@@ -1,0 +1,113 @@
+.employeesPage {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+
+  .main {
+    padding: 2px;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 0;
+
+    .mainHeader {
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .filterWrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .searchInput {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 220px;
+        width: 250px;
+        max-width: 280px;
+        border-radius: 4px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        height: 32px;
+        padding: 0 10px;
+        font-weight: 600;
+
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+
+        input {
+          width: 100%;
+          height: 90%;
+          font-size: var(--font-small);
+        }
+
+        svg {
+          cursor: pointer;
+
+          &:hover {
+            transform: scale(1.1);
+          }
+        }
+
+        &:hover,
+        &:focus-within {
+          border: 1px solid var(--third-color);
+        }
+
+        .clearBtn {
+          position: absolute;
+          right: 2px;
+        }
+      }
+
+      .buttonsWrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .refreshBtn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 10px;
+          max-width: 180px;
+          height: 32px;
+          padding: 0 10px;
+          font-size: var(--font-small);
+          font-weight: 600;
+          border-radius: 4px;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          cursor: pointer;
+          box-sizing: border-box;
+          background-color: white;
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+
+          .badge {
+            color: var(--third-color);
+            margin-left: 6px;
+          }
+
+          &:hover {
+            border: 1px solid var(--third-color);
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model branches {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique @db.VarChar(255)
+  status           Boolean            @default(true)
+  director_id      Int?
+  added_at       DateTime @default(now()) @db.Timestamptz(6)
+  added_by Int
+
+  director  employees? @relation("BranchDirector", fields: [director_id], references: [id])
+  employmentOrders      employment_orders[]
+  employees   employees[]
+  departments departments[]
+  addedBy    users     @relation(fields: [added_by], references: [id])
+}
+
+model departments {
+  id               Int                @id @default(autoincrement())
+  name             String?            @db.VarChar(255)
+  status           Boolean            @default(true)
+  branch_id        Int
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+
+  employmentOrders employment_orders[]
+  employees        employees[]
+  branch    branches    @relation(fields: [branch_id], references: [id])
+}
+
+model employment_orders {
+  id            Int                @id @default(autoincrement())
+  employee_id   Int?
+  type          String?      @db.VarChar(50)
+  date          DateTime?    @db.Date
+  branch_id     Int?
+  department_id Int?
+  position_id   Int?
+  order_number  String?      @db.VarChar(100)
+  note   String?
+  added_at    DateTime    @default(now()) @db.Timestamptz(6)
+
+  branches      branches?    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  departments   departments? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  positions     positions?   @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employees     employees?   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model employees {
+  id                                       Int                @id @default(autoincrement())
+  employee_number                          Int?               @unique
+  last_name                                String?
+  first_name                               String?
+  middle_name                              String?            @db.VarChar(255)
+  date_of_birth                            DateTime?          @db.Date
+  gender                                   String?            @db.VarChar(255)
+  passport                                 String?            @db.VarChar(255)
+  passport_expiry_date                     DateTime?          @db.Date
+  pinfl                                    String?            @unique @db.VarChar(255)
+  education                                String?            @db.VarChar(255)
+  phone                                    String?            @db.VarChar(255)
+  email                                    String?            @db.VarChar(255)
+  address                                  String?            @db.VarChar(255)
+  status                                   Boolean?           @default(true)
+  photo                                    String?            @db.VarChar(255)
+  branch_id                                Int?
+  department_id                            Int?
+  position_id                              Int?
+  work_schedule_id                         Int?
+  education_specialty                      String?            @db.VarChar(500)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+
+  branch         branches?       @relation(fields: [branch_id], references: [id])
+  department     departments?    @relation(fields: [department_id], references: [id])
+  position       positions?      @relation(fields: [position_id], references: [id])
+  workSchedule  work_schedules? @relation(fields: [work_schedule_id], references: [id])
+  employeeScheduleHistory employee_schedule_history[]
+  employmentOrders   employment_orders[]
+  employeeTimeOffs   time_off[]  @relation("employeeTimeOffs")
+  facePasses        face_passes[]
+  doors           doors[]
+  user users?
+  directedBranches   branches[] @relation("BranchDirector")
+}
+
+model face_passes {
+  id                  Int       @id @default(autoincrement())
+  date                DateTime
+  identifier          String    @unique @db.VarChar(50)
+  photo               String?   @db.VarChar(255)
+  employee_id         Int
+  door_id             Int
+  face_devices_id     Int
+  direction           String?   @db.VarChar(10)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+
+  employee     employees     @relation(fields: [employee_id], references: [id])
+  faceDevice  face_devices  @relation(fields: [face_devices_id], references: [id])
+  door         doors         @relation(fields: [door_id], references: [id])
+
+  @@index([date])
+}
+
+model holidays {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  date_from  DateTime @db.Date
+  date_to    DateTime @db.Date
+  added_by Int @default(1)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  
+  addedBy    users     @relation(fields: [added_by], references: [id])
+}
+
+model positions {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique @db.VarChar(255)
+  status           Boolean            @default(true)
+  added_at         DateTime @default(now()) @db.Timestamptz(6)
+
+  employmentOrders employment_orders[]
+  employees employees[]
+}
+
+model sessions {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  refresh_token String
+  ip_address    String?
+  user_agent    String?
+  added_at    DateTime @default(now()) @db.Timestamptz(6)
+  expires_at    DateTime? @db.Timestamptz(6)
+  user_id       Int
+  user          users     @relation(fields: [user_id], references: [id])
+}
+
+model telegram_bots {
+  id                        Int      @id @default(autoincrement())
+  name                      String?  @unique @db.VarChar(255)
+  chat_id                   String?  @unique @db.VarChar(255)
+  selectedEmployeeIds       Int[]
+  receive_late_report       Boolean?
+  receive_event_alerts      Boolean?
+  receive_attendance_report Boolean?
+  status                    Boolean? @default(true)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+}
+
+model time_off {
+  id                                        Int    @id @default(autoincrement())
+  employee_id                               Int
+  reason                                    String
+  date_from                                 DateTime  @db.Timestamptz(6)
+  date_to                                   DateTime  @db.Timestamptz(6)
+   added_by Int @default(1)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  is_company_paid                           Boolean   @default(false)
+  type                                      String    @default("hour") @db.VarChar(10)
+  credited_hours                            Int?      @default(0)
+
+  addedBy    users     @relation(fields: [added_by], references: [id])
+  employee   employees     @relation("employeeTimeOffs", fields: [employee_id], references: [id])
+}
+
+model timesheet {
+  id           Int      @id @default(autoincrement())
+  month        Int
+  year         Int
+  day          Int?
+  worked_hours String?  @db.VarChar
+  intervals    String[]
+  user_id      Int
+}
+
+model users {
+  id           Int       @id @default(autoincrement())
+  username     String    @unique
+  password     String
+  employee_id  Int?      
+  status       Boolean   @default(true)
+  access_level String?
+  branch_access Int[]
+  department_access Int[]
+  language     String    @default("ru")
+  theme        String    @default("light")
+  sidebar      String    @default("opened")
+  added_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  employee     employees? @relation(fields: [employee_id], references: [id])
+  menuAccess  user_menu_access[]
+  sessions     sessions[]
+  holidays     holidays[]
+  branches     branches[]
+  timeOff     time_off[]
+  employeeScheduleHistory employee_schedule_history[]
+
+  @@index([employee_id])
+  @@unique([employee_id], map: "unique_employee_per_user") 
+}
+
+model menus {
+  id         Int              @id @default(autoincrement())
+  name       String           @unique @db.VarChar(100)
+  path       String?          @db.VarChar(255)
+  parent_id   Int?
+  parent     menus?            @relation("MenuHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children   menus[]           @relation("MenuHierarchy")
+  sort_order  Int              @default(0)
+  
+  access     user_menu_access[] 
+}
+
+model user_menu_access {
+  id        Int   @id @default(autoincrement())
+  user_id    Int
+  menu_id    Int
+  can_view   Boolean @default(false)
+  can_add Boolean @default(false)
+  can_update Boolean @default(false)
+  can_delete Boolean @default(false)
+
+  user      users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  menu      menus   @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, menu_id])
+}
+
+model work_schedules {
+  id                 Int          @id @default(autoincrement())
+  name               String       @db.VarChar(255)
+  shift_type         String?      @db.VarChar
+  shift_start        String?      @db.VarChar(5)
+  shift_end          String?      @db.VarChar(5)
+  first_shift_start  String?      @db.VarChar(5)
+  first_shift_end    String?      @db.VarChar(5)
+  second_shift_start String?      @db.VarChar(5)
+  second_shift_end   String?      @db.VarChar(5)
+  third_shift_start  String?      @db.VarChar(5)
+  third_shift_end    String?      @db.VarChar(5)
+  break_minutes      Int?
+  valid_from         DateTime?    @default(now()) @db.Timestamptz(6)
+  added_at         DateTime    @default(now()) @db.Timestamptz(6)
+  status             Boolean?     @default(true)
+
+  employees          employees[]
+  employeeScheduleHistory employee_schedule_history[]
+}
+
+model employee_schedule_history {
+  id                Int   @id @default(autoincrement())
+  employee_id       Int
+  work_schedule_id  Int
+  date_from         DateTime
+  date_to           DateTime?
+  added_at          DateTime @default(now())
+  added_by          Int
+  change_reason     String?  @db.VarChar(255)
+
+  // relations
+  employee         employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  workSchedule     work_schedules  @relation(fields: [work_schedule_id], references: [id])
+  addedBy          users     @relation(fields: [added_by], references: [id])
+
+  @@index([employee_id, date_from])
+  @@index([employee_id, date_to])
+}
+
+model doors {
+  id           Int            @id @default(autoincrement())
+  name         String         @unique @db.VarChar(255)
+  status       Boolean        @default(true)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+
+  employees    employees[]
+  faceDevices face_devices[]
+  facePasses  face_passes[] 
+}
+
+model face_devices {
+  id         Int       @id @default(autoincrement())
+  name       String?   @db.VarChar(100)
+  door_id    Int
+  device_ip  String    @db.VarChar(50)
+  port       Int?      @default(80)
+  direction  String?   @db.VarChar(10)
+  status     Boolean?  @default(true)
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  door      doors     @relation(fields: [door_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facePasses  face_passes[]
+}

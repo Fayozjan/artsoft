@@ -1,0 +1,29 @@
+.active {
+  padding: 0px 8px;
+  border-radius: 8px;
+  background: var(--badge-bg-active);
+  color: var(--badge-color-active);
+  font-weight: 600;
+  font-size: calc(var(--font-small) - 1px);
+  border: 1px solid var(--badge-bg-active);
+}
+
+.inactive {
+  padding: 0px 8px;
+  border-radius: 8px;
+  background: var(--badge-bg-disabled);
+  color: var(--badge-color-disabled);
+  font-weight: 600;
+  font-size: calc(var(--font-small) - 1px);
+  border: 1px solid var(--badge-bg-disabled);
+}
+
+.unknown {
+  padding: 0px 8px;
+  border-radius: 8px;
+  background: rgba(112, 112, 112, 0.1);
+  color: black;
+  font-weight: 600;
+  font-size: calc(var(--font-small) - 1px);
+  border: 1px solid rgba(112, 112, 112, 0.1);
+}

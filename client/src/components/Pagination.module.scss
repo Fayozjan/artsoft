@@ -1,0 +1,97 @@
+.pagination {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-size: var(--font-small);
+  box-sizing: border-box;
+
+  .pageSize {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 30px;
+    background-color: white;
+    border: 1px solid rgba(162, 161, 168, 0.4);
+    border-radius: 10px;
+    padding: 0 8px;
+    font-weight: 500;
+    box-sizing: border-box;
+
+    &:hover {
+      border: 1px solid var(--third-color);
+    }
+
+    select {
+      background: none;
+      width: 45px;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: all 0.3s ease;
+      font-size: var(--font-small);
+    }
+  }
+
+  .pageCounts {
+    font-weight: 600;
+    font-size: var(--font-small);
+    color: grey;
+  }
+
+  .pageControls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .currentPage {
+      background: #fff;
+      border: 1px solid rgba(162, 161, 168, 0.35);
+      border-radius: 10px;
+      font-size: var(--font-small);
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      height: 30px;
+      padding: 0 8px;
+      box-sizing: border-box;
+
+      span:first-child {
+        color: #000;
+        font-weight: 700;
+      }
+
+      span:last-child {
+        color: #666;
+      }
+    }
+
+    .arrows {
+      display: flex;
+      gap: 5px;
+
+      .arrow {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 28px;
+        padding: 0 8px;
+        background-color: white;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        border-radius: 10px;
+        box-sizing: border-box;
+        cursor: pointer;
+
+        &:hover {
+          border: 1px solid var(--third-color);
+        }
+
+        svg {
+          width: 15px;
+          height: 15px;
+        }
+      }
+    }
+  }
+}

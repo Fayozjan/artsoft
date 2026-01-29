@@ -1,0 +1,123 @@
+{
+  "auth": {
+    "welcome": "Salom,",
+    "welcomeBack": "xush kelibsiz!",
+    "username": "Login",
+    "password": "Parol",
+    "login": "Kirish",
+    "loginError": "Login yoki parol noto‘g‘ri!"
+  },
+  "menu": {
+    "dashboard": "Dashbord",
+    "branches": "Filiallar",
+    "departments": "Bo‘limlar",
+    "employees": "Xodimlar",
+    "facePasses": "Kirish va chiqishlar",
+    "attendance": "Hozirlik",
+    "lateEmployees": "Kechikkanlar",
+    "timesheet": "Hisobot",
+    "workSchedules": "Ish jadvallari",
+    "timeOff": "Dam olish va ruxsatlar",
+    "holidays": "Байрамлар",
+    "positions": "Lavozimlar",
+    "users": "Foydalanuvchilar",
+    "telegramBots": "Telegram botlari",
+    "doors": "Eshiklar",
+    "faceDevices": "Face qurilmalari"
+  },
+  "filters": {
+    "selectBranch": "Filialni tanlang",
+    "selectDepartment": "Bo‘limni tanlang",
+    "selectEmployee": "Xodimni tanlang",
+    "selectPosition": "Lavozimni tanlang",
+    "selectStatus": "Holatni tanlang",
+    "statusOptions": {
+      "active": "Ishlayapti",
+      "terminated": "Ishdan bo‘shatilgan",
+      "unknown": "Noma’lum"
+    },
+    "noMatches": "Mosliklar yo‘q"
+  },
+  "button": {
+    "search": "Qidiruv",
+    "add": "Qo‘shish",
+    "save": "Saqlash"
+  },
+  "dashboard": {
+    "title": "Boshqaruv paneli",
+    "logout": "Chiqish"
+  },
+  "employees": {
+    "title": "Xodimlar",
+    "add": "Xodim qo‘shish"
+  },
+  "noData": {
+    "text": "Ma'lumot yo'q"
+  },
+  "alertMessages": {
+    "success": "Muvaffaqiyatli",
+    "error": "Xato"
+  },
+  "branchesPage": {
+    "table": {
+      "name": "Nomi",
+      "departments": "Bo‘limlar",
+      "employees": "Xodimlar",
+      "status": "Holati",
+      "action": "Amal"
+    },
+    "addBranch": {
+      "title": "Filial qo‘shish",
+      "name": "Nomi",
+      "status": "Holati",
+      "statusOptions": {
+        "true": "Faol",
+        "false": "O‘chirilgan"
+      }
+    },
+    "editBranch": {
+      "title": "Filialni o‘zgartirish",
+      "name": "Nomi",
+      "status": "Holati",
+      "statusOptions": {
+        "true": "Faol",
+        "false": "O‘chirilgan"
+      }
+    }
+  },
+  "departmentsPage": {
+    "table": {
+      "name": "Номи",
+      "branch": "Филиал",
+      "departments": "Бўлимлар",
+      "employees": "Ходимлар",
+      "status": "Холати",
+      "action": "Амал"
+    },
+    "addDepartment": {
+      "title": "Бўлим қўшиш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "selectBranch": "Филиални танланг"
+    },
+    "editDepartment": {
+      "title": "Бўлим ўзгартириш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "status": "Холати",
+      "statusOptions": {
+        "true": "Фаол",
+        "false": "Ўчирилган"
+      }
+    }
+  },
+  "badge": {
+    "true": "Faol",
+    "false": "O‘chirilgan",
+    "active": "Ishlayapti",
+    "terminated": "Ishdan bo‘shatilgan",
+    "entry": "Kirish",
+    "exit": "Chiqish",
+    "unknown": "Noma’lum"
+  }
+}

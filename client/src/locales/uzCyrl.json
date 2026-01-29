@@ -1,0 +1,175 @@
+{
+  "auth": {
+    "welcome": "Салом,",
+    "welcomeBack": "хуш келибсиз!",
+    "username": "логин",
+    "password": "парол",
+    "login": "Кириш",
+    "loginError": "Логин ёки парол нотўғри!"
+  },
+  "menu": {
+    "dashboard": "Дашборд",
+    "hr": "Кадрлар бўлими",
+    "reports": "Хисоботлар",
+    "manufacturing": "Ишлаб чиқариш",
+    "settings": "Созламалар",
+    "branches": "Филиаллар",
+    "departments": "Бўлимлар",
+    "employees": "Ходимлар",
+    "face-passes": "Кириш ва чиқишлар",
+    "attendance": "Давомат",
+    "late-employees": "Кечикканлар",
+    "timesheet": "Табел",
+    "work-schedules": "Иш жадваллар",
+    "time-off": "Дам олиш ва рухсатлар",
+    "holidays": "Байрам кунлар",
+    "positions": "Лавозимлар",
+    "users": "Логинлар",
+    "telegram-bots": "Телеграм ботлар",
+    "doors": "Ешиклар",
+    "face-devices": "Фейс қурилмалар"
+  },
+  "dashboard": {
+    "title": "Бошқарув панели",
+    "logout": "Чиқиш"
+  },
+
+  "branchesPage": {
+    "table": {
+      "name": "Номи",
+      "departments": "Бўлимлар",
+      "employees": "Ходимлар",
+      "status": "Холати",
+      "action": "Ҳаракат"
+    },
+    "addBranch": {
+      "title": "Филиал қўшиш",
+      "name": "Номи",
+      "status": "Холати",
+      "statusOptions": {
+        "true": "Фаол",
+        "false": "Ўчирилган"
+      }
+    },
+    "editBranch": {
+      "title": "Филиални ўзгартириш",
+      "name": "Номи",
+      "status": "Холати",
+      "statusOptions": {
+        "true": "Фаол",
+        "false": "Ўчирилган"
+      }
+    }
+  },
+  "departmentsPage": {
+    "table": {
+      "name": "Номи",
+      "branch": "Филиал",
+      "departments": "Бўлимлар",
+      "employees": "Ходимлар",
+      "status": "Холати",
+      "action": "Ҳаракат"
+    },
+    "addDepartment": {
+      "title": "Бўлим қўшиш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "selectBranch": "Филиални танланг"
+    },
+    "editDepartment": {
+      "title": "Бўлим ўзгартириш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "status": "Холати",
+      "statusOptions": {
+        "true": "Фаол",
+        "false": "Ўчирилган"
+      }
+    }
+  },
+  "employeesPage": {
+    "title": "Ходимлар",
+    "add": "Ходим қўшиш",
+    "table": {
+      "name": "Ходим",
+      "photo": "Расм",
+      "dateOfBirth": "Туғилган кун",
+      "employeeNumber": "Таб. №",
+      "branch": "Филиал",
+      "department": "Бўлим",
+      "position": "Лавозим",
+      "pinfl": "ЖШШИР",
+      "passport": "Паспорт",
+      "status": "Холати",
+      "action": "Ҳаракат"
+    },
+    "addEmployee": {
+      "profile": "Профил",
+      "order": "Буйруқ",
+      "door": "Эшик",
+      "surname": "Фамилия",
+      "name": "Исм",
+      "patronymic": "Отасининг исми",
+      "dateOfBirth": "Туғилган кун",
+      "sex": "Жинс",
+      "placeOfBirth": "Туғилган жой",
+      "passport": "Паспорт (ID)",
+      "passportDateOfIssue": "Паспорт берилган сана",
+      "passportDateOfExpiration": "Паспорт амал қилиш муддати",
+      "pinfl": "ЖШШИР",
+      "nationality": "Миллат",
+      "education": "Маълумот",
+      "speciality": "Мутахассислик",
+      "higherEdu": "Олий",
+      "secondaryEdu": "Ўрта махсус",
+      "generalEdu": "Умумий ўрта",
+      "phoneNumber": "Телефон рақам",
+      "email": "Почта",
+      "address": "Манзил",
+      "branch": "Филиал",
+      "department": "Бўлим",
+      "position": "Лавозим",
+      "employeeNumber": "Табел рақами",
+      "workSchedule": "Иш жадвали",
+      "select": "Танланг",
+      "male": "Эркак",
+      "female": "Аёл",
+      "uploadPhoto": "Расм юкланг"
+    }
+  },
+  "filters": {
+    "selectBranch": "Филиални танланг",
+    "selectDepartment": "Бўлимни танланг",
+    "selectEmployee": "Ходимни танланг",
+    "selectPosition": "Лавозимни танланг",
+    "selectStatus": "Холатни танланг",
+    "statusOptions": {
+      "active": "Ишлаяпти",
+      "terminated": "Ишдан бўшатилган",
+      "unknown": "Номаълум"
+    },
+    "noMatches": "Мосликлар йўқ"
+  },
+  "button": {
+    "search": "Қидирув",
+    "add": "Қўшиш",
+    "save": "Сақлаш",
+    "saveAndNext": "Сақлаш ва давом эттириш"
+  },
+  "noData": {
+    "text": "Маълумот йўқ"
+  },
+  "alertMessages": {
+    "success": "Муваффақиятли",
+    "error": "Хато"
+  },
+  "badge": {
+    "true": "Фаол",
+    "false": "Ўчирилган",
+    "active": "Ишлаяпти",
+    "terminated": "Ишдан бўшатилган",
+    "entry": "Кириш",
+    "exit": "Чиқиш",
+    "unknown": "Номаълум"
+  }
+}

@@ -1,0 +1,50 @@
+.modal {
+  width: 100%;
+  margin: auto;
+  text-align: center;
+  animation: scaleIn 0.3s ease;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 20px;
+
+  button {
+    border-radius: 4px;
+    padding: 5px 40px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.accept {
+  background: #f5f5f5;
+  color: black;
+  border: 1px solid #d0d0d0;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.reject {
+  background: #3052d8;
+  color: #fff;
+  border: none;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(48, 82, 216, 0.45);
+  }
+
+  &:active {
+    transform: scale(0.96);
+  }
+}

@@ -1,0 +1,112 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99;
+}
+
+.add_order {
+  background: #fff;
+  width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 12px;
+  padding: 30px;
+  position: relative;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+
+  h1 {
+    font-size: 22px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-weight: 600;
+  }
+
+  h2 {
+    font-size: 18px;
+    margin: 25px 0 15px;
+    font-weight: 500;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+  }
+}
+
+.cancelBtn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 24px;
+  height: 24px;
+  color: #999;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    color: #000;
+    transform: scale(1.1);
+  }
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+}
+
+.orderForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+
+  label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    width: 100%;
+    transition: 0.2s;
+
+    &:focus {
+      border-color: #007bff;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    }
+
+    &[readOnly] {
+      background: #f7f7f7;
+      color: #555;
+    }
+  }
+
+  textarea {
+    min-height: 60px;
+    resize: vertical;
+  }
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 15px;
+
+  button {
+    min-width: 120px;
+  }
+}

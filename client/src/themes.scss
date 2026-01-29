@@ -1,0 +1,47 @@
+:root {
+  --bg-color: #f0f0f391;
+  --text-color: black;
+  --card-bg: white;
+  --border-color: #ddd;
+  --button-bg: black;
+  --button-text: white;
+  --svg-color: black;
+  --table-header: #efefef;
+  --profile-bg: white;
+  --search--btn-bg: white;
+  --badge-bg-active: rgba(41, 153, 43, 0.1);
+  --badge-color-active: #117b41;
+  --badge-bg-disabled: rgba(245, 23, 23, 0.1);
+  --badge-color-disabled: #dd0303;
+  --select-hover-color: #ddd;
+  --third-color: #1455fe;
+  --third-color-overlay: #99b6ff;
+  --auth-greeting: rgb(29, 29, 29);
+  --scroll-color: #b4b4b4;
+  --placeholder-color: rgb(63, 63, 63);
+
+  --font-h1: clamp(28px, 3vw, 40px);
+  --font-h2: clamp(22px, 2.5vw, 32px);
+  --font-h3: clamp(18px, 2vw, 26px);
+  --font-body: clamp(13px, 0.9vw, 15px);
+  --font-small: clamp(12px, 1vw, 13px);
+}
+
+html.dark {
+  --bg-color: black;
+  --text-color: white;
+  --card-bg: #111;
+  --button-bg: #333;
+  --button-hover: #444;
+  --table-header: #333;
+  --svg-color: white;
+  --profile-bg: #333;
+  --search--btn-bg: #333;
+  --border-color: #333;
+  --badge-bg-active: green;
+  --badge-color-active: white;
+  --badge-bg-disabled: rgba(245, 23, 23, 0.7);
+  --badge-color-disabled: white;
+  --select-hover-color: #333;
+  --scroll-color: #ddd;
+}

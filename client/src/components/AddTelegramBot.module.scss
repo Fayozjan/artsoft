@@ -1,0 +1,262 @@
+.addTelegramBot {
+  position: relative;
+  padding-bottom: 8px;
+
+  .header {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #ddd;
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: calc(var(--font-small) + 2px);
+    }
+  }
+
+  .row {
+    margin-top: 10px;
+    padding: 0px 8px 8px 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    > div {
+      flex: 1;
+    }
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-small);
+    margin-bottom: 2px;
+    color: #666;
+  }
+
+  .label {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .sticker {
+      margin-bottom: 10px;
+      color: var(--third-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: var(--font-small);
+    }
+  }
+
+  input,
+  select {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+  }
+
+  .status {
+    margin-top: 5px;
+    width: 100%;
+    display: flex;
+    column-gap: 20px;
+    align-items: center;
+    flex-wrap: wrap;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      cursor: pointer;
+    }
+
+    input {
+      width: 15px;
+      height: 15px;
+    }
+  }
+}
+
+.addTelegramBotOld {
+  position: relative;
+  width: 50%;
+  background: white;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+
+  .container {
+    background-color: #fff;
+    margin: 10px;
+    border: 2px solid rgba(162, 161, 168, 0.2);
+    border-radius: 10px;
+    padding: 15px;
+    box-sizing: border-box;
+  }
+
+  .formGroup {
+    width: 100%;
+    display: flex;
+    gap: 15px;
+    box-sizing: border-box;
+  }
+
+  .inputFields {
+    flex-grow: 1;
+  }
+
+  .row {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .telegram_type {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .type {
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .label {
+    text-align: center;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #666;
+  }
+
+  .inputCol {
+    flex-grow: 1;
+    flex-basis: 0;
+
+    .label {
+      font-size: 14px;
+      display: flex;
+    }
+
+    .sticker {
+      position: relative;
+      left: 4px;
+      bottom: 5px;
+      background-color: #3052d8;
+      color: #fff;
+      border-radius: 5px;
+      min-width: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 12px;
+      padding: 0 5px;
+    }
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #666;
+  }
+
+  .inputCol input[type="text"],
+  select {
+    font-weight: 500;
+    color: black;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .inputCol .checkbox {
+    margin-top: 10px;
+    width: 18px;
+    height: 18px;
+    border-radius: 8px;
+  }
+
+  .inputFile {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .buttons {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+  }
+
+  .btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 300;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn:hover {
+    opacity: 0.9;
+    font-weight: 500;
+  }
+
+  .cancel {
+    border: 2px solid rgba(162, 161, 168, 0.2);
+    margin-right: 10px;
+    background-color: #ffffff;
+    color: #16151c;
+  }
+
+  .save {
+    background: #3052d8;
+    color: white;
+  }
+
+  .successMessageOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Поверх всех элементов */
+  }
+  .successMessage {
+    padding: 40px;
+    border-radius: 10px;
+
+    background-color: white;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: #3052d8;
+  }
+}

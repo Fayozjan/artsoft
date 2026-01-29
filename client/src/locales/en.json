@@ -1,0 +1,123 @@
+{
+  "auth": {
+    "welcome": "Hello,",
+    "welcomeBack": "welcome back!",
+    "username": "Username",
+    "password": "Password",
+    "login": "Login",
+    "loginError": "Invalid username or password!"
+  },
+  "menu": {
+    "dashboard": "Dashboard",
+    "branches": "Branches",
+    "departments": "Departments",
+    "employees": "Employees",
+    "facePasses": "Entries & Exits",
+    "attendance": "Attendance",
+    "lateEmployees": "Late Employees",
+    "timesheet": "Timesheet",
+    "workSchedules": "Work Schedules",
+    "timeOff": "Time Off",
+    "holidays": "Holidays",
+    "positions": "Positions",
+    "users": "Users",
+    "telegramBots": "Telegram Bots",
+    "doors": "Doors",
+    "faceDevices": "Face Devices"
+  },
+  "filters": {
+    "selectBranch": "Select branch",
+    "selectDepartment": "Select department",
+    "selectEmployee": "Select employee",
+    "selectPosition": "Select position",
+    "selectStatus": "Select status",
+    "statusOptions": {
+      "active": "Active",
+      "terminated": "Terminated",
+      "unknown": "Unknown"
+    },
+    "noMatches": "No matches"
+  },
+  "button": {
+    "search": "Search",
+    "add": "Add",
+    "save": "Save"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "logout": "Logout"
+  },
+  "employees": {
+    "title": "Employees",
+    "add": "Add employee"
+  },
+  "noData": {
+    "text": "No data"
+  },
+  "alertMessages": {
+    "success": "Success",
+    "error": "Error"
+  },
+  "branchesPage": {
+    "table": {
+      "name": "Name",
+      "departments": "Departments",
+      "employees": "Employees",
+      "status": "Status",
+      "action": "Action"
+    },
+    "addBranch": {
+      "title": "Add branch",
+      "name": "Name",
+      "status": "Status",
+      "statusOptions": {
+        "true": "Active",
+        "false": "Disabled"
+      }
+    },
+    "editBranch": {
+      "title": "Edit branch",
+      "name": "Name",
+      "status": "Status",
+      "statusOptions": {
+        "true": "Active",
+        "false": "Disabled"
+      }
+    }
+  },
+  "departmentsPage": {
+    "table": {
+      "name": "Номи",
+      "branch": "Филиал",
+      "departments": "Бўлимлар",
+      "employees": "Ходимлар",
+      "status": "Холати",
+      "action": "Амал"
+    },
+    "addDepartment": {
+      "title": "Бўлим қўшиш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "selectBranch": "Филиални танланг"
+    },
+    "editDepartment": {
+      "title": "Бўлим ўзгартириш",
+      "name": "Номи",
+      "branch": "Филиал",
+      "status": "Холати",
+      "statusOptions": {
+        "true": "Фаол",
+        "false": "Ўчирилган"
+      }
+    }
+  },
+  "badge": {
+    "true": "Active",
+    "false": "Disabled",
+    "active": "Active",
+    "terminated": "Terminated",
+    "entry": "Entry",
+    "exit": "Exit",
+    "unknown": "Unknown"
+  }
+}

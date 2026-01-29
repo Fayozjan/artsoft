@@ -1,0 +1,68 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 250px;
+  max-width: 280px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  text-align: center;
+
+  h2 {
+    width: 95%;
+    margin: 0;
+    font-size: calc(var(--font-small) + 6px);
+  }
+
+  p {
+    margin: 0;
+    font-size: calc(var(--font-small) + 1px);
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: space-evenly;
+
+  button {
+    min-width: 100px;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: var(--font-small);
+    cursor: pointer;
+    border: none;
+    color: var(--button-text);
+
+    &.accept {
+      background-color: var(--third-color);
+      color: white;
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+
+    &.cancel {
+      color: var(--text-color);
+      background: var(--border-color);
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.05);
+      }
+    }
+  }
+}

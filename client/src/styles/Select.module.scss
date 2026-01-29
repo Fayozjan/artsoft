@@ -1,0 +1,46 @@
+.multiSelectContainer {
+  position: relative;
+}
+
+.selectBox {
+  font-weight: 500;
+  color: black;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+  padding: 10px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+  max-height: 150px;
+  overflow-y: auto;
+  z-index: 1000;
+
+  font-size: 14px;
+}
+
+.item {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.item:hover {
+  background-color: #f1f1f1;
+}
+
+.selected {
+  background-color: #d1e7ff;
+  font-weight: bold;
+}

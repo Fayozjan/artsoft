@@ -1,0 +1,73 @@
+.wrapper {
+  margin-top: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header,
+.row {
+  padding: 0;
+  margin: 0;
+  display: flex;
+  font-size: 10px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.header {
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.header div:nth-child(1),
+.row div:nth-child(1) {
+  width: 10px;
+}
+
+.header div:nth-child(2),
+.row div:nth-child(2) {
+  width: 120px;
+}
+
+.header div:nth-child(3),
+.row div:nth-child(3) {
+  width: 120px;
+}
+
+.header div:nth-child(4),
+.row div:nth-child(4) {
+  width: 120px;
+}
+
+.header div:nth-child(5),
+.row div:nth-child(5) {
+  width: 20px;
+}
+
+.cell .dayCell {
+  min-width: 20px;
+  border: 1px solid #ddd;
+  padding: 1px;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dayCell {
+  width: 20px;
+  border: 1px solid #ddd;
+  padding: 1px;
+  font-size: 10px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.dayHeader {
+  text-align: center;
+}
+
+.holiday {
+  background-color: #ffe2e2;
+}

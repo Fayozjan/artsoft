@@ -1,0 +1,153 @@
+.tableWrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin: 10px;
+  padding: 5px;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  box-sizing: border-box;
+
+  @media (min-width: 1540px) {
+    padding: 10px;
+  }
+}
+
+.tableTitle {
+  color: #2c3e50;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 5px 0;
+
+  @media (min-width: 1540px) {
+    margin-bottom: 10px;
+  }
+}
+
+.tableContainer {
+  flex-grow: 1;
+  overflow: auto;
+  min-height: 0;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 3px;
+  }
+}
+
+.statsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  overflow: auto;
+
+  tbody {
+    tr {
+      cursor: pointer;
+      &:hover {
+        background-color: #ebebeb;
+      }
+    }
+  }
+
+  th,
+  td {
+    padding: 3px;
+    text-align: left;
+    border-bottom: 1px solid #e9ecef;
+    font-size: 14px;
+    text-align: center;
+  }
+
+  th {
+    background-color: #f8f9fa;
+    top: 0;
+    z-index: 1;
+    position: sticky;
+    text-align: center;
+    color: #495057;
+    font-weight: 700;
+  }
+
+  :nth-child(1) {
+    text-align: center;
+  }
+
+  td:nth-child(2) {
+    text-align: left;
+  }
+
+  td:last-child {
+    width: 150px;
+  }
+}
+
+.deptName {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.total {
+  color: #4f46e5;
+}
+
+.arrived {
+  color: #16a34a;
+}
+
+.absent {
+  color: red;
+}
+
+.present {
+  color: green;
+}
+
+.left {
+  color: #ef4444;
+}
+
+.progressBar {
+  width: 100%;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: #007bff;
+  border-radius: 3px;
+}
+
+.tooltip {
+  background: white;
+  padding: 0.75rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid #e9ecef;
+}
+
+.tooltipTitle {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.tooltipItem {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+}
+
+.tooltipValue {
+  font-weight: 600;
+}

@@ -1,0 +1,334 @@
+.addEmployee {
+  position: relative;
+  padding-bottom: 8px;
+
+  .header {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #ddd;
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: calc(var(--font-small) + 2px);
+    }
+  }
+
+  .previewPhoto {
+    position: relative;
+    margin: 10px 0 0 10px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    img {
+      width: 150px;
+      height: 150px;
+      border-radius: 20%;
+      object-fit: cover;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+      &.active {
+        border: 2px solid #28a745;
+        box-shadow: 0 0 15px 2px rgba(40, 167, 69, 0.5);
+
+        animation: activePulse 3s infinite ease-in-out;
+      }
+
+      &.terminated {
+        border: 2px solid #dc3545;
+        box-shadow: 0 0 15px 2px rgba(255, 0, 0, 0.3);
+        filter: grayscale(0.2);
+      }
+    }
+
+    &:hover img {
+      opacity: 0.9;
+    }
+
+    &:hover svg {
+      opacity: 1;
+    }
+
+    svg {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      opacity: 0;
+      transition: 0.25s ease;
+      cursor: pointer;
+    }
+  }
+
+  .uploadPhoto {
+    margin: 10px 0 0 10px;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20%;
+    border: 2px dashed #ccc;
+    box-sizing: border-box;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+
+      svg {
+        width: 35px;
+        height: 35px;
+        margin-bottom: 10px;
+      }
+
+      span {
+        font-weight: 500;
+        font-size: var(--font-small);
+      }
+    }
+
+    input {
+      display: none;
+    }
+
+    &.active {
+      border: 2px solid #28a745;
+      box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+
+      // Можно добавить легкую анимацию пульсации
+      animation: activePulse 3s infinite ease-in-out;
+    }
+
+    // Стиль для уволенного сотрудника
+    &.terminated {
+      border: 2px solid #dc3545;
+      box-shadow: 0 0 15px rgba(220, 53, 69, 0.3);
+      filter: grayscale(0.5); // Можно слегка обесцветить фото уволенного
+    }
+  }
+
+  .topRow {
+    padding: 8px;
+
+    display: flex;
+    align-items: start;
+    gap: 30px;
+
+    :nth-child(2) {
+      flex: 1;
+    }
+  }
+
+  .row {
+    padding: 0px 8px 8px 8px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    > div {
+      flex: 1;
+    }
+  }
+
+  h4 {
+    border-top: 1px solid #c5c5c5;
+    text-align: center;
+    margin: 10px;
+    padding-top: 10px;
+    font-size: var(--font-body);
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-small);
+    margin-bottom: 2px;
+    color: #666;
+  }
+
+  input,
+  select {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+  }
+
+  .addOrderBtnWrapper {
+    display: flex;
+    gap: 10px;
+    margin: 5px 10px;
+
+    .btn {
+      min-width: 160px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 15px;
+      height: 32px;
+      background-color: transparent;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      outline: none;
+      border: 1.5px solid black;
+
+      svg {
+        fill: #000000;
+      }
+    }
+
+    .showAllEmploymentBtn {
+      &:hover {
+        border: 1.5px solid #555;
+        background-color: #555;
+        color: #ffffff;
+
+        svg {
+          fill: white;
+        }
+      }
+
+      &:active {
+        transform: scale(1.02);
+
+        svg {
+          fill: white;
+        }
+      }
+    }
+
+    .transferBtn {
+      color: var(--third-color);
+      border: 1.5px solid var(--third-color);
+
+      svg {
+        fill: var(--third-color);
+      }
+
+      &:hover {
+        border: 1.5px solid var(--third-color);
+        background-color: var(--third-color);
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+
+        svg {
+          fill: white;
+        }
+      }
+
+      &:active {
+        transform: scale(1.02);
+
+        svg {
+          fill: white;
+        }
+      }
+    }
+
+    .terminateBtn {
+      color: #dc3545;
+      border: 1.5px solid #dc3545;
+
+      svg {
+        fill: #dc3545;
+      }
+
+      &:hover {
+        background-color: #dc3545;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+
+        svg {
+          fill: white;
+        }
+      }
+
+      &:active {
+        transform: scale(0.98);
+        background-color: #bd2130;
+        border-color: #bd2130;
+
+        svg {
+          fill: white;
+        }
+      }
+    }
+
+    .hireBtn {
+      color: green;
+      border: 1.5px solid green;
+
+      svg {
+        fill: green;
+      }
+
+      &:hover {
+        background-color: green;
+        color: #ffffff;
+        box-shadow: 0 4px 12px rgba(64, 171, 40, 0.25);
+
+        svg {
+          fill: white;
+        }
+      }
+
+      &:active {
+        transform: scale(0.98);
+        background-color: #bd2130;
+        border-color: #bd2130;
+
+        svg {
+          fill: white;
+        }
+      }
+    }
+  }
+
+  .orderSectionWrapper {
+    position: relative; // Важно для позиционирования печати
+    margin-top: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .blurred {
+    pointer-events: none;
+    user-select: none;
+    opacity: 0.6;
+  }
+
+  .terminatedStamp {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    z-index: 10;
+
+    span {
+      color: #e74c3c;
+      font-size: var(--font-body);
+      font-weight: 900;
+      text-transform: uppercase;
+      border: 2px solid #e74c3c;
+      padding: 10px 50px;
+      border-radius: 8px;
+      background-color: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+      white-space: nowrap;
+    }
+  }
+}

@@ -1,0 +1,100 @@
+.calendar_container {
+  max-width: 700px;
+  margin: 10px auto;
+  text-align: center;
+
+  @media (max-width: 1440px) {
+    max-width: 900px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+}
+
+.summary {
+  background: #f9f9f9;
+  padding: 5px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 1440px) {
+    max-width: 900px;
+    text-align: start;
+    height: 100%;
+  }
+
+  h3 {
+    font-size: 18px;
+    margin: 0;
+  }
+
+  p {
+    margin: 5px 0;
+    font-size: 14px;
+  }
+
+  strong {
+    color: #333;
+  }
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 10px;
+
+  @media (max-width: 1440px) {
+    margin-top: 0px;
+  }
+
+  .day {
+    background: #f0f0f0;
+    border-radius: 8px;
+    padding: 5px;
+    min-height: 40px;
+    width: 80px;
+    position: relative;
+    font-size: 14px;
+    text-align: center;
+
+    @media (max-width: 600px) {
+      font-size: 12px;
+    }
+
+    @media (max-width: 1024px) {
+      font-size: 14px;
+    }
+
+    .day_number {
+      font-weight: bold;
+    }
+
+    .holiday {
+      background: #ffeb99;
+    }
+
+    .holiday_icon {
+      font-size: 14px;
+      position: absolute;
+      top: 1px;
+      right: 2px;
+      cursor: help;
+    }
+
+    .intervals {
+      font-size: 12px;
+    }
+
+    .total_hours {
+      font-size: 12px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .no_data {
+      color: #aaa;
+    }
+  }
+}

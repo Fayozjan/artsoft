@@ -1,0 +1,56 @@
+.container {
+  position: relative;
+
+  .searchInput {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid rgba(162, 161, 168, 0.2);
+    border-radius: 5px;
+  }
+
+  .options {
+    position: absolute;
+    background-color: #fff;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid rgba(162, 161, 168, 0.2);
+    border-radius: 4px;
+    width: 100%;
+    font-size: var(--font-small);
+    z-index: 9999;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(0, 0, 0, 0.2);
+      border-radius: 3px;
+    }
+
+    .option {
+      padding: 4px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f1f1;
+      display: flex;
+      align-items: center;
+
+      .checkbox {
+        margin-right: 10px;
+      }
+
+      input {
+        width: auto;
+        height: auto;
+      }
+    }
+  }
+
+  .noData {
+    padding: 8px 12px;
+    color: var(--text-muted, #999);
+    font-size: var(--font-body);
+    text-align: center;
+    user-select: none;
+  }
+}

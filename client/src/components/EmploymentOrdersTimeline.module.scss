@@ -1,0 +1,332 @@
+.timelineContainer {
+  padding: 6px;
+  background-color: white;
+
+  .header {
+    display: flex;
+    justify-content: end;
+    padding-bottom: 10px;
+
+    svg {
+      cursor: pointer;
+      transition: transform 0.1s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .timelineWrapper {
+    position: relative;
+    margin: 0 auto;
+  }
+}
+
+.timeline_item {
+  display: flex;
+}
+
+// Левая колонка с датой
+.timeline_date {
+  width: 80px;
+  text-align: right;
+  padding: 4px 10px;
+  font-size: var(--font-small);
+  color: #64748b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// Центральная колонка с линией
+.timeline_path {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 20px;
+
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #cbd5e1;
+    z-index: 2;
+    margin-top: 6px;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 1px #cbd5e1;
+
+    // Цвета по типам событий
+    &.hire {
+      background: #22c55e;
+      box-shadow: 0 0 0 1px #22c55e;
+    }
+    &.terminate {
+      background: red;
+      box-shadow: 0 0 0 1px #ef4444;
+    }
+    &.transfer {
+      background: #3b82f6;
+      box-shadow: 0 0 0 1px #3b82f6;
+    }
+    &.leave {
+      background: #f59e0b;
+      box-shadow: 0 0 0 1px #f59e0b;
+    }
+  }
+
+  .line {
+    width: 2px;
+    background: #e2e8f0;
+    flex-grow: 1;
+    margin: 5px 0;
+  }
+}
+
+// Правая колонка с карточкой
+.timelineContent {
+  flex: 1;
+  padding: 0 10px;
+
+  .card {
+    position: relative;
+    background: #fff;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+
+    &.isDeleting {
+      background: #f1f5f9;
+      border-color: #cbd5e1;
+      transform: scale(0.98);
+    }
+
+    .deleteConfirmOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      background: rgba(255, 255, 255, 0.9);
+      animation: fadeIn 0.2s ease;
+      border-radius: 8px;
+
+      p {
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        color: #1e293b;
+        font-size: var(--font-small);
+      }
+
+      .deleteActions {
+        display: flex;
+        gap: 12px;
+
+        button {
+          padding: 6px 20px;
+          border-radius: 6px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: var(--font-small);
+          transition: all 0.2s;
+        }
+
+        .confirmBtn {
+          background: #ef4444;
+          color: white;
+          border: none;
+          &:hover {
+            background: #dc2626;
+          }
+        }
+
+        .cancelBtn {
+          background: white;
+          color: #64748b;
+          border: 1px solid #e2e8f0;
+          &:hover {
+            background: #f8fafc;
+          }
+        }
+      }
+    }
+
+    .card_header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+
+      .title {
+        margin: 0;
+        font-size: calc(var(--font-body) + 2px);
+        font-weight: 700;
+
+        &.hire {
+          color: #166534;
+        }
+        &.terminate {
+          color: #ca1313;
+        }
+        &.transfer {
+          color: #1e40af;
+        }
+      }
+
+      .operations {
+        display: flex;
+        gap: 8px;
+
+        button {
+          background: none;
+          border: none;
+          color: #94a3b8;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+
+          &:hover {
+            background: #f1f5f9;
+            color: #334155;
+          }
+
+          &.deleteBtn:hover {
+            color: #ef4444;
+            background: #fee2e2;
+          }
+        }
+      }
+    }
+
+    .card_body {
+      p {
+        margin: 4px 0;
+        font-size: var(--font-small);
+        color: #475569;
+
+        span {
+          color: #94a3b8;
+          font-weight: 500;
+          margin-right: 4px;
+        }
+      }
+
+      .note {
+        margin-top: 6px;
+        padding-top: 6px;
+        border-top: 1px dashed #e2e8f0;
+        color: #64748b;
+      }
+    }
+
+    .inlineInput,
+    .inlineSelect {
+      font-family: inherit;
+      font-size: var(--font-small);
+      color: #475569;
+      border: 1px solid transparent;
+      background: #f8fafc;
+      border-radius: 4px;
+      padding: 2px 4px;
+      margin-left: 4px;
+      outline: none;
+      width: auto;
+      min-width: 150px;
+
+      &:focus {
+        border-color: #cbd5e1;
+        background: #fff;
+        box-shadow: 0 0 0 2px rgba(203, 213, 225, 0.2);
+      }
+    }
+
+    .inlineselect {
+      cursor: pointer;
+    }
+
+    input[type="date"] {
+      cursor: pointer;
+    }
+
+    .editActions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #f1f5f9;
+
+      button {
+        min-width: 80px;
+        padding: 4px 12px;
+        font-size: var(--font-small);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+
+        &:hover {
+          transform: scale(1.01);
+        }
+      }
+
+      .saveBtn {
+        background: var(--third-color);
+        color: white;
+        border: none;
+      }
+
+      .cancelBtn {
+        background: white;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+
+        &:hover {
+          font-weight: 600;
+        }
+      }
+    }
+  }
+
+  .card {
+    transition: background 0.3s ease;
+  }
+
+  .card.saved {
+    background: #f0fdf4;
+  }
+}
+
+.inlineEditForm {
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+  background-color: white;
+  font-style: italic;
+}

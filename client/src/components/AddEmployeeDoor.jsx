@@ -1,0 +1,214 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+
+import { useAlertStore } from "../stores/alertStore";
+
+import Button from "./Button";
+
+import styles from "./AddEmployeeDoor.module.scss";
+
+const AddEmployeeDoor = ({ userId, cancelButton }) => {
+  const { showAlert } = useAlertStore();
+  const [imagePreview, setImagePreview] = useState(null);
+  const [file, setFile] = useState(null);
+  const [allDoor, setAllDoor] = useState();
+  const [formData, setFormData] = useState({});
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const userResponse = await axios.get(`/api/users/get/${userId}`);
+        setFormData({
+          ...userResponse.data.user,
+          door:
+            userResponse.data.user.door === null
+              ? []
+              : userResponse.data.user.door,
+        });
+        setImagePreview(
+          userResponse.data.user.photo &&
+            userResponse.data.user.photo !== "null"
+            ? `/${userResponse.data.user.photo}`
+            : ""
+        );
+
+        if (userResponse.data.user.photo) {
+          // Создайте объект File из ссылки на фото
+          const fileFromUrl = await fetchFileFromUrl(
+            userResponse.data.user.photo
+          );
+          setFile(fileFromUrl);
+        }
+      } catch (err) {
+        console.log(err.message);
+      }
+    };
+
+    const fetchExtraInfo = async () => {
+      try {
+        const doorsResponse = await axios.get(`/api/doors`);
+        setAllDoor(doorsResponse.data.data);
+      } catch (err) {
+        console.log(err.message);
+      }
+    };
+
+    fetchExtraInfo();
+    if (userId) {
+      fetchUserInfo();
+    }
+  }, []);
+
+  const fetchFileFromUrl = async (url) => {
+    const response = await axios(`/${url}`);
+    const blob = await response.blob();
+    const fileName = url.split("/").pop();
+    return new File([blob], fileName, { type: blob.type });
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    setFile(selectedFile);
+    if (selectedFile) {
+      setImagePreview(URL.createObjectURL(selectedFile));
+    }
+  };
+
+  const handleDoorChange = (e, door_id) => {
+    const { checked } = e.target;
+
+    setFormData((prevFormData) => {
+      let updatedDoors = [...prevFormData.door];
+
+      if (checked) {
+        updatedDoors.push(door_id);
+      } else {
+        updatedDoors = updatedDoors.filter((d) => d !== door_id);
+      }
+
+      return {
+        ...prevFormData,
+        door: updatedDoors,
+      };
+    });
+  };
+
+  const handleChangeImage = (e) => {
+    setImagePreview(null);
+    setFormData((prevData) => ({ ...prevData, photo: "" }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const data = new FormData();
+
+    // Добавьте все простые поля
+    Object.entries(formData).forEach(([key, value]) => {
+      // Если значение является массивом объектов (например, door), сериализуйте его
+      if (Array.isArray(value)) {
+        data.append(key, JSON.stringify(value)); // Преобразуем массив объектов в строку
+      } else if (value !== null && value !== undefined) {
+        // Убедитесь, что null или undefined значения не добавляются
+        data.append(key, value);
+      }
+    });
+
+    if (file instanceof File) {
+      data.append("photo", file);
+    }
+
+    try {
+      const res = await axios.patch(`/api/users/update/door/${userId}`, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (res.data.success) {
+        showAlert("Успешно", "success");
+        setTimeout(() => cancelButton(), 1500);
+      }
+    } catch (error) {
+      showAlert("Ошибка", "error");
+      console.log("Error submitting data:", error);
+    }
+  };
+
+  return (
+    <div className={styles.add_user}>
+      <form className={styles.employee_form} onSubmit={handleSubmit}>
+        <div className={styles.input_file}>
+          {imagePreview ? (
+            <div className={styles.previewContainer}>
+              <img
+                src={imagePreview}
+                alt="Selected"
+                className={styles.previewImage}
+              />
+              <button
+                type="button"
+                className={styles.changeImageButton}
+                onClick={handleChangeImage}
+              >
+                Изменить фото
+              </button>
+            </div>
+          ) : (
+            <div className={styles.uploadContainer}>
+              <label htmlFor="photo-upload" className={styles.uploadLabel}>
+                <svg
+                  className={styles.uploadIcon}
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                <span>Загрузите фото</span>
+              </label>
+              <input
+                id="photo-upload"
+                type="file"
+                name="photo"
+                onChange={handleFileChange}
+                className={styles.hiddenInput}
+              />
+            </div>
+          )}
+        </div>
+        <div className={styles.input_fields}>
+          <label>Двери</label>
+          <div className={styles.checkbox}>
+            {allDoor &&
+              allDoor.map((door) => (
+                <span key={door.id}>
+                  <input
+                    type="checkbox"
+                    id={door.id}
+                    value={door.id}
+                    checked={
+                      formData.door && formData.door.some((d) => d === door.id)
+                    }
+                    onChange={(e) => handleDoorChange(e, door.id)}
+                  />
+                  <label>{door.name}</label>
+                </span>
+              ))}
+          </div>
+        </div>
+      </form>
+      <div className={styles.buttons}>
+        <Button text={"Сохранить"} onClick={handleSubmit} />
+      </div>
+    </div>
+  );
+};
+
+export default AddEmployeeDoor;

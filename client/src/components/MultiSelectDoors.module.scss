@@ -1,0 +1,68 @@
+.multiSelectDoors {
+  position: relative;
+
+  .sticker {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    background-color: var(--bg-color);
+    border-radius: 4px;
+    min-width: 10px;
+    max-width: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: var(--font-small);
+    padding: 0 5px;
+  }
+
+  .searchInput {
+    width: 100%;
+    padding: 5px;
+    margin: 0;
+    border: 1px solid rgba(162, 161, 168, 0.4);
+    border-radius: 4px;
+    font-size: var(--font-small);
+    font-weight: 500;
+    box-sizing: border-box;
+  }
+
+  .options {
+    max-height: 180px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    width: 100%;
+    background-color: #fff;
+    overflow-y: auto;
+    border: 1px solid rgba(162, 161, 168, 0.4);
+    border-radius: 4px;
+    font-size: var(--font-small);
+    z-index: 9999;
+    box-sizing: border-box;
+
+    .option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f1f1;
+
+      .checkbox {
+        padding: 0;
+        margin: 0;
+        width: 15px;
+        height: 15px;
+      }
+    }
+  }
+
+  .options.down {
+    top: calc(100% + 2px);
+  }
+
+  .options.up {
+    bottom: calc(100% + 2px);
+  }
+}

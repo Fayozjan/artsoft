@@ -1,0 +1,169 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.user_job {
+  position: relative;
+  margin: 0 15%;
+  flex: 1;
+  box-shadow: 0 2px 5px rgba(0, 0.3, 0, 0.3);
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-sizing: border-box;
+
+  .cancel {
+    border: none;
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    transition: all 0.5s ease;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+
+  .employee_form {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .form_group {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    box-sizing: border-box;
+  }
+
+  .input_fields {
+    flex-grow: 1;
+  }
+
+  .row {
+    width: 100%;
+    display: flex;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .input_col {
+    flex-grow: 1;
+    flex-basis: 0;
+  }
+
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #666;
+  }
+
+  .form_group input[type="text"],
+  input[type="email"],
+  input[type="date"],
+  select {
+    font-weight: 500;
+    color: black;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+  .form_group input select {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .checkbox {
+    display: flex;
+    justify-content: start;
+    gap: 5px;
+    padding: 0px 7px 0px 7px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+
+    label {
+      font-size: 12px;
+    }
+  }
+
+  .buttons {
+    display: flex;
+    align-items: center;
+    justify-content: end;
+  }
+
+  .btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50px;
+    padding: 20px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+  }
+
+  .btn:hover {
+    opacity: 0.9;
+    font-weight: 500;
+  }
+
+  .save {
+    background: #3052d8;
+    color: white;
+
+    &:hover {
+      opacity: 0.95;
+    }
+  }
+
+  .user_timeline {
+    width: 500px;
+    overflow: auto;
+  }
+
+  .successMessageOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Полупрозрачный черный фон */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000; /* Поверх всех элементов */
+  }
+  .successMessage {
+    padding: 40px;
+    border-radius: 10px;
+
+    background-color: white;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    color: #3052d8;
+  }
+}
