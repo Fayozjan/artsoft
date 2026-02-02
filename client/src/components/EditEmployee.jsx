@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 
 import {
-  getEmployee,
+  getEmployeeById,
   editEmployee,
   getActiveBranches,
   getActivePositions,
@@ -41,15 +41,25 @@ const EditEmployee = ({
   const { showAlert } = useAlertStore();
   const [loading, setLoading] = useState(true);
 
+  const today = () => new Date().toISOString().slice(0, 10);
+
+  const currentScheduleId = Number(formData.work_schedule_id || 0);
+  const originalScheduleId = Number(originalData.work_schedule_id || 0);
+
+  const workScheduleChanged =
+    Object.keys(originalData).length > 0 &&
+    currentScheduleId !== originalScheduleId &&
+    currentScheduleId > 0;
+
   const fetchInfo = async () => {
     try {
       setLoading(true);
 
-      const employeeRes = await getEmployee(id);
+      const employeeRes = await getEmployeeById(id);
       const employee = employeeRes.data;
       const currentOrder = employee.employmentOrders.at(-1);
 
-      setFormData({
+      const initialData = {
         ...employee,
         order_id: currentOrder?.id,
         order_number: currentOrder?.order_number,
@@ -57,9 +67,10 @@ const EditEmployee = ({
         branch_id: currentOrder?.branch_id,
         department_id: currentOrder?.department_id,
         position_id: currentOrder?.position_id,
-      });
+      };
 
-      setOriginalData(formData);
+      setFormData(initialData);
+      setOriginalData(initialData);
 
       if (employeeRes.data.photo) {
         setImagePreview(employeeRes.data.photo);
@@ -98,6 +109,12 @@ const EditEmployee = ({
       }));
     }
   }, [branches]);
+
+  useEffect(() => {
+    if (workScheduleChanged && !formData.work_schedule_start_date) {
+      setFormData((prev) => ({ ...prev, work_schedule_start_date: today() }));
+    }
+  }, [workScheduleChanged]);
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -139,6 +156,11 @@ const EditEmployee = ({
         employee_number: formData.employee_number,
         work_schedule_id: formData.work_schedule_id,
         door_ids: formData.door_ids,
+        work_schedule_start_date:
+          Number(formData.work_schedule_id) !==
+          Number(originalData.work_schedule_id)
+            ? formData.work_schedule_start_date
+            : null,
       });
 
       // 2. Обновляем ТЕКУЩИЙ приказ
@@ -427,6 +449,18 @@ const EditEmployee = ({
               ))}
           </select>
         </div>
+        {workScheduleChanged && (
+          <div>
+            <label>{t("workScheduleStartDate")}</label>
+            <input
+              type="date"
+              name="work_schedule_start_date"
+              value={formData.work_schedule_start_date || 0}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        )}
         <div>
           <label>{t("door")}</label>
           <MultiSelectDoors
@@ -437,6 +471,24 @@ const EditEmployee = ({
             }
           />
         </div>
+      </div>
+
+      <div className={styles.addOrderBtnWrapper}>
+        <button
+          type="button"
+          className={`${styles.showAllEmploymentBtn} ${styles.btn} `}
+          onClick={() => handleLeftPanel("list", "employmentWorkScheduleList")}
+        >
+          <svg
+            width="18"
+            height="18"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 1024 1024"
+          >
+            <path d="M960 96H704V32q0-13-9.5-22.5T672 0t-22.5 9.5T640 32v64H384V32q0-13-9.5-22.5T352 0t-22.5 9.5T320 32v64H64q-27 0-45.5 18.5T0 160v800q0 17 8.5 32t23.5 23.5t32 8.5h896q27 0 45.5-19t18.5-45V160q0-18-8.5-32.5t-23.5-23t-32-8.5zm0 864H64V160h256v32q0 13 9.5 22.5T352 224t22.5-9.5T384 192v-32h256v32q0 13 9.5 22.5T672 224t22.5-9.5T704 192v-32h256v800zM736 512h64q13 0 22.5-9.5T832 480v-64q0-13-9.5-22.5T800 384h-64q-13 0-22.5 9.5T704 416v64q0 13 9.5 22.5T736 512zm0 256h64q13 0 22.5-9.5T832 736v-64q0-13-9.5-22.5T800 640h-64q-13 0-22.5 9.5T704 672v64q0 13 9.5 22.5T736 768zM544 640h-64q-13 0-22.5 9.5T448 672v64q0 5 1.5 10t4.5 9t7 7t9 4.5t10 1.5h64q13 0 22.5-9.5T576 736v-64q0-4-1-8.5t-3-8t-5-6.5t-6.5-5t-8-3t-8.5-1zm0-256h-64q-13 0-22.5 9.5T448 416v64q0 13 9.5 22.5T480 512h64q13 0 22.5-9.5T576 480v-64q0-7-2.5-12.5t-7-10t-10-7T544 384zm-256 0h-64q-13 0-22.5 9.5T192 416v64q0 13 9.5 22.5T224 512h64q13 0 22.5-9.5T320 480v-64q0-7-2.5-12.5t-7-10t-10-7T288 384zm0 256h-64q-13 0-22.5 9.5T192 672v64q0 13 9.5 22.5T224 768h64q13 0 22.5-9.5T320 736v-64q0-4-1-8.5t-3-8t-5-6.5t-6.5-5t-8-3t-8.5-1z" />
+          </svg>
+          {t("employeeWorkScheduleHistory")}
+        </button>
       </div>
 
       <h4>Редактирование текущего приказа</h4>
@@ -545,7 +597,7 @@ const EditEmployee = ({
         <button
           type="button"
           className={`${styles.showAllEmploymentBtn} ${styles.btn} `}
-          onClick={() => handleLeftPanel("list", "list")}
+          onClick={() => handleLeftPanel("list", "employmentOrdersList")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -563,7 +615,7 @@ const EditEmployee = ({
             <button
               type="button"
               className={`${styles.transferBtn} ${styles.btn} `}
-              onClick={() => handleLeftPanel("transfer", "add")}
+              onClick={() => handleLeftPanel("transfer", "addEmploymentOrder")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -579,7 +631,7 @@ const EditEmployee = ({
             <button
               type="button"
               className={`${styles.terminateBtn} ${styles.btn} `}
-              onClick={() => handleLeftPanel("terminate", "add")}
+              onClick={() => handleLeftPanel("terminate", "addEmploymentOrder")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -596,7 +648,7 @@ const EditEmployee = ({
           <button
             type="button"
             className={`${styles.hireBtn} ${styles.btn} `}
-            onClick={() => handleLeftPanel("hire", "add")}
+            onClick={() => handleLeftPanel("hire", "addEmploymentOrder")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

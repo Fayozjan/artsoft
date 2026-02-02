@@ -255,11 +255,10 @@ model employee_schedule_history {
   id                Int   @id @default(autoincrement())
   employee_id       Int
   work_schedule_id  Int
-  date_from         DateTime
-  date_to           DateTime?
+  date_from         DateTime @db.Date
+  date_to           DateTime? @db.Date
   added_at          DateTime @default(now())
   added_by          Int
-  change_reason     String?  @db.VarChar(255)
 
   // relations
   employee         employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)

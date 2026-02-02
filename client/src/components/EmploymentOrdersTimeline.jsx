@@ -45,7 +45,6 @@ const EmploymentOrdersTimeline = ({
   const [branches, setBranches] = useState([]);
   const [positions, setPositions] = useState([]);
   const { showAlert } = useAlertStore();
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
   const sortedOrders = useMemo(() => {
@@ -245,213 +244,208 @@ const EmploymentOrdersTimeline = ({
                           </button>
                         </div>
                       </div>
-                    ) : null}
-
-                    <div className={styles.card_header}>
-                      <h4 className={`${styles.title} ${styles[item.type]}`}>
-                        {EVENT_LABELS[item.type] || item.type}
-                      </h4>
-                      <div className={styles.operations}>
-                        <button
-                          onClick={() => startEditing(item)}
-                          title="Редактировать"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 18 18">
-                            <path
-                              d="M0,14.2 L0,18 L3.8,18 L14.8,6.9 L11,3.1 L0,14.2 Z M17.7,4 C18.1,3.6 18.1,3 17.7,2.6 L15.4,0.3 C15,-0.1 14.4,-0.1 14,0.3 L12.2,2.1 L16,5.9 L17.7,4 Z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDownload(item)}
-                          title="Скачать"
-                        >
-                          <svg width="18" height="14" viewBox="0 0 24 16">
-                            <path
-                              d="M19.4,6 C18.7,2.6 15.7,0 12,0 C9.1,0 6.6,1.6 5.4,4 C2.3,4.4 0,6.9 0,10 C0,13.3 2.7,16 6,16 L19,16 C21.8,16 24,13.8 24,11 C24,8.4 21.9,6.2 19.4,6 Z M17,9 L12,14 L7,9 L10,9 L10,5 L14,5 L14,9 L17,9 L17,9 Z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(item.id)}
-                          className={styles.deleteBtn}
-                          title="Удалить"
-                        >
-                          <svg width="14" height="16" viewBox="0 0 14 18">
-                            <path
-                              d="M1,16 C1,17.1 1.9,18 3,18 L11,18 C12.1,18 13,17.1 13,16 L13,4 L1,4 L1,16 L1,16 Z M14,1 L10.5,1 L9.5,0 L4.5,0 L3.5,1 L0,1 L0,3 L14,3 L14,1 L14,1 Z"
-                              fill="currentColor"
-                            />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                    <div className={styles.card_body}>
-                      {editingId === item.id ? (
-                        <div className={styles.inlineEditForm}>
-                          <p>
-                            <span>Дата:</span>
-                            <input
-                              type="date"
-                              name="date"
-                              className={styles.inlineInput}
-                              value={editFormData.date}
-                              onChange={handleInputChange}
-                              onFocus={(e) => e.target.showPicker?.()}
-                              required
-                            />
-                          </p>
-
-                          <p>
-                            <span>Приказ:</span>
-                            <input
-                              type="text"
-                              name="order_number"
-                              className={styles.inlineInput}
-                              placeholder="№"
-                              value={editFormData.order_number}
-                              onChange={handleInputChange}
-                            />
-                          </p>
-
-                          {editFormData.type !== "terminate" && (
-                            <>
-                              <p>
-                                <span>Филиал:</span>
-                                <select
-                                  name="branch_id"
-                                  className={styles.inlineSelect}
-                                  value={editFormData.branch_id}
-                                  onChange={handleInputChange}
-                                  required
-                                >
-                                  <option value="">{t("select")}</option>
-                                  {branches.map((b) => (
-                                    <option key={b.id} value={b.id}>
-                                      {b.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </p>
-
-                              <p>
-                                <span>Отдел:</span>
-                                <select
-                                  name="department_id"
-                                  className={styles.inlineSelect}
-                                  value={editFormData.department_id}
-                                  onChange={handleInputChange}
-                                  disabled={!editFormData.branch_id}
-                                  required
-                                >
-                                  <option value="">{t("select")}</option>
-                                  {editFormData.branch_id &&
-                                    branches
-                                      .find(
-                                        (b) =>
-                                          b.id ===
-                                          Number(editFormData.branch_id),
-                                      )
-                                      ?.departments.map((d) => (
-                                        <option key={d.id} value={d.id}>
-                                          {d.name}
-                                        </option>
-                                      ))}
-                                </select>
-                              </p>
-
-                              <p>
-                                <span>Должность:</span>
-                                <select
-                                  name="position_id"
-                                  className={styles.inlineSelect}
-                                  value={editFormData.position_id}
-                                  onChange={handleInputChange}
-                                  required
-                                >
-                                  <option value="">{t("select")}</option>
-                                  {positions.map((p) => (
-                                    <option key={p.id} value={p.id}>
-                                      {p.name}
-                                    </option>
-                                  ))}
-                                </select>
-                              </p>
-                            </>
-                          )}
-
-                          <p className={styles.note}>
-                            <span>Заметка:</span>
-                            <input
-                              name="note"
-                              className={styles.inlineInput}
-                              value={editFormData.note}
-                              onChange={handleInputChange}
-                            />
-                          </p>
-
-                          <div className={styles.editActions}>
+                    ) : (
+                      <>
+                        <div className={styles.card_header}>
+                          <h4
+                            className={`${styles.title} ${styles[item.type]}`}
+                          >
+                            {EVENT_LABELS[item.type] || item.type}
+                          </h4>
+                          <div className={styles.operations}>
                             <button
-                              onClick={() => handleInlineSave(item.id)}
-                              className={styles.saveBtn}
+                              onClick={() => startEditing(item)}
+                              title="Редактировать"
                             >
-                              Сохранить
+                              <svg width="16" height="16" viewBox="0 0 18 18">
+                                <path
+                                  d="M0,14.2 L0,18 L3.8,18 L14.8,6.9 L11,3.1 L0,14.2 Z M17.7,4 C18.1,3.6 18.1,3 17.7,2.6 L15.4,0.3 C15,-0.1 14.4,-0.1 14,0.3 L12.2,2.1 L16,5.9 L17.7,4 Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
                             </button>
                             <button
-                              onClick={() => setEditingId(null)}
-                              className={styles.cancelBtn}
+                              onClick={() => handleDownload(item)}
+                              title="Скачать"
                             >
-                              Отмена
+                              <svg width="18" height="14" viewBox="0 0 24 16">
+                                <path
+                                  d="M19.4,6 C18.7,2.6 15.7,0 12,0 C9.1,0 6.6,1.6 5.4,4 C2.3,4.4 0,6.9 0,10 C0,13.3 2.7,16 6,16 L19,16 C21.8,16 24,13.8 24,11 C24,8.4 21.9,6.2 19.4,6 Z M17,9 L12,14 L7,9 L10,9 L10,5 L14,5 L14,9 L17,9 L17,9 Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(item.id)}
+                              className={styles.deleteBtn}
+                              title="Удалить"
+                            >
+                              <svg width="14" height="16" viewBox="0 0 14 18">
+                                <path
+                                  d="M1,16 C1,17.1 1.9,18 3,18 L11,18 C12.1,18 13,17.1 13,16 L13,4 L1,4 L1,16 L1,16 Z M14,1 L10.5,1 L9.5,0 L4.5,0 L3.5,1 L0,1 L0,3 L14,3 L14,1 L14,1 Z"
+                                  fill="currentColor"
+                                />
+                              </svg>
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        <>
-                          {item.order_number && (
-                            <p>
-                              <span>Приказ:</span> №{item.order_number}
-                            </p>
+                        <div className={styles.card_body}>
+                          {editingId === item.id ? (
+                            <div className={styles.inlineEditForm}>
+                              <p>
+                                <span>Дата:</span>
+                                <input
+                                  type="date"
+                                  name="date"
+                                  className={styles.inlineInput}
+                                  value={editFormData.date}
+                                  onChange={handleInputChange}
+                                  onFocus={(e) => e.target.showPicker?.()}
+                                  required
+                                />
+                              </p>
+
+                              <p>
+                                <span>Приказ:</span>
+                                <input
+                                  type="text"
+                                  name="order_number"
+                                  className={styles.inlineInput}
+                                  placeholder="№"
+                                  value={editFormData.order_number}
+                                  onChange={handleInputChange}
+                                />
+                              </p>
+
+                              {editFormData.type !== "terminate" && (
+                                <>
+                                  <p>
+                                    <span>Филиал:</span>
+                                    <select
+                                      name="branch_id"
+                                      className={styles.inlineSelect}
+                                      value={editFormData.branch_id}
+                                      onChange={handleInputChange}
+                                      required
+                                    >
+                                      <option value="">{t("select")}</option>
+                                      {branches.map((b) => (
+                                        <option key={b.id} value={b.id}>
+                                          {b.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </p>
+
+                                  <p>
+                                    <span>Отдел:</span>
+                                    <select
+                                      name="department_id"
+                                      className={styles.inlineSelect}
+                                      value={editFormData.department_id}
+                                      onChange={handleInputChange}
+                                      disabled={!editFormData.branch_id}
+                                      required
+                                    >
+                                      <option value="">{t("select")}</option>
+                                      {editFormData.branch_id &&
+                                        branches
+                                          .find(
+                                            (b) =>
+                                              b.id ===
+                                              Number(editFormData.branch_id),
+                                          )
+                                          ?.departments.map((d) => (
+                                            <option key={d.id} value={d.id}>
+                                              {d.name}
+                                            </option>
+                                          ))}
+                                    </select>
+                                  </p>
+
+                                  <p>
+                                    <span>Должность:</span>
+                                    <select
+                                      name="position_id"
+                                      className={styles.inlineSelect}
+                                      value={editFormData.position_id}
+                                      onChange={handleInputChange}
+                                      required
+                                    >
+                                      <option value="">{t("select")}</option>
+                                      {positions.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                          {p.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </p>
+                                </>
+                              )}
+
+                              <p className={styles.note}>
+                                <span>Заметка:</span>
+                                <input
+                                  name="note"
+                                  className={styles.inlineInput}
+                                  value={editFormData.note}
+                                  onChange={handleInputChange}
+                                />
+                              </p>
+
+                              <div className={styles.editActions}>
+                                <button
+                                  onClick={() => handleInlineSave(item.id)}
+                                  className={styles.saveBtn}
+                                >
+                                  Сохранить
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className={styles.cancelBtn}
+                                >
+                                  Отмена
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {item.order_number && (
+                                <p>
+                                  <span>Приказ:</span> №{item.order_number}
+                                </p>
+                              )}
+                              {item.branches?.name && (
+                                <p>
+                                  <span>Филиал:</span> {item.branches.name}
+                                </p>
+                              )}
+                              {item.departments?.name && (
+                                <p>
+                                  <span>Отдел:</span> {item.departments.name}
+                                </p>
+                              )}
+                              {item.positions?.name && (
+                                <p>
+                                  <span>Должность:</span> {item.positions.name}
+                                </p>
+                              )}
+                              {item.note && (
+                                <p className={styles.note}>
+                                  <i>{item.note}</i>
+                                </p>
+                              )}
+                            </>
                           )}
-                          {item.branches?.name && (
-                            <p>
-                              <span>Филиал:</span> {item.branches.name}
-                            </p>
-                          )}
-                          {item.departments?.name && (
-                            <p>
-                              <span>Отдел:</span> {item.departments.name}
-                            </p>
-                          )}
-                          {item.positions?.name && (
-                            <p>
-                              <span>Должность:</span> {item.positions.name}
-                            </p>
-                          )}
-                          {item.note && (
-                            <p className={styles.note}>
-                              <i>{item.note}</i>
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
             ))
           : !loading && <div className={styles.empty}>История пуста</div>}
       </div>
-
-      {showDeleteModal && (
-        <Modal
-          onClose={() => setShowDeleteModal(false)}
-          onAccept={confirmDelete}
-          title="Удаление записи"
-          message="Вы уверены, что хотите удалить эту запись из истории?"
-        />
-      )}
 
       {alert.show && (
         <Alert message={alert.message} onClose={closeAlert} type={alert.type} />

@@ -3,9 +3,8 @@ import fs from "fs";
 import {
   createEmployee,
   getEmployees,
-  getEmployee,
   getActiveEmployeesModel,
-  editEmployee,
+  EmployeeModel,
 } from "./employees.model.js";
 
 import { UserModel } from "../users/users.model.js";
@@ -162,24 +161,6 @@ export const addEmployeeService = async (req) => {
   return await createEmployee(data);
 };
 
-export const getEmployeeService = async (id) => {
-  const employee = await getEmployee(id);
-
-  if (!employee) return null;
-
-  // Преобразуем даты, если они есть
-  const dateFields = ["date_of_birth", "passport_expiry_date", "order_date"];
-
-  for (const field of dateFields) {
-    if (employee[field]) {
-      const date = new Date(employee[field]);
-      employee[field] = date.toISOString().split("T")[0];
-    }
-  }
-
-  return employee;
-};
-
 export const getActiveEmployeesService = async ({ userId, filters = {} }) => {
   const { branch_id, department_id } = filters;
 
@@ -221,17 +202,154 @@ export const getActiveEmployeesService = async ({ userId, filters = {} }) => {
   };
 };
 
-export const updateEmployeeService = async (id, data) => {
-  try {
-    if (!data || Object.keys(data).length === 0) {
+export const EmployeeService = {
+  updateEmployee: async (id, rawData, file, userId) => {
+    if (!rawData || Object.keys(rawData).length === 0) {
       throw new Error("Нет данных для обновления");
     }
 
-    const updatedEmployee = await editEmployee(id, data);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
 
-    return updatedEmployee;
-  } catch (error) {
-    console.error("Ошибка при обновлении сотрудника:", error.message);
-    throw error;
-  }
+    // 1️⃣ Подготовка raw
+    const raw = { ...rawData };
+    delete raw.id;
+
+    // 2️⃣ Получаем текущий график
+    const currentWorkSchedule = await EmployeeModel.getCurrentWorkSchedule(id);
+
+    const newScheduleId =
+      raw.work_schedule_id !== undefined ? Number(raw.work_schedule_id) : null;
+
+    const oldScheduleId = currentWorkSchedule?.work_schedule_id ?? null;
+
+    const scheduleChanged =
+      newScheduleId !== null && newScheduleId !== oldScheduleId;
+
+    // 3.1 История графиков
+    if (scheduleChanged) {
+      await EmployeeModel.updateWorkSchedule(
+        Number(id),
+        newScheduleId,
+        userId,
+        raw.work_schedule_start_date,
+      );
+    }
+
+    // 3.2 Работа с фото
+    if (file) {
+      const ext = path.extname(file.originalname);
+      const newFileName = `${raw.last_name}_${raw.first_name}_${id}_${Date.now()}${ext}`;
+      const newPath = path.join(file.destination, newFileName);
+
+      await fs.promises.rename(file.path, newPath);
+      raw.photo = `/api/uploads/employees/${newFileName}`;
+    }
+
+    // 3.3 Удаляем пустые строки
+    Object.keys(raw).forEach((k) => {
+      if (raw[k] === "") delete raw[k];
+    });
+
+    const data = {};
+
+    if (raw.employee_number !== undefined)
+      data.employee_number = Number(raw.employee_number);
+
+    const scalarFields = [
+      "first_name",
+      "last_name",
+      "middle_name",
+      "gender",
+      "passport",
+      "pinfl",
+      "education",
+      "phone",
+      "email",
+      "order_number",
+      "address",
+      "education_specialty",
+      "photo",
+    ];
+
+    scalarFields.forEach((f) => {
+      if (raw[f] !== undefined) data[f] = raw[f];
+    });
+
+    if (raw.date_of_birth) data.date_of_birth = new Date(raw.date_of_birth);
+
+    if (raw.document_validity_period)
+      data.document_validity_period = new Date(raw.document_validity_period);
+
+    if (raw.status !== undefined) {
+      if (["true", "active", true, 1, "1"].includes(raw.status))
+        data.status = true;
+      else if (["false", "inactive", false, 0, "0"].includes(raw.status))
+        data.status = false;
+    }
+
+    // Связи
+    if (raw.branch_id) data.branch = { connect: { id: Number(raw.branch_id) } };
+    if (raw.department_id)
+      data.department = {
+        connect: { id: Number(raw.department_id) },
+      };
+    if (raw.position_id)
+      data.position = {
+        connect: { id: Number(raw.position_id) },
+      };
+    if (raw.door_id) data.door = { connect: { id: Number(raw.door_id) } };
+    if (scheduleChanged)
+      data.workSchedule = {
+        connect: { id: newScheduleId },
+      };
+
+    // 3.4 Обновляем сотрудника
+    return EmployeeModel.updateEmployee(id, data);
+
+    return result;
+  },
+
+  getEmployee: async (id) => {
+    const employee = await EmployeeModel.getEmployee(id);
+
+    if (!employee) return null;
+
+    // Преобразуем даты, если они есть
+    const dateFields = ["date_of_birth", "passport_expiry_date", "order_date"];
+
+    for (const field of dateFields) {
+      if (employee[field]) {
+        const date = new Date(employee[field]);
+        employee[field] = date.toISOString().split("T")[0];
+      }
+    }
+
+    if (employee.employeeScheduleHistory?.length) {
+      employee.employeeScheduleHistory = employee.employeeScheduleHistory.map(
+        (h) => {
+          const emp = h.addedBy?.employee;
+
+          const addedByFio = emp
+            ? `${emp.last_name} ${emp.first_name}${
+                emp.middle_name ? " " + emp.middle_name : ""
+              } (${h.added_by})`
+            : "—";
+
+          return {
+            id: h.id,
+            employee_id: h.employee_id,
+            work_schedule_id: h.work_schedule_id,
+            date_from: h.date_from,
+            date_to: h.date_to,
+            added_at: h.added_at,
+            workSchedule: h.workSchedule,
+            addedBy: addedByFio,
+          };
+        },
+      );
+    }
+
+    return employee;
+  },
 };

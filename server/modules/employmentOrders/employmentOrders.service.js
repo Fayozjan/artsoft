@@ -1,7 +1,7 @@
 import prisma from "../../prisma/client.js";
 import { buildAccessWhere } from "../../utils/accessFilter.js";
 import * as model from "./employmentOrders.model.js";
-import * as employeeService from "../employees/employees.service.js";
+import { EmployeeService } from "../employees/employees.service.js";
 import { UserModel } from "../users/users.model.js";
 
 export const getEmploymentOrders = async ({
@@ -137,7 +137,7 @@ export const createEmploymentOrder = async (data) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await employeeService.updateEmployeeService(data.employeeId, {
+    await EmployeeService.updateEmployee(data.employeeId, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -189,7 +189,7 @@ export const updateEmploymentOrder = async (id, data) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await employeeService.updateEmployeeService(order.employee_id, {
+    await EmployeeService.updateEmployee(order.employee_id, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -249,7 +249,7 @@ export const deleteEmploymentOrder = async (userId, id) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await employeeService.updateEmployeeService(order.employee_id, {
+    await EmployeeService.updateEmployee(order.employee_id, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -271,7 +271,7 @@ export const deleteEmploymentOrder = async (userId, id) => {
           : undefined,
     });
   }
-  await employeeService.updateEmployeeService(order.employee_id, {
+  await EmployeeService.updateEmployee(order.employee_id, {
     status: false,
     branch_id: null,
     department_id: null,

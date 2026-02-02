@@ -115,5 +115,6 @@
   "terminatedStamp": "Сотрудник уволен",
   "director": "Директор",
   "newPassword": "Новый пароль",
-  "addedBy": "Добавил"
+  "addedBy": "Добавил",
+  "employeeWorkScheduleHistory": "История рабочего графика"
 }

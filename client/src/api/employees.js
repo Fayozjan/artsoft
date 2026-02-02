@@ -16,7 +16,7 @@ export const getActiveEmployees = async () => {
   };
 };
 
-export const getEmployee = async (id) => {
+export const getEmployeeById = async (id) => {
   const res = await api.get(`/employees/${id}`);
   return res.data;
 };

@@ -19,6 +19,7 @@ import Pagination from "../components/Pagination";
 import EmployeeFilter from "../components/EmployeeFilter";
 import DownloadButton from "../components/DownloadButton";
 import AddEmploymentOrder from "../components/AddEmploymentOrder";
+import EmployeeWorkSchedulesHistory from "../components/EmployeeWorkSchedulesHistory";
 
 import styles from "./EmployeesPage.module.scss";
 
@@ -328,20 +329,26 @@ const EmployeesPage = () => {
             isOpen: isLeftPanelOpen,
             width: "500px",
             children:
-              leftPanelType === "add" ? (
+              leftPanelType === "addEmploymentOrder" ? (
                 <AddEmploymentOrder
                   employeeId={selectedItem}
                   employmentOrderType={employmentOrderType}
                   handleClose={closeLeftPanel}
                   updateEmployeeDataFunction={updateEmployeeDataFunction}
                 />
-              ) : (
+              ) : leftPanelType === "employmentOrdersList" ? (
                 <EmploymentOrdersTimeline
                   employeeId={selectedItem}
                   handleClose={closeLeftPanel}
                   updateEmployeeDataFunction={updateEmployeeDataFunction}
                 />
-              ),
+              ) : leftPanelType === "employmentWorkScheduleList" ? (
+                <EmployeeWorkSchedulesHistory
+                  employeeId={selectedItem}
+                  handleClose={closeLeftPanel}
+                  updateEmployeeDataFunction={updateEmployeeDataFunction}
+                />
+              ) : null,
           }}
         />
       )}

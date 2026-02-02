@@ -16,3 +16,4 @@ export * from "./workSchedules";
 export * from "./manufacturingOrders";
 export * from "./menus";
 export * from "./employmentOrders";
+export * from "./workScheduleHistory";

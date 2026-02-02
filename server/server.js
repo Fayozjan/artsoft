@@ -18,6 +18,7 @@ import branchesRoutes from "./modules/branches/branches.routes.js";
 import departmentRoutes from "./modules/departments/departments.routes.js";
 import employeesRoutes from "./modules/employees/employees.routes.js";
 import employmentOrderRoutes from "./modules/employmentOrders/employmentOrders.routes.js";
+import employeeScheduleHistoryRoutes from "./modules/employeeScheduleHistory/employeeScheduleHistory.routes.js";
 
 import authRoutes from "./routes/auth.js";
 
@@ -67,6 +68,7 @@ app.use("/api/branches", branchesRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/employees", employeesRoutes);
 app.use("/api/employment-orders", employmentOrderRoutes);
+app.use("/api/employee-schedule-history", employeeScheduleHistoryRoutes);
 app.use("/api/face-passes", facePassesRouter);
 app.use("/api/attendance", attendance);
 app.use("/api/late-employees", lateEmployeesRouter);
