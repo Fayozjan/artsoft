@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
-import { getActiveBranches, getActivePositions } from "../api";
+import { getActiveBranches, getActivePositions, getEmployeeById } from "../api";
 import { addEmploymentOrder } from "../api/employmentOrders";
 
 import Button from "./Button";
@@ -22,31 +22,50 @@ const AddEmploymentOrder = ({
     type: employmentOrderType,
     order_date: new Date().toISOString().slice(0, 10),
   });
-  const [branches, setBranches] = useState();
-  const [positions, setPositions] = useState();
-  const { t } = useTranslation();
+  const [branches, setBranches] = useState([]);
+  const [positions, setPositions] = useState([]);
   const { showAlert } = useAlertStore();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      employeeId,
+      type: employmentOrderType,
+    }));
+  }, [employeeId, employmentOrderType]);
 
   useEffect(() => {
     const fetchInfo = async () => {
       try {
         setLoading(true);
 
-        const branchesRes = await getActiveBranches();
-        setBranches(branchesRes.data);
+        const [branchesRes, positionsRes, employeeRes] = await Promise.all([
+          getActiveBranches(),
+          getActivePositions(),
+          getEmployeeById(employeeId),
+        ]);
 
-        const positionsRes = await getActivePositions();
+        setBranches(branchesRes.data);
         setPositions(positionsRes.data);
+        setFormData((prev) => ({
+          ...prev,
+          branch_id: employeeRes.data.branch_id,
+        }));
       } catch (err) {
-        console.log(err.message);
+        console.error(err);
+        showAlert({
+          type: "error",
+          message: t("error"),
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchInfo();
-  }, []);
+  }, [employeeId]);
 
   useEffect(() => {
     if (branches?.length === 1) {
@@ -85,6 +104,8 @@ const AddEmploymentOrder = ({
       setLoading(false);
     }
   };
+
+  console.log("employmentOrderType", employmentOrderType);
 
   return (
     <form className={styles.addEmploymentOrder} onSubmit={handleSubmit}>
@@ -137,25 +158,27 @@ const AddEmploymentOrder = ({
       {employmentOrderType != "terminate" && (
         <>
           <div className={styles.row}>
-            <div>
-              <label>
-                {t("branch")} <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                name="branch_id"
-                value={formData.branch_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">{t("select")}</option>
-                {branches &&
-                  branches.map((data) => (
-                    <option key={data.id} value={data.id}>
-                      {data.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
+            {employmentOrderType != "transfer" && (
+              <div>
+                <label>
+                  {t("branch")} <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  name="branch_id"
+                  value={formData.branch_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">{t("select")}</option>
+                  {branches &&
+                    branches.map((data) => (
+                      <option key={data.id} value={data.id}>
+                        {data.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
             <div>
               <label>
                 {t("department")} <span style={{ color: "red" }}>*</span>

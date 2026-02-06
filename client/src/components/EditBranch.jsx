@@ -10,6 +10,7 @@ import Button from "./Button";
 import SelectEmployee from "./SelectEmployee";
 
 import styles from "./AddBranch.module.scss";
+import Loading from "./Loading";
 
 const EditBranch = ({ id, onSuccess }) => {
   const { showAlert } = useAlertStore();
@@ -19,36 +20,31 @@ const EditBranch = ({ id, onSuccess }) => {
     name: "",
     status: true,
     director_id: "",
+    address: "",
   });
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await getBranchById(id);
-      if (res.success) {
-        setFormData(res.data);
-      } else {
-        console.error("Ошибка");
-      }
+      const [branchRes, employeesRes] = await Promise.all([
+        getBranchById(id),
+        getActiveEmployees(),
+      ]);
+
+      if (branchRes.success) setFormData(branchRes.data);
+      if (employeesRes.success) setEmployees(employeesRes.data);
     } catch (error) {
       console.error("Ошибка при загрузке данных:", error.message);
       showAlert("Ошибка", "error");
-    }
-  };
-
-  const fetchEmployees = async () => {
-    try {
-      const res = await getActiveEmployees();
-      setEmployees(res.data);
-    } catch (e) {
-      console.error(e);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchData();
-    fetchEmployees();
   }, [id]);
 
   const handleChange = useCallback((e) => {
@@ -85,6 +81,7 @@ const EditBranch = ({ id, onSuccess }) => {
 
   return (
     <form className={styles.addBranch} onSubmit={handleSubmit}>
+      {loading && <Loading />}
       <div className={styles.header}>
         <h2>{t("editBranch")}</h2>
         <Button text={t("save")} type="submit" disabled={loading} />
@@ -102,7 +99,83 @@ const EditBranch = ({ id, onSuccess }) => {
             disabled={loading}
           />
         </div>
-
+        <div>
+          <label>{t("director")}</label>
+          <SelectEmployee
+            data="director"
+            options={employees}
+            setFormData={setFormData}
+            defaultValue={formData.director_id}
+            placeholder={t("select")}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      <div className={styles.row}>
+        <div>
+          <label>{t("region")}</label>
+          <input
+            type="text"
+            name="region"
+            value={formData.region}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label>{t("address")}</label>
+          <input
+            type="text"
+            name="address"
+            value={formData.address}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      <div className={styles.row}>
+        <div>
+          <label>{t("bankName")}</label>
+          <input
+            type="text"
+            name="bank_name"
+            value={formData.bank_name}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label>{t("bankAccount")}</label>
+          <input
+            type="text"
+            name="bank_account"
+            value={formData.bank_account}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      <div className={styles.row}>
+        <div>
+          <label>{t("inn")}</label>
+          <input
+            type="text"
+            name="inn"
+            value={formData.inn}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label>{t("mfo")}</label>
+          <input
+            type="mfo"
+            name="mfo"
+            value={formData.mfo}
+            onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
         <div>
           <label>Статус</label>
           <select
@@ -114,20 +187,6 @@ const EditBranch = ({ id, onSuccess }) => {
             <option value="true">{t("true")}</option>
             <option value="false">{t("false")}</option>
           </select>
-        </div>
-      </div>
-
-      <div className={styles.row}>
-        <div>
-          <label>{t("director")}</label>
-          <SelectEmployee
-            data="director"
-            options={employees}
-            setFormData={setFormData}
-            defaultValue={formData.director_id}
-            placeholder={t("select")}
-            disabled={loading}
-          />
         </div>
       </div>
     </form>

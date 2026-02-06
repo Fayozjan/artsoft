@@ -10,7 +10,7 @@ const { upload, convertToJpg } = uploadPhoto("employees");
 
 router.get("/", authMiddleware, employeesController.getEmployees);
 router.get("/active", authMiddleware, employeesController.getActiveEmployees);
-router.get("/:id", authMiddleware, EmployeeController.getEmployee);
+router.get("/:id", authMiddleware, EmployeeController.getByid);
 router.post(
   "/",
   authMiddleware,
@@ -23,7 +23,7 @@ router.put(
   authMiddleware,
   upload,
   convertToJpg,
-  EmployeeController.updateEmployee,
+  EmployeeController.update,
 );
 router.delete("/:id", authMiddleware, employeesController.deleteEmployee);
 

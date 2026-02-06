@@ -8,7 +8,7 @@ import { findLateEmployeesByDay } from "../lateEmployees/lateEmployees.helpers.j
 import { getAllFacePasses } from "../facePasses/facePasses.service.js";
 import { getHolidaysService } from "../holidays/holidays.service.js";
 import { getTimeOffsAllService } from "../timeOff/timeOff.service.js";
-import { getActiveBranchesService } from "../branches/branches.service.js";
+import { BranchService } from "../branches/branches.service.js";
 import { getActiveDepartmentsService } from "../departments/departments.service.js";
 
 export async function getAttendanceService({ userId, filters }) {
@@ -30,7 +30,7 @@ export async function getAttendanceService({ userId, filters }) {
       getActiveEmployeesService({ userId, filters }),
       getHolidaysService(start_date, end_date),
       getTimeOffsAllService({ userId, filters: { start_date, end_date } }),
-      getActiveBranchesService({ userId }),
+      BranchService.listActive({ userId }),
       getActiveDepartmentsService({ userId }),
     ]);
 

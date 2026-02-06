@@ -91,7 +91,7 @@ export const deleteEmployee = async (req, res) => {
 };
 
 export const EmployeeController = {
-  updateEmployee: async (req, res) => {
+  update: async (req, res) => {
     const userId = req.user?.id;
 
     if (!userId) {
@@ -101,7 +101,7 @@ export const EmployeeController = {
     try {
       const { id } = req.params;
 
-      const updated = await EmployeeService.updateEmployee(
+      const updated = await EmployeeService.update(
         id,
         req.body,
         req.file,
@@ -117,10 +117,10 @@ export const EmployeeController = {
     }
   },
 
-  getEmployee: async (req, res) => {
+  getByid: async (req, res) => {
     try {
       const { id } = req.params;
-      const employee = await EmployeeService.getEmployee(id);
+      const employee = await EmployeeService.getByid(id);
 
       if (!employee)
         return res.status(404).json({ error: "Сотрудник не найден" });

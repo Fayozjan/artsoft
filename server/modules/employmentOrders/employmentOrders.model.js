@@ -25,7 +25,7 @@ export const findEmploymentOrderById = async (id) => {
   return prisma.employment_orders.findUnique({
     where: { id: Number(id) },
     include: {
-      employees: true,
+      employee: true,
     },
   });
 };
@@ -35,17 +35,31 @@ export const findEmploymentOrdersByEmployeeId = async ({ where, orderBy }) => {
     where,
     orderBy,
     include: {
-      employees: {
+      employee: {
         select: {
           id: true,
           first_name: true,
           last_name: true,
           middle_name: true,
+          address: true,
+          passport: true,
+          pinfl: true,
         },
       },
-      branches: true,
-      departments: true,
-      positions: true,
+      branch: {
+        include: {
+          director: {
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              middle_name: true,
+            },
+          },
+        },
+      },
+      department: true,
+      position: true,
     },
   });
 };
@@ -65,23 +79,23 @@ export const createEmploymentOrderByModel = async (data) => {
       date: data.order_date ? new Date(data.order_date) : new Date(),
       order_number: data.order_number || null,
       note: data.note || null,
-      employees: { connect: { id: Number(data.employeeId) } },
+      employee: { connect: { id: Number(data.employeeId) } },
 
-      branches:
+      branch:
         data.branch_id === null
           ? { disconnect: true }
           : data.branch_id
             ? { connect: { id: Number(data.branch_id) } }
             : undefined,
 
-      departments:
+      department:
         data.department_id === null
           ? { disconnect: true }
           : data.department_id
             ? { connect: { id: Number(data.department_id) } }
             : undefined,
 
-      positions:
+      position:
         data.position_id === null
           ? { disconnect: true }
           : data.position_id
@@ -98,21 +112,21 @@ export const updateEmploymentOrderById = async (id, data) => {
       order_number: data.order_number ?? undefined,
       date: data.date ?? undefined,
 
-      branches:
+      branch:
         data.branch_id === null
           ? { disconnect: true }
           : data.branch_id
             ? { connect: { id: Number(data.branch_id) } }
             : undefined,
 
-      departments:
+      department:
         data.department_id === null
           ? { disconnect: true }
           : data.department_id
             ? { connect: { id: Number(data.department_id) } }
             : undefined,
 
-      positions:
+      position:
         data.position_id === null
           ? { disconnect: true }
           : data.position_id

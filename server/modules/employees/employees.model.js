@@ -111,7 +111,7 @@ export async function addEmployeeRaw(body) {
 }
 
 export const EmployeeModel = {
-  updateEmployee: async (id, data) => {
+  update: async (id, data) => {
     return prisma.employees.update({
       where: { id: Number(id) },
       data,
@@ -175,7 +175,7 @@ export const EmployeeModel = {
     });
   },
 
-  getEmployee: async (id) => {
+  getByid: async (id) => {
     return prisma.employees.findUnique({
       where: { id: Number(id) },
       include: {

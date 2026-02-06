@@ -137,7 +137,7 @@ export const createEmploymentOrder = async (data) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await EmployeeService.updateEmployee(data.employeeId, {
+    await EmployeeService.update(data.employeeId, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -189,7 +189,7 @@ export const updateEmploymentOrder = async (id, data) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await EmployeeService.updateEmployee(order.employee_id, {
+    await EmployeeService.update(order.employee_id, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -249,7 +249,7 @@ export const deleteEmploymentOrder = async (userId, id) => {
     const status = lastOrderFull.type === "terminate" ? false : true;
 
     // 4️⃣ Обновляем данные сотрудника по последнему приказу
-    await EmployeeService.updateEmployee(order.employee_id, {
+    await EmployeeService.update(order.employee_id, {
       status,
       branch_id:
         lastOrderFull.branch_id !== undefined
@@ -270,13 +270,14 @@ export const deleteEmploymentOrder = async (userId, id) => {
             : null
           : undefined,
     });
+  } else {
+    await EmployeeService.update(order.employee_id, {
+      status: false,
+      branch_id: null,
+      department_id: null,
+      position_id: null,
+    });
   }
-  await EmployeeService.updateEmployee(order.employee_id, {
-    status: false,
-    branch_id: null,
-    department_id: null,
-    position_id: null,
-  });
 
   return { success: true };
 };

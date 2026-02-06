@@ -203,7 +203,7 @@ export const getActiveEmployeesService = async ({ userId, filters = {} }) => {
 };
 
 export const EmployeeService = {
-  updateEmployee: async (id, rawData, file, userId) => {
+  update: async (id, rawData, file, userId) => {
     if (!rawData || Object.keys(rawData).length === 0) {
       throw new Error("Нет данных для обновления");
     }
@@ -289,15 +289,26 @@ export const EmployeeService = {
     }
 
     // Связи
-    if (raw.branch_id) data.branch = { connect: { id: Number(raw.branch_id) } };
-    if (raw.department_id)
-      data.department = {
-        connect: { id: Number(raw.department_id) },
-      };
-    if (raw.position_id)
-      data.position = {
-        connect: { id: Number(raw.position_id) },
-      };
+    if (raw.branch_id !== undefined) {
+      data.branch =
+        raw.branch_id === null
+          ? { disconnect: true }
+          : { connect: { id: Number(raw.branch_id) } };
+    }
+
+    if (raw.department_id !== undefined) {
+      data.department =
+        raw.department_id === null
+          ? { disconnect: true }
+          : { connect: { id: Number(raw.department_id) } };
+    }
+
+    if (raw.position_id !== undefined) {
+      data.position =
+        raw.position_id === null
+          ? { disconnect: true }
+          : { connect: { id: Number(raw.position_id) } };
+    }
     if (raw.door_id) data.door = { connect: { id: Number(raw.door_id) } };
     if (scheduleChanged)
       data.workSchedule = {
@@ -305,13 +316,13 @@ export const EmployeeService = {
       };
 
     // 3.4 Обновляем сотрудника
-    return EmployeeModel.updateEmployee(id, data);
+    return EmployeeModel.update(id, data);
 
     return result;
   },
 
-  getEmployee: async (id) => {
-    const employee = await EmployeeModel.getEmployee(id);
+  getByid: async (id) => {
+    const employee = await EmployeeModel.getByid(id);
 
     if (!employee) return null;
 

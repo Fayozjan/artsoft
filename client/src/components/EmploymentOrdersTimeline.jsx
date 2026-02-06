@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 
-import Modal from "./Modal";
 import Loading from "./Loading";
 
 import { useAlertStore } from "../stores/alertStore";
@@ -15,11 +14,7 @@ import {
   deleteEmploymentOrderById,
 } from "../api";
 
-import {
-  downloadHiredDoc,
-  downloadTerminationDoc,
-  downloadTransferDoc,
-} from "../utils/downloadDoc";
+import { DownloadOrder } from "../utils/downloadDoc";
 
 import styles from "./EmploymentOrdersTimeline.module.scss";
 import { useTranslation } from "react-i18next";
@@ -33,7 +28,6 @@ const EVENT_LABELS = {
 
 const EmploymentOrdersTimeline = ({
   employeeId,
-  employeeData,
   handleClose,
   updateEmployeeDataFunction,
 }) => {
@@ -100,12 +94,15 @@ const EmploymentOrdersTimeline = ({
     setLoading(true);
     try {
       const res = await deleteEmploymentOrderById(id);
+      console.log("res", res);
       if (res.success) {
         setEmploymentOrders((prev) => prev.filter((item) => item.id !== id));
         showAlert(t("success"), "success");
       }
     } catch (error) {
-      showAlert(t("error"), "error");
+      const message = error?.response?.data?.message || t("error");
+
+      showAlert(message, "error");
     } finally {
       setDeletingId(null);
       setLoading(false);
@@ -118,21 +115,22 @@ const EmploymentOrdersTimeline = ({
   };
 
   const handleDownload = (item) => {
-    const lastHire = employmentOrders.find(
-      (order) => order.event_type === "hired",
-    );
+    const lastHire = employmentOrders.find((order) => order.type === "hire");
+    const lastOrder =
+      employmentOrders.find((o) => o.type === "transfer") ??
+      employmentOrders.find((o) => o.type === "hire");
 
-    switch (item.event_type) {
-      case "hired":
-        downloadHiredDoc(item);
-        break;
-      case "termination":
-        downloadTerminationDoc(item, lastHire);
+    switch (item.type) {
+      case "hire":
+        DownloadOrder.hire(item);
         break;
       case "transfer":
-      case "promotion":
-        downloadTransferDoc(item, lastHire, employeeData);
+        DownloadOrder.transfer(item, lastHire);
         break;
+      case "terminate":
+        DownloadOrder.terminate(item, lastHire, lastOrder);
+        break;
+
       default:
         console.warn("Неизвестный тип события для скачивания");
     }
@@ -415,19 +413,19 @@ const EmploymentOrdersTimeline = ({
                                   <span>Приказ:</span> №{item.order_number}
                                 </p>
                               )}
-                              {item.branches?.name && (
+                              {item.branch?.name && (
                                 <p>
-                                  <span>Филиал:</span> {item.branches.name}
+                                  <span>Филиал:</span> {item.branch.name}
                                 </p>
                               )}
-                              {item.departments?.name && (
+                              {item.department?.name && (
                                 <p>
-                                  <span>Отдел:</span> {item.departments.name}
+                                  <span>Отдел:</span> {item.department.name}
                                 </p>
                               )}
-                              {item.positions?.name && (
+                              {item.position?.name && (
                                 <p>
-                                  <span>Должность:</span> {item.positions.name}
+                                  <span>Должность:</span> {item.position.name}
                                 </p>
                               )}
                               {item.note && (

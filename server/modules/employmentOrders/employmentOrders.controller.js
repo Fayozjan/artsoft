@@ -54,8 +54,28 @@ export const updateEmploymentOrder = async (req, res) => {
 };
 
 export const deleteEmploymentOrder = async (req, res) => {
-  const userId = req.user.id;
-  const id = req.params.id;
-  const data = await service.deleteEmploymentOrder(userId, id);
-  res.json({ success: true, data });
+  try {
+    const result = await service.deleteEmploymentOrder(
+      req.user.id,
+      req.params.id,
+    );
+
+    if (result?.status) {
+      return res.status(result.status).json({
+        success: false,
+        message: result.message,
+      });
+    }
+
+    return res.json({
+      success: true,
+    });
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Ошибка при удалении приказа",
+    });
+  }
 };

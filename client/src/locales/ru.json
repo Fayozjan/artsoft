@@ -116,5 +116,10 @@
   "director": "Директор",
   "newPassword": "Новый пароль",
   "addedBy": "Добавил",
-  "employeeWorkScheduleHistory": "История рабочего графика"
+  "employeeWorkScheduleHistory": "История рабочего графика",
+  "region": "Регион",
+  "bankName": "Название банка",
+  "bankAccount": "Расчётный счёт",
+  "inn": "ИНН",
+  "mfo": "МФО"
 }

@@ -49,10 +49,15 @@ const PositionsPage = () => {
     setModalType("edit");
   };
 
+  const handleCloseModal = () => {
+    setModalType(null);
+    setSelectedItem(null);
+  };
+
   const fetchData = async (
     page = currentPage,
     filters = formData,
-    size = pageSize
+    size = pageSize,
   ) => {
     setLoading(true);
     try {
@@ -86,7 +91,7 @@ const PositionsPage = () => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setCurrentPage((prevPage) =>
-      Math.min(prevPage, Math.ceil(totalItems / size))
+      Math.min(prevPage, Math.ceil(totalItems / size)),
     );
   };
 
@@ -351,6 +356,7 @@ const PositionsPage = () => {
             handleClose={() => setModalType(null)}
             onSuccess={() => {
               fetchData();
+              setTimeout(handleCloseModal, 500);
             }}
           />
         )}
@@ -360,6 +366,7 @@ const PositionsPage = () => {
             handleClose={() => setModalType(null)}
             onSuccess={() => {
               fetchData();
+              setTimeout(handleCloseModal, 500);
             }}
           />
         )}

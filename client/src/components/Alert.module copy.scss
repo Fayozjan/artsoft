@@ -1,0 +1,52 @@
+.alert {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10001;
+  transform: translateX(100%);
+  opacity: 0;
+  font-size: 16px;
+  color: #fff;
+  padding: 8px 25px;
+  border-radius: 4px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+
+  animation: slideIn 0.2s ease-out forwards, slideOut 0.2s ease-in 2s forwards;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.success {
+  background-color: rgb(22, 195, 22);
+}
+
+.error {
+  background-color: rgb(233, 45, 45);
+}
+
+/* Анимация появления (вылетает справа) */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Анимация исчезновения (уходит вправо) */
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}

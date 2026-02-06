@@ -23,7 +23,7 @@ import styles from "./BranchesPage.module.scss";
 
 const BranchesPage = () => {
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
   const [formData, setFormData] = useState({});
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -232,7 +232,7 @@ const BranchesPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 

@@ -1,27 +1,9 @@
 import { buildAccessWhere } from "../../utils/accessFilter.js";
 import { UserModel } from "../users/users.model.js";
-import { findActiveBranches, BranchModel } from "./branches.model.js";
-
-export async function getActiveBranchesService({ userId }) {
-  const user = await UserModel.getUserById(userId);
-  if (!user) throw new Error("Пользователь не найден");
-
-  const where = buildAccessWhere(user);
-  const records = await findActiveBranches(where);
-
-  return {
-    data: records.map((b) => ({
-      id: b.id,
-      name: b.name,
-      status: b.status,
-      departments: b.departments,
-      activeEmployeesCount: b._count.employees,
-    })),
-  };
-}
+import { BranchModel } from "./branches.model.js";
 
 export const BranchService = {
-  createBranch: async (data, userId) => {
+  create: async (data, userId) => {
     if (!data.name) throw new Error("Name is required");
     if (!userId) throw new Error("User is required");
 
@@ -40,12 +22,36 @@ export const BranchService = {
     return BranchModel.create({
       name: data.name,
       director_id: directorId,
+      region: data.region,
+      address: data.address,
+      bank_name: data.bank_name,
+      bank_account: data.bank_account,
+      inn: data.inn,
+      mfo: data.mfo,
       status: data.status ?? true,
-      creator_id: Number(userId),
+      added_by: Number(userId),
     });
   },
 
-  getBranches: async ({ page, pageSize, filters, userId }) => {
+  listActive: async ({ userId }) => {
+    const user = await UserModel.getUserById(userId);
+    if (!user) throw new Error("Пользователь не найден");
+
+    const where = buildAccessWhere(user);
+    const records = await BranchModel.findActive(where);
+
+    return {
+      data: records.map((b) => ({
+        id: b.id,
+        name: b.name,
+        status: b.status,
+        departments: b.departments,
+        activeEmployeesCount: b._count.employees,
+      })),
+    };
+  },
+
+  list: async ({ page, pageSize, filters, userId }) => {
     const limit = pageSize ? parseInt(pageSize, 10) : undefined;
     const currentPage = Math.max(parseInt(page || 1, 10), 1);
     const skip = limit ? (currentPage - 1) * limit : undefined;
@@ -68,14 +74,12 @@ export const BranchService = {
       where.status = status === "true";
     }
 
-    // 📦 данные
     const records = await BranchModel.findMany({
       where,
       skip,
       take: limit,
     });
 
-    // 🎯 маппинг под фронт
     const data = records.map((b) => ({
       id: b.id,
       name: b.name,
@@ -83,6 +87,12 @@ export const BranchService = {
       director: b.director
         ? `${b.director.last_name || ""} ${b.director.first_name || ""} ${b.director.middle_name || ""} (${b.director.id})`.trim()
         : "",
+      address: b.address,
+      region: b.region,
+      bank_name: b.bank_name,
+      bank_account: b.bank_account,
+      inn: b.inn,
+      mfo: b.mfo,
       addedBy: b.addedBy
         ? `${b.addedBy.employee.last_name || ""} ${b.addedBy.employee.first_name || ""} ${b.addedBy.employee.middle_name || ""} (${b.addedBy.employee.id})`.trim()
         : "",
@@ -106,13 +116,13 @@ export const BranchService = {
     };
   },
 
-  getBranchById: async (id) => {
+  getById: async (id) => {
     if (!id) throw new Error("ID is required");
     const branchId = parseInt(id, 10);
     return BranchModel.findById(branchId);
   },
 
-  updateBranch: async (id, data) => {
+  update: async (id, data) => {
     const branchId = parseInt(id, 10);
     if (isNaN(branchId)) throw new Error("Invalid branch ID");
 
@@ -137,12 +147,23 @@ export const BranchService = {
     return BranchModel.update(branchId, {
       name: data.name,
       director_id: directorId,
+      region: data.region,
+      bank_name: data.bank_name,
+      bank_account: data.bank_account,
+      inn: data.inn,
+      mfo: data.mfo,
+      address: data.address,
       status: data.status ?? true,
     });
   },
 
-  deleteBranch: async (id) => {
+  remove: async (id) => {
     if (!id) throw new Error("ID is required");
     return BranchModel.delete(id);
+  },
+
+  isInUse: async (branchId) => {
+    if (!branchId) throw new Error("Branch ID is required");
+    return BranchModel.isBranchInUse(branchId);
   },
 };
