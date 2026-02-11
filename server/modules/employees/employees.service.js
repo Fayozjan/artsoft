@@ -9,6 +9,7 @@ import {
 
 import { UserModel } from "../users/users.model.js";
 import { buildAccessWhere } from "../../utils/accessFilter.js";
+import { FaceDeviceService } from "../faceDevices/faceDevice.service.js";
 
 export const getEmployeesService = async ({
   userId,
@@ -239,7 +240,7 @@ export const EmployeeService = {
     // 3.2 Работа с фото
     if (file) {
       const ext = path.extname(file.originalname);
-      const newFileName = `${raw.last_name}_${raw.first_name}_${id}_${Date.now()}${ext}`;
+      const newFileName = `${id}${ext}`;
       const newPath = path.join(file.destination, newFileName);
 
       await fs.promises.rename(file.path, newPath);
@@ -248,6 +249,7 @@ export const EmployeeService = {
 
     // 3.3 Удаляем пустые строки
     Object.keys(raw).forEach((k) => {
+      if (Array.isArray(raw[k])) return;
       if (raw[k] === "") delete raw[k];
     });
 
@@ -309,16 +311,45 @@ export const EmployeeService = {
           ? { disconnect: true }
           : { connect: { id: Number(raw.position_id) } };
     }
-    if (raw.door_id) data.door = { connect: { id: Number(raw.door_id) } };
+
+    if (Array.isArray(raw.door_ids)) {
+      const doorIds = raw.door_ids
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0);
+
+      data.doors = { set: doorIds.map((id) => ({ id })) };
+    }
+
     if (scheduleChanged)
       data.workSchedule = {
         connect: { id: newScheduleId },
       };
 
-    // 3.4 Обновляем сотрудника
-    return EmployeeModel.update(id, data);
+    const oldData = await EmployeeModel.getByid(id);
 
-    return result;
+    // 3.4 Обновляем сотрудника
+
+    const updatedEmployee = await EmployeeModel.update(id, data);
+
+    const photoChanged = file !== undefined;
+    const oldDoorIds = oldData.doors?.map((d) => Number(d.id)) || [];
+    const newDoorIds = Array.isArray(raw.door_ids)
+      ? raw.door_ids.map((id) => Number(id))
+      : null;
+
+    const doorsChanged =
+      newDoorIds !== null &&
+      (newDoorIds.length !== oldDoorIds.length ||
+        !newDoorIds.every((id) => oldDoorIds.includes(id)));
+
+    const statusChanged =
+      raw.status !== undefined && Boolean(data.status) !== oldData.status;
+
+    if (photoChanged || doorsChanged || statusChanged) {
+      FaceDeviceService.syncEmployee(id);
+    }
+
+    return updatedEmployee;
   },
 
   getByid: async (id) => {
@@ -336,6 +367,7 @@ export const EmployeeService = {
       }
     }
 
+    // Преобразуем график работы
     if (employee.employeeScheduleHistory?.length) {
       employee.employeeScheduleHistory = employee.employeeScheduleHistory.map(
         (h) => {
@@ -359,6 +391,13 @@ export const EmployeeService = {
           };
         },
       );
+    }
+
+    // Преобразуем doors в массив ID
+    if (employee.doors?.length) {
+      employee.door_ids = employee.doors.map((d) => d.id);
+    } else {
+      employee.door_ids = [];
     }
 
     return employee;

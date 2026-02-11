@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthStore } from "../stores/authStore";
 import { getAge, formatDate } from "../utils/utils";
 
 import SortArrow from "../components/SortArrow";
@@ -21,19 +20,7 @@ const EmployeesTable = ({
 }) => {
   const [sortField, setSortField] = useState("last_name");
   const [sortOrder, setSortOrder] = useState("asc");
-  const userSettings = useAuthStore((state) => state.userSettings);
-  const { i18n, t } = useTranslation();
-
-  useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
-  }, [userSettings, i18n]);
-
-  const handleEditEmployee = (id) => {
-    setEditEmployee(true);
-    setEditingEmployeeId(id);
-  };
+  const { t } = useTranslation();
 
   const getSortedData = () => {
     return [...data].sort((a, b) => {
@@ -181,8 +168,8 @@ const EmployeesTable = ({
 
                     {item.photo && (
                       <img
-                        src={item.photo}
-                        alt="employee_photo"
+                        src={`${item.photo}?t=${new Date()}`}
+                        alt="employeePhoto"
                         className={
                           item.status ? styles.active : styles.terminated
                         }
@@ -193,7 +180,7 @@ const EmployeesTable = ({
                 <td>
                   {item.date_of_birth &&
                     `${formatDate(item.date_of_birth)} (${getAge(
-                      item.date_of_birth
+                      item.date_of_birth,
                     )})`}
                 </td>
                 <td>{item.employee_number}</td>

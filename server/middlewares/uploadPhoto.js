@@ -4,7 +4,7 @@ import fs from "fs";
 import sharp from "sharp";
 
 // Универсальный аплоадер фото
-const uploadPhoto = (typeFolder = "students") => {
+const uploadPhoto = (typeFolder = "employee") => {
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const dir = `uploads/${typeFolder}`;
@@ -38,7 +38,7 @@ const uploadPhoto = (typeFolder = "students") => {
 
       const newPath = filePath.replace(ext, ".jpg");
 
-      await sharp(filePath).jpeg({ quality: 90 }).toFile(newPath);
+      await sharp(filePath).jpeg({ quality: 80 }).toFile(newPath);
 
       // удалить оригинальный файл
       fs.unlinkSync(filePath);
@@ -47,8 +47,6 @@ const uploadPhoto = (typeFolder = "students") => {
       req.file.filename = path.basename(newPath);
       req.file.path = newPath;
       req.file.finalPath = newPath;
-
-      console.log(`✅ Файл ${filePath} сконвертирован в JPG`);
       next();
     } catch (err) {
       console.error("❌ Ошибка при конвертации в JPG:", err);

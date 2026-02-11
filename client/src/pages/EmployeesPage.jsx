@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
@@ -22,6 +22,7 @@ import AddEmploymentOrder from "../components/AddEmploymentOrder";
 import EmployeeWorkSchedulesHistory from "../components/EmployeeWorkSchedulesHistory";
 
 import styles from "./EmployeesPage.module.scss";
+import { Icons } from "../icons/icons";
 
 const EmployeesPage = () => {
   const { deleteUser } = useFilterDataStore();
@@ -39,11 +40,9 @@ const EmployeesPage = () => {
   const [employmentOrderType, setEmploymentOrderType] = useState("");
   const isLeftPanelOpen = Boolean(employmentOrderType);
   const [leftPanelType, setLeftPanelType] = useState("");
-  const [updateEmployeeDataFunction, setUpdateEmployeeDataFunction] = useState(
-    () => () => {},
-  );
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
+  const updateEmployeeDataRef = useRef(() => {});
 
   const [formData, setFormData] = useState({
     branch_id: "",
@@ -81,7 +80,7 @@ const EmployeesPage = () => {
   }, []);
 
   const handleSetUpdateFunction = (fn) => {
-    setUpdateEmployeeDataFunction(() => fn);
+    updateEmployeeDataRef.current = fn;
   };
 
   const handleSearch = () => {
@@ -155,18 +154,7 @@ const EmployeesPage = () => {
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>
-                <svg
-                  onClick={handleSearch}
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
+                <span onClick={handleSearch}>{Icons.search}</span>
                 <input
                   type="text"
                   placeholder={t("search")}
@@ -185,7 +173,7 @@ const EmployeesPage = () => {
                 />
 
                 {formData.search && (
-                  <svg
+                  <span
                     className={styles.clearBtn}
                     onClick={() => {
                       setFormData((prev) => ({
@@ -193,20 +181,9 @@ const EmployeesPage = () => {
                         search: "",
                       }));
                     }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
                   >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                    {Icons.clear}
+                  </span>
                 )}
               </div>
 
@@ -236,22 +213,7 @@ const EmployeesPage = () => {
                 className={styles.refreshBtn}
                 onClick={() => fetchEmployees(currentPage, formData, pageSize)}
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
+                {Icons.refresh}
                 <span>Обновить данные</span>
               </div>
 
@@ -287,7 +249,7 @@ const EmployeesPage = () => {
         title="Вы уверены, что хотите удалить?"
       />
 
-      {modalType === "add" ? (
+      {modalType === "add" && (
         <OverlaySidebar
           isOpen={modalType !== null}
           onClose={() => setModalType(null)}
@@ -302,7 +264,9 @@ const EmployeesPage = () => {
             />
           }
         />
-      ) : (
+      )}
+
+      {modalType === "edit" && (
         <OverlaySidebar
           isOpen={modalType !== null}
           onClose={() => {
@@ -334,19 +298,19 @@ const EmployeesPage = () => {
                   employeeId={selectedItem}
                   employmentOrderType={employmentOrderType}
                   handleClose={closeLeftPanel}
-                  updateEmployeeDataFunction={updateEmployeeDataFunction}
+                  updateEmployeeDataFunction={updateEmployeeDataRef.current}
                 />
               ) : leftPanelType === "employmentOrdersList" ? (
                 <EmploymentOrdersTimeline
                   employeeId={selectedItem}
                   handleClose={closeLeftPanel}
-                  updateEmployeeDataFunction={updateEmployeeDataFunction}
+                  updateEmployeeDataFunction={updateEmployeeDataRef.current}
                 />
               ) : leftPanelType === "employmentWorkScheduleList" ? (
                 <EmployeeWorkSchedulesHistory
                   employeeId={selectedItem}
                   handleClose={closeLeftPanel}
-                  updateEmployeeDataFunction={updateEmployeeDataFunction}
+                  updateEmployeeDataFunction={updateEmployeeDataRef.current}
                 />
               ) : null,
           }}

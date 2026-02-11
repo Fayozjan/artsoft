@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthStore } from "../stores/authStore";
-import { useAlertStore } from "../stores/alertStore";
 import { usePermissions } from "../hooks/usePermissions";
 
 import AddDoor from "../components/AddDoor";
@@ -35,20 +33,13 @@ const DoorsPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null);
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
-  const userSettings = useAuthStore((state) => state.userSettings);
-  const { i18n, t } = useTranslation();
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
+  const { t } = useTranslation();
 
   const [formData, setFormData] = useState({
     search: "",
     status: "",
   });
-
-  useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
-  }, []);
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -63,7 +54,7 @@ const DoorsPage = () => {
   const fetchData = async (
     page = currentPage,
     filters = formData,
-    size = pageSize
+    size = pageSize,
   ) => {
     setLoading(true);
     try {
@@ -97,7 +88,7 @@ const DoorsPage = () => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setCurrentPage((prevPage) =>
-      Math.min(prevPage, Math.ceil(totalItems / size))
+      Math.min(prevPage, Math.ceil(totalItems / size)),
     );
   };
 
@@ -228,7 +219,7 @@ const DoorsPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 

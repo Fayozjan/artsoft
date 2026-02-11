@@ -9,7 +9,7 @@ const MultiSelectDoors = ({ options, selected, onChange }) => {
 
   // Фильтрация дверей по поиску
   const filteredOptions = options.filter((door) =>
-    door.name.toLowerCase().includes(search.toLowerCase())
+    door.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   // Закрытие списка при клике вне компонента
@@ -41,7 +41,7 @@ const MultiSelectDoors = ({ options, selected, onChange }) => {
 
       onChange(newSelected);
     },
-    [selected, onChange]
+    [selected, onChange],
   );
 
   // Выбрать / снять выделение всех дверей

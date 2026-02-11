@@ -50,6 +50,16 @@ export const editEmployee = async (id, data) => {
       else formData.append(key, "");
       return;
     }
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        formData.append(`${key}[]`, "");
+      } else {
+        value.forEach((v) => formData.append(`${key}[]`, v));
+      }
+      return;
+    }
+
     formData.append(key, value ?? "");
   });
 

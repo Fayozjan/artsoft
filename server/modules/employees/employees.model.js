@@ -203,6 +203,9 @@ export const EmployeeModel = {
             },
           },
         },
+        doors: {
+          include: { faceDevices: true },
+        },
       },
     });
   },

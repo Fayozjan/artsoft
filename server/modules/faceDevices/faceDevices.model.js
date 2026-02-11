@@ -21,7 +21,7 @@ export async function getFaceDevices(page, limit, filters = {}) {
       { door: { name: { contains: s, mode: "insensitive" } } },
       Number.isInteger(idNum) ? { id: { equals: idNum } } : null,
       Number.isInteger(portNum) ? { port: { equals: portNum } } : null,
-      { device_ip: { contains: s, mode: "insensitive" } }
+      { device_ip: { contains: s, mode: "insensitive" } },
     );
 
     OR = OR.filter(Boolean);
@@ -100,3 +100,16 @@ export async function getFaceDeviceByDoorId(doorId) {
     },
   });
 }
+
+export const FaceDeviceModel = {
+  findActive() {
+    return prisma.face_devices.findMany({
+      where: {
+        status: true,
+      },
+      select: {
+        device_ip: true,
+      },
+    });
+  },
+};
