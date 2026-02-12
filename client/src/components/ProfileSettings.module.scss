@@ -7,9 +7,14 @@
 
   .error {
     color: red;
-    font-size: 14px;
+    font-size: var(--font-small);
     margin-bottom: 10px;
     text-align: center;
+  }
+
+  .flex {
+    display: flex;
+    gap: 20px;
   }
 
   .form {
@@ -23,20 +28,39 @@
     width: 100%;
     display: flex;
     flex-direction: column;
+    position: relative;
 
     label {
       font-weight: 600;
       margin-bottom: 5px;
-      font-size: 14px;
+      font-size: var(--font-small);
     }
 
     input,
     select {
-      font-size: 14px;
+      font-size: var(--font-small);
       padding: 10px 12px;
       border: 1px solid #ccc;
       border-radius: 8px;
       transition: all 0.2s;
+    }
+
+    select {
+      cursor: pointer;
+    }
+
+    .togglePassword {
+      position: absolute;
+      right: 10px;
+      top: 70%;
+      transform: translateY(-50%);
+      background-color: transparent;
+      border: none;
+      font-size: var(--font-small);
+      font-weight: 600;
+      cursor: pointer;
+      color: var(--placeholder-color);
+      padding: 5px;
     }
 
     input:focus,
@@ -49,18 +73,17 @@
 
   .saveButton {
     color: var(--button-text);
-    margin-top: 15px;
-    padding: 12px;
+    padding: 10px;
     font-weight: 600;
+    font-size: var(--font-small);
     background: var(--third-color);
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 15px;
-    transition: all 0.2s;
+    transition: transform 0.2s;
 
     &:hover {
-      background: var(--third-color-overlay);
+      transform: scale(1.01);
     }
   }
 }

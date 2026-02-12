@@ -110,10 +110,12 @@
         font-weight: 600;
         font-size: 18px;
         cursor: pointer;
-        transition: background-color 0.3s, transform 0.2s, box-shadow 0.3s;
+        transition:
+          background-color 0.3s,
+          transform 0.2s,
+          box-shadow 0.3s;
 
         &:hover {
-          background-color: #0069d9;
           transform: translateY(-2px);
           box-shadow: 0 4px 10px var(--shadow-dark);
         }

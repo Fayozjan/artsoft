@@ -171,18 +171,6 @@ const AddBranch = ({ onSuccess }) => {
             disabled={loading}
           />
         </div>
-        <div>
-          <label>Статус</label>
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            disabled={loading}
-          >
-            <option value="true">{t("true")}</option>
-            <option value="false">{t("false")}</option>
-          </select>
-        </div>
       </div>
     </form>
   );

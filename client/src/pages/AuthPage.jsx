@@ -16,7 +16,7 @@ const AuthPage = () => {
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [currentLang, setCurrentLang] = useState(
-    localStorage.getItem("language") || i18n.language
+    localStorage.getItem("language") || i18n.language,
   );
 
   const handleChange = (e) => {
@@ -27,6 +27,7 @@ const AuthPage = () => {
   const handleLanguageChange = (lang) => {
     i18n.changeLanguage(lang);
     localStorage.setItem("language", lang);
+    setCurrentLang(lang);
   };
 
   const handleLogin = async (e) => {
@@ -40,7 +41,7 @@ const AuthPage = () => {
 
     result.success
       ? navigate("/dashboard")
-      : showAlert(t("auth.loginError"), "error");
+      : showAlert(t("loginError"), "error");
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getAge, formatDate } from "../utils/utils";
@@ -22,32 +22,54 @@ const EmployeesTable = ({
   const [sortOrder, setSortOrder] = useState("asc");
   const { t } = useTranslation();
 
-  const getSortedData = () => {
-    return [...data].sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
+  const sortedData = useMemo(() => {
+    if (!data) return [];
 
-      // Пустые значения идут в конец
+    return [...data].sort((a, b) => {
+      const getValue = (obj, field) => {
+        if (field === "branch_name") return obj.branch?.name;
+        if (field === "department_name") return obj.department?.name;
+        if (field === "position_name") return obj.position?.name;
+        return obj[field];
+      };
+
+      let aVal = getValue(a, sortField);
+      let bVal = getValue(b, sortField);
+
+      // --- ИСПРАВЛЕННЫЙ БЛОК NULL ---
+      if (aVal === bVal) return 0; // Если оба null или одинаковые
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
+      // ------------------------------
 
-      // Преобразование к числу, если возможно
-      const aNum = parseFloat(aVal);
-      const bNum = parseFloat(bVal);
+      // --- Сравнение дат ---
+      if (sortField === "date_of_birth" || sortField === "added_at") {
+        const dateA = new Date(aVal);
+        const dateB = new Date(bVal);
+        return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+      }
 
-      const isNumberA = !isNaN(aNum);
-      const isNumberB = !isNaN(bNum);
+      const isNum = (v) =>
+        typeof v !== "boolean" &&
+        v !== "" &&
+        !isNaN(v) &&
+        !isNaN(parseFloat(v));
 
-      if (isNumberA && isNumberB) {
+      if (isNum(aVal) && isNum(bVal)) {
+        const aNum = parseFloat(aVal);
+        const bNum = parseFloat(bVal);
         return sortOrder === "asc" ? aNum - bNum : bNum - aNum;
       }
 
-      // Сравнение как строки
-      return sortOrder === "asc"
-        ? String(aVal).localeCompare(String(bVal))
-        : String(bVal).localeCompare(String(aVal));
+      // Строковая сортировка
+      const comparison = String(aVal).localeCompare(String(bVal), undefined, {
+        sensitivity: "accent",
+        numeric: true,
+      });
+
+      return sortOrder === "asc" ? comparison : -comparison;
     });
-  };
+  }, [data, sortField, sortOrder]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -63,11 +85,8 @@ const EmployeesTable = ({
       <table className={styles.table}>
         <thead>
           <tr>
-            <th onClick={() => handleSort("row_num")}>
-              <span className={styles.headerContent}>
-                №
-                <SortArrow active={sortField === "row_num"} order={sortOrder} />
-              </span>
+            <th>
+              <span className={styles.headerContent}>№</span>
             </th>
             <th
               className={styles.table_name_header}
@@ -152,7 +171,7 @@ const EmployeesTable = ({
         </thead>
         <tbody>
           {data?.length > 0 ? (
-            getSortedData().map((item, i) => (
+            sortedData.map((item, i) => (
               <tr key={item.id}>
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
                 <td>

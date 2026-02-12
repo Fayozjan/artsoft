@@ -24,7 +24,7 @@ export const getUser = async (id) => {
   };
 };
 
-export const editMe = async (data = {}) => {
+export const updateProfile = async (data = {}) => {
   const res = await api.put("/users/me", data);
   return { data: res.data.data, success: res.data.success };
 };

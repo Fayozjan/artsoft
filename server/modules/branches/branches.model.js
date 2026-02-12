@@ -3,22 +3,7 @@ import prisma from "../../prisma/client.js";
 export const BranchModel = {
   create: async (data) => {
     return prisma.branches.create({
-      data: {
-        name: data.name,
-        director: data.director_id
-          ? { connect: { id: Number(data.director_id) } }
-          : null,
-        region: data.region || null,
-        address: data.address || null,
-        bank_name: data.bank_name || null,
-        bank_account: data.bank_account || null,
-        inn: data.inn || null,
-        mfo: data.mfo || null,
-        status: data.status ?? true,
-        addedBy: {
-          connect: { id: Number(data.added_by) },
-        },
-      },
+      data,
     });
   },
 
@@ -94,19 +79,7 @@ export const BranchModel = {
   update: async (id, data) => {
     return prisma.branches.update({
       where: { id },
-      data: {
-        name: data.name,
-        director: data.director_id
-          ? { connect: { id: Number(data.director_id) } }
-          : null,
-        region: data.region || null,
-        address: data.address || null,
-        bank_name: data.bank_name || null,
-        bank_account: data.bank_account || null,
-        inn: data.inn || null,
-        mfo: data.mfo || null,
-        status: data.status,
-      },
+      data,
     });
   },
 

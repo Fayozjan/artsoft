@@ -1,8 +1,7 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+
 import styles from "./CenterModal.module.scss";
 
 export default function CenterModal({
@@ -26,6 +25,22 @@ export default function CenterModal({
     };
   }, []);
 
+  useEffect(() => {
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      window.addEventListener("keydown", handleEsc);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [isOpen, onClose]);
+
   if (!portalContainer) return null;
 
   const modalVariants = {
@@ -42,7 +57,7 @@ export default function CenterModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.2 }}
           onClick={onClose}
         >
           <motion.div
@@ -51,7 +66,7 @@ export default function CenterModal({
             initial="hidden"
             animate="visible"
             exit="exit"
-            transition={{ duration: 0.3, ease: "easeInOut" }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h2>{title}</h2>
@@ -68,6 +83,6 @@ export default function CenterModal({
         </motion.div>
       )}
     </AnimatePresence>,
-    portalContainer
+    portalContainer,
   );
 }

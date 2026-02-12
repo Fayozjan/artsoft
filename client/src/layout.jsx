@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useOutlet, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Icons } from "./icons/icons";
 
 import { useAuthCheck } from "./hooks/useAuthCheck";
 import { useAuthStore } from "./stores/authStore";
@@ -35,7 +36,7 @@ export default function HrLayout() {
       }
       if (menu.children?.length) {
         const sub = menu.children.find((child) =>
-          location.pathname.startsWith(child.path)
+          location.pathname.startsWith(child.path),
         );
         if (sub) {
           foundMenu = menu;
@@ -78,7 +79,6 @@ export default function HrLayout() {
   }
 
   return (
-    // Ваш компонент Layout
     <div className={styles.layout}>
       <Sidebar menuData={menuData} />
 
@@ -86,8 +86,8 @@ export default function HrLayout() {
         <motion.main
           key={location.pathname}
           initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0, transition: { duration: 0.3 } }}
-          exit={{ opacity: 0, y: -20, transition: { duration: 0.2 } }}
+          animate={{ opacity: 1, y: 0, transition: { duration: 0.1 } }}
+          exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
           className={styles.page}
         >
           <h2 className={styles.pageTitle}>
@@ -97,20 +97,8 @@ export default function HrLayout() {
 
             {currentMenu.foundSubmenu && (
               <>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className={styles.arrow}
-                >
-                  <path
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="m10 17l5-5l-5-5"
-                  />
-                </svg>
+                <span className={styles.arrow}>{Icons.arrowRight}</span>
+
                 <span className={styles.subTitle}>
                   {t(currentMenu.foundSubmenu.name)}
                 </span>

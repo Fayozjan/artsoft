@@ -19,8 +19,8 @@ model branches {
   inn              String?  @db.VarChar(50)
   mfo              String?  @db.VarChar(10)
 
-  added_at       DateTime @default(now()) @db.Timestamptz(6)
-  added_by Int
+  added_at         DateTime @default(now()) @db.Timestamptz(6)
+  added_by         Int
 
   director  employees? @relation("BranchDirector", fields: [director_id], references: [id])
   employmentOrders      employment_orders[]

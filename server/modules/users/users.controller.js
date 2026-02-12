@@ -63,43 +63,6 @@ export const addUser = async (req, res) => {
   }
 };
 
-export const editUser = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    const { currentPassword, newPassword, theme, language } = req.body;
-
-    const user = await usersModel.getUser(userId);
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Пользователь не найден" });
-    }
-
-    if (newPassword) {
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if (!isMatch) {
-        return res
-          .status(400)
-          .json({ success: false, error: "Текущий пароль неверный" });
-      }
-      user.password = await bcrypt.hash(newPassword, 10);
-    }
-
-    user.theme = theme ?? user.theme;
-    user.language = language ?? user.language;
-
-    const updatedUser = await usersModel.editUserById(userId, user);
-
-    res.status(200).json({ success: true, data: updatedUser });
-  } catch (err) {
-    console.error("Ошибка при обновлении пользователя:", err);
-    res
-      .status(500)
-      .json({ success: false, error: "Ошибка при обновлении пользователя" });
-  }
-};
-
 export const editUserById = async (req, res) => {
   const { id } = req.params;
   const data = req.body;
@@ -190,6 +153,29 @@ export const UserController = {
     } catch (err) {
       console.error("Ошибка в /menu:", err);
       res.status(500).json({ message: "Ошибка сервера" });
+    }
+  },
+
+  updateProfile: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { currentPassword, newPassword, theme, language } = req.body;
+
+      const updatedUser = await UserService.updateProfile(userId, {
+        currentPassword,
+        newPassword,
+        theme,
+        language,
+      });
+
+      res.status(200).json({ success: true, data: updatedUser });
+    } catch (err) {
+      console.error("Ошибка при обновлении профиля:", err);
+
+      res.status(err.statusCode || 500).json({
+        success: false,
+        error: err.message || "Ошибка при обновлении пользователя",
+      });
     }
   },
 };

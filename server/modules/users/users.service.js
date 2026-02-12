@@ -15,27 +15,6 @@ export const UserService = {
       menu,
     } = data;
 
-    // 1️⃣ Валидация доступа
-    if (access_level === "branch") {
-      if (!Array.isArray(branch_access) || branch_access.length === 0) {
-        const err = new Error(
-          "Для доступа 'branch' необходимо выбрать хотя бы один филиал.",
-        );
-        err.code = "VALIDATION_ERROR";
-        throw err;
-      }
-    }
-
-    if (access_level === "department") {
-      if (!Array.isArray(department_access) || department_access.length === 0) {
-        const err = new Error(
-          "Для доступа 'department' необходимо выбрать хотя бы один отдел.",
-        );
-        err.code = "VALIDATION_ERROR";
-        throw err;
-      }
-    }
-
     // 2️⃣ Подготовка данных для обновления
     const dataToUpdate = {
       username,
@@ -186,5 +165,44 @@ export const UserService = {
     };
 
     return buildTree();
+  },
+
+  updateProfile: async (userId, data) => {
+    const { currentPassword, newPassword, theme, language } = data;
+
+    const user = await UserModel.getUserWithPasswordById(userId);
+
+    if (!user) {
+      const error = new Error("Пользователь не найден");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updateData = {};
+
+    // 🔐 Проверка пароля
+    if (newPassword) {
+      if (!currentPassword) {
+        const error = new Error("Введите текущий пароль");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+      if (!isMatch) {
+        const error = new Error("Текущий пароль неверный");
+        error.statusCode = 400;
+        throw error;
+      }
+
+      updateData.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    // 🎨 Настройки
+    if (theme !== undefined) updateData.theme = theme;
+    if (language !== undefined) updateData.language = language;
+
+    return await UserModel.updateProfile(userId, updateData);
   },
 };

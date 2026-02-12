@@ -29,6 +29,7 @@
 }
 
 .success {
+  border: 1px solid #10b98182;
   .glow {
     background: #10b981;
     box-shadow: 0 0 10px #10b981;
@@ -36,6 +37,7 @@
 }
 
 .error {
+  border: 1px solid #ef444481;
   .glow {
     background: #ef4444;
     box-shadow: 0 0 10px #ef4444;

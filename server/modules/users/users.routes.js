@@ -6,7 +6,7 @@ import { UserController } from "./users.controller.js";
 const router = express.Router();
 
 router.get("/", authMiddleware, usersController.getUsers);
-router.put("/me", authMiddleware, usersController.editUser);
+router.put("/me", authMiddleware, UserController.updateProfile);
 router.get("/me", authMiddleware, usersController.getUserInfo);
 router.get("/menu", authMiddleware, UserController.getUserMenu);
 router.get("/:id", authMiddleware, UserController.getUserById);

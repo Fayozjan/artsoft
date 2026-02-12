@@ -107,8 +107,8 @@ export const getUserInfo = async (id) => {
   });
 
   return {
-    fullName:
-      `${user?.employee?.last_name} ${user?.employee?.first_name}` || null,
+    first_name: user?.employee?.first_name,
+    last_name: user?.employee?.last_name,
     photo: user?.employee?.photo,
     position: user?.employee?.position?.name || undefined,
   };
@@ -126,6 +126,16 @@ export const UserModel = {
         branch_access: true,
         department_access: true,
         status: true,
+      },
+    });
+  },
+
+  getUserWithPasswordById: async (id) => {
+    return await prisma.users.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        password: true,
       },
     });
   },
@@ -190,6 +200,13 @@ export const UserModel = {
   getUserMenuAccesses: async (userId) => {
     return prisma.user_menu_access.findMany({
       where: { user_id: Number(userId) },
+    });
+  },
+
+  updateProfile: async (userId, data) => {
+    return await prisma.users.update({
+      where: { id: userId },
+      data,
     });
   },
 };
