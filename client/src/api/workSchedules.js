@@ -2,10 +2,7 @@ import api from "./instance";
 
 export const addWorkSchedule = async (data) => {
   const res = await api.post("/work-schedules", data);
-  return {
-    data: res.data.data,
-    success: res.data.success,
-  };
+  return res.data;
 };
 
 export const getWorkSchedules = async (params = {}) => {

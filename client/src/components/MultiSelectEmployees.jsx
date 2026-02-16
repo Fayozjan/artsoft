@@ -7,8 +7,6 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
-  console.log("options", options);
-
   const safeSelected = Array.isArray(selected) ? selected : [];
 
   // 🔍 Фильтрация по fullName, branch, department
@@ -37,7 +35,7 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
         : [...safeSelected, option.id];
       onChange(newSelected);
     },
-    [safeSelected, onChange]
+    [safeSelected, onChange],
   );
 
   // ✅ Выбор всех

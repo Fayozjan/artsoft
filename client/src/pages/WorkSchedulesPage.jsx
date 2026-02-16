@@ -44,7 +44,7 @@ const WorkSchedulesPage = () => {
   });
 
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -70,7 +70,7 @@ const WorkSchedulesPage = () => {
   const fetchData = async (
     page = currentPage,
     filters = formData,
-    size = pageSize
+    size = pageSize,
   ) => {
     setLoading(true);
     try {
@@ -105,7 +105,7 @@ const WorkSchedulesPage = () => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setCurrentPage((prevPage) =>
-      Math.min(prevPage, Math.ceil(totalItems / size))
+      Math.min(prevPage, Math.ceil(totalItems / size)),
     );
   };
 
@@ -236,7 +236,7 @@ const WorkSchedulesPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 

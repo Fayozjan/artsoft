@@ -32,10 +32,15 @@ export const addWorkSchedule = async (data) => {
   const schedule = await workScheduleModel.create(preparedData);
 
   // 2️⃣ Назначаем график сотрудникам — через модель
-  await workScheduleModel.updateWorkScheduleForMany(
-    data.selectedEmployeeIds,
-    schedule.id
-  );
+  if (
+    Array.isArray(data.selectedEmployeeIds) &&
+    data.selectedEmployeeIds.length
+  ) {
+    await workScheduleModel.updateWorkScheduleForMany(
+      data.selectedEmployeeIds,
+      schedule.id,
+    );
+  }
 
   return schedule;
 };
@@ -123,7 +128,7 @@ export const updateWorkSchedule = async (id, data) => {
   const prepared = {
     name: data.name?.trim(),
     status: Boolean(
-      data.status === true || data.status === "true" || data.status === 1
+      data.status === true || data.status === "true" || data.status === 1,
     ),
     shift_type: data.shift_type,
 
@@ -165,7 +170,7 @@ export const updateWorkSchedule = async (id, data) => {
     await workScheduleModel.clearWorkSchedule(id);
     await workScheduleModel.updateWorkScheduleForMany(
       data.selectedEmployeeIds,
-      id
+      id,
     );
   }
 

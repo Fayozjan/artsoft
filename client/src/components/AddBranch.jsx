@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
-import { addBranch, getActiveEmployees } from "../api";
+import { addBranch, EmployeeService } from "../api";
 
 import Button from "./Button";
 import SelectEmployee from "./SelectEmployee";
@@ -29,7 +29,7 @@ const AddBranch = ({ onSuccess }) => {
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const res = await getActiveEmployees();
+        const res = await EmployeeService.getActive();
         setEmployees(res.data);
       } catch (e) {
         console.error(e);

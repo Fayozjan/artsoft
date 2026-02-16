@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 import { useFilterDataStore } from "../stores/filterDataStore";
 import { usePermissions } from "../hooks/usePermissions";
-import { getEmployees } from "../api";
+import { EmployeeService } from "../api";
 
 import Button from "../components/Button";
 import Loading from "../components/Loading";
@@ -59,7 +59,7 @@ const EmployeesPage = () => {
   ) => {
     setLoading(true);
     try {
-      const { data: employees, pagination } = await getEmployees({
+      const { data: employees, pagination } = await EmployeeService.getAll({
         ...customFormData,
         page,
         pageSize: customPageSize,

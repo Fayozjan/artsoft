@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 import {
-  getActiveEmployees,
+  EmployeeService,
   getWorkScheduleById,
   editWorkScheduleById,
 } from "../api";
@@ -43,7 +43,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
       try {
         const [workScheduleRes, employeeRes] = await Promise.all([
           getWorkScheduleById(id),
-          getActiveEmployees(),
+          EmployeeService.getActive(),
         ]);
 
         if (workScheduleRes.success) {
@@ -100,7 +100,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
     } catch (error) {
       console.error(
         "Ошибка при обновлении данных:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
       showAlert("Ошибка", "error");
     }

@@ -110,6 +110,7 @@ model face_passes {
   employee     employees     @relation(fields: [employee_id], references: [id])
   faceDevice  face_devices  @relation(fields: [face_devices_id], references: [id])
   door         doors         @relation(fields: [door_id], references: [id])
+  notifications notifications_outbox[]
 
   @@index([date])
 }
@@ -301,3 +302,18 @@ model face_devices {
   door      doors     @relation(fields: [door_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   facePasses  face_passes[]
 }
+
+model notifications_outbox {
+  id              Int      @id @default(autoincrement())
+  face_pass_id    Int
+  chat_id         String   @db.VarChar(255)
+  status      String   @db.VarChar(50) @default("pending")
+  retry_count  Int      @default(0)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  facePass    face_passes  @relation(fields: [face_pass_id], references: [id])
+
+
+  @@index([status, created_at])
+}
+

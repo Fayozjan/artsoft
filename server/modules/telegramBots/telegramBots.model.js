@@ -59,3 +59,23 @@ export async function updateBot(id, data) {
     data,
   });
 }
+
+export const telegramBotsModel = {
+  getEventAlertBots: async () => {
+    try {
+      return await prisma.telegram_bots.findMany({
+        where: {
+          status: true,
+          receive_event_alerts: true,
+        },
+        select: {
+          chat_id: true,
+          selectedEmployeeIds: true,
+        },
+      });
+    } catch (err) {
+      console.error("Ошибка при получении телеграм ботов из модели:", err);
+      throw err;
+    }
+  },
+};

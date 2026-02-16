@@ -42,7 +42,9 @@ export async function addBot(req, res) {
     const bot = await telegramBotsModel.createBot({
       name,
       chat_id,
-      selectedEmployeeIds,
+      selectedEmployeeIds: Array.isArray(selectedEmployeeIds)
+        ? selectedEmployeeIds.map((id) => Number(id))
+        : [],
       receive_attendance_report: Boolean(receive_attendance_report),
       receive_event_alerts: Boolean(receive_event_alerts),
       receive_late_report: Boolean(receive_late_report),

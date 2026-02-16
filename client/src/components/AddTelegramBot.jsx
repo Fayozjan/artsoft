@@ -1,9 +1,8 @@
-import axios from "axios";
 import { useState, useEffect } from "react";
 import { useAlertStore } from "../stores/alertStore";
 import { useTranslation } from "react-i18next";
 
-import { addTelegramBot, getActiveEmployees } from "../api";
+import { addTelegramBot, EmployeeService } from "../api";
 
 import Button from "./Button";
 import MultiSelectEmployees from "./MultiSelectEmployees";
@@ -25,7 +24,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
 
   const fetchData = async () => {
     try {
-      const employees = await getActiveEmployees();
+      const employees = await EmployeeService.getActive();
       if (employees.success) {
         setEmployees(employees.data);
       }
@@ -69,7 +68,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
     } catch (error) {
       console.error(
         "Ошибка при отправке данных:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
       showAlert("Ошибка", "error");
     }

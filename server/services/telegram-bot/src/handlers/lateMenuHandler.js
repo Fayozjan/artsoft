@@ -1,6 +1,6 @@
 import { Composer, Keyboard } from "grammy";
 import axios from "axios";
-import pool from "../services/db.js";
+import pool from "../../../../db.js";
 
 const composer = new Composer();
 

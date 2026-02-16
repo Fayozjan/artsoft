@@ -1,44 +1,28 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
-import * as employmentOrdersController from "./employmentOrders.controller.js";
+import { EmploymentOrdersController } from "./employmentOrders.controller.js";
 
 const router = Router();
 
 // Получить список кадровых приказов
-router.get("/", authMiddleware, employmentOrdersController.getEmploymentOrders);
+router.get("/", authMiddleware, EmploymentOrdersController.getAll);
 
 router.get(
   "/employee/:id",
   authMiddleware,
-  employmentOrdersController.getEmploymentOrdersByEmployeeId,
+  EmploymentOrdersController.getByEmployeeId,
 );
 
 // Получить кадровый приказ по id
-router.get(
-  "/:id",
-  authMiddleware,
-  employmentOrdersController.getEmploymentOrderById,
-);
+router.get("/:id", authMiddleware, EmploymentOrdersController.getById);
 
-// Создать кадровый приказ (hire / transfer / terminate)
-router.post(
-  "/",
-  authMiddleware,
-  employmentOrdersController.createEmploymentOrder,
-);
+// Создать кадровый приказ
+router.post("/", authMiddleware, EmploymentOrdersController.create);
 
 // Обновить кадровый приказ
-router.put(
-  "/:id",
-  authMiddleware,
-  employmentOrdersController.updateEmploymentOrder,
-);
+router.put("/:id", authMiddleware, EmploymentOrdersController.update);
 
 // Удалить кадровый приказ
-router.delete(
-  "/:id",
-  authMiddleware,
-  employmentOrdersController.deleteEmploymentOrder,
-);
+router.delete("/:id", authMiddleware, EmploymentOrdersController.delete);
 
 export default router;

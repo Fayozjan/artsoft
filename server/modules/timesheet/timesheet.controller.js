@@ -7,7 +7,7 @@ import {
 } from "./timesheet.model.js";
 
 import * as facePassesService from "../facePasses/facePasses.service.js";
-import { getEmployeesService } from "../employees/employees.service.js";
+import { EmployeeService } from "../employees/employees.service.js";
 import { buildSessionsIndex } from "./timesheet.helpers.js";
 
 function filterSessionsByMonth(data, selectedMonth) {
@@ -80,7 +80,7 @@ async function getEmployeeTripsMap(startDate, endDate) {
     FROM leave_permissions
     WHERE date_from <= $2 AND date_to >= $1
   `,
-    [startDate, endDate]
+    [startDate, endDate],
   );
 
   const tripsMap = {};
@@ -111,7 +111,7 @@ function getAdjustedTimes(dateFrom, dateTo, creditedHours = null) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     workDuration = `${String(hours).padStart(2, "0")}:${String(
-      minutes
+      minutes,
     ).padStart(2, "0")}`;
   }
 
@@ -139,14 +139,14 @@ function getAdjustedTimes(dateFrom, dateTo, creditedHours = null) {
       creditedHours !== null
         ? null
         : hasTimeFrom && hasTimeTo
-        ? `${firstEntry} - ${lastExit}`
-        : null,
+          ? `${firstEntry} - ${lastExit}`
+          : null,
   };
 }
 
 function injectPermissionsIntoSessions(result, tripsMap, startDate, endDate) {
   const days = eachDayOfInterval({ start: startDate, end: endDate }).map((d) =>
-    format(d, "yyyy-MM-dd")
+    format(d, "yyyy-MM-dd"),
   );
 
   for (const user of result) {
@@ -171,7 +171,7 @@ function injectPermissionsIntoSessions(result, tripsMap, startDate, endDate) {
             } = getAdjustedTimes(
               trip.date_from,
               trip.date_to,
-              trip.credited_hours
+              trip.credited_hours,
             );
 
             // Если передан credited_hours и дата без времени → оставляем только дату
@@ -236,7 +236,7 @@ export async function getTimesheet(req, res) {
 
     // Получаем список сотрудников по размеру страницы
 
-    const employees = await getEmployeesService({
+    const employees = await EmployeeService.getAll({
       userId,
       filters,
       page,
@@ -255,7 +255,7 @@ export async function getTimesheet(req, res) {
     let processedEvents = generateAttendanceReport(events);
 
     const processedMap = new Map(
-      processedEvents.map((e) => [String(e.employeeId), e])
+      processedEvents.map((e) => [String(e.employeeId), e]),
     );
 
     for (const emp of employees.data) {
@@ -358,7 +358,7 @@ export async function getTimesheetByEmployees(req, res) {
     const startOfMonth = new Date(
       baseDate.getFullYear(),
       baseDate.getMonth(),
-      1
+      1,
     );
     const endOfMonth = new Date(
       baseDate.getFullYear(),
@@ -366,7 +366,7 @@ export async function getTimesheetByEmployees(req, res) {
       0,
       23,
       59,
-      59
+      59,
     );
 
     const holidays = await getHolidays(date);

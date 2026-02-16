@@ -165,7 +165,7 @@
     box-sizing: border-box;
   }
 
-  .addOrderBtnWrapper {
+  .orderBtnWrapper {
     display: flex;
     gap: 10px;
     margin: 5px 10px;
@@ -285,22 +285,12 @@
           fill: white;
         }
       }
-
-      &:active {
-        transform: scale(0.98);
-        background-color: #bd2130;
-        border-color: #bd2130;
-
-        svg {
-          fill: white;
-        }
-      }
     }
   }
 
   .orderSectionWrapper {
-    position: relative; // Важно для позиционирования печати
-    margin-top: 20px;
+    position: relative;
+    margin-top: 10px;
     border-radius: 8px;
     overflow: hidden;
   }

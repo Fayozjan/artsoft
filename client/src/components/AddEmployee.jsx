@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 
 import {
-  addEmployee,
   getActiveBranches,
   getActivePositions,
   getActiveDoors,
   getActiveWorkSchedules,
+  EmployeeService,
 } from "../api";
 
 import Button from "./Button";
@@ -81,17 +81,15 @@ const AddEmployee = ({ handleClose, onSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await addEmployee(formData);
-      if (res?.success) {
-        showAlert(t("success"), "success");
-        onSuccess();
-        setTimeout(handleClose, 1500);
-      } else {
-        showAlert(res?.error || t("error"), "error");
-      }
+      const res = await EmployeeService.create(formData);
+
+      showAlert(t("success"), "success");
+      onSuccess();
+      setTimeout(handleClose, 1500);
     } catch (err) {
-      console.error(err);
-      showAlert(err?.response?.data?.message || t("error"), "error");
+      const message =
+        err.response?.data?.error || err.message || "Произошла ошибка";
+      showAlert(message, "error");
     }
   };
 

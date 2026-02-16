@@ -4,13 +4,11 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 
 import {
-  getEmployeeById,
-  editEmployee,
+  EmployeeService,
   getActiveBranches,
   getActivePositions,
   getActiveDoors,
   getActiveWorkSchedules,
-  editEmploymentOrderById,
 } from "../api";
 
 import MultiSelectDoors from "./MultiSelectDoors";
@@ -41,6 +39,7 @@ const EditEmployee = ({
   const { t } = useTranslation();
   const { showAlert } = useAlertStore();
   const [loading, setLoading] = useState(true);
+  console.log("data", formData);
 
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -56,7 +55,7 @@ const EditEmployee = ({
     try {
       setLoading(true);
 
-      const employeeRes = await getEmployeeById(id);
+      const employeeRes = await EmployeeService.getById(id);
       const employee = employeeRes.data;
       const currentOrder = employee.employmentOrders.at(-1);
 
@@ -142,42 +141,7 @@ const EditEmployee = ({
     setLoading(true);
 
     try {
-      // 1. Обновляем сотрудника
-      await editEmployee(id, {
-        last_name: formData.last_name,
-        first_name: formData.first_name,
-        middle_name: formData.middle_name,
-        photo: formData.photo,
-        gender: formData.gender,
-        date_of_birth: formData.date_of_birth,
-        pinfl: formData.pinfl,
-        passport: formData.passport,
-        passport_expiry_date: formData.passport_expiry_date,
-        education: formData.education,
-        education_specialty: formData.education_specialty,
-        phone: formData.phone,
-        email: formData.email,
-        address: formData.address,
-        employee_number: formData.employee_number,
-        work_schedule_id: formData.work_schedule_id,
-        door_ids: formData.door_ids,
-        work_schedule_start_date:
-          Number(formData.work_schedule_id) !==
-          Number(originalData.work_schedule_id)
-            ? formData.work_schedule_start_date
-            : null,
-      });
-
-      // 2. Обновляем ТЕКУЩИЙ приказ
-      if (formData.order_id) {
-        await editEmploymentOrderById(formData.order_id, {
-          order_number: formData.order_number,
-          date: formData.order_date,
-          branch_id: formData.branch_id,
-          department_id: formData.department_id,
-          position_id: formData.position_id,
-        });
-      }
+      await EmployeeService.update(id, formData);
 
       showAlert(t("success"), "success");
       onSuccess();
@@ -490,130 +454,138 @@ const EditEmployee = ({
         </div>
       </div>
 
-      <div className={styles.addOrderBtnWrapper}>
-        <button
-          type="button"
-          className={`${styles.showAllEmploymentBtn} ${styles.btn} `}
-          onClick={() => handleLeftPanel("list", "employmentWorkScheduleList")}
-        >
-          {Icons.calendar}
-          {t("employeeWorkScheduleHistory")}
-        </button>
-      </div>
+      {!!formData?.employeeScheduleHistory?.length && (
+        <div className={styles.orderBtnWrapper}>
+          <button
+            type="button"
+            className={`${styles.showAllEmploymentBtn} ${styles.btn}`}
+            onClick={() =>
+              handleLeftPanel("list", "employmentWorkScheduleList")
+            }
+          >
+            {Icons.calendar}
+            {t("employeeWorkScheduleHistory")}
+          </button>
+        </div>
+      )}
 
-      <h4>Редактирование текущего приказа</h4>
-      <div className={styles.orderSectionWrapper}>
-        <div
-          className={`${styles.orderFields} ${!formData.status ? styles.blurred : ""}`}
-        >
-          <div className={styles.row}>
-            <div style={{ flex: 0.5 }}>
-              <label>{t("orderNumber")}</label>
-              <input
-                type="text"
-                name="order_number"
-                value={formData.order_number}
-                onChange={handleChange}
-              />
-            </div>
-            <div style={{ flex: 0.6 }}>
-              <label>
-                {t("orderDate")} <span style={{ color: "red" }}>*</span>
-              </label>
-              <input
-                type="date"
-                name="order_date"
-                value={formData.order_date}
-                onChange={handleChange}
-                onFocus={(e) => e.target.showPicker?.()}
-                required
-              />
-            </div>
-            <div>
-              <label>
-                {t("branch")} <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                name="branch_id"
-                value={formData.branch_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">{t("select")}</option>
-                {branches &&
-                  branches.map((data) => (
-                    <option key={data.id} value={data.id}>
-                      {data.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.row}>
-            <div>
-              <label>
-                {t("department")} <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                name="department_id"
-                value={formData.department_id}
-                onChange={handleChange}
-                disabled={!formData.branch_id}
-                required
-              >
-                <option value="">{t("select")}</option>
-                {formData?.branch_id &&
-                  branches &&
-                  branches
-                    .find((b) => b.id === Number(formData.branch_id))
-                    ?.departments.map((data) => (
+      {!!formData?.employmentOrders?.length && (
+        <div className={styles.orderSectionWrapper}>
+          <h4>Редактирование текущего приказа</h4>
+          <div
+            className={`${styles.orderFields} ${!formData.status ? styles.blurred : ""}`}
+          >
+            <div className={styles.row}>
+              <div style={{ flex: 0.5 }}>
+                <label>{t("orderNumber")}</label>
+                <input
+                  type="text"
+                  name="order_number"
+                  value={formData.order_number}
+                  onChange={handleChange}
+                />
+              </div>
+              <div style={{ flex: 0.6 }}>
+                <label>
+                  {t("orderDate")} <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  name="order_date"
+                  value={formData.order_date}
+                  onChange={handleChange}
+                  onFocus={(e) => e.target.showPicker?.()}
+                  required
+                />
+              </div>
+              <div>
+                <label>
+                  {t("branch")} <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  name="branch_id"
+                  value={formData.branch_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">{t("select")}</option>
+                  {branches &&
+                    branches.map((data) => (
                       <option key={data.id} value={data.id}>
                         {data.name}
                       </option>
                     ))}
-              </select>
+                </select>
+              </div>
             </div>
-            <div>
-              <label>
-                {t("position")} <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                name="position_id"
-                value={formData.position_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">{t("select")}</option>
-                {positions &&
-                  positions.map((data) => (
-                    <option key={data.id} value={data.id}>
-                      {data.name}
-                    </option>
-                  ))}
-              </select>
+
+            <div className={styles.row}>
+              <div>
+                <label>
+                  {t("department")} <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  name="department_id"
+                  value={formData.department_id}
+                  onChange={handleChange}
+                  disabled={!formData.branch_id}
+                  required
+                >
+                  <option value="">{t("select")}</option>
+                  {formData?.branch_id &&
+                    branches &&
+                    branches
+                      .find((b) => b.id === Number(formData.branch_id))
+                      ?.departments.map((data) => (
+                        <option key={data.id} value={data.id}>
+                          {data.name}
+                        </option>
+                      ))}
+                </select>
+              </div>
+              <div>
+                <label>
+                  {t("position")} <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  name="position_id"
+                  value={formData.position_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">{t("select")}</option>
+                  {positions &&
+                    positions.map((data) => (
+                      <option key={data.id} value={data.id}>
+                        {data.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           </div>
+
+          {!formData.status && (
+            <div className={styles.terminatedStamp}>
+              <span>{t("terminatedStamp")}</span>
+            </div>
+          )}
         </div>
+      )}
 
-        {!formData.status && (
-          <div className={styles.terminatedStamp}>
-            <span>{t("terminatedStamp")}</span>
-          </div>
+      <div className={styles.orderBtnWrapper}>
+        {!!formData?.employmentOrders?.length && (
+          <button
+            type="button"
+            className={`${styles.showAllEmploymentBtn} ${styles.btn} `}
+            onClick={() => handleLeftPanel("list", "employmentOrdersList")}
+          >
+            {Icons.book}
+            {t("showAllEmploymentOrders")}
+          </button>
         )}
-      </div>
 
-      <div className={styles.addOrderBtnWrapper}>
-        <button
-          type="button"
-          className={`${styles.showAllEmploymentBtn} ${styles.btn} `}
-          onClick={() => handleLeftPanel("list", "employmentOrdersList")}
-        >
-          {Icons.book}
-          {t("showAllEmploymentOrders")}
-        </button>
-
-        {formData.status ? (
+        {formData?.employmentOrders?.length ? (
           <>
             <button
               type="button"

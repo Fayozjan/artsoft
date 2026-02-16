@@ -41,6 +41,8 @@ const EmploymentOrdersTimeline = ({
   const { showAlert } = useAlertStore();
   const [deletingId, setDeletingId] = useState(null);
 
+  console.log("employmentOrders", employmentOrders);
+
   const sortedOrders = useMemo(() => {
     return [...employmentOrders].sort((a, b) => {
       const dateA = new Date(a.date);

@@ -1,105 +1,7 @@
 import prisma from "../../prisma/client.js";
 import dotenv from "dotenv";
+import { parseDateOnly } from "./employee.helpers.js";
 dotenv.config();
-
-const parseDateOnly = (str) => {
-  const [y, m, d] = str.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-};
-
-export async function getEmployees(where = {}, skip = 0, take = 50) {
-  const [data, total] = await Promise.all([
-    prisma.employees.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { last_name: "asc" },
-      include: {
-        branch: true,
-        department: true,
-        position: true,
-        workSchedule: true,
-      },
-    }),
-    prisma.employees.count({ where }),
-  ]);
-
-  return { data, total };
-}
-
-export const getAllEmployees = async (where = {}) => {
-  return prisma.employees.findMany({
-    where,
-    orderBy: { last_name: "asc" },
-    include: {
-      branch: true,
-      department: true,
-      position: true,
-    },
-  });
-};
-
-export const getActiveEmployeesModel = async (where) => {
-  return prisma.employees.findMany({
-    where,
-    orderBy: { last_name: "asc" },
-    select: {
-      id: true,
-      first_name: true,
-      last_name: true,
-      middle_name: true,
-      employee_number: true,
-      photo: true,
-      branch: { select: { name: true } },
-      department: { select: { name: true } },
-      position: { select: { name: true } },
-    },
-  });
-};
-
-export const createEmployee = async (data) => {
-  return await prisma.$transaction(async (tx) => {
-    const newEmployee = await tx.employees.create({
-      data: {
-        ...data,
-      },
-    });
-
-    // Если переданы данные для приказа
-    if (data.order_date || data.order_number) {
-      await tx.orders.create({
-        data: {
-          employee_id: newEmployee.id,
-          branch_id: newEmployee.branch_id ?? null,
-          department_id: newEmployee.department_id ?? null,
-          position_id: newEmployee.position_id ?? null,
-          date: data.order_date ?? null,
-          order_number: data.order_number ?? null,
-          type: "hire",
-        },
-      });
-    }
-
-    return newEmployee;
-  });
-};
-
-export const deleteEmployee = async (id) => {
-  return prisma.employees.delete({ where: { id: Number(id) } });
-};
-
-export async function getAllEmployeeIds() {
-  try {
-    const employees = await prisma.employees.findMany({
-      select: { id: true },
-    });
-
-    return employees.map((emp) => emp.id);
-  } catch (err) {
-    console.error("Ошибка при получении всех ID сотрудников:", err);
-    throw err;
-  }
-}
 
 export async function addEmployeeRaw(body) {
   const { id, first_name, branch_id, status } = body;
@@ -111,11 +13,101 @@ export async function addEmployeeRaw(body) {
 }
 
 export const EmployeeModel = {
+  create: async (data, tx = prisma) => {
+    return tx.employees.create({ data });
+  },
+
   update: async (id, data) => {
     return prisma.employees.update({
       where: { id: Number(id) },
       data,
     });
+  },
+
+  getAll: async (where = {}, skip = 0, take = 50) => {
+    const [data, total] = await Promise.all([
+      prisma.employees.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { last_name: "asc" },
+        include: {
+          branch: true,
+          department: true,
+          position: true,
+          workSchedule: true,
+        },
+      }),
+      prisma.employees.count({ where }),
+    ]);
+
+    return { data, total };
+  },
+
+  getById: async (id) => {
+    return prisma.employees.findUnique({
+      where: { id: Number(id) },
+      include: {
+        branch: true,
+        department: true,
+        position: true,
+        employmentOrders: true,
+        employeeScheduleHistory: {
+          orderBy: {
+            date_from: "asc",
+          },
+          include: {
+            workSchedule: true,
+            addedBy: {
+              select: {
+                id: true,
+                employee: {
+                  select: {
+                    first_name: true,
+                    last_name: true,
+                    middle_name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        doors: {
+          include: { faceDevices: true },
+        },
+      },
+    });
+  },
+
+  getActive: async (where) => {
+    return prisma.employees.findMany({
+      where,
+      orderBy: { last_name: "asc" },
+      select: {
+        id: true,
+        first_name: true,
+        last_name: true,
+        middle_name: true,
+        employee_number: true,
+        photo: true,
+        branch: { select: { name: true } },
+        department: { select: { name: true } },
+        position: { select: { name: true } },
+      },
+    });
+  },
+
+  getAllIds: async () => {
+    try {
+      const employees = await prisma.employees.findMany({
+        select: { id: true },
+      });
+
+      return employees.map((emp) => emp.id);
+    } catch (err) {
+      console.error("Ошибка при получении всех ID сотрудников:", err);
+      throw err;
+    }
   },
 
   getCurrentWorkSchedule: async (employeeId) => {
@@ -175,38 +167,7 @@ export const EmployeeModel = {
     });
   },
 
-  getByid: async (id) => {
-    return prisma.employees.findUnique({
-      where: { id: Number(id) },
-      include: {
-        branch: true,
-        department: true,
-        position: true,
-        employmentOrders: true,
-        employeeScheduleHistory: {
-          orderBy: {
-            date_from: "asc",
-          },
-          include: {
-            workSchedule: true,
-            addedBy: {
-              select: {
-                id: true,
-                employee: {
-                  select: {
-                    first_name: true,
-                    last_name: true,
-                    middle_name: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        doors: {
-          include: { faceDevices: true },
-        },
-      },
-    });
+  delete: async (id) => {
+    return prisma.employees.delete({ where: { id: Number(id) } });
   },
 };

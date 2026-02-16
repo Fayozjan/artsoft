@@ -4,7 +4,7 @@ import { ru } from "date-fns/locale";
 
 import Loading from "./Loading";
 import styles from "./EmployeeWorkSchedulesHistory.module.scss";
-import { getEmployeeById, workScheduleHistoryApi } from "../api";
+import { EmployeeService, workScheduleHistoryApi } from "../api";
 
 const SHIFT_TYPE_LABELS = {
   normal: "Офисный",
@@ -54,7 +54,7 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
     if (!employeeId) return;
     setLoading(true);
     try {
-      const res = await getEmployeeById(employeeId);
+      const res = await EmployeeService.getById(employeeId);
       if (res?.success) {
         // Сортируем историю по убыванию даты (новые сверху)
         const sorted = (res?.data?.employeeScheduleHistory || []).sort(

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
-import { editTelegramBot, getActiveEmployees, getTelegramBot } from "../api";
+import { editTelegramBot, EmployeeService, getTelegramBot } from "../api";
 
 import Button from "./Button";
 import MultiSelectEmployees from "./MultiSelectEmployees";
@@ -30,7 +30,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
       try {
         const [telegramBotRes, employeeRes] = await Promise.all([
           getTelegramBot(id),
-          getActiveEmployees(),
+          EmployeeService.getActive(),
         ]);
 
         if (telegramBotRes.success) {
@@ -88,7 +88,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
     } catch (error) {
       console.error(
         "Ошибка при обновлении данных:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
       showAlert("Ошибка", "error");
     }

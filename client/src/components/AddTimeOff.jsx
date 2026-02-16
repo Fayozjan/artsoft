@@ -1,8 +1,7 @@
-import axios from "axios";
 import { useState, useEffect, useCallback } from "react";
 import { useAlertStore } from "../stores/alertStore";
 import { useTranslation } from "react-i18next";
-import { createTimeOff, getActiveEmployees } from "../api";
+import { createTimeOff, EmployeeService } from "../api";
 
 import MultiSelectEmployees from "./MultiSelectEmployees";
 import Button from "./Button";
@@ -26,12 +25,10 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
     is_company_paid: false,
   });
 
-  console.log("formData", formData);
-
   const fetchData = async () => {
     setLoading(true);
     try {
-      const employees = await getActiveEmployees();
+      const employees = await EmployeeService.getActive();
       if (employees.success) {
         setEmployees(employees.data);
       }

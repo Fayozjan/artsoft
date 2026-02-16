@@ -2,7 +2,7 @@ import { DateTime } from "luxon";
 
 import { UserModel } from "../users/users.model.js";
 import { generateAttendanceReport } from "../../utils/attendanceUtils.js";
-import { getActiveEmployeesService } from "../employees/employees.service.js";
+import { EmployeeService } from "../employees/employees.service.js";
 import { splitEmployeesByTodayStatus } from "./attendance.helpers.js";
 import { findLateEmployeesByDay } from "../lateEmployees/lateEmployees.helpers.js";
 import { getAllFacePasses } from "../facePasses/facePasses.service.js";
@@ -27,7 +27,7 @@ export async function getAttendanceService({ userId, filters }) {
   const [faceEvents, employees, holidays, timeOffs, branches, departments] =
     await Promise.all([
       getAllFacePasses({ userId, filters }),
-      getActiveEmployeesService({ userId, filters }),
+      EmployeeService.getActive({ userId, filters }),
       getHolidaysService(start_date, end_date),
       getTimeOffsAllService({ userId, filters: { start_date, end_date } }),
       BranchService.listActive({ userId }),

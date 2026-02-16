@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
-import { getActiveBranches, getActivePositions, getEmployeeById } from "../api";
+import { getActiveBranches, getActivePositions, EmployeeService } from "../api";
 import { addEmploymentOrder } from "../api/employmentOrders";
 
 import Button from "./Button";
@@ -44,7 +44,7 @@ const AddEmploymentOrder = ({
         const [branchesRes, positionsRes, employeeRes] = await Promise.all([
           getActiveBranches(),
           getActivePositions(),
-          getEmployeeById(employeeId),
+          EmployeeService.getById(employeeId),
         ]);
 
         setBranches(branchesRes.data);
@@ -104,8 +104,6 @@ const AddEmploymentOrder = ({
       setLoading(false);
     }
   };
-
-  console.log("employmentOrderType", employmentOrderType);
 
   return (
     <form className={styles.addEmploymentOrder} onSubmit={handleSubmit}>

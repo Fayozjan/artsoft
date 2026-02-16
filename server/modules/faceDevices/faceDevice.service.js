@@ -11,7 +11,7 @@ function extractFaceDevices(doors = []) {
 
 export const FaceDeviceService = {
   async syncEmployee(id) {
-    const employee = await EmployeeService.getByid(id);
+    const employee = await EmployeeService.getById(id);
 
     if (!employee) {
       throw new Error("Сотрудник не найден");
@@ -22,7 +22,6 @@ export const FaceDeviceService = {
 
     const currentDevices = extractFaceDevices(employee.doors);
 
-    // Сценарий 1: Удаление сотрудника (статус false или нет доступных дверей)
     if (employee.status === false || currentDevices.length === 0) {
       const allFaceDevices = await FaceDeviceModel.findActive();
 

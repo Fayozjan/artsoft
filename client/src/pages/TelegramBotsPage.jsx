@@ -40,7 +40,7 @@ const TelegramBotsPage = () => {
   });
 
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -216,7 +216,7 @@ const TelegramBotsPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 

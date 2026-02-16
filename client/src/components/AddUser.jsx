@@ -2,13 +2,11 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthStore } from "../stores/authStore";
 import { useAlertStore } from "../stores/alertStore";
 import {
-  addUser,
   getActiveBranches,
   getActiveDepartments,
-  getActiveEmployees,
+  EmployeeService,
   getMenus,
   getUserMenu,
 } from "../api";
@@ -44,14 +42,7 @@ const AddUser = ({ cancelButton }) => {
     showPassword: false,
   });
 
-  const userSettings = useAuthStore((state) => state.userSettings);
-  const { i18n, t } = useTranslation();
-
-  useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
-  }, [userSettings, i18n]);
+  const { t } = useTranslation();
 
   // Получение данных при первой загрузке
   useEffect(() => {
@@ -59,7 +50,7 @@ const AddUser = ({ cancelButton }) => {
       try {
         const [employeeRes, branchesRes, departmentsRes, userMenu, allMenus] =
           await Promise.all([
-            getActiveEmployees(),
+            EmployeeService.getActive(),
             getActiveBranches(),
             getActiveDepartments(),
             getUserMenu(),

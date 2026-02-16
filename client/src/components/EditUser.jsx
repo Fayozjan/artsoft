@@ -7,7 +7,7 @@ import {
   getUser,
   getActiveBranches,
   getActiveDepartments,
-  getActiveEmployees,
+  EmployeeService,
   getMenus,
   getUserMenu,
 } from "../api";
@@ -58,7 +58,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         allMenus,
       ] = await Promise.all([
         getUser(id),
-        getActiveEmployees(),
+        EmployeeService.getActive(),
         getActiveBranches(),
         getActiveDepartments(),
         getUserMenu(),

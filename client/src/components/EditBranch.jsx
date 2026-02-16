@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 
 import { editBranchById, getBranchById } from "../api/branches";
-import { getActiveEmployees } from "../api";
+import { EmployeeService } from "../api";
 
 import Button from "./Button";
 import SelectEmployee from "./SelectEmployee";
@@ -30,7 +30,7 @@ const EditBranch = ({ id, onSuccess }) => {
     try {
       const [branchRes, employeesRes] = await Promise.all([
         getBranchById(id),
-        getActiveEmployees(),
+        EmployeeService.getActive(),
       ]);
 
       if (branchRes.success) setFormData(branchRes.data);

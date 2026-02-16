@@ -7,12 +7,11 @@ import { initDatabase } from "./utils/initDatabase.js";
 
 dotenv.config();
 
-const { BOT_TOKEN, SERVER_TYPE } = process.env;
+const { SERVER_TYPE } = process.env;
 
 await initDatabase(process.env.DATABASE_URL);
 
 import { events_checker } from "./utils/eventsChecker.js";
-import { Telegram } from "./utils/telegram/index.js";
 
 import branchesRoutes from "./modules/branches/branches.routes.js";
 import departmentRoutes from "./modules/departments/departments.routes.js";
@@ -40,6 +39,7 @@ import telegramBots from "./modules/telegramBots/telegramBots.routes.js";
 import doorsRoutes from "./modules/doors/doors.routes.js";
 import faceDevicesRoutes from "./modules/faceDevices/faceDevices.routes.js";
 import menusRoutes from "./modules/menus/menus.routes.js";
+import { startTelegramBot } from "./services/telegram-bot/bot.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -97,9 +97,8 @@ if (SERVER_TYPE === "WINDOWS") {
 // setInterval(() => events_checker(-0.3), 1800000); // Каждые 30 мин делаем запрос на получение данных из терминала за последние 2 часа
 // setInterval(() => events_checker(-1), 86400000); // Каждые день делаем запрос на получение данных из терминала за последние день
 // setInterval(() => events_checker(-3), 259200000); // Каждые 3 дня делаем запрос на получение данных из терминала за последние 3 дня
-// Telegram(BOT_TOKEN);
-
-// events_checker(-41);
+//startTelegramBot();
+//events_checker(-5);
 
 process.on("uncaughtException", (err) => {
   console.error("Необработанная ошибка:", err);

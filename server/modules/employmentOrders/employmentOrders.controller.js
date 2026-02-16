@@ -1,81 +1,85 @@
-import * as service from "./employmentOrders.service.js";
+import { EmploymentOrdersService } from "./employmentOrders.service.js";
 
-export const getEmploymentOrders = async (req, res) => {
-  try {
-    const result = await service.getEmploymentOrders({
-      userId: req.user.id,
-      page: req.query.page,
-      pageSize: req.query.pageSize,
-      filters: req.query.filters,
-    });
+export const EmploymentOrdersController = {
+  create: async (req, res) => {
+    const data = await EmploymentOrdersService.create(req.body);
+    res.status(201).json({ success: true, data });
+  },
 
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка при получении приказов" });
-  }
-};
+  getAll: async (req, res) => {
+    try {
+      const result = await EmploymentOrdersService.getAll({
+        userId: req.user.id,
+        page: req.query.page,
+        pageSize: req.query.pageSize,
+        filters: req.query.filters,
+      });
 
-export const getEmploymentOrdersByEmployeeId = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!id) {
-      return res.status(400).json({ error: "employeeId обязателен" });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Ошибка при получении приказов" });
     }
+  },
 
-    const result = await service.getEmploymentOrdersByEmployeeId({
-      userId: req.user.id,
-      employeeId: id,
-    });
+  getById: async (req, res) => {
+    const data = await EmploymentOrdersService.getById(req.params.id);
+    if (!data) return res.status(404).json({ error: "Приказ не найден" });
 
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Ошибка при поиске приказов по сотруднику" });
-  }
-};
+    res.json({ success: true, data });
+  },
 
-export const getEmploymentOrderById = async (req, res) => {
-  const data = await service.getEmploymentOrderById(req.params.id);
-  if (!data) return res.status(404).json({ error: "Приказ не найден" });
+  getByEmployeeId: async (req, res) => {
+    try {
+      const { id } = req.params;
 
-  res.json({ success: true, data });
-};
+      if (!id) {
+        return res.status(400).json({ error: "employeeId обязателен" });
+      }
 
-export const createEmploymentOrder = async (req, res) => {
-  const data = await service.createEmploymentOrder(req.body);
-  res.status(201).json({ success: true, data });
-};
+      const result = await EmploymentOrdersService.getByEmployeeId({
+        userId: req.user.id,
+        employeeId: id,
+      });
 
-export const updateEmploymentOrder = async (req, res) => {
-  const data = await service.updateEmploymentOrder(req.params.id, req.body);
-  res.json({ success: true, data });
-};
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: "Ошибка при поиске приказов по сотруднику" });
+    }
+  },
 
-export const deleteEmploymentOrder = async (req, res) => {
-  try {
-    const result = await service.deleteEmploymentOrder(
-      req.user.id,
-      req.params.id,
-    );
+  update: async (req, res) => {
+    const data = await EmploymentOrdersService.update(req.params.id, req.body);
+    res.json({ success: true, data });
+  },
 
-    if (result?.status) {
-      return res.status(result.status).json({
+  delete: async (req, res) => {
+    try {
+      const result = await EmploymentOrdersService.delete(
+        req.user.id,
+        req.params.id,
+      );
+
+      if (result?.status) {
+        return res.status(result.status).json({
+          success: false,
+          message: result.message,
+        });
+      }
+
+      return res.json({
+        success: true,
+      });
+    } catch (err) {
+      console.error(err);
+
+      return res.status(500).json({
         success: false,
-        message: result.message,
+        message: err.message || "Ошибка при удалении приказа",
       });
     }
-
-    return res.json({
-      success: true,
-    });
-  } catch (err) {
-    console.error(err);
-
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Ошибка при удалении приказа",
-    });
-  }
+  },
 };

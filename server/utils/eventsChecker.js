@@ -14,10 +14,12 @@ import { getActiveDoors } from "../modules/doors/doors.model.js";
 import { getFacePassIds } from "../modules/facePasses/facePasses.model.js";
 import {
   addEmployeeRaw,
-  getAllEmployeeIds,
+  EmployeeModel,
 } from "../modules/employees/employees.model.js";
 import { getFaceDeviceByDoorId } from "../modules/faceDevices/faceDevices.model.js";
 import { addFacePass } from "../modules/facePasses/facePasses.service.js";
+import { notificationsOutboxService } from "../modules/notificationsOutbox/notificationsOutbox.service.js";
+import { telegramBotsService } from "../modules/telegramBots/telegramBots.service.js";
 
 const ADD_NOT_FOUND_USER = process.env.ADD_NOT_FOUND_USER === "true";
 const username = "admin";
@@ -28,7 +30,7 @@ async function downloadImageWithRetries(
   url,
   imagePath,
   maxAttempts = 3,
-  delayMs = 2000
+  delayMs = 2000,
 ) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -37,7 +39,7 @@ async function downloadImageWithRetries(
 
       if (!response.ok) {
         throw new Error(
-          `HTTP Error: ${response.status} ${response.statusText}`
+          `HTTP Error: ${response.status} ${response.statusText}`,
         );
       }
 
@@ -46,7 +48,7 @@ async function downloadImageWithRetries(
       return true;
     } catch (err) {
       console.warn(
-        `⚠️ Попытка ${attempt} загрузки фото не удалась: ${err.message}`
+        `⚠️ Попытка ${attempt} загрузки фото не удалась: ${err.message}`,
       );
       if (attempt < maxAttempts) {
         await new Promise((res) => setTimeout(res, delayMs));
@@ -64,10 +66,10 @@ function getDayRange(offsetDays = 0) {
   start.setDate(start.getDate() + offsetDays);
 
   const startTime = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(
-    start.getDate()
+    start.getDate(),
   )}T00:00:00+05:00`;
   const endTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
-    now.getDate()
+    now.getDate(),
   )}T23:59:59+05:00`;
 
   return { startTime, endTime };
@@ -90,7 +92,7 @@ export async function saveEventPhoto(info) {
     "..",
     "events",
     year.toString(),
-    month
+    month,
   );
   const imagePath = path.join(eventFolderPath, imageName);
 
@@ -104,7 +106,7 @@ export async function saveEventPhoto(info) {
     return `api/events/${year}/${month}/${imageName}`;
   } else {
     console.log(
-      `🚫 Фото для события ${info.serialNo} не удалось скачать. Сохраняем без фото.`
+      `🚫 Фото для события ${info.serialNo} не удалось скачать. Сохраняем без фото.`,
     );
     return null;
   }
@@ -179,7 +181,7 @@ export async function fetchEvents(
   endTime,
   device,
   existedFacePassIds,
-  allEmployeeIds
+  allEmployeeIds,
 ) {
   const apiUrl = `http://${device.device_ip}${api_get_events}`;
   const client = createHikClient(username, password);
@@ -273,7 +275,7 @@ async function fetchAllBatchesForDevice(device, startTime, endTime) {
       client,
       `http://${device.device_ip}${api_get_events}`,
       postData,
-      maxAttempts
+      maxAttempts,
     );
 
     if (!batch.length) {
@@ -288,8 +290,7 @@ async function fetchAllBatchesForDevice(device, startTime, endTime) {
   return batches;
 }
 
-async function processEvent(e, existedFacePassIds) {
-  // Скачиваем фото параллельно
+async function processEvent(e, existedFacePassIds, employeeSubscribers) {
   const photoPathInDb = await saveEventPhoto(e);
 
   const payload = {
@@ -303,8 +304,17 @@ async function processEvent(e, existedFacePassIds) {
   };
 
   try {
+    // Добавляем событие в базу
     const newPass = await addFacePass(payload);
     existedFacePassIds.add(e.employeeNoString + "-" + e.serialNo);
+
+    // Получаем всех подписанных чатах для этого сотрудника
+    const chats = employeeSubscribers.get(Number(e.employeeNoString));
+
+    if (chats && chats.size > 0) {
+      await notificationsOutboxService.sendNotifications(newPass.id, chats);
+    }
+
     return newPass;
   } catch (err) {
     console.error("Ошибка при добавлении события:", err);
@@ -313,12 +323,11 @@ async function processEvent(e, existedFacePassIds) {
 }
 
 export async function events_checker(time) {
-  console.time("eventCheckerTime");
-
   const { startTime, endTime } = getDayRange(time);
   const allActiveDoors = await getActiveDoors();
   const existedFacePassIds = new Set(await getFacePassIds(startTime, endTime));
-  const allEmployeeIds = new Set(await getAllEmployeeIds());
+  const allEmployeeIds = new Set(await EmployeeModel.getAllIds());
+  const employeeSubscribers = await telegramBotsService.getEventAlertBots();
 
   const doorConcurrency = 3;
 
@@ -336,13 +345,13 @@ export async function events_checker(time) {
           const deviceEvents = await fetchAllBatchesForDevice(
             device,
             startTime,
-            endTime
+            endTime,
           );
           doorEvents.push(...deviceEvents.map((e) => ({ ...e, device })));
         } catch (err) {
           console.error(
             `❌ Ошибка при обработке устройства ${device.device_ip}:`,
-            err
+            err,
           );
         }
       });
@@ -364,13 +373,13 @@ export async function events_checker(time) {
       const eventsToInsert = newEvents.filter((e) => !e.skip);
 
       console.log(
-        `📌 ${door.name}: all: ${doorEvents.length} / new: ${newEvents.length} / add: ${eventsToInsert.length}`
+        `📌 ${door.name}: all: ${doorEvents.length} / new: ${newEvents.length} / add: ${eventsToInsert.length}`,
       );
 
       // 5. Добавляем события в базу с ограничением параллелизма
       const concurrency = 10;
       await asyncPool(concurrency, eventsToInsert, async (e) => {
-        await processEvent(e, existedFacePassIds);
+        await processEvent(e, existedFacePassIds, employeeSubscribers);
       });
 
       console.log(`✅ ${door.name}: ${eventsToInsert.length} added`);
@@ -380,5 +389,4 @@ export async function events_checker(time) {
   });
 
   console.log("🏁 Все двери обработаны");
-  console.timeEnd("eventCheckerTime");
 }

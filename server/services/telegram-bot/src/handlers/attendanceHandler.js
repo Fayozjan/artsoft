@@ -1,7 +1,7 @@
 import { Composer, Keyboard, InputFile } from "grammy";
 import axios from "axios";
 import fs from "node:fs/promises";
-import pool from "../services/db.js";
+import pool from "../../../../db.js";
 import { generateAttendanceExcel } from "../services/excelService.js";
 
 const composer = new Composer();

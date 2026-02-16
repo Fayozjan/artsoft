@@ -3,12 +3,11 @@ import * as workScheduleService from "./workSchedules.service.js";
 
 export const addWorkSchedule = async (req, res) => {
   try {
-    const schedule = await workScheduleService.addWorkSchedule(req.body);
-    res.status(201).json({ success: true, data: schedule });
+    const result = await workScheduleService.addWorkSchedule(req.body);
+    res.status(201).json(result);
   } catch (err) {
     console.error(err);
     res.status(500).json({
-      success: false,
       error: "Ошибка при добавлении графика",
     });
   }

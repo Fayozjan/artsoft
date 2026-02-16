@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
-import { getActiveEmployees, addWorkSchedule } from "../api";
+import { EmployeeService, addWorkSchedule } from "../api";
 
 import MultiSelectEmployees from "./MultiSelectEmployees";
 import Button from "./Button";
@@ -34,15 +34,13 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await getActiveEmployees();
+        const res = await EmployeeService.getActive();
         if (res.success) {
           setEmployees(res.data);
         } else {
           showAlert("Ошибка", "error");
-          console.error("Ошибка");
         }
       } catch (error) {
-        console.error("Ошибка при загрузке данных:", error.message);
         showAlert("Ошибка", "error");
         setTimeout(() => handleClose(), 1500);
       }
@@ -73,16 +71,10 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     try {
       const res = await addWorkSchedule(formData);
 
-      if (res.success) {
-        showAlert(t("success"), "success");
-        onSuccess();
-        setTimeout(handleClose, 1500);
-      }
+      showAlert(t("success"), "success");
+      onSuccess();
+      setTimeout(handleClose, 1500);
     } catch (error) {
-      console.error(
-        "Ошибка при отправке данных:",
-        error.response ? error.response.data : error.message
-      );
       showAlert("Ошибка", "error");
     }
   };
@@ -122,30 +114,30 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
         </div>
       </div>
 
-      {formData.shift_type === "normal" ||
-        (formData.shift_type === "flexible" && (
-          <div className={styles.row}>
-            <div>
-              <label>Начало</label>
-              <input
-                type="time"
-                name="shift_start"
-                value={formData.shift_start}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <label>Конец</label>
-              <input
-                type="time"
-                name="shift_end"
-                value={formData.shift_end}
-                onChange={handleChange}
-              />
-            </div>
+      {(formData.shift_type === "normal" ||
+        formData.shift_type === "flexible") && (
+        <div className={styles.row}>
+          <div>
+            <label>Начало</label>
+            <input
+              type="time"
+              name="shift_start"
+              value={formData.shift_start}
+              onChange={handleChange}
+            />
           </div>
-        ))}
+
+          <div>
+            <label>Конец</label>
+            <input
+              type="time"
+              name="shift_end"
+              value={formData.shift_end}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+      )}
 
       {formData.shift_type === "shift" &&
         ["first_shift", "second_shift", "third_shift"].map((shift, index) => (
