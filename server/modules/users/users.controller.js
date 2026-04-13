@@ -1,181 +1,126 @@
-import bcrypt from "bcryptjs";
-import * as usersModel from "./users.model.js";
 import { UserService } from "./users.service.js";
 
-export const addUser = async (req, res) => {
-  const {
-    username,
-    password,
-    user_id,
-    access_level,
-    branches,
-    departments,
-    status,
-    menu,
-  } = req.body;
-
-  // Проверки
-  if (
-    access_level === "multi-branch" &&
-    (!Array.isArray(branches) || branches.length === 0)
-  ) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Для доступа 'multi-branch' необходимо выбрать хотя бы один филиал.",
-    });
-  }
-
-  if (
-    access_level === "multi-department" &&
-    (!Array.isArray(departments) || departments.length === 0)
-  ) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Для доступа 'multi-department' необходимо выбрать хотя бы один отдел.",
-    });
-  }
-
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await usersModel.createUser({
-      username,
-      password: hashedPassword,
-      employee_id: user_id,
-      access_level,
-      branches,
-      departments,
-      status,
-      menu,
-    });
-
-    res.status(201).json({ success: true, result: newUser });
-  } catch (err) {
-    console.error(err);
-    if (err.code === "P2002") {
-      return res
-        .status(409)
-        .json({ error: "Такое имя логина уже существует!" });
-    }
-    res.status(500).json({ error: "Ошибка при добавлении логина" });
-  }
-};
-
-export const editUserById = async (req, res) => {
-  const { id } = req.params;
-  const data = req.body;
-
-  try {
-    const updatedUser = await UserService.editUserById(id, data);
-    res.status(200).json({ success: true, result: updatedUser });
-  } catch (err) {
-    console.error("Ошибка при обновлении пользователя:", err);
-
-    if (err.code === "VALIDATION_ERROR") {
-      return res.status(400).json({ success: false, error: err.message });
-    }
-
-    if (err.code === "NOT_FOUND") {
-      return res
-        .status(404)
-        .json({ success: false, error: "Пользователь не найден" });
-    }
-
-    res
-      .status(500)
-      .json({ success: false, error: "Ошибка при обновлении пользователя" });
-  }
-};
-
-export const getUsers = async (req, res) => {
-  try {
-    const { page, pageSize, filters } = req.query;
-
-    const result = await UserService.getUsers(page, pageSize, filters);
-
-    res.status(200).json({
-      success: true,
-      ...result,
-    });
-  } catch (err) {
-    console.error("Ошибка при получении списка логинов:", err);
-    res.status(500).json({ error: "Ошибка при получении данных о логинах" });
-  }
-};
-
-export const getUserInfo = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const userInfo = await usersModel.getUserInfo(userId);
-
-    if (!userInfo) {
-      return res.status(404).json({ message: "Не найдено" });
-    }
-
-    res.json(userInfo);
-  } catch (err) {
-    console.error("Ошибка в userInfo:", err);
-    res.status(500).json({ message: "Ошибка сервера" });
-  }
-};
-
 export const UserController = {
-  getUserById: async (req, res) => {
+  create: async (req, res) => {
     try {
-      const { id } = req.params;
-      const user = await UserService.getUserById(Number(id));
+      const result = await UserService.create(req.body);
+
+      res.status(201).json({
+        success: true,
+        result,
+      });
+    } catch (err) {
+      console.error(err);
+
+      if (err.code === "P2002") {
+        return res
+          .status(409)
+          .json({ success: false, error: "Такое имя логина уже существует!" });
+      }
+
+      res
+        .status(err.statusCode || 500)
+        .json({ success: false, error: err.message });
+    }
+  },
+
+  get: async (req, res) => {
+    try {
+      const { page, pageSize, filters } = req.query;
+
+      const result = await UserService.get(page, pageSize, filters);
+
+      res.json({
+        success: true,
+        ...result,
+      });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Ошибка получения пользователей" });
+    }
+  },
+
+  getById: async (req, res) => {
+    try {
+      const user = await UserService.getById(req.params.id);
 
       if (!user) {
         return res
           .status(404)
-          .json({ success: false, error: "Логин не найден" });
+          .json({ success: false, error: "Пользователь не найден" });
       }
 
-      res.status(200).json({ success: true, data: user });
+      res.json({ success: true, data: user });
     } catch (err) {
-      console.error("Ошибка при получении логина по id:", err);
-      res.status(500).json({ error: "Ошибка при получении данных о логинах" });
+      console.error(err);
+      res.status(500).json({ error: "Ошибка сервера" });
     }
   },
 
-  getUserMenu: async (req, res) => {
+  getMenu: async (req, res) => {
     try {
-      const userId = req.user.id;
-      const menu = await UserService.getUserMenu(userId);
-
-      if (!menu) {
-        return res.status(404).json({ message: "Меню не найдено" });
-      }
-
+      const menu = await UserService.getMenu(req.user.id);
       res.json(menu);
     } catch (err) {
-      console.error("Ошибка в /menu:", err);
-      res.status(500).json({ message: "Ошибка сервера" });
+      console.error(err);
+      res.status(500).json({ error: "Ошибка получения меню" });
+    }
+  },
+
+  getInfo: async (req, res) => {
+    try {
+      const info = await UserService.getInfo(req.user.id);
+      res.json(info);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Ошибка сервера" });
+    }
+  },
+
+  getAccess: async (req, res) => {
+    try {
+      const access = await UserService.getAccess(req.user.id);
+      res.json({ success: true, data: access });
+    } catch (err) {
+      console.error("getAccess error:", err.message);
+      console.error("getAccess stack:", err.stack);
+      res
+        .status(err.statusCode || 500)
+        .json({ success: false, error: err.message });
+    }
+  },
+
+  updateById: async (req, res) => {
+    try {
+      const result = await UserService.updateById(req.params.id, req.body);
+
+      res.json({
+        success: true,
+        result,
+      });
+    } catch (err) {
+      console.error(err);
+
+      res
+        .status(err.statusCode || 500)
+        .json({ success: false, error: err.message });
     }
   },
 
   updateProfile: async (req, res) => {
     try {
-      const userId = req.user.id;
-      const { currentPassword, newPassword, theme, language } = req.body;
+      const result = await UserService.updateProfile(req.user.id, req.body);
 
-      const updatedUser = await UserService.updateProfile(userId, {
-        currentPassword,
-        newPassword,
-        theme,
-        language,
+      res.json({
+        success: true,
+        data: result,
       });
-
-      res.status(200).json({ success: true, data: updatedUser });
     } catch (err) {
-      console.error("Ошибка при обновлении профиля:", err);
+      console.error(err);
 
-      res.status(err.statusCode || 500).json({
-        success: false,
-        error: err.message || "Ошибка при обновлении пользователя",
-      });
+      res
+        .status(err.statusCode || 500)
+        .json({ success: false, error: err.message });
     }
   },
 };

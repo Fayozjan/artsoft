@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { usePermissions } from "../hooks/usePermissions";
 import { useTranslation } from "react-i18next";
 
-import { getHolidays } from "../api";
+import { deleteHolidayById, getHolidays } from "../api";
+import { useAlertStore } from "../stores/alertStore";
 
 import Loading from "../components/Loading";
 import AddHoliday from "../components/AddHoliday";
@@ -11,11 +12,12 @@ import Button from "../components/Button";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
 import DownloadButton from "../components/DownloadButton";
-import TableIcons from "../icons/tableIcons";
 
 import styles from "./HolidaysPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
 
 const HolidaysPage = () => {
+  const { showAlert } = useAlertStore();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
@@ -27,7 +29,7 @@ const HolidaysPage = () => {
   const startYear = 2025;
   const years = Array.from(
     { length: currentYear - startYear + 1 },
-    (_, i) => startYear + i
+    (_, i) => startYear + i,
   );
   const { t } = useTranslation();
 
@@ -37,7 +39,7 @@ const HolidaysPage = () => {
   });
 
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
   const fetchData = async () => {
     setLoading(true);
@@ -64,6 +66,25 @@ const HolidaysPage = () => {
   const handleEditClick = (id) => {
     setSelectedItem(id);
     setModalType("edit");
+  };
+
+  // Для удаления
+  const handleDeleteClick = (itemId) => {
+    setSelectedItem(itemId);
+    setShowModal(true);
+  };
+
+  // Обработчик удаления после подтверждения
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteHolidayById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   const getSortedData = () => {
@@ -184,7 +205,7 @@ const HolidaysPage = () => {
             </div>
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 
@@ -242,20 +263,15 @@ const HolidaysPage = () => {
                       <td>{item?.date_from}</td>
                       <td>{item?.date_to}</td>
                       <td>{item?.creatorFullName}</td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

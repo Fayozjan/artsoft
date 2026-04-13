@@ -1,11 +1,13 @@
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
 export const EmploymentOrdersModel = {
-  create: async (data, tx = prisma) => {
-    return tx.employment_orders.create({ data });
+  create: async (data, tx = null) => {
+    const prisma = tx || prismaContext.get();
+    return prisma.employment_orders.create({ data });
   },
 
-  findAll: async ({ where, skip, take, orderBy }) => {
+  findAll: async ({ where, skip, take, orderBy } = {}, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.findMany({
       where,
       skip,
@@ -22,16 +24,16 @@ export const EmploymentOrdersModel = {
     });
   },
 
-  findById: async (id) => {
+  findById: async (id, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.findUnique({
       where: { id: Number(id) },
-      include: {
-        employee: true,
-      },
+      include: { employee: true },
     });
   },
 
-  findByEmployee: async (employeeId) => {
+  findByEmployee: async (employeeId, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.findMany({
       where: { employee_id: Number(employeeId) },
       include: {
@@ -65,7 +67,8 @@ export const EmploymentOrdersModel = {
     });
   },
 
-  findLatestByEmployee: async (employeeId) => {
+  findLatestByEmployee: async (employeeId, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.findFirst({
       where: { employee_id: Number(employeeId) },
       include: {
@@ -99,31 +102,30 @@ export const EmploymentOrdersModel = {
     });
   },
 
-  countAll: async (where) => {
+  countAll: async (where, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.count({ where });
   },
 
-  update: async (id, data) => {
+  update: async (id, data, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.update({
       where: { id: Number(id) },
       data: {
         order_number: data.order_number ?? undefined,
         date: data.date ?? undefined,
-
         branch:
           data.branch_id === null
             ? { disconnect: true }
             : data.branch_id
               ? { connect: { id: Number(data.branch_id) } }
               : undefined,
-
         department:
           data.department_id === null
             ? { disconnect: true }
             : data.department_id
               ? { connect: { id: Number(data.department_id) } }
               : undefined,
-
         position:
           data.position_id === null
             ? { disconnect: true }
@@ -134,7 +136,8 @@ export const EmploymentOrdersModel = {
     });
   },
 
-  delete: async (id) => {
+  delete: async (id, tx = null) => {
+    const prisma = tx || prismaContext.get();
     return prisma.employment_orders.delete({
       where: { id: Number(id) },
     });

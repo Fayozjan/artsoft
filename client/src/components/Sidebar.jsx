@@ -6,15 +6,21 @@ import Profile from "./Profile";
 import { Icons } from "../icons/icons";
 
 import styles from "./Sidebar.module.scss";
+import { BranchSwitcher } from "./BranchSwitcher";
 
 const Sidebar = ({ menuData }) => {
   const userSettings = useAuthStore((state) => state.userSettings);
+  const access = useAuthStore((state) => state.access);
   const setSidebarState = useAuthStore((state) => state.setSidebarState);
+  const setActiveBranch = useAuthStore((s) => s.setActiveBranch);
+
+  const { sidebar: isOpen, viewMode, activeBranchId } = userSettings;
+  const branches = access?.branches ?? [];
+  const activeBranch = branches.find((b) => b.id === activeBranchId);
 
   const [openItems, setOpenItems] = useState({});
 
   const location = useLocation();
-  const isOpen = userSettings.sidebar;
 
   const toggleSidebar = () => setSidebarState(!isOpen);
 
@@ -41,7 +47,6 @@ const Sidebar = ({ menuData }) => {
     [menuData],
   );
 
-  // Эффект для автоматического открытия родителей при смене URL
   useEffect(() => {
     const newOpenItems = {};
 
@@ -74,13 +79,13 @@ const Sidebar = ({ menuData }) => {
   const renderedMenuItems = useMemo(() => {
     return menuData
       .filter((item) => item.permissions?.view)
+      .sort((a, b) => a.sort_order - b.sort_order)
       .map((item) => (
         <SidebarItem
           key={item.id}
           item={item}
           type={isOpen ? "full" : "mini"}
           toggleItem={toggleItem}
-          isActive={location.pathname.startsWith(item.path)}
           isSubItemOpen={!!openItems[item.id]}
           openItems={openItems}
         />
@@ -93,19 +98,31 @@ const Sidebar = ({ menuData }) => {
         className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}
       >
         <div className={styles.sidebarTop}>
-          <img
-            src={isOpen ? "/ilm.webp" : "/ilm-icon.webp"}
-            alt="Logo"
-            className={isOpen ? styles.logo : styles.logoIcon}
-          />
+          {isOpen && (
+            <div className={styles.logoWrapper}>
+              <img src="/logo.png" alt="" className={styles.logo} />
+              <span>OnBase</span>
+            </div>
+          )}
+
           <span className={styles.toggle} onClick={toggleSidebar}>
             {Icons.sidebarToggle}
           </span>
         </div>
 
+        {viewMode === "branch" && branches?.length > 0 && (
+          <BranchSwitcher
+            branches={branches}
+            activeBranch={activeBranch}
+            activeBranchId={activeBranchId}
+            onSelect={setActiveBranch}
+            isOpen={isOpen}
+          />
+        )}
+
         <ul className={styles.menuWrapper}>{renderedMenuItems}</ul>
 
-        {isOpen ? <Profile /> : <Profile type="mini" />}
+        {<Profile type={!isOpen && "mini"} />}
       </div>
     </>
   );

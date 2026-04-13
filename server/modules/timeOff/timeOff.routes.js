@@ -1,13 +1,17 @@
 import { Router } from "express";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
-import * as timeOffController from "./timeOff.controller.js";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
+import { TimeOffController } from "./timeOff.controller.js";
 
 const router = Router();
 
-router.get("/", authMiddleware, timeOffController.getTimeOffs);
-router.get("/:id", authMiddleware, timeOffController.getTimeOffById);
-router.post("/", authMiddleware, timeOffController.createTimeOff);
-router.put("/:id", authMiddleware, timeOffController.updateTimeOff);
-router.delete("/:id", authMiddleware, timeOffController.deleteTimeOff);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", TimeOffController.get);
+router.get("/:id", TimeOffController.getById);
+router.post("/", TimeOffController.create);
+router.put("/:id", TimeOffController.updateById);
+router.delete("/:id", TimeOffController.deleteById);
 
 export default router;

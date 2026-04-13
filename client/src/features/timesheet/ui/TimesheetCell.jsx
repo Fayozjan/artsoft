@@ -7,12 +7,10 @@ const TimesheetCell = ({ day, dayData, employeeId }) => {
     : styles.cell;
 
   const cellText = [
-    dayData?.firstEntry,
-    dayData?.lastExit,
-    dayData?.workDuration,
-  ]
-    .filter(Boolean)
-    .join("\n");
+    dayData?.firstEntry || "",
+    dayData?.lastExit || "",
+    dayData?.workDuration || "",
+  ].join("\n");
 
   return (
     <td
@@ -31,5 +29,5 @@ export default React.memo(
   (prevProps, nextProps) =>
     prevProps.day === nextProps.day &&
     prevProps.employeeId === nextProps.employeeId &&
-    prevProps.dayData === nextProps.dayData
+    prevProps.dayData === nextProps.dayData,
 );

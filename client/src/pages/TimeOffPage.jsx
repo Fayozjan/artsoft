@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { DateTime } from "luxon";
 
-import { getTimeOff } from "../api";
+import { deleteTimeOff, getTimeOff } from "../api";
 import { useTranslation } from "react-i18next";
 import { usePermissions } from "../hooks/usePermissions";
 import { downloadPermissionPdf } from "../utils/DocGenerator";
@@ -19,6 +19,8 @@ import AddTimeOff from "../components/AddTimeOff";
 import EditTimeOff from "../components/EditTimeOff";
 
 import styles from "./TimeOffPage.module.scss";
+import { formatIsoToLocalDateTime } from "../utils/date";
+import { ActionCell } from "../components/ActionButtons";
 
 const TimeOffPage = () => {
   const { t } = useTranslation();
@@ -31,12 +33,12 @@ const TimeOffPage = () => {
   const [totalItems, setTotalItems] = useState(1);
   const [modalType, setModalType] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [selectedPermissionId, setSelectedPermissionId] = useState(null);
-  const [sortField, setSortField] = useState("user_full_name");
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [sortField, setSortField] = useState("date_from");
   const [sortOrder, setSortOrder] = useState("asc");
 
   const currentPath = window.location.pathname;
-  const { canCreate, canEdit, canDelete } = usePermissions(currentPath);
+  const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
   const now = DateTime.now().setZone("Asia/Tashkent");
 
@@ -115,7 +117,7 @@ const TimeOffPage = () => {
       if (bVal === null || bVal === undefined) return -1;
 
       // Если сортируем по времени события
-      if (sortField === "event_time_formatted") {
+      if (sortField === "date_from") {
         const aDate = new Date(aVal);
         const bDate = new Date(bVal);
 
@@ -152,6 +154,28 @@ const TimeOffPage = () => {
     } else {
       setSortField(field);
       setSortOrder("asc");
+    }
+  };
+
+  const handleEditClick = (itemId) => {
+    setSelectedItem(itemId);
+    setModalType("edit");
+  };
+
+  const handleDeleteClick = (itemId) => {
+    setSelectedItem(itemId);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteTimeOff(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
     }
   };
 
@@ -237,7 +261,7 @@ const TimeOffPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {canCreate && (
+              {canAdd && (
                 <Button text={t("add")} onClick={() => setModalType("add")} />
               )}
 
@@ -274,23 +298,23 @@ const TimeOffPage = () => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th onClick={() => handleSort("permission_number")}>
+                  <th onClick={() => handleSort("id")}>
                     <span className={styles.headerContent}>
                       Номер
                       <SortArrow
-                        active={sortField === "permission_number"}
+                        active={sortField === "id"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
                   <th
                     className={styles.table_name_header}
-                    onClick={() => handleSort("user_full_name")}
+                    onClick={() => handleSort("employeeFullName")}
                   >
                     <span className={styles.headerContent}>
                       ФИО
                       <SortArrow
-                        active={sortField === "user_full_name"}
+                        active={sortField === "employeeFullName"}
                         order={sortOrder}
                       />
                     </span>
@@ -322,6 +346,7 @@ const TimeOffPage = () => {
                       />
                     </span>
                   </th>
+                  <th>Тип</th>
                   <th>Причина</th>
                   <th onClick={() => handleSort("date_from")}>
                     <span className={styles.headerContent}>
@@ -350,16 +375,16 @@ const TimeOffPage = () => {
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("creator_full_name")}>
+                  <th onClick={() => handleSort("creatorFullName")}>
                     <span className={styles.headerContent}>
                       Добавил
                       <SortArrow
-                        active={sortField === "creator_full_name"}
+                        active={sortField === "creatorFullName"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
-                  {canEdit || (canDelete && <th>Действие</th>)}
+                  <th>{(canEdit || canDelete) && t("action")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -369,78 +394,38 @@ const TimeOffPage = () => {
                       <td>{(currentPage - 1) * pageSize + i + 1}</td>
                       <td>{item.id}</td>
                       <td>{item.employeeFullName}</td>
-                      <td>{item.employee?.branch?.name}</td>
-                      <td>{item.employee?.department?.name}</td>
-                      <td>{item.employee?.position?.name}</td>
+                      <td>{item.branch_name}</td>
+                      <td>{item.department_name}</td>
+                      <td>{item.position_name}</td>
+                      <td>{t(item.type)}</td>
                       <td>{item.reason}</td>
-                      <td>{item.date_from}</td>
-                      <td>{item.date_to}</td>
+                      <td>
+                        {item.type === "hour"
+                          ? formatIsoToLocalDateTime(item.date_from)
+                          : formatIsoToLocalDate(item.date_from)}
+                      </td>
+                      <td>
+                        {item.type === "hour"
+                          ? formatIsoToLocalDateTime(item.date_to)
+                          : formatIsoToLocalDate(item.date_to)}
+                      </td>
                       <td>{item.is_company_paid === true ? "Да" : "Нет"}</td>
                       <td>{item.creatorFullName}</td>
-                      {canEdit ||
-                        (canDelete && (
-                          <td className={styles.table_body_action}>
-                            <svg
-                              onClick={() => downloadPermissionPdf(timeoff)}
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="200"
-                              height="200"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M7 11l5 5l5-5m-5-7v12"
-                              />
-                            </svg>
-
-                            {canEdit && (
-                              <svg
-                                onClick={() => handleEditPermission(timeoff.id)}
-                                fill="none"
-                                height="24"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path d="M12 20h9" />
-                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-                              </svg>
-                            )}
-                            {canDelete && (
-                              <svg
-                                onClick={() => {
-                                  setShowModal(true);
-                                  setSelectedPermissionId(timeoff.id);
-                                }}
-                                fill="none"
-                                height="24"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                                width="24"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              </svg>
-                            )}
-                          </td>
-                        ))}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onDownload={downloadPermissionPdf}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">Нет данных</td>
+                    <td colSpan="12">Нет данных</td>
                   </tr>
                 )}
               </tbody>
@@ -453,8 +438,9 @@ const TimeOffPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        tag="Удаление"
       />
+
       <OverlaySidebar
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}

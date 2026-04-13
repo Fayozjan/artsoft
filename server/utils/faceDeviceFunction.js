@@ -2,7 +2,9 @@ import "dotenv/config";
 import fetch from "digest-fetch";
 import pool from "../db.js";
 import { internalIpV4 } from "internal-ip";
-import { PORT } from "../server.js";
+import { config } from "../config.js";
+
+import axios from "axios";
 
 const serverIp = await internalIpV4();
 const username = "admin";
@@ -14,6 +16,318 @@ const api_edit_user = "/ISAPI/AccessControl/UserInfo/SetUp?format=json";
 const api_edit_user_photo = "/ISAPI/Intelligent/FDLib/FDSetUp?format=json";
 const api_delete_user =
   "/ISAPI/AccessControl/UserInfoDetail/Delete?format=json";
+
+export const FaceDeviceClient = {
+  async updateUser(ip, employeeId, fullName) {
+    const client = new fetch(username, password);
+
+    const url = `http://${ip}${api_edit_user}`;
+
+    const payload = {
+      UserInfo: {
+        employeeNo: employeeId,
+        userType: "normal",
+        Valid: {
+          enable: true,
+          beginTime: "2023-01-01T00:00:00",
+          endTime: "2037-12-31T23:59:59",
+        },
+        doorRight: "1",
+        RightPlan: [{ doorNo: 1, planTemplateNo: "1" }],
+        name: fullName,
+      },
+    };
+
+    const res = await client.fetch(url, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Ошибка обновления пользователя (${res.status})`);
+    }
+  },
+
+  async updateUserPhoto(ip, employeeId, fullName, photoPath) {
+    const client = new fetch(username, password);
+
+    const url = `http://${ip}${api_edit_user_photo}`;
+
+    const tempLinkRes = await axios.get(
+      `http://${serverIp}:${config.port}/api/employees/image-link/${photoPath}`,
+    );
+
+    const photoUrl = tempLinkRes.data.url;
+
+    const payload = {
+      faceURL: photoUrl,
+      faceLibType: "blackFD",
+      FDID: "1",
+      FPID: String(employeeId),
+      bornTime: "1990-01-01T00:00:00Z",
+      name: fullName,
+      saveFacePic: true,
+    };
+
+    const res = await client.fetch(url, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`Ошибка загрузки фото (${res.status})`);
+    }
+  },
+
+  async deleteUser(ip, employeeId) {
+    const client = new fetch(username, password);
+    const url = `http://${ip}${api_delete_user}`;
+
+    const res = await client.fetch(url, {
+      method: "PUT",
+      body: JSON.stringify({
+        UserInfoDetail: {
+          mode: "byEmployeeNo",
+          EmployeeNoList: [
+            {
+              employeeNo: String(employeeId),
+            },
+          ],
+        },
+      }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!res.ok) {
+      console.log(`Error HTTP: Ошибка удаления пользователя ${res.status}`);
+    }
+  },
+};
+
+export const RemoteFaceDeviceClient = {
+  apiKey: "ykED51zjLL",
+  apiSecret: "qVbE912Yuy",
+
+  accessToken: null,
+  tokenExpireTime: 0,
+  domain: null,
+
+  // 🔐 Получение токена
+  async getToken() {
+    try {
+      const response = await axios.post(
+        "https://api.hik-partnerru.com/api/hpcgw/v1/token/get",
+        {
+          appKey: this.apiKey,
+          secretKey: this.apiSecret,
+        },
+      );
+
+      if (response.data.errorCode !== "0") {
+        throw new Error(response.data.message || "Token error");
+      }
+
+      const data = response.data.data;
+
+      this.accessToken = data.accessToken;
+      this.tokenExpireTime = Date.now() + data.expireTime - 60000;
+
+      this.domain = data.areaDomain.startsWith("http")
+        ? data.areaDomain
+        : `https://${data.areaDomain}`;
+
+      return true;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data ||
+          error.message ||
+          "Token request failed",
+      );
+    }
+  },
+
+  // 🔄 Проверка токена
+  async ensureToken() {
+    if (!this.accessToken || Date.now() >= this.tokenExpireTime) {
+      await this.getToken();
+    }
+  },
+
+  // ➕ Добавление / обновление пользователя
+  async addUserToDevice(employeeNo, name, deviceSerial) {
+    await this.ensureToken();
+
+    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/SetUp?format=json`;
+
+    const data = {
+      UserInfo: {
+        employeeNo,
+        name,
+        userType: "normal",
+        Valid: {
+          enable: true,
+          beginTime: "2024-01-01T00:00:00",
+          endTime: "2037-12-31T23:59:59",
+          timeType: "local",
+        },
+        doorRight: "1",
+        RightPlan: [
+          {
+            doorNo: 1,
+            planTemplateNo: "1",
+          },
+        ],
+      },
+    };
+
+    try {
+      const response = await axios.put(url, data, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "X-Devserial": deviceSerial,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.errorCode && response.data.errorCode !== "0") {
+        throw new Error(response.data.message || "User API error");
+      }
+
+      const status = response.data.ResponseStatus || response.data;
+
+      if (status.statusCode !== 1 && status.statusString !== "OK") {
+        throw new Error(
+          status.subStatusCode ||
+            status.statusString ||
+            "Device rejected user setup",
+        );
+      }
+
+      return true;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.ResponseStatus?.subStatusCode ||
+          error.response?.data ||
+          error.message ||
+          "User setup failed",
+      );
+    }
+  },
+
+  // 📷 Добавление фото
+  async addUserPhotoToDevice(employeeNo, name, deviceSerial, photoPath) {
+    await this.ensureToken();
+
+    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/Intelligent/FDLib/FDSetUp?format=json`;
+
+    const tempLinkRes = await axios.get(
+      `http://${serverIp}:${config.port}/api/employees/image-link/${photoPath}`,
+    );
+
+    const photoUrl = tempLinkRes.data.url;
+
+    const data = {
+      faceURL: photoUrl,
+      faceLibType: "blackFD",
+      FDID: "1",
+      FPID: String(employeeNo),
+      name: name,
+      bornTime: "1990-01-01T00:00:00Z",
+      saveFacePic: true,
+    };
+
+    try {
+      const response = await axios.put(url, data, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "X-Devserial": deviceSerial,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.errorCode && response.data.errorCode !== "0") {
+        throw new Error(response.data.message || "Photo API error");
+      }
+
+      const status = response.data.ResponseStatus || response.data;
+
+      if (status.statusCode !== 1 && status.statusString !== "OK") {
+        throw new Error(
+          status.subStatusCode ||
+            status.statusString ||
+            "Device rejected photo",
+        );
+      }
+
+      return true;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.ResponseStatus?.subStatusCode ||
+          error.response?.data ||
+          error.message ||
+          "Photo upload failed",
+      );
+    }
+  },
+
+  // ❌ Удаление пользователя
+  async deleteUserFromDevice(employeeNo, deviceSerial) {
+    await this.ensureToken();
+
+    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/Delete?format=json`;
+
+    const data = {
+      UserInfoDelCond: {
+        EmployeeNoList: [{ employeeNo }],
+      },
+    };
+
+    try {
+      const response = await axios.put(url, data, {
+        headers: {
+          Authorization: `Bearer ${this.accessToken}`,
+          "X-Devserial": deviceSerial,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.errorCode && response.data.errorCode !== "0") {
+        throw new Error(response.data.message || "Delete API error");
+      }
+
+      const status = response.data.ResponseStatus || response.data;
+
+      if (status.statusCode !== 1 && status.statusString !== "OK") {
+        throw new Error(
+          status.subStatusCode ||
+            status.statusString ||
+            "Device rejected delete",
+        );
+      }
+
+      return true;
+    } catch (error) {
+      throw new Error(
+        error.response?.data?.message ||
+          error.response?.data?.ResponseStatus?.subStatusCode ||
+          error.response?.data ||
+          error.message ||
+          "User delete failed",
+      );
+    }
+  },
+};
 
 export async function updateUser(door_ip, user_id, surname, name) {
   try {
@@ -283,93 +597,3 @@ export async function getUsers(door_ip) {
     return []; // Возвращаем пустой массив в случае ошибки
   }
 }
-
-export const FaceDeviceClient = {
-  async updateUser(ip, employeeId, fullName) {
-    const client = new fetch(username, password);
-
-    const url = `http://${ip}${api_edit_user}`;
-
-    const payload = {
-      UserInfo: {
-        employeeNo: employeeId,
-        userType: "normal",
-        Valid: {
-          enable: true,
-          beginTime: "2023-01-01T00:00:00",
-          endTime: "2037-12-31T23:59:59",
-        },
-        doorRight: "1",
-        RightPlan: [{ doorNo: 1, planTemplateNo: "1" }],
-        name: fullName,
-      },
-    };
-
-    const res = await client.fetch(url, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(`Ошибка обновления пользователя (${res.status})`);
-    }
-  },
-
-  async updateUserPhoto(ip, employeeId, fullName, photoPath) {
-    const client = new fetch(username, password);
-
-    const url = `http://${ip}${api_edit_user_photo}`;
-    const photoUrl = `http://${serverIp}:${PORT}${photoPath}`;
-
-    const payload = {
-      faceURL: photoUrl,
-      faceLibType: "blackFD",
-      FDID: "1",
-      FPID: String(employeeId),
-      bornTime: "1990-01-01T00:00:00Z",
-      name: fullName,
-      saveFacePic: true,
-    };
-
-    const res = await client.fetch(url, {
-      method: "PUT",
-      body: JSON.stringify(payload),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error(`Ошибка загрузки фото (${res.status})`);
-    }
-  },
-
-  async deleteUser(ip, employeeId) {
-    const client = new fetch(username, password);
-    const url = `http://${ip}${api_delete_user}`;
-
-    const res = await client.fetch(url, {
-      method: "PUT",
-      body: JSON.stringify({
-        UserInfoDetail: {
-          mode: "byEmployeeNo",
-          EmployeeNoList: [
-            {
-              employeeNo: String(employeeId),
-            },
-          ],
-        },
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!res.ok) {
-      console.log(`Error HTTP: Ошибка удаления пользователя ${res.status}`);
-    }
-  },
-};

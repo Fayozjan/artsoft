@@ -1,7 +1,7 @@
 import { useState } from "react";
 import AttendanceCard from "./AttendanceCard";
 import Portal from "./Portal";
-import AttendanceTable from "./AttendanceTableByStatus";
+import AttendanceTableByStatus from "./AttendanceTableByStatus";
 
 import styles from "./AttendanceDashboard.module.scss";
 
@@ -111,7 +111,7 @@ const icons = {
     >
       <path
         fill="none"
-        stroke="#08CB00"
+        stroke="#2563eb"
         d="M12 23.92a9.04 9.04 0 0 0-2.96-6.61l-2.567-2.334A8.365 8.365 0 0 1 3.75 8.799C3.75 4.242 7.444.5 12 .5s8.25 3.741 8.25 8.298c0 2.343-.989 4.6-2.723 6.177l-2.568 2.334a9.041 9.041 0 0 0-2.96 6.61Zm0 0V24v-.057M12 11.5a2.5 2.5 0 1 1 0-5a2.5 2.5 0 0 1 0 5Z"
       />
     </svg>
@@ -125,7 +125,7 @@ const icons = {
     >
       <path
         fill="none"
-        stroke="#BF092F"
+        stroke="#7c3aed"
         d="M24 12H8m10.5-5c0 .577.665 1.562 1.228 2.294a7.494 7.494 0 0 0 1.745 1.662C22.2 11.445 23.2 12 23.99 12c-.79 0-1.79.556-2.517 1.044a7.494 7.494 0 0 0-1.745 1.662c-.563.732-1.228 1.717-1.228 2.294m-4-10V2.5h-.329A46 46 0 0 1 1.103.605L.75.5H.5v23h.25l.353-.105A45.998 45.998 0 0 1 14.171 21.5h.329V17"
       />
     </svg>
@@ -147,13 +147,16 @@ const icons = {
   ),
 };
 
-export const AttendanceDashboard = ({ data, showAllCards = true }) => {
+export const AttendanceDashboard = ({
+  data,
+  showAllCards = true,
+  viewMode,
+}) => {
   const [modalData, setModalData] = useState(null);
-
   const visibleCardIds = getVisibleCardIds(showAllCards);
 
   const attendanceCards = [
-    {
+    viewMode !== "branch" && {
       id: "branches",
       title: "Филиалы",
       value: data?.branches?.length || 0,
@@ -221,7 +224,7 @@ export const AttendanceDashboard = ({ data, showAllCards = true }) => {
   ];
 
   const cardsToDisplay = attendanceCards.filter((card) =>
-    visibleCardIds.includes(card.id)
+    visibleCardIds.includes(card.id),
   );
 
   return (
@@ -241,7 +244,8 @@ export const AttendanceDashboard = ({ data, showAllCards = true }) => {
       ))}
 
       <Portal isOpen={!!modalData} onClose={() => setModalData(null)}>
-        <AttendanceTable
+        <AttendanceTableByStatus
+          key={modalData?.type}
           data={data}
           modalType={modalData?.type}
           modalTitle={modalData?.title}

@@ -1,16 +1,19 @@
 import { Router } from "express";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
 import { BranchController } from "./branches.controller.js";
 
 const router = Router();
 
-router.get("/", authMiddleware, BranchController.list);
-router.get("/active", authMiddleware, BranchController.listActive);
-router.get("/:id/in-use", authMiddleware, BranchController.isInUse);
-router.get("/:id", authMiddleware, BranchController.getById);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
 
-router.post("/", authMiddleware, BranchController.create);
-router.put("/:id", authMiddleware, BranchController.update);
-router.delete("/:id", authMiddleware, BranchController.remove);
+router.get("/", BranchController.list);
+router.get("/active", BranchController.listActive);
+router.get("/:id/in-use", BranchController.isInUse);
+router.get("/:id", BranchController.getById);
+router.post("/", BranchController.create);
+router.put("/:id", BranchController.update);
+router.delete("/:id", BranchController.remove);
 
 export default router;

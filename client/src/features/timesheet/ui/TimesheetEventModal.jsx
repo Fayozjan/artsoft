@@ -1,9 +1,13 @@
 import { useEffect, useRef } from "react";
+import { t } from "i18next";
 
-import styles from "./TimesheetEventModal.module.scss";
+import { formatIsoToLocalDateTime } from "../../../utils/date";
+
 import Badge from "../../../components/Badge";
 
-const TimesheetEventModal = ({ visible, onClose, events }) => {
+import styles from "./TimesheetEventModal.module.scss";
+
+const TimesheetEventModal = ({ visible, onClose, events, timeOffs }) => {
   if (!visible) return null;
 
   const modalRef = useRef(null);
@@ -41,83 +45,50 @@ const TimesheetEventModal = ({ visible, onClose, events }) => {
         ) : (
           <ul className={styles.eventList}>
             {events.map((event, index) => {
-              // Если это отгул
-              if (event.leave_request) {
-                const leave = event.leave_request;
-                return (
-                  <li
-                    key={`leave-${index}`}
-                    className={`${styles.eventItem} ${styles.leaveRequest}`}
-                  >
-                    <div>
-                      <p>
-                        <strong>Отгул / Командировка</strong>
-                      </p>
-                      <p>
-                        <strong>Номер разрешения:</strong>{" "}
-                        {leave.permission_number}
-                      </p>
-                      <p>
-                        <strong>Тип: </strong>{" "}
-                        {leave.type === "day" ? "Дневной" : "Почасовой"}
-                      </p>
-
-                      <p>
-                        <strong>Период:</strong> {leave.date_from} –{" "}
-                        {leave.date_to}
-                      </p>
-                      <p>
-                        <strong>Причина:</strong> {leave.description}
-                      </p>
-
-                      <p>
-                        <strong>Оплачиваемый: </strong>
-                        {leave.company_paid ? "Да" : "Нет"}
-                      </p>
-                      {leave.credited_hours && (
-                        <p>
-                          <strong>Часы в учёт:</strong> {leave.credited_hours}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                );
-              }
-
-              // Если это обычное событие входа/выхода
               return (
                 <li key={index} className={styles.eventItem}>
                   <div>
-                    <p>
-                      <strong>Номер события: </strong>
-                      {index + 1}
-                    </p>
+                    <div className={styles.eventNumber}>
+                      Cобытиe {index + 1}
+                    </div>
                     <p>
                       <strong>ФИО: </strong>
                       {event.employee.employeeFullName}
                     </p>
                     <p>
-                      <strong>Рабочий график сотрудника: </strong>
-                      {event.employee.work_schedule_name}
-                    </p>
-                    <p>
-                      <strong>Дверь: </strong> {event.door_name}
+                      <strong>Дверь: </strong> {event.doorName}
                     </p>
                     <p>
                       <strong>Направление: </strong>
                       <Badge text={event.direction} />
                     </p>
                     <p>
-                      <strong>Время:</strong> {event.event_time_string}
+                      <strong>Время:</strong>{" "}
+                      {formatIsoToLocalDateTime(event.date)}
                     </p>
                   </div>
 
-                  {event.event_photo && (
-                    <img src={event.event_photo} alt="event_photo" />
-                  )}
+                  {event.photo && <img src={event.photo} alt="event_photo" />}
                 </li>
               );
             })}
+
+            {timeOffs && (
+              <div className={`${styles.eventItem} ${styles.borderOrange}`}>
+                <div>
+                  <p>
+                    <strong>Тип:</strong> {t(timeOffs.type)}
+                  </p>
+                  <p>
+                    <strong>Причина:</strong> {timeOffs.reason}
+                  </p>
+                  <p>
+                    <strong>Оплачиваемый:</strong>{" "}
+                    {timeOffs.isCompanyPaid ? "Да" : "Нет"}
+                  </p>
+                </div>
+              </div>
+            )}
           </ul>
         )}
       </div>

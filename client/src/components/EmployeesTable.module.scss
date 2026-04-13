@@ -2,10 +2,15 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+
+  @media (max-width: 1400px) {
+    overflow-x: auto;
+  }
 }
 
 .table {
   width: 100%;
+  min-width: 1300px;
   border-collapse: collapse;
   font-size: var(--font-small);
 

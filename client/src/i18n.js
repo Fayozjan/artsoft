@@ -16,7 +16,7 @@ i18n.use(initReactI18next).init({
     en: { translation: en },
   },
   lng: savedLang,
-  fallbackLng: "uzCyrl",
+  fallbackLng: "ru",
   interpolation: { escapeValue: false },
 });
 

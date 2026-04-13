@@ -41,8 +41,6 @@ const EmploymentOrdersTimeline = ({
   const { showAlert } = useAlertStore();
   const [deletingId, setDeletingId] = useState(null);
 
-  console.log("employmentOrders", employmentOrders);
-
   const sortedOrders = useMemo(() => {
     return [...employmentOrders].sort((a, b) => {
       const dateA = new Date(a.date);
@@ -96,7 +94,7 @@ const EmploymentOrdersTimeline = ({
     setLoading(true);
     try {
       const res = await deleteEmploymentOrderById(id);
-      console.log("res", res);
+
       if (res.success) {
         setEmploymentOrders((prev) => prev.filter((item) => item.id !== id));
         showAlert(t("success"), "success");

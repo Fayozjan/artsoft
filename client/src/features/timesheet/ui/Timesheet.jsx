@@ -38,24 +38,30 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [eventsForDay, setEventsForDay] = useState([]);
+  const [timeOffForDay, setTimeOffForDay] = useState([]);
 
   const sessionsMap = useMemo(() => {
     const map = new Map();
     for (const emp of data) {
       const employeeId = String(emp.employeeId);
       for (const [dayStr, session] of Object.entries(emp.sessions || {})) {
-        const day = Number(dayStr);
+        if (!dayStr.startsWith(date)) continue;
+        const day = Number(dayStr.split("-")[2]);
+        if (!day) continue;
+
         const events = (session.events || []).map((ev) => ({
           ...ev,
           employee: emp,
         }));
         map.set(`${employeeId}-${day}`, {
           events,
+          timeOff: session.timeOff,
+          date: dayStr,
         });
       }
     }
     return map;
-  }, [data]);
+  }, [data, date]);
 
   const sortedEmployees = useMemo(() => {
     return [...data].sort((a, b) => {
@@ -92,6 +98,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
       const item = sessionsMap.get(`${employeeId}-${day}`);
       if (!item) return;
       setEventsForDay(item.events);
+      setTimeOffForDay(item.timeOff);
       setSelectedDate(item.date);
       setModalVisible(true);
     },
@@ -156,6 +163,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
                   currentPage={currentPage}
                   pageSize={pageSize}
                   virtualRow={virtualRow}
+                  date={date}
                 />
               );
             })
@@ -167,6 +175,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
         visible={modalVisible}
         onClose={closeModal}
         events={eventsForDay}
+        timeOffs={timeOffForDay}
         date={selectedDate}
       />
     </div>

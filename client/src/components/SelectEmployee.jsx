@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import styles from "./SelectEmployee.module.scss";
 
-function SelectWithSearch({
+function SelectEmployee({
   options = [],
   setFormData,
   placeholder,
@@ -180,4 +180,4 @@ function SelectWithSearch({
   );
 }
 
-export default SelectWithSearch;
+export default SelectEmployee;

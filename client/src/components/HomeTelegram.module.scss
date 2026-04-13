@@ -1,0 +1,505 @@
+// HomePageTelegram.module.scss
+// Dark Telegram mini-app style — matches AttendancePageTelegram
+
+// ─── Page ────────────────────────────────────────────────────────────────────
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: calc(
+      var(--tg-safe-area-inset-top, 0px) +
+        var(--tg-content-safe-area-inset-top, 0px) + 12px
+    )
+    10px
+    calc(
+      env(safe-area-inset-bottom, 0px) + var(--tg-safe-area-inset-bottom, 0px) +
+        80px
+    );
+  background: rgba(18, 18, 18, 0.9);
+  min-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ─── Card ────────────────────────────────────────────────────────────────────
+.card {
+  background: #1c1c1c;
+  border-radius: 16px;
+  padding: 14px;
+  border: 0.5px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+// ─── Section label ───────────────────────────────────────────────────────────
+.sectionLabel {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #555;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    color: #444;
+  }
+}
+
+// ─── Row ─────────────────────────────────────────────────────────────────────
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+}
+
+.rowLabel {
+  font-size: 13px;
+  color: #777;
+}
+
+.rowValue {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8e8e8;
+  text-align: right;
+}
+
+.divider {
+  height: 0.5px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 2px 0;
+}
+
+// ─── Badges ──────────────────────────────────────────────────────────────────
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badgeGreen {
+  background: rgba(22, 163, 74, 0.18);
+  color: #4ade80;
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+.badgeAmber {
+  background: rgba(217, 119, 6, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(217, 119, 6, 0.25);
+}
+.badgeBlue {
+  background: rgba(37, 99, 235, 0.18);
+  color: #60a5fa;
+  border: 1px solid rgba(37, 99, 235, 0.25);
+}
+.badgeRed {
+  background: rgba(220, 38, 38, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+}
+.badgePurple {
+  background: rgba(124, 58, 237, 0.18);
+  color: #a78bfa;
+  border: 1px solid rgba(124, 58, 237, 0.25);
+}
+.badgePink {
+  background: rgba(219, 39, 119, 0.18);
+  color: #f472b6;
+  border: 1px solid rgba(219, 39, 119, 0.25);
+}
+.badgeGray {
+  background: rgba(255, 255, 255, 0.06);
+  color: #888;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// pulse dot for "inside" status
+.pulseDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.75);
+  }
+}
+
+// ─── Card header row (title + right element) ─────────────────────────────────
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ─── Employee ─────────────────────────────────────────────────────────────────
+.empHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.15);
+  border: 1.5px solid rgba(37, 99, 235, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #60a5fa;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.empInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.empName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0f0f0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empPosition {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ─── Current shift big time ───────────────────────────────────────────────────
+.bigTime {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f0f0f0;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  margin-top: 4px;
+}
+
+.bigTimeSub {
+  font-size: 11px;
+  color: #555;
+  margin-top: 2px;
+}
+
+// ─── Month nav ────────────────────────────────────────────────────────────────
+.monthNav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.monthBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #252525;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+  padding: 0;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    color: #888;
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+.monthLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+  min-width: 64px;
+  text-align: center;
+}
+
+// ─── Month stat row ───────────────────────────────────────────────────────────
+.statRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 24px;
+}
+
+.statRowLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.statDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+// ─── Branch card ──────────────────────────────────────────────────────────────
+.branchHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.branchIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.12);
+  border: 0.5px solid rgba(37, 99, 235, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: #60a5fa;
+  }
+}
+
+.branchInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.branchName {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.branchAddr {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #555;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    color: #444;
+  }
+}
+
+// ─── Date label ───────────────────────────────────────────────────────────────
+.dateLabel {
+  font-size: 11px;
+  color: #555;
+}
+
+// ─── Total banner ─────────────────────────────────────────────────────────────
+.totalBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 10px 12px;
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.totalNum {
+  font-size: 30px;
+  font-weight: 700;
+  color: #f0f0f0;
+  line-height: 1;
+}
+
+.totalLabel {
+  font-size: 10px;
+  color: #555;
+  margin-top: 3px;
+}
+
+.totalBar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #252525;
+  display: flex;
+  overflow: hidden;
+  gap: 1px;
+}
+
+.totalBarSegment {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+// ─── Status list ──────────────────────────────────────────────────────────────
+.statusList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 9px 12px;
+  border: 0.5px solid rgba(255, 255, 255, 0.05);
+}
+
+.statusLeft {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.statusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.statusName {
+  font-size: 13px;
+  color: #bbb;
+}
+
+.statusRight {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.statusCount {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f0f0f0;
+  min-width: 24px;
+  text-align: right;
+}
+
+.statusPct {
+  font-size: 11px;
+  min-width: 30px;
+  text-align: right;
+}
+
+// ─── Department bars ──────────────────────────────────────────────────────────
+.deptList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.deptRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.deptLabel {
+  font-size: 11px;
+  color: #666;
+  width: 72px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deptBarWrap {
+  flex: 1;
+}
+
+.deptBarBg {
+  height: 6px;
+  background: #252525;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.deptBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.deptNums {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.deptPresent {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.deptTotal {
+  font-size: 10px;
+  color: #444;
+}

@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import styles from "./MultiSelectDoors.module.scss";
 
-const MultiSelectDoors = ({ options, selected, onChange }) => {
+const MultiSelectDoors = ({
+  options,
+  selected,
+  onChange,
+  placeholder = "Выберите дверь",
+}) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [openDirection, setOpenDirection] = useState("down");
@@ -85,7 +90,7 @@ const MultiSelectDoors = ({ options, selected, onChange }) => {
       <span className={styles.sticker}>{selected?.length || 0}</span>
       <input
         type="text"
-        placeholder="Выберите дверь"
+        placeholder={placeholder}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onClick={toggleOpen}

@@ -1,7 +1,7 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.35);
   z-index: 10000;
   display: flex;
   justify-content: center;
@@ -10,63 +10,101 @@
 
 .modal {
   display: flex;
-  justify-content: center;
-  align-items: center;
   flex-direction: column;
-  gap: 10px;
-  background: var(--card-bg);
-  border-radius: 8px;
-  padding: 20px 10px;
-  min-width: 250px;
-  max-width: 280px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  text-align: center;
+  align-items: flex-start;
+  background: #fcfcfc;
+  border-radius: 16px;
+  padding: 22px 22px 20px;
+  min-width: 260px;
+  max-width: 300px;
+  border: 1.5px solid #b3b2b1;
+}
 
-  h2 {
-    width: 95%;
-    margin: 0;
-    font-size: calc(var(--font-small) + 6px);
-  }
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffe8e8;
+  border: 1.5px solid #f0c8c8;
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+  font-size: calc(var(--font-small) - 2px);
+  font-weight: 700;
+  color: #c30000;
+  letter-spacing: 0.06em;
+}
 
-  p {
-    margin: 0;
-    font-size: calc(var(--font-small) + 1px);
-  }
+.tagDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e43030;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: var(--font-small);
+  font-weight: 700;
+  color: #2c1a0e;
+  margin: 0 0 7px;
+  line-height: 1.3;
+}
+
+.text {
+  font-size: 13px;
+  color: #9a7e6a;
+  line-height: 1.55;
+  margin: 0 0 20px;
 }
 
 .actions {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
+}
 
-  button {
-    padding: 10px 30px;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: var(--font-body);
-    cursor: pointer;
-    border: none;
-    color: var(--button-text);
+.accept {
+  flex: 1;
+  padding: 10px 0;
+  background: #1455fe;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
 
-    &.accept {
-      background-color: var(--third-color);
-      color: white;
-      transition: transform 0.2s ease;
+  &:hover {
+    background: #003bd0;
+  }
 
-      &:hover {
-        transform: scale(1.05);
-      }
-    }
+  &:active {
+    background: #1a0e06;
+  }
+}
 
-    &.cancel {
-      color: var(--text-color);
-      background: var(--border-color);
-      transition: transform 0.2s ease;
+.cancel {
+  flex: 1;
+  padding: 10px 0;
+  background: transparent;
+  color: #616161;
+  border: 1.5px solid #c6c6c6;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 
-      &:hover {
-        transform: scale(1.05);
-      }
-    }
+  &:hover {
+    border-color: #9e9e9e;
+    color: #000000;
+  }
+
+  &:active {
+    border-color: #b09070;
   }
 }

@@ -1,20 +1,16 @@
-import path from "path";
-import fs from "fs";
-
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
 import { EmployeeModel } from "./employees.model.js";
 import { UserModel } from "../users/users.model.js";
-import { buildAccessWhere } from "../../utils/accessFilter.js";
-import { FaceDeviceService } from "../faceDevices/faceDevice.service.js";
-import { removeUndefined } from "./employee.helpers.js";
+import { FaceDevicesService } from "../faceDevices/faceDevices.service.js";
+import { buildEmployeeAccess, removeUndefined } from "./employee.helpers.js";
 import { EmploymentOrdersModel } from "../employmentOrders/employmentOrders.model.js";
 import { EmployeeWorkScheduleHistoryModel } from "../employeeScheduleHistory/employeeScheduleHistory.model.js";
 import { EmploymentOrdersService } from "../employmentOrders/employmentOrders.service.js";
 
 export const EmployeeService = {
   create: async (userId, rawData, file) => {
-    const user = await UserModel.getUserById(Number(userId));
+    const user = await UserModel.getById(Number(userId));
 
     if (!user) throw new Error("Пользователь не найден");
 
@@ -30,17 +26,10 @@ export const EmployeeService = {
       throw new Error("Не указаны обязательные данные");
     }
 
-    // Если передан файл сохраняем
     let photoPath;
 
     if (file) {
-      const ext = path.extname(file.originalname);
-      const newFileName = `${rawData.pinfl}${ext}`;
-      const newPath = path.join(file.destination, newFileName);
-
-      await fs.promises.rename(file.path, newPath);
-
-      photoPath = `/api/uploads/employees/${newFileName}`;
+      photoPath = file?.filename;
     }
 
     const employeeData = removeUndefined({
@@ -80,29 +69,32 @@ export const EmployeeService = {
       status: true,
     });
 
-    // Добавляем двери, если есть
-    if (Array.isArray(rawData.door_ids)) {
-      const doorIds = rawData.door_ids
-        .map((id) => Number(id))
-        .filter((id) => Number.isInteger(id) && id > 0);
+    if (rawData.door_ids) {
+      const doorIdsArray = Array.isArray(rawData.door_ids)
+        ? rawData.door_ids
+        : rawData.door_ids.split(",").map((s) => s.trim());
 
-      if (doorIds.length) {
-        employeeData.doors = {
-          connect: doorIds.map((id) => ({ id })),
-        };
+      const doorIds = doorIdsArray
+        .map((d) => Number(d))
+        .filter((d) => Number.isInteger(d) && d > 0);
+
+      if (doorIds.length > 0) {
+        employeeData.doors = { connect: doorIds.map((id) => ({ id })) };
       }
     }
 
-    return prisma.$transaction(async (tx) => {
-      const newEmployee = await EmployeeModel.create(employeeData, tx);
+    const prisma = prismaContext.get();
 
-      // Создание приказа
+    const newEmployee = await prisma.$transaction(async (tx) => {
+      // 1️⃣ Создание сотрудника
+      const createdEmployee = await EmployeeModel.create(employeeData, tx);
+
+      // 2️⃣ Создание приказа (если есть)
       if (rawData.order_date || rawData.order_number) {
         const orderData = removeUndefined({
           date: rawData.order_date ? new Date(rawData.order_date) : null,
           order_number: rawData.order_number ?? null,
           type: "hire",
-
           branch: rawData.branch_id
             ? { connect: { id: Number(rawData.branch_id) } }
             : undefined,
@@ -112,21 +104,18 @@ export const EmployeeService = {
           position: rawData.position_id
             ? { connect: { id: Number(rawData.position_id) } }
             : undefined,
-
-          employee: { connect: { id: newEmployee.id } },
+          employee: { connect: { id: createdEmployee.id } },
         });
 
         await EmploymentOrdersModel.create(orderData, tx);
       }
 
-      // Создание истории графика
+      // 3️⃣ Создание истории графика (если есть)
       if (rawData.work_schedule_id) {
         await EmployeeWorkScheduleHistoryModel.create(
           {
-            employee: { connect: { id: newEmployee.id } },
-            workSchedule: {
-              connect: { id: Number(rawData.work_schedule_id) },
-            },
+            employee: { connect: { id: createdEmployee.id } },
+            workSchedule: { connect: { id: Number(rawData.work_schedule_id) } },
             date_from: rawData.order_date
               ? new Date(rawData.order_date)
               : new Date(),
@@ -136,8 +125,19 @@ export const EmployeeService = {
           tx,
         );
       }
-      return newEmployee;
+
+      return createdEmployee;
     });
+
+    if (rawData.door_ids) {
+      Promise.resolve()
+        .then(() => FaceDevicesService.syncEmployee(newEmployee.id))
+        .catch((err) =>
+          console.error("Ошибка синхронизации с FaceDevice:", err),
+        );
+    }
+
+    return newEmployee;
   },
 
   getAll: async ({ userId, page, pageSize, filters = {} }) => {
@@ -147,14 +147,13 @@ export const EmployeeService = {
       employee_id,
       position_id,
       search,
+      gender,
       status,
     } = filters;
 
-    const user = await UserModel.getUserById(Number(userId));
-
+    const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
 
-    const { access_level, branches, departments } = user;
     const where = { AND: [] };
 
     // --- фильтры ---
@@ -162,10 +161,9 @@ export const EmployeeService = {
     if (department_id) where.department_id = Number(department_id);
     if (employee_id) where.id = Number(employee_id);
     if (position_id) where.position_id = Number(position_id);
-    if (status) where.status = status;
+    if (gender) where.gender = gender;
 
     if (status !== undefined && status !== null && status !== "") {
-      // если пришло "true"/"false" — приводим к boolean
       if (typeof status === "string") {
         where.status = status === "true";
       } else {
@@ -173,7 +171,7 @@ export const EmployeeService = {
       }
     }
 
-    if (search && search.trim() !== "") {
+    if (search && search?.trim() !== "") {
       const s = search.trim();
 
       let exactNumericFilters = [];
@@ -220,13 +218,8 @@ export const EmployeeService = {
     }
 
     // --- права доступа ---
-    if (access_level === "branch" && branches?.length) {
-      where.AND.push({ branch_id: { in: branches } });
-    } else if (access_level === "department" && departments?.length) {
-      where.AND.push({ department_id: { in: departments } });
-    } else if (access_level !== "absolute") {
-      where.AND.push({ id: -1 });
-    }
+    const accessFilter = buildEmployeeAccess(user);
+    where.AND.push(accessFilter);
 
     const currentPage = Math.max(parseInt(page) || 1, 1);
     const size = Math.max(parseInt(pageSize) || 50, 1);
@@ -242,6 +235,47 @@ export const EmployeeService = {
         pageSize: size,
         totalPages: Math.ceil(total / size),
       },
+    };
+  },
+
+  getActive: async ({ userId, filters = {} }) => {
+    const { branch_id, department_id } = filters;
+
+    const user = await UserModel.getById(Number(userId));
+
+    if (!user) {
+      throw new Error("Пользователь не найден");
+    }
+
+    const accessWhere = buildEmployeeAccess(user);
+
+    const where = { ...accessWhere, status: true };
+
+    if (branch_id) {
+      where.branch_id = Number(branch_id);
+    }
+
+    if (department_id) {
+      where.department_id = Number(department_id);
+    }
+
+    const records = await EmployeeModel.getActive(where);
+
+    const formatted = records.map((emp) => ({
+      id: String(emp.id),
+      employeeFullName:
+        [emp.last_name, emp.first_name, emp.middle_name]
+          .filter(Boolean)
+          .join(" ") + ` (${emp.id})`,
+      employeeNumber: emp.employee_number || null,
+      employeePhoto: emp.photo || null,
+      branchName: emp.branch?.name || null,
+      departmentName: emp.department?.name || null,
+      positionName: emp.position?.name || null,
+    }));
+
+    return {
+      data: formatted,
     };
   },
 
@@ -295,221 +329,6 @@ export const EmployeeService = {
 
     return employee;
   },
-
-  getActive: async ({ userId, filters = {} }) => {
-    const { branch_id, department_id } = filters;
-
-    const user = await UserModel.getUserById(userId);
-
-    if (!user) {
-      throw new Error("Пользователь не найден");
-    }
-
-    const accessWhere = buildAccessWhere(user);
-
-    const where = { ...accessWhere, status: true };
-
-    if (branch_id) {
-      where.branch_id = Number(branch_id);
-    }
-
-    if (department_id) {
-      where.department_id = Number(department_id);
-    }
-
-    const records = await EmployeeModel.getActive(where);
-
-    const formatted = records.map((emp) => ({
-      id: String(emp.id),
-      employeeFullName:
-        [emp.last_name, emp.first_name, emp.middle_name]
-          .filter(Boolean)
-          .join(" ") + ` (${emp.id})`,
-      employeeNumber: emp.employee_number || null,
-      photo: emp.photo || null,
-      branchName: emp.branch?.name || null,
-      departmentName: emp.department?.name || null,
-      positionName: emp.position?.name || null,
-    }));
-
-    return {
-      data: formatted,
-    };
-  },
-
-  // update: async (id, rawData, file, userId) => {
-  //   if (!rawData || Object.keys(rawData).length === 0) {
-  //     throw new Error("Нет данных для обновления");
-  //   }
-
-  //   const raw = { ...rawData };
-  //   delete raw.id;
-
-  //   Object.keys(raw).forEach((k) => {
-  //     if (Array.isArray(raw[k])) return;
-  //     if (raw[k] === "") delete raw[k];
-  //   });
-
-  //   const orderFields = [
-  //     "order_id",
-  //     "order_number",
-  //     "order_date",
-  //     "branch_id",
-  //     "department_id",
-  //     "position_id",
-  //   ];
-
-  //   const orderDataToUpdate = {};
-  //   let orderId = null;
-
-  //   orderFields.forEach((field) => {
-  //     if (raw[field] !== undefined) {
-  //       if (field === "order_id") {
-  //         orderId = Number(raw[field]);
-  //       } else if (field === "order_date") {
-  //         orderDataToUpdate.date = new Date(raw[field]);
-  //       } else {
-  //         orderDataToUpdate[field] = raw[field];
-  //       }
-
-  //       delete raw[field];
-  //     }
-  //   });
-
-  //   const data = {};
-
-  //   if (raw.employee_number !== undefined)
-  //     data.employee_number = Number(raw.employee_number);
-
-  //   const scalarFields = [
-  //     "first_name",
-  //     "last_name",
-  //     "middle_name",
-  //     "gender",
-  //     "passport",
-  //     "pinfl",
-  //     "education",
-  //     "phone",
-  //     "email",
-  //     "address",
-  //     "education_specialty",
-  //     "photo",
-  //   ];
-
-  //   const yesterday = new Date();
-  //   yesterday.setDate(yesterday.getDate() - 1);
-
-  //   // 2️⃣ Получаем текущий график
-  //   const currentWorkSchedule = await EmployeeModel.getCurrentWorkSchedule(id);
-
-  //   const newScheduleId =
-  //     raw.work_schedule_id !== undefined ? Number(raw.work_schedule_id) : null;
-
-  //   const oldScheduleId = currentWorkSchedule?.work_schedule_id ?? null;
-
-  //   const scheduleChanged =
-  //     newScheduleId !== null && newScheduleId !== oldScheduleId;
-
-  //   // 3.1 История графиков
-  //   if (scheduleChanged) {
-  //     await EmployeeModel.updateWorkSchedule(
-  //       Number(id),
-  //       newScheduleId,
-  //       userId,
-  //       raw.work_schedule_start_date,
-  //     );
-  //   }
-
-  //   // 3.2 Работа с фото
-  //   if (file) {
-  //     const ext = path.extname(file.originalname);
-  //     const newFileName = `${id}${ext}`;
-  //     const newPath = path.join(file.destination, newFileName);
-
-  //     await fs.promises.rename(file.path, newPath);
-  //     raw.photo = `/api/uploads/employees/${newFileName}`;
-  //   }
-
-  //   // 3.3 Удаляем пустые строки
-
-  //   scalarFields.forEach((f) => {
-  //     if (raw[f] !== undefined) data[f] = raw[f];
-  //   });
-
-  //   if (raw.date_of_birth) data.date_of_birth = new Date(raw.date_of_birth);
-
-  //   if (raw.document_validity_period)
-  //     data.document_validity_period = new Date(raw.document_validity_period);
-
-  //   if (raw.status !== undefined) {
-  //     if (["true", "active", true, 1, "1"].includes(raw.status))
-  //       data.status = true;
-  //     else if (["false", "inactive", false, 0, "0"].includes(raw.status))
-  //       data.status = false;
-  //   }
-
-  //   // Связи
-  //   if (raw.branch_id !== undefined) {
-  //     data.branch =
-  //       raw.branch_id === null
-  //         ? { disconnect: true }
-  //         : { connect: { id: Number(raw.branch_id) } };
-  //   }
-
-  //   if (raw.department_id !== undefined) {
-  //     data.department =
-  //       raw.department_id === null
-  //         ? { disconnect: true }
-  //         : { connect: { id: Number(raw.department_id) } };
-  //   }
-
-  //   if (raw.position_id !== undefined) {
-  //     data.position =
-  //       raw.position_id === null
-  //         ? { disconnect: true }
-  //         : { connect: { id: Number(raw.position_id) } };
-  //   }
-
-  //   if (Array.isArray(raw.door_ids)) {
-  //     const doorIds = raw.door_ids
-  //       .map((id) => Number(id))
-  //       .filter((id) => Number.isInteger(id) && id > 0);
-
-  //     data.doors = { set: doorIds.map((id) => ({ id })) };
-  //   }
-
-  //   if (scheduleChanged)
-  //     data.workSchedule = {
-  //       connect: { id: newScheduleId },
-  //     };
-
-  //   const oldData = await EmployeeModel.getById(id);
-
-  //   // 3.4 Обновляем сотрудника
-
-  //   const updatedEmployee = await EmployeeModel.update(id, data);
-
-  //   if (orderId && Object.keys(orderDataToUpdate).length > 0) {
-  //     await EmploymentOrdersService.update(orderId, orderDataToUpdate);
-  //   }
-
-  //   const photoChanged = file !== undefined;
-  //   const oldDoorIds = oldData.doors?.map((d) => Number(d.id)) || [];
-  //   const newDoorIds = Array.isArray(raw.door_ids)
-  //     ? raw.door_ids.map((id) => Number(id))
-  //     : null;
-
-  //   const doorsChanged =
-  //     newDoorIds !== null &&
-  //     (newDoorIds.length !== oldDoorIds.length ||
-  //       !newDoorIds.every((id) => oldDoorIds.includes(id)));
-
-  //   if (photoChanged || doorsChanged) {
-  //     FaceDeviceService.syncEmployee(id);
-  //   }
-
-  //   return updatedEmployee;
-  // },
 
   update: async (id, rawData, file, userId) => {
     if (!rawData || Object.keys(rawData).length === 0) {
@@ -585,6 +404,9 @@ export const EmployeeService = {
       "email",
       "address",
       "education_specialty",
+      "branch_id",
+      "department_id",
+      "position_id",
     ];
 
     for (const field of scalarFields) {
@@ -608,27 +430,6 @@ export const EmployeeService = {
     // -------------------------------------------------
     // 4️⃣ СВЯЗИ СОТРУДНИКА
     // -------------------------------------------------
-
-    if (raw.branch_id !== undefined) {
-      data.branch =
-        raw.branch_id === null
-          ? { disconnect: true }
-          : { connect: { id: Number(raw.branch_id) } };
-    }
-
-    if (raw.department_id !== undefined) {
-      data.department =
-        raw.department_id === null
-          ? { disconnect: true }
-          : { connect: { id: Number(raw.department_id) } };
-    }
-
-    if (raw.position_id !== undefined) {
-      data.position =
-        raw.position_id === null
-          ? { disconnect: true }
-          : { connect: { id: Number(raw.position_id) } };
-    }
 
     if (Array.isArray(raw.door_ids)) {
       const doorIds = raw.door_ids
@@ -670,13 +471,7 @@ export const EmployeeService = {
     // -------------------------------------------------
 
     if (file) {
-      const ext = path.extname(file.originalname);
-      const newFileName = `${id}${ext}`;
-      const newPath = path.join(file.destination, newFileName);
-
-      await fs.promises.rename(file.path, newPath);
-
-      data.photo = `/api/uploads/employees/${newFileName}`;
+      data.photo = file?.filename;
     }
 
     // -------------------------------------------------
@@ -712,7 +507,11 @@ export const EmployeeService = {
         !newDoorIds.every((id) => oldDoorIds.includes(id)));
 
     if (photoChanged || doorsChanged) {
-      await FaceDeviceService.syncEmployee(id);
+      Promise.resolve()
+        .then(() => FaceDevicesService.syncEmployee(id))
+        .catch((err) =>
+          console.error("Ошибка синхронизации с FaceDevice:", err),
+        );
     }
 
     return updatedEmployee;

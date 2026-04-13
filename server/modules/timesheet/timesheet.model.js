@@ -1,6 +1,9 @@
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
+// Получить праздники на конкретную дату
 export async function getHolidays(date) {
+  const prisma = prismaContext.get();
+
   return prisma.holidays.findMany({
     where: {
       date_from: { lte: new Date(date) },
@@ -10,12 +13,15 @@ export async function getHolidays(date) {
   });
 }
 
+// Получить проходы сотрудников за диапазон месяца
 export async function getEmployeeFacePassesByMonthRange({
   startOfMonth,
   endOfMonth,
   employeeIds,
 }) {
   if (!employeeIds?.length) throw new Error("Нет пользователей для выборки");
+
+  const prisma = prismaContext.get();
 
   const where = {
     employee_id: { in: employeeIds.map(Number) },

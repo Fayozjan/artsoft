@@ -17,9 +17,12 @@ import TelegramBotsPage from "./pages/TelegramBotsPage";
 import DoorsPage from "./pages/DoorsPage";
 import FaceDevicesPage from "./pages/FaceDevicesPage";
 import ManufacturingOrdersPage from "./pages/ManufacturingOrdersPage";
+import VehiclePassesPage from "./pages/VehiclePassesPage";
+import GatesPage from "./pages/GatesPage";
+import VehicleCamerasPage from "./pages/VehicleCamerasPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
-const HrRoutes = [
+const Routes = [
   <Route path="dashboard" element={<DashboardPage />} key="dashboard" />,
   <Route path="branches" element={<BranchesPage />} key="branches" />,
   <Route path="departments" element={<DepartmentsPage />} key="departments" />,
@@ -57,7 +60,18 @@ const HrRoutes = [
     element={<ManufacturingOrdersPage />}
     key="manufacturing-orders"
   />,
+  <Route
+    path="vehicle-passes"
+    element={<VehiclePassesPage />}
+    key="vehicle-passes"
+  />,
+  <Route path="gates" element={<GatesPage />} key="gates" />,
+  <Route
+    path="vehicle-cameras"
+    element={<VehicleCamerasPage />}
+    key="vehicle-cameras"
+  />,
   <Route path="*" element={<NotFoundPage />} />,
 ];
 
-export default HrRoutes;
+export default Routes;

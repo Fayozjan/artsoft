@@ -1,12 +1,14 @@
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
+// Получение телеграм-ботов с фильтром и пагинацией
 export async function getBots(page, limit, filters) {
+  const prisma = prismaContext.get();
+
   const currentPage = Math.max(parseInt(page) || 1, 1);
   const pageSize = Math.max(parseInt(limit) || 50, 1);
   const skip = (currentPage - 1) * pageSize;
 
   const where = {};
-
   const { search, status } = filters || {};
 
   if (search) {
@@ -43,25 +45,34 @@ export async function getBots(page, limit, filters) {
   };
 }
 
+// Получить бота по ID
 export async function getBotById(id) {
+  const prisma = prismaContext.get();
   return prisma.telegram_bots.findUnique({
     where: { id: Number(id) },
   });
 }
 
-export async function createBot(data) {
+// Создать бота
+export async function createBot(data, tx = null) {
+  const prisma = tx || prismaContext.get();
   return prisma.telegram_bots.create({ data });
 }
 
-export async function updateBot(id, data) {
+// Обновить бота
+export async function updateBot(id, data, tx = null) {
+  const prisma = tx || prismaContext.get();
   return prisma.telegram_bots.update({
     where: { id: Number(id) },
     data,
   });
 }
 
+// Модель для специфичных выборок
 export const telegramBotsModel = {
   getEventAlertBots: async () => {
+    const prisma = prismaContext.get();
+
     try {
       return await prisma.telegram_bots.findMany({
         where: {

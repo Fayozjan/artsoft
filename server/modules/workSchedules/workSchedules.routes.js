@@ -1,22 +1,18 @@
 import { Router } from "express";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
-import * as workScheduleController from "./workSchedules.controller.js";
+import { workScheduleController } from "./workSchedules.controller.js";
 
 const router = Router();
 
-router.get("/", authMiddleware, workScheduleController.getWorkSchedules);
-router.get(
-  "/active",
-  authMiddleware,
-  workScheduleController.getActiveWorkSchedules
-);
-router.get("/:id", authMiddleware, workScheduleController.getWorkSchedule);
-router.post("/", authMiddleware, workScheduleController.addWorkSchedule);
-router.put("/:id", authMiddleware, workScheduleController.editWorkSchedule);
-router.delete(
-  "/:id",
-  authMiddleware,
-  workScheduleController.removeWorkSchedule
-);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", workScheduleController.getAll);
+router.get("/active", workScheduleController.getActive);
+router.get("/:id", workScheduleController.getById);
+router.post("/", workScheduleController.create);
+router.put("/:id", workScheduleController.updateById);
+router.delete("/:id", workScheduleController.deleteById);
 
 export default router;

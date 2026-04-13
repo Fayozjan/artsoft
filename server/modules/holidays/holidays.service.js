@@ -4,7 +4,7 @@ export async function createHolidayService({
   name,
   date_from,
   date_to,
-  creator_id,
+  added_by,
 }) {
   if (!name || !date_from || !date_to) {
     throw new Error("Все поля обязательны");
@@ -25,7 +25,7 @@ export async function createHolidayService({
     name: name.trim(),
     date_from: from,
     date_to: to,
-    creator_id,
+    added_by,
   });
 }
 
@@ -50,7 +50,7 @@ export async function getHolidaysService({
 
     and.push(
       { date_from: { lte: endOfYear } },
-      { date_to: { gte: startOfYear } }
+      { date_to: { gte: startOfYear } },
     );
   }
 
@@ -72,7 +72,7 @@ export async function getHolidaysService({
 
     and.push(
       ...(to ? [{ date_from: { lte: to } }] : []),
-      ...(from ? [{ date_to: { gte: from } }] : [])
+      ...(from ? [{ date_to: { gte: from } }] : []),
     );
   }
 
@@ -160,7 +160,7 @@ export async function updateHolidayById(id, updateData) {
   // Проверка, что есть хотя бы одно поле для обновления
   const allowedFields = ["name", "date_from", "date_to"];
   const fieldsToUpdate = Object.keys(updateData).filter((key) =>
-    allowedFields.includes(key)
+    allowedFields.includes(key),
   );
 
   if (fieldsToUpdate.length === 0) {
@@ -187,7 +187,7 @@ export async function updateHolidayById(id, updateData) {
   // Обновляем по ID
   const updatedRecords = await holidaysModel.updateHoliday(
     holidayId,
-    updatePayload
+    updatePayload,
   );
 
   if (!updatedRecords) {

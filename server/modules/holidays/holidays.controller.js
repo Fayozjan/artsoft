@@ -47,7 +47,7 @@ export async function addHoliday(req, res) {
       name,
       date_from,
       date_to,
-      creator_id: req.user.id,
+      added_by: req.user.id,
     });
 
     res.status(201).json({
@@ -69,7 +69,7 @@ export async function updateHoliday(req, res) {
   try {
     const holiday = await holidaysService.updateHolidayById(
       req.params.id,
-      req.body
+      req.body,
     );
     res.json({ success: true, data: holiday });
   } catch (e) {

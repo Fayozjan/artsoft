@@ -31,3 +31,14 @@ export const editTelegramBot = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteTelegramBotById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/telegram-bots/${id}`);
+
+  return {
+    success: res.data.success,
+    message: res.data.message || "Телеграм-бот удалён",
+  };
+};

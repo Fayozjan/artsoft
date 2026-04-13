@@ -1,4 +1,10 @@
+import path from "path";
+import fs from "fs";
 import { EmployeeService } from "./employees.service.js";
+import {
+  createTempToken,
+  resolveTempToken,
+} from "../../middlewares/tempPhotoToken.js";
 
 export const EmployeeController = {
   create: async (req, res) => {
@@ -40,6 +46,7 @@ export const EmployeeController = {
         employee_id,
         position_id,
         search,
+        gender,
         status,
       } = req.query;
 
@@ -53,6 +60,7 @@ export const EmployeeController = {
           employee_id,
           position_id,
           search,
+          gender,
           status,
         },
       });
@@ -134,6 +142,91 @@ export const EmployeeController = {
       res
         .status(400)
         .json({ error: err.message || "Ошибка при удалении сотрудника" });
+    }
+  },
+
+  getImage: async (req, res) => {
+    try {
+      const filename = req.params[0];
+      if (!filename) return res.status(400).json({ error: "Не указан файл" });
+
+      const baseDir = path.join(process.cwd(), "uploads", "employees");
+
+      // Защита от path traversal
+      const safeName = path
+        .normalize(filename)
+        .replace(/^(\.\.(\/|\\|$))+/, "");
+
+      const filePath = path.join(baseDir, safeName);
+
+      if (!filePath.startsWith(baseDir + path.sep) && filePath !== baseDir) {
+        return res.status(403).json({ error: "Доступ запрещён" });
+      }
+
+      // Async проверка существования
+      await fs.promises.access(filePath, fs.constants.R_OK).catch(() => {
+        const err = new Error("Файл не найден");
+        err.status = 404;
+        throw err;
+      });
+
+      if (process.env.NODE_ENV === "production") {
+        res.setHeader("X-Accel-Redirect", `/internal/employees/${safeName}`);
+        res.setHeader("Cache-Control", "private, max-age=86400");
+        return res.status(200).end();
+      }
+
+      res.sendFile(filePath);
+    } catch (err) {
+      console.error("Ошибка при получении фото:", err.message);
+      res.status(err.status ?? 400).json({ error: err.message });
+    }
+  },
+
+  getImageTempLink: async (req, res) => {
+    try {
+      const filename = req.params[0];
+      if (!filename) return res.status(400).json({ error: "Не указан файл" });
+
+      const baseDir = path.join(process.cwd(), "uploads", "employees");
+      const safeName = path
+        .normalize(filename)
+        .replace(/^(\.\.(\/|\\|$))+/, "");
+      const filePath = path.join(baseDir, safeName);
+
+      if (!filePath.startsWith(baseDir + path.sep)) {
+        return res.status(403).json({ error: "Доступ запрещён" });
+      }
+
+      await fs.promises.access(filePath, fs.constants.R_OK).catch(() => {
+        const err = new Error("Файл не найден");
+        err.status = 404;
+        throw err;
+      });
+
+      const token = createTempToken(filePath);
+      const url = `${req.protocol}://${req.get("host")}/api/employees/photo/${token}`;
+
+      res.json({ url, expiresIn: 300 });
+    } catch (err) {
+      res.status(err.status ?? 500).json({ error: err.message });
+    }
+  },
+
+  getImageByToken: async (req, res) => {
+    try {
+      const { token } = req.params;
+      const filePath = resolveTempToken(token);
+
+      if (!filePath) {
+        return res
+          .status(410)
+          .json({ error: "Ссылка истекла или недействительна" });
+      }
+
+      res.sendFile(filePath);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
     }
   },
 };

@@ -23,6 +23,7 @@ import EmployeeWorkSchedulesHistory from "../components/EmployeeWorkSchedulesHis
 
 import styles from "./EmployeesPage.module.scss";
 import { Icons } from "../icons/icons";
+import { useAuthStore } from "../stores/authStore";
 
 const EmployeesPage = () => {
   const { deleteUser } = useFilterDataStore();
@@ -43,6 +44,8 @@ const EmployeesPage = () => {
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
   const updateEmployeeDataRef = useRef(() => {});
+  const { viewMode, activeBranchId } =
+    useAuthStore((s) => s.userSettings) || {};
 
   const [formData, setFormData] = useState({
     branch_id: "",
@@ -50,6 +53,7 @@ const EmployeesPage = () => {
     employee_id: "",
     position_id: "",
     status: "",
+    gender: "",
   });
 
   const fetchEmployees = async (
@@ -78,6 +82,12 @@ const EmployeesPage = () => {
   useEffect(() => {
     fetchEmployees(1, formData, pageSize);
   }, []);
+
+  useEffect(() => {
+    if (viewMode === "branch") {
+      fetchEmployees(1, formData, pageSize);
+    }
+  }, [activeBranchId]);
 
   const handleSetUpdateFunction = (fn) => {
     updateEmployeeDataRef.current = fn;

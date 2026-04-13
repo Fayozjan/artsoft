@@ -37,3 +37,13 @@ export const editWorkScheduleById = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteWorkScheduleById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/work-schedules/${id}`);
+
+  return {
+    success: res.data.success,
+  };
+};

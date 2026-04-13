@@ -1,31 +1,51 @@
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
-
 import api from "../api/instance";
 
 export const useAuthCheck = () => {
-  const { accessToken, setAccessToken, logout } = useAuthStore();
+  const { logout, isLoggingOut, isAuthenticated, setUserSettings } =
+    useAuthStore();
   const [loading, setLoading] = useState(true);
   const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
+    if (isLoggingOut) {
+      setLoading(false);
+      setIsAuth(false);
+      return;
+    }
+
+    // Если стор уже знает что авторизован — не делаем лишний запрос
+    if (isAuthenticated) {
+      setIsAuth(true);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const verify = async () => {
       try {
-        if (!accessToken) {
-          const res = await api.post("/auth/refresh");
-          setAccessToken(res.data.accessToken);
-        }
-        await api.get("/auth/me");
+        const res = await api.get("/auth/me");
+
+        if (cancelled) return;
+        setUserSettings(res.data);
         setIsAuth(true);
       } catch {
-        logout();
-        setIsAuth(false);
+        if (!cancelled) {
+          logout();
+          setIsAuth(false);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
+
     verify();
-  }, [accessToken, setAccessToken, logout]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggingOut, isAuthenticated, logout, setUserSettings]);
 
   return { loading, isAuth };
 };

@@ -3,52 +3,83 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 
-// Универсальный аплоадер фото
-const uploadPhoto = (typeFolder = "employee") => {
+const uploadPhoto = (typeFolder = "employees") => {
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      const dir = `uploads/${typeFolder}`;
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
+      const clientFolder = req?.tenant?.subdomain || "default";
+      const dir = path.join("uploads", typeFolder, clientFolder);
+      fs.mkdirSync(dir, { recursive: true }); // existsSync не нужен перед mkdirSync({ recursive })
       cb(null, dir);
     },
     filename: (req, file, cb) => {
-      // сохраняем временно с оригинальным расширением
-      const ext = path.extname(file.originalname);
-      cb(null, `temp_${Date.now()}${ext}`);
+      // Сохраняем сразу под финальным именем — без temp
+      const ext = path.extname(file.originalname).toLowerCase();
+      const pinfl = req.body.pinfl || `upload_${Date.now()}`;
+      cb(null, `${pinfl}${ext}`);
     },
   });
 
   const upload = multer({ storage });
 
-  // middleware для конвертации после загрузки
   const convertToJpg = async (req, res, next) => {
+    if (!req.file) return next();
+
+    const clientFolder = req?.tenant?.subdomain || "default";
+    const filePath = req.file.path;
+    const ext = path.extname(filePath).toLowerCase();
+    const maxSize = 200 * 1024;
+    const pinfl = req.body.pinfl || Date.now();
+
+    const newFileName = `${pinfl}.jpg`;
+    const newPath = path.join(path.dirname(filePath), newFileName);
+
     try {
-      if (!req.file) return next();
+      const isAlreadyJpg = ext === ".jpg" || ext === ".jpeg";
+      const isSmallEnough = fs.statSync(filePath).size <= maxSize;
 
-      const filePath = req.file.path;
-      const ext = path.extname(filePath).toLowerCase();
+      if (isAlreadyJpg && isSmallEnough) {
+        if (filePath !== newPath) {
+          await fs.promises.rename(filePath, newPath);
+        }
+      } else {
+        let quality = 90;
+        let buffer;
 
-      // если уже jpg/jpeg — ничего не делаем
-      if (ext === ".jpg" || ext === ".jpeg") {
-        req.file.finalPath = filePath;
-        return next();
+        do {
+          buffer = await sharp(filePath)
+            .resize({
+              width: 600,
+              height: 600,
+              fit: "inside",
+              withoutEnlargement: true,
+            })
+            .jpeg({ quality, mozjpeg: true })
+            .toBuffer();
+          quality -= 5;
+        } while (buffer.length > maxSize && quality > 40);
+
+        // ✅ Пишем во временный файл, потом атомарно переименовываем
+        const tmpPath = newPath + ".tmp";
+        await fs.promises.writeFile(tmpPath, buffer);
+
+        if (fs.existsSync(newPath)) {
+          await fs.promises.unlink(newPath);
+        }
+        await fs.promises.rename(tmpPath, newPath);
+
+        if (filePath !== newPath && fs.existsSync(filePath)) {
+          await fs.promises.unlink(filePath).catch(() => {});
+        }
       }
 
-      const newPath = filePath.replace(ext, ".jpg");
-
-      await sharp(filePath).jpeg({ quality: 80 }).toFile(newPath);
-
-      // удалить оригинальный файл
-      fs.unlinkSync(filePath);
-
-      // обновляем данные файла, чтобы дальше использовать .jpg
-      req.file.filename = path.basename(newPath);
+      // ✅ Храним в БД как "artsoft/3175.jpg" — тенант + имя
+      req.file.filename = `${clientFolder}/${newFileName}`;
       req.file.path = newPath;
-      req.file.finalPath = newPath;
+
       next();
     } catch (err) {
+      // Чистим файл если что-то пошло не так
+      await fs.promises.unlink(filePath).catch(() => {});
       console.error("❌ Ошибка при конвертации в JPG:", err);
       next(err);
     }

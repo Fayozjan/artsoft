@@ -2,13 +2,13 @@
   position: relative;
 
   .searchInput {
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 5px 10px;
     border: 1px solid rgba(162, 161, 168, 0.2);
     border-radius: 5px;
   }
 
   .options {
+    margin-top: 4px;
     position: absolute;
     background-color: #fff;
     max-height: 300px;

@@ -11,13 +11,14 @@ import styles from "./AddFaceDevice.module.scss";
 const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
   const { showAlert } = useAlertStore();
   const [formData, setFormData] = useState({
-    id: "",
     name: "",
     direction: "",
     device_ip: "",
-    port: "",
+    port: 80,
     door_id: "",
-    status: "",
+    serial_number: "",
+    password: "",
+    is_local: true,
   });
   const [doors, setDoors] = useState();
   const { t } = useTranslation();
@@ -53,9 +54,10 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "is_local" ? value === "true" : value,
     }));
   };
 
@@ -75,7 +77,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
     } catch (error) {
       console.error(
         "Ошибка при отправке данных:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
       showAlert("Ошибка", "error");
     }
@@ -84,7 +86,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
   return (
     <form className={styles.addFaceDevice} onSubmit={handleSubmit}>
       <div className={styles.header}>
-        <h2>{t("addFaceDevice")}</h2>
+        <h2>{t("editFaceDevice")}</h2>
         <Button text={t("save")} type={"submit"} />
       </div>
 
@@ -99,9 +101,27 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
             required
           />
         </div>
+        <div>
+          <label>Пароль</label>
+          <input
+            type="text"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
+        </div>
       </div>
 
       <div className={styles.row}>
+        <div>
+          <label>Серийный номер</label>
+          <input
+            type="text"
+            name="serial_number"
+            value={formData.serial_number}
+            onChange={handleChange}
+          />
+        </div>
         <div>
           <label for="name">Направление</label>
           <select
@@ -111,6 +131,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
           >
             <option value="entry">Вход</option>
             <option value="exit">Выход</option>
+            <option value="universal">Универсальный</option>
           </select>
         </div>
       </div>
@@ -126,9 +147,6 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
             required
           />
         </div>
-      </div>
-
-      <div className={styles.row}>
         <div>
           <label>Порт</label>
           <input
@@ -141,6 +159,17 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
       </div>
 
       <div className={styles.row}>
+        <div>
+          <label>Локальное устройство</label>
+          <select
+            name="is_local"
+            value={formData.is_local}
+            onChange={handleChange}
+          >
+            <option value={true}>Да</option>
+            <option value={false}>Нет</option>
+          </select>
+        </div>
         <div>
           <label for="name">Дверь</label>
           <select

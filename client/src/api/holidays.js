@@ -38,3 +38,13 @@ export const updateHolidayById = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteHolidayById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/holidays/${id}`);
+
+  return {
+    success: res.data.success,
+  };
+};

@@ -1,5 +1,5 @@
-import { buildAccessWhere } from "../../utils/accessFilter.js";
 import { UserModel } from "../users/users.model.js";
+import { buildBranchAccess } from "./branches.helpers.js";
 import { BranchModel } from "./branches.model.js";
 
 export const BranchService = {
@@ -8,7 +8,6 @@ export const BranchService = {
     if (!userId) throw new Error("User is required");
 
     const duplicate = await BranchModel.findByName(data.name);
-
     if (duplicate) {
       const error = new Error("Branch name already exists");
       error.code = "DUPLICATE_NAME";
@@ -35,10 +34,10 @@ export const BranchService = {
   },
 
   listActive: async ({ userId }) => {
-    const user = await UserModel.getUserById(userId);
+    const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
 
-    const where = buildAccessWhere(user);
+    const where = buildBranchAccess(user);
     const records = await BranchModel.findActive(where);
 
     return {
@@ -57,36 +56,23 @@ export const BranchService = {
     const currentPage = Math.max(parseInt(page || 1, 10), 1);
     const skip = limit ? (currentPage - 1) * limit : undefined;
 
-    // 🔐 доступ пользователя
-    const user = await UserModel.getUserById(userId);
+    const user = await UserModel.getById(Number(userId));
+
     if (!user) throw new Error("Пользователь не найден");
 
-    // 🧠 условия доступа
-    const where = buildAccessWhere(user);
+    const where = buildBranchAccess(user);
 
-    // 🔍 фильтры
     const { search, status } = filters || {};
+    if (search) where.name = { contains: search, mode: "insensitive" };
+    if (status !== undefined && status !== "") where.status = status === "true";
 
-    if (search) {
-      where.name = { contains: search, mode: "insensitive" };
-    }
-
-    if (status !== undefined && status !== "") {
-      where.status = status === "true";
-    }
-
-    const records = await BranchModel.findMany({
-      where,
-      skip,
-      take: limit,
-    });
-
+    const records = await BranchModel.findMany({ where, skip, take: limit });
     const data = records.map((b) => ({
       id: b.id,
       name: b.name,
       status: b.status,
       director: b.director
-        ? `${b.director?.last_name || ""} ${b.director?.first_name || ""} ${b.director?.middle_name || ""} (${b.director?.id})`.trim()
+        ? `${b.director.last_name || ""} ${b.director.first_name || ""} ${b.director.middle_name || ""}`.trim()
         : "",
       address: b.address,
       region: b.region,
@@ -95,7 +81,7 @@ export const BranchService = {
       inn: b.inn,
       mfo: b.mfo,
       addedBy: b.addedBy?.employee
-        ? `${b.addedBy.employee.last_name || ""} ${b.addedBy.employee.first_name || ""} ${b.addedBy.employee.middle_name || ""} (${b.addedBy.employee.id})`.trim()
+        ? `${b.addedBy.employee.last_name || ""} ${b.addedBy.employee.first_name || ""}`.trim()
         : "",
       departmentsCount: b.departments?.length,
       employeesCount: b.departments.reduce(
@@ -117,21 +103,14 @@ export const BranchService = {
     };
   },
 
-  getById: async (id) => {
-    if (!id) throw new Error("ID is required");
-    const branchId = parseInt(id, 10);
-    return BranchModel.findById(branchId);
-  },
+  getById: async (id) => BranchModel.findById(parseInt(id, 10)),
 
   update: async (id, data) => {
     const branchId = parseInt(id, 10);
     if (isNaN(branchId)) throw new Error("Invalid branch ID");
-
-    if (!data.name || data.name.trim() === "") {
+    if (!data.name || data.name.trim() === "")
       throw new Error("Name is required");
-    }
 
-    // Проверяем дубликат имени у других филиалов
     const duplicate = await BranchModel.findByName(data.name);
     if (duplicate && duplicate.id !== branchId) {
       const error = new Error("Branch name already exists");
@@ -151,25 +130,16 @@ export const BranchService = {
     };
 
     if (data.director_id && data.director_id.trim() !== "") {
-      updateData.director = {
-        connect: { id: parseInt(data.director_id, 10) },
-      };
+      updateData.director = { connect: { id: parseInt(data.director_id, 10) } };
     } else {
-      updateData.director = {
-        disconnect: true,
-      };
+      updateData.director = { disconnect: true };
     }
 
     return BranchModel.update(branchId, updateData);
   },
 
-  remove: async (id) => {
-    if (!id) throw new Error("ID is required");
-    return BranchModel.delete(id);
-  },
+  remove: async (id) => BranchModel.delete(parseInt(id, 10)),
 
-  isInUse: async (branchId) => {
-    if (!branchId) throw new Error("Branch ID is required");
-    return BranchModel.isBranchInUse(branchId);
-  },
+  isInUse: async (branchId) =>
+    BranchModel.isBranchInUse(parseInt(branchId, 10)),
 };

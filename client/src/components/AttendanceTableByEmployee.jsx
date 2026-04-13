@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import SortArrow from "./SortArrow";
@@ -20,7 +20,12 @@ export const columns = [
     render: (row) => (
       <div className={styles.employee}>
         {row.employeeFullName}
-        {row.employeePhoto && <img src={row.employeePhoto} alt="employee" />}
+        {row.employeePhoto && (
+          <img
+            src={`/api/employees/image/${row.employeePhoto}`}
+            alt="employee"
+          />
+        )}
       </div>
     ),
   },

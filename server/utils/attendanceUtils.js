@@ -1,197 +1,554 @@
 export function processEvents() {}
 
-function parseCustomDate(dateStr) {
-  if (!dateStr) return null;
-  const [datePart, timePart] = dateStr.split(", ");
-  const [day, month, year] = datePart.split(".").map(Number);
-  const [hours, minutes, seconds] = timePart.split(":").map(Number);
-  return new Date(year, month - 1, day, hours, minutes, seconds);
+// ── Utilities ──────────────────────────────────────────────────────────────────
+
+/** Сдвигает UTC-дату на +5 часов (Ташкент) */
+function toUTCPlus5(date) {
+  return new Date(new Date(date).getTime() + 5 * 60 * 60 * 1000);
+}
+
+/**
+ * Парсит дату события (ISO-строка или Date объект) → локальное время UTC+5.
+ * Заменяет старую parseCustomDate, которая ожидала "DD.MM.YYYY, HH:MM:SS".
+ */
+function parseEventDate(dateInput) {
+  if (!dateInput) return null;
+  const utc = new Date(dateInput);
+  if (isNaN(utc)) return null;
+  return toUTCPlus5(utc);
 }
 
 function formatTime(date) {
   if (!date) return null;
-  const h = date.getHours().toString().padStart(2, "0");
-  const m = date.getMinutes().toString().padStart(2, "0");
-  return `${h}:${m}`;
+  return [date.getUTCHours(), date.getUTCMinutes()]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
 }
 
-function formatDuration(totalMinutes) {
-  const h = Math.floor(totalMinutes / 60);
-  const m = totalMinutes % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
 }
 
-export function generateAttendanceReport(attendanceData) {
-  return attendanceData.map((data) => {
-    // 1. Подготовка базовых данных
-    const scheduleType = data.workSchedule?.shift_type || "normal";
-    const sortedEvents = (data.events || [])
-      .filter((e) => e.date)
-      .map((e) => ({
-        ...e,
-        parsedDate: parseCustomDate(e.date),
-      }))
-      .sort((a, b) => a.parsedDate - b.parsedDate);
+function dateToYMD(date) {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
-    const sessionsMap = {};
-    let totalMinutesWorked = 0;
+function formatDurationFromSeconds(totalSeconds) {
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 
-    if (scheduleType === "normal" || scheduleType === "flexible") {
-      const eventsByDay = {};
+function lateStringToMinutes(lateStr) {
+  if (!lateStr) return 0;
+  const [h, m] = lateStr.split(":").map(Number);
+  return h * 60 + m;
+}
 
-      sortedEvents.forEach((event) => {
-        const dayKey = event.parsedDate.getDate().toString();
-        if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
-        eventsByDay[dayKey].push(event);
-      });
+function minutesToLateString(minutes) {
+  return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
+}
 
-      // Обрабатываем каждый день
-      Object.keys(eventsByDay).forEach((dayKey) => {
-        const dailyEvents = eventsByDay[dayKey];
+// ── Schedule helpers ───────────────────────────────────────────────────────────
 
-        const firstEntryEvent = dailyEvents.find(
-          (e) => e.direction === "entry"
-        );
-        const lastExitEvent = [...dailyEvents]
-          .reverse()
-          .find((e) => e.direction === "exit");
+function getScheduleForDate(date, history = []) {
+  const targetYMD = dateToYMD(date);
 
-        let durationMinutes = 0;
-        let firstEntryTime = null;
-        let lastExitTime = null;
+  const sorted = [...history].sort(
+    (a, b) => new Date(a.date_from) - new Date(b.date_from),
+  );
 
-        if (
-          firstEntryEvent &&
-          lastExitEvent &&
-          lastExitEvent.parsedDate > firstEntryEvent.parsedDate
-        ) {
-          const diffMs = lastExitEvent.parsedDate - firstEntryEvent.parsedDate;
-          durationMinutes = Math.floor(diffMs / 1000 / 60);
-          totalMinutesWorked += durationMinutes;
-        }
+  const record = sorted.find((h) => {
+    const fromYMD = dateToYMD(toUTCPlus5(new Date(h.date_from)));
+    const toYMD = h.date_to ? dateToYMD(toUTCPlus5(new Date(h.date_to))) : null;
+    return toYMD
+      ? targetYMD >= fromYMD && targetYMD <= toYMD
+      : targetYMD >= fromYMD;
+  });
 
-        if (firstEntryEvent)
-          firstEntryTime = formatTime(firstEntryEvent.parsedDate);
-        if (lastExitEvent) lastExitTime = formatTime(lastExitEvent.parsedDate);
+  return record?.workSchedule || null;
+}
 
-        // Формируем сессию
-        sessionsMap[dayKey] = {
-          firstEntry: firstEntryTime,
-          lastExit: lastExitTime,
-          workDuration: formatDuration(durationMinutes),
-          shiftType: scheduleType,
-          hasPermission: false,
-          events: dailyEvents.map((e) => ({
-            employeeId: e.employee_id,
-            date: e.date,
-            direction: e.direction,
-            door_id: e.door_id,
-            door_name: e.door_name,
-            determinedShift: "normal / flexible",
-            event_photo: e.photo || null,
-          })),
-        };
-      });
-    } else if (scheduleType === "shift") {
-      const shiftsByStartDay = {};
+/** Возвращает плановые секунды работы для конкретной даты (с учётом перерыва) */
+function getScheduledSecondsForDate(date, workSchedule) {
+  const schedule = getScheduleForDate(date, workSchedule);
+  if (!schedule) return 0;
 
-      let i = 0;
-      while (i < sortedEvents.length) {
-        const currentEvent = sortedEvents[i];
+  let shift = null;
 
-        if (currentEvent.direction === "entry") {
-          const dayKey = currentEvent.parsedDate.getDate().toString();
+  if (schedule.type === "fixed") {
+    const jsDay = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
+    shift = schedule.work_days?.find((d) => d.day === jsDay);
+  } else if (schedule.type === "shift") {
+    shift = schedule.shifts?.[0];
+  }
 
-          let exitEvent = null;
-          let shiftEvents = [currentEvent];
-          let j = i + 1;
+  if (!shift?.start || !shift?.end) return 0;
 
-          while (j < sortedEvents.length) {
-            const nextEvent = sortedEvents[j];
-            // Лимит смены 24 часа (86400000 мс)
-            if (nextEvent.parsedDate - currentEvent.parsedDate > 86400000) {
-              break;
-            }
+  const startMins = timeToMinutes(shift.start);
+  const endMins = timeToMinutes(shift.end);
+  const breakMins = shift.break_minutes || 0;
+  const durationMins =
+    endMins > startMins ? endMins - startMins : endMins + 24 * 60 - startMins;
 
-            shiftEvents.push(nextEvent);
+  return Math.max(0, durationMins - breakMins) * 60;
+}
 
-            if (nextEvent.direction === "exit") {
-              exitEvent = nextEvent;
-              i = j;
-              break;
-            }
-            j++;
-          }
+// ── Shift determination ────────────────────────────────────────────────────────
 
-          // Расчет длительности найденной одиночной смены
-          let durationMinutes = 0;
-          if (exitEvent) {
-            const diffMs = exitEvent.parsedDate - currentEvent.parsedDate;
-            durationMinutes = Math.floor(diffMs / 1000 / 60);
-            totalMinutesWorked += durationMinutes;
-          }
+/** Определяет смену по времени события через зоны вокруг midpoint-ов между сменами */
+function determineShiftForEvent(eventDate, shifts) {
+  if (!eventDate || !shifts.length) return null;
+  if (shifts.length === 1) return shifts[0];
 
-          // Сохраняем информацию об одиночной смене в группу
-          if (!shiftsByStartDay[dayKey]) shiftsByStartDay[dayKey] = [];
+  const minutes = eventDate.getUTCHours() * 60 + eventDate.getUTCMinutes();
+  const TOTAL = 24 * 60;
 
-          shiftsByStartDay[dayKey].push({
-            firstEntry: currentEvent.parsedDate,
-            lastExit: exitEvent ? exitEvent.parsedDate : null,
-            durationMinutes: durationMinutes,
-            events: shiftEvents,
-          });
+  const sorted = [...shifts].sort(
+    (a, b) => timeToMinutes(a.start) - timeToMinutes(b.start),
+  );
 
-          if (!exitEvent) i++;
-          else i++;
-        } else {
-          i++;
-        }
+  const zones = sorted.map((shift, i) => {
+    const prevShift = sorted[(i - 1 + sorted.length) % sorted.length];
+    const curr = timeToMinutes(shift.start);
+    const prev = timeToMinutes(prevShift.start);
+    const gap = (curr - prev + TOTAL) % TOTAL;
+    const midpoint = (prev + Math.floor(gap / 2)) % TOTAL;
+    return { shift, zoneStart: midpoint };
+  });
+
+  for (let i = zones.length - 1; i >= 0; i--) {
+    const curr = zones[i].zoneStart;
+    const prev = zones[(i - 1 + zones.length) % zones.length].zoneStart;
+    const inZone =
+      prev <= curr
+        ? minutes >= curr || minutes < prev
+        : minutes >= curr && minutes < prev;
+    if (inZone) return zones[i].shift;
+  }
+
+  return sorted[0].shift;
+}
+
+// ── Work duration calculation ──────────────────────────────────────────────────
+
+/**
+ * Вычисляет суммарное отработанное время по парам entry/exit.
+ * Игнорирует пары с нулевым/отрицательным интервалом.
+ * Пропускает повторные exit, если пауза между ними меньше MAX_GAP.
+ */
+function calculateWorkDuration(events, MAX_GAP) {
+  let totalSeconds = 0;
+  let isInside = false;
+  let currentEntry = null;
+  let firstEntryEvent = null;
+  let lastExitEvent = null;
+
+  events.forEach((event, i) => {
+    if (event.direction === "entry") {
+      if (!isInside) {
+        currentEntry = event;
+        isInside = true;
+        if (!firstEntryEvent) firstEntryEvent = event;
+      } else {
+        // Двойной вход: сдвигаем точку отсчёта если пауза большая
+        const gap = (event.parsedDate - currentEntry.parsedDate) / 1000;
+        if (gap > MAX_GAP) currentEntry = event;
+      }
+      return;
+    }
+
+    if (event.direction === "exit") {
+      if (!isInside || !currentEntry) return;
+
+      const diff = (event.parsedDate - currentEntry.parsedDate) / 1000;
+      if (diff <= 0) {
+        isInside = false;
+        currentEntry = null;
+        return;
       }
 
-      Object.keys(shiftsByStartDay).forEach((dayKey) => {
-        const shifts = shiftsByStartDay[dayKey];
+      // Пропускаем повторный exit если он слишком близко к предыдущему
+      if (i > 0 && events[i - 1].direction === "exit") {
+        const gap = (event.parsedDate - events[i - 1].parsedDate) / 1000;
+        if (gap <= MAX_GAP) return;
+      }
 
-        const firstEntryOfAllShifts = shifts[0].firstEntry;
+      totalSeconds += diff;
+      lastExitEvent = event;
+      isInside = false;
+      currentEntry = null;
+    }
+  });
 
-        let lastExitOfAllShifts = null;
-        shifts.forEach((shift) => {
-          if (shift.lastExit) {
-            if (!lastExitOfAllShifts || shift.lastExit > lastExitOfAllShifts) {
-              lastExitOfAllShifts = shift.lastExit;
-            }
-          }
-        });
+  return { totalSeconds, firstEntryEvent, lastExitEvent };
+}
 
-        const totalShiftDurationMinutes = shifts.reduce(
-          (sum, shift) => sum + shift.durationMinutes,
-          0
-        );
+// ── Main ───────────────────────────────────────────────────────────────────────
 
-        const allEvents = shifts
-          .flatMap((shift) => shift.events)
-          .sort((a, b) => a.parsedDate - b.parsedDate);
+export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
+  const MAX_GAP = 15 * 60; // 15 минут
 
-        sessionsMap[dayKey] = {
-          firstEntry: formatTime(firstEntryOfAllShifts),
-          lastExit: formatTime(lastExitOfAllShifts),
-          workDuration: formatDuration(totalShiftDurationMinutes),
-          shiftType: "shift",
-          hasPermission: false,
-          events: allEvents.map((e) => ({
-            employee_id: e.id,
-            date: e.date,
-            direction: e.direction,
-            door_id: e.door_id,
-            door_name: e.door_name,
-            determinedShift: "shift_aggregated",
-            event_photo: e.photo || null,
-          })),
-        };
+  // Индексируем отгулы по employee_id
+  const timeOffsByEmployee = {};
+  (timeOffs?.data || []).forEach((to) => {
+    const eid = to.employee_id.toString();
+    if (!timeOffsByEmployee[eid]) timeOffsByEmployee[eid] = [];
+    timeOffsByEmployee[eid].push(to);
+  });
+
+  return attendanceData.map((data) => {
+    const employeeTimeOffs =
+      timeOffsByEmployee[data.employeeId.toString()] || [];
+    const hasWorkSchedule =
+      Array.isArray(data.workSchedule) && data.workSchedule.length > 0;
+
+    if (!hasWorkSchedule) {
+      return {
+        employeeId: data.employeeId.toString(),
+        employeeNumber: data.employeeNumber,
+        employeeFullName: data.employeeFullName,
+        employeePhoto: data.employeePhoto || null,
+        branchName: data.branchName,
+        departmentName: data.departmentName,
+        positionName: data.positionName,
+        workScheduleName: undefined,
+        totalWorkedDays: 0,
+        totalWorkedHours: "00:00",
+        totalLateCount: 0,
+        totalLateTime: "00:00",
+        sessions: {},
+      };
+    }
+
+    /** Возвращает все timeoff-записи, покрывающие дату */
+    function getTimeOffsForDate(date) {
+      const ymd = dateToYMD(date);
+      return employeeTimeOffs.filter((to) => {
+        const fromYMD = dateToYMD(toUTCPlus5(to.date_from));
+        const toYMD = dateToYMD(toUTCPlus5(to.date_to));
+        return ymd >= fromYMD && ymd <= toYMD;
       });
     }
 
-    const workedDaysCount = Object.values(sessionsMap).filter(
-      (s) => s.workDuration !== "00:00"
+    // Парсим и сортируем события: UTC → UTC+5
+    const sortedEvents = (data.events || [])
+      .filter((e) => e.date)
+      .map((e) => ({ ...e, parsedDate: parseEventDate(e.date) }))
+      .filter((e) => e.parsedDate)
+      .sort((a, b) => a.parsedDate - b.parsedDate);
+
+    const sessionsMap = {};
+
+    // ── Шаг 1: группировка событий по календарному дню ────────────────────────
+    const eventsByDay = {};
+    sortedEvents.forEach((e) => {
+      const dayKey = dateToYMD(e.parsedDate);
+      if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
+      eventsByDay[dayKey].push(e);
+    });
+
+    // ── Шаг 2: перенос exit-событий ночной смены в день начала смены ──────────
+    Object.keys(eventsByDay)
+      .sort()
+      .forEach((dayKey) => {
+        const dailyEvents = eventsByDay[dayKey];
+        if (!dailyEvents?.length) return;
+
+        const scheduleForDay = getScheduleForDate(
+          dailyEvents[0].parsedDate,
+          data.workSchedule,
+        );
+        if (scheduleForDay?.type !== "shift") return;
+
+        const firstEntry = dailyEvents.find((e) => e.direction === "entry");
+        if (!firstEntry) return;
+
+        const shift = determineShiftForEvent(
+          firstEntry.parsedDate,
+          scheduleForDay.shifts || [],
+        );
+        if (!shift) return;
+
+        const isNightShift =
+          timeToMinutes(shift.end) < timeToMinutes(shift.start);
+        if (!isNightShift) return;
+
+        const nextDate = new Date(dailyEvents[0].parsedDate);
+        nextDate.setDate(nextDate.getDate() + 1);
+        const nextDayKey = dateToYMD(nextDate);
+        if (!eventsByDay[nextDayKey]) return;
+
+        // Сессия должна оставаться открытой на конец дня
+        let isOpen = false;
+        for (const e of dailyEvents) {
+          if (e.direction === "entry") isOpen = true;
+          if (e.direction === "exit") isOpen = false;
+        }
+        if (!isOpen) return;
+
+        const shiftEndMins = timeToMinutes(shift.end);
+        const toMove = [];
+        const toKeep = [];
+        let sessionClosed = false;
+
+        eventsByDay[nextDayKey].forEach((e) => {
+          const mins =
+            e.parsedDate.getUTCHours() * 60 + e.parsedDate.getUTCMinutes();
+          if (!sessionClosed && mins <= shiftEndMins) {
+            toMove.push(e);
+            if (e.direction === "exit") sessionClosed = true;
+          } else {
+            toKeep.push(e);
+          }
+        });
+
+        if (toMove.length > 0) {
+          eventsByDay[dayKey] = [...dailyEvents, ...toMove].sort(
+            (a, b) => a.parsedDate - b.parsedDate,
+          );
+          if (toKeep.length === 0) {
+            delete eventsByDay[nextDayKey];
+          } else {
+            eventsByDay[nextDayKey] = toKeep;
+          }
+        }
+      });
+
+    // ── Шаг 3: обработка каждого дня ──────────────────────────────────────────
+    Object.keys(eventsByDay)
+      .sort()
+      .forEach((dayKey) => {
+        const dailyEvents = eventsByDay[dayKey];
+        const date = dailyEvents[0].parsedDate;
+        const scheduleForDay = getScheduleForDate(date, data.workSchedule);
+        const scheduleType = scheduleForDay?.type || null;
+
+        const dayTimeOffs = getTimeOffsForDate(date);
+
+        // hour-тип: разрешённое опоздание
+        let permittedLateMinutes = 0;
+        let companyPaidHourSeconds = 0;
+        dayTimeOffs
+          .filter((to) => to.type === "hour")
+          .forEach((to) => {
+            const durationMinutes = Math.round(
+              (toUTCPlus5(to.date_to) - toUTCPlus5(to.date_from)) / 60000,
+            );
+            permittedLateMinutes += durationMinutes;
+            if (to.is_company_paid)
+              companyPaidHourSeconds += durationMinutes * 60;
+          });
+
+        const dayOffRecord = dayTimeOffs.find(
+          (to) => to.type === "day_off" || to.type === "vacation",
+        );
+
+        let scheduleStart = null;
+        let scheduleEnd = null;
+        let determinedShift = null;
+        let breakMinutes = 0;
+
+        if (scheduleType === "fixed") {
+          const jsDay = date.getDay() === 0 ? 7 : date.getDay();
+          const workDay = scheduleForDay.work_days?.find(
+            (d) => d.day === jsDay,
+          );
+          if (workDay) {
+            scheduleStart = workDay.start;
+            scheduleEnd = workDay.end;
+            breakMinutes = workDay.break_minutes || 0;
+          }
+        } else if (scheduleType === "shift") {
+          determinedShift = determineShiftForEvent(
+            dailyEvents.find((e) => e.direction === "entry")?.parsedDate,
+            scheduleForDay.shifts || [],
+          );
+          if (determinedShift) {
+            scheduleStart = determinedShift.start;
+            scheduleEnd = determinedShift.end;
+            breakMinutes = determinedShift.break_minutes || 0;
+          }
+        }
+
+        const result = calculateWorkDuration(dailyEvents, MAX_GAP);
+        const hasPair = result.lastExitEvent !== null;
+
+        const firstEntryTime = hasPair
+          ? result.firstEntryEvent?.parsedDate
+          : dailyEvents[0]?.direction === "entry"
+            ? dailyEvents[0].parsedDate
+            : null;
+
+        const lastExitTime = hasPair
+          ? result.lastExitEvent?.parsedDate
+          : dailyEvents.at(-1)?.direction === "exit"
+            ? dailyEvents.at(-1).parsedDate
+            : null;
+
+        let netSeconds = Math.max(0, result.totalSeconds - breakMinutes * 60);
+        netSeconds += companyPaidHourSeconds;
+
+        // Опоздание
+        let late = null;
+        if (scheduleStart && result.firstEntryEvent) {
+          const entryMins =
+            result.firstEntryEvent.parsedDate.getUTCHours() * 60 +
+            result.firstEntryEvent.parsedDate.getUTCMinutes();
+          const rawDiff = Math.max(0, entryMins - timeToMinutes(scheduleStart));
+          late = minutesToLateString(
+            Math.max(0, rawDiff - permittedLateMinutes),
+          );
+        }
+
+        // Ранний уход
+        let earlyLeave = null;
+        if (scheduleEnd && result.lastExitEvent) {
+          const scheduleStartMins = scheduleStart
+            ? timeToMinutes(scheduleStart)
+            : 0;
+          let endMins = timeToMinutes(scheduleEnd);
+          let exitMins =
+            result.lastExitEvent.parsedDate.getUTCHours() * 60 +
+            result.lastExitEvent.parsedDate.getUTCMinutes();
+
+          if (endMins < scheduleStartMins) endMins += 24 * 60;
+          if (exitMins < scheduleStartMins) exitMins += 24 * 60;
+
+          earlyLeave = minutesToLateString(Math.max(0, endMins - exitMins));
+        }
+
+        sessionsMap[dayKey] = {
+          firstEntry: formatTime(firstEntryTime),
+          lastExit: formatTime(lastExitTime),
+          workDuration: formatDurationFromSeconds(netSeconds),
+          breakMinutes,
+          shiftType: scheduleType,
+          scheduleStart,
+          scheduleEnd,
+          determinedShift: determinedShift?.shift_number || null,
+          late,
+          earlyLeave,
+          events: dailyEvents,
+          hadAttendance: true,
+          timeOff: dayOffRecord
+            ? {
+                id: dayOffRecord.id,
+                type: dayOffRecord.type,
+                reason: dayOffRecord.reason,
+                isCompanyPaid: dayOffRecord.is_company_paid,
+              }
+            : null,
+        };
+      });
+
+    // ── Шаг 4: плановые часы за оплачиваемые vacation/day_off ─────────────────
+    employeeTimeOffs
+      .filter((to) => to.is_company_paid)
+      .forEach((to) => {
+        const fromDate = toUTCPlus5(to.date_from);
+        const toDate = toUTCPlus5(to.date_to);
+        const timeOffEntry = {
+          id: to.id,
+          date_from: to.date_from,
+          date_to: to.date_to,
+          type: to.type,
+          reason: to.reason,
+          isCompanyPaid: to.is_company_paid,
+        };
+
+        for (
+          let d = new Date(fromDate);
+          d <= toDate;
+          d.setDate(d.getDate() + 1)
+        ) {
+          const currentDate = new Date(d);
+          const dayKey = dateToYMD(currentDate);
+          const scheduledSecs = getScheduledSecondsForDate(
+            currentDate,
+            data.workSchedule,
+          );
+
+          if (sessionsMap[dayKey]) {
+            // День уже есть: проставляем флаг и плановые часы
+            if (!sessionsMap[dayKey].timeOff) {
+              sessionsMap[dayKey].timeOff = timeOffEntry;
+            }
+            sessionsMap[dayKey].workDuration =
+              formatDurationFromSeconds(scheduledSecs);
+          } else {
+            // Нет событий — создаём пустую сессию
+            if (scheduledSecs === 0) return; // нерабочий день по графику
+
+            const scheduleForDay = getScheduleForDate(
+              currentDate,
+              data.workSchedule,
+            );
+            const scheduleType = scheduleForDay?.type || null;
+            let scheduleStart = null;
+            let scheduleEnd = null;
+
+            if (scheduleType === "fixed") {
+              const jsDay =
+                currentDate.getDay() === 0 ? 7 : currentDate.getDay();
+              const workDay = scheduleForDay?.work_days?.find(
+                (wd) => wd.day === jsDay,
+              );
+              if (!workDay) return;
+              scheduleStart = workDay.start;
+              scheduleEnd = workDay.end;
+            }
+
+            sessionsMap[dayKey] = {
+              firstEntry: null,
+              lastExit: null,
+              workDuration: formatDurationFromSeconds(scheduledSecs),
+              breakMinutes: 0,
+              shiftType: scheduleType,
+              scheduleStart,
+              scheduleEnd,
+              determinedShift: null,
+              late: null,
+              earlyLeave: null,
+              events: [],
+              hadAttendance: false,
+              timeOff: timeOffEntry,
+            };
+          }
+        }
+      });
+
+    // ── Шаг 5: фильтрация по месяцу ───────────────────────────────────────────
+    const finalSessions = yearMonth
+      ? Object.fromEntries(
+          Object.entries(sessionsMap).filter(([key]) =>
+            key.startsWith(yearMonth),
+          ),
+        )
+      : sessionsMap;
+
+    // ── Шаг 6: итоговая статистика ────────────────────────────────────────────
+    let totalLateCount = 0;
+    let totalLateSeconds = 0;
+    let totalWorkedSeconds = 0;
+
+    Object.values(finalSessions).forEach((s) => {
+      const [h, m] = s.workDuration.split(":").map(Number);
+      totalWorkedSeconds += h * 3600 + m * 60;
+
+      const lateMinutes = lateStringToMinutes(s.late);
+      if (lateMinutes > 0) {
+        totalLateCount++;
+        totalLateSeconds += lateMinutes * 60;
+      }
+    });
+
+    const totalWorkedDays = Object.values(finalSessions).filter(
+      (s) => s.hadAttendance || s.workDuration !== "00:00",
     ).length;
 
     return {
@@ -202,11 +559,12 @@ export function generateAttendanceReport(attendanceData) {
       branchName: data.branchName,
       departmentName: data.departmentName,
       positionName: data.positionName,
-      workScheduleName: data.workSchedule?.name,
-      workSchedule: data.workSchedule,
-      totalWorkedDays: workedDaysCount,
-      totalWorkedHours: formatDuration(totalMinutesWorked),
-      sessions: sessionsMap,
+      workScheduleName: data.workScheduleName,
+      totalWorkedDays,
+      totalWorkedHours: formatDurationFromSeconds(totalWorkedSeconds),
+      totalLateCount,
+      totalLateTime: formatDurationFromSeconds(totalLateSeconds),
+      sessions: finalSessions,
     };
   });
 }

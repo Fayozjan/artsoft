@@ -1,12 +1,16 @@
+import { buildPayload } from "./notificationsOutbox.helpers.js";
 import { notificationsOutboxModel } from "./notificationsOutbox.model.js";
 
 export const notificationsOutboxService = {
-  async sendNotifications(newPassId, chats) {
+  async create(source_type, eventData, chats) {
     if (!chats || chats.size === 0) return;
+    const payload = buildPayload(source_type, eventData);
 
     const notifications = Array.from(chats).map((chat_id) => ({
-      face_pass_id: newPassId,
+      source_type,
       chat_id,
+      payload,
+      event_date: eventData.date,
     }));
 
     try {
@@ -17,7 +21,7 @@ export const notificationsOutboxService = {
     }
   },
 
-  async getPendingNotifications() {
+  async getPending() {
     try {
       const pending = await notificationsOutboxModel.findMany({
         status: "pending",
@@ -29,7 +33,7 @@ export const notificationsOutboxService = {
     }
   },
 
-  async updateNotification(id, data) {
+  async update(id, data) {
     try {
       const updated = await notificationsOutboxModel.update(id, data);
       return updated;
@@ -39,7 +43,7 @@ export const notificationsOutboxService = {
     }
   },
 
-  async deleteOldSentNotifications() {
+  async deleteOldSent() {
     try {
       const threeDaysAgo = subDays(new Date(), 3);
 

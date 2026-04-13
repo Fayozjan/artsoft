@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
 import { useAlertStore } from "../stores/alertStore";
 import { useAuthStore } from "../stores/authStore";
 
@@ -34,34 +33,34 @@ const AuthPage = () => {
     e.preventDefault();
     const lang = localStorage.getItem("language") || i18n.language;
 
-    const result = await loginUser({
-      ...form,
-      language: lang,
-    });
+    const result = await loginUser({ ...form, language: lang });
 
-    result.success
-      ? navigate("/dashboard")
-      : showAlert(t("loginError"), "error");
+    if (result.success) {
+      navigate("/dashboard");
+    } else {
+      showAlert(t("loginError"), "error");
+    }
   };
 
   return (
     <div className={styles.authPage}>
-      <div className={styles.logo}>
-        <img src="/ilm.webp" alt="Logo" />
+      <div className={styles.logoWrapper}>
+        <img src="/logo.png" alt="Logo" className={styles.logo} />
+        <span>OnBase</span>
       </div>
 
       <div className={styles.lang_switcher}>
-        <button
-          onClick={() => handleLanguageChange("uzCyrl")}
-          className={currentLang === "uzCyrl" ? styles.active : ""}
-        >
-          ЎЗ
-        </button>
         <button
           onClick={() => handleLanguageChange("ru")}
           className={currentLang === "ru" ? styles.active : ""}
         >
           РУ
+        </button>
+        <button
+          onClick={() => handleLanguageChange("uzCyrl")}
+          className={currentLang === "uzCyrl" ? styles.active : ""}
+        >
+          ЎЗ
         </button>
         <button
           onClick={() => handleLanguageChange("en")}
@@ -76,6 +75,7 @@ const AuthPage = () => {
           {t("welcome")}
           <span className={styles.subtitle}>{t("welcomeBack")}</span>
         </h2>
+
         <form onSubmit={handleLogin} className={styles.form}>
           <div className={styles.input_group}>
             <input
@@ -99,7 +99,6 @@ const AuthPage = () => {
               onChange={handleChange}
               className={styles.input_field}
             />
-
             <span
               className={styles.toggle_password}
               onClick={() => setShowPassword((prev) => !prev)}

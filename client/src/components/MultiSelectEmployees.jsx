@@ -1,38 +1,40 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import styles from "./MultiSelectEmployees.module.scss";
 
 const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [initialSortedOptions, setInitialSortedOptions] = useState([]);
   const containerRef = useRef(null);
 
   const safeSelected = Array.isArray(selected) ? selected : [];
 
-  // 🔍 Фильтрация по fullName, branch, department
-  const filteredOptions = options.filter((option) => {
-    const query = search.toLowerCase();
-
-    const fullName = option.employeeFullName?.toLowerCase() || "";
-    const id = option.id?.toString().toLowerCase() || "";
-    const branch = option.branchName?.toLowerCase() || "";
-    const department = option.departmentName?.toLowerCase() || "";
-
-    return (
-      fullName.includes(query) ||
-      id.includes(query) ||
-      branch.includes(query) ||
-      department.includes(query)
-    );
-  });
+  const filteredOptions = useMemo(
+    () =>
+      options.filter((option) => {
+        const query = search.toLowerCase();
+        const fullName = option.employeeFullName?.toLowerCase() || "";
+        const id = option.id?.toString().toLowerCase() || "";
+        const branch = option.branchName?.toLowerCase() || "";
+        const department = option.departmentName?.toLowerCase() || "";
+        return (
+          fullName.includes(query) ||
+          id.includes(query) ||
+          branch.includes(query) ||
+          department.includes(query)
+        );
+      }),
+    [options, search],
+  );
 
   // ✅ Выбор одного
   const handleSelect = useCallback(
     (option) => {
-      const isSelected = safeSelected.includes(option.id);
+      const id = Number(option.id);
+      const isSelected = safeSelected.includes(id);
       const newSelected = isSelected
-        ? safeSelected.filter((item) => item !== option.id)
-        : [...safeSelected, option.id];
+        ? safeSelected.filter((item) => item !== id)
+        : [...safeSelected, id];
       onChange(newSelected);
     },
     [safeSelected, onChange],
@@ -43,20 +45,25 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
     if (safeSelected.length === options.length) {
       onChange([]);
     } else {
-      const allIds = options.map((option) => option.id);
+      const allIds = options.map((option) => Number(option.id));
       onChange(allIds);
     }
   }, [safeSelected, options, onChange]);
 
-  // Сортировка: выбранные сверху
-  const sortedFilteredOptions = [
-    { id: "select_all", fullName: "Выбрать всех" },
-    ...filteredOptions.sort((a, b) => {
-      const isASelected = safeSelected.includes(a.id);
-      const isBSelected = safeSelected.includes(b.id);
-      return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
-    }),
-  ];
+  // ⚡ Сортировка при первом открытии
+  useEffect(() => {
+    if (isOpen && initialSortedOptions.length === 0) {
+      const sorted = [...filteredOptions].sort((a, b) => {
+        const isASelected = safeSelected.includes(Number(a.id));
+        const isBSelected = safeSelected.includes(Number(b.id));
+        return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
+      });
+      setInitialSortedOptions([
+        { id: "select_all", employeeFullName: "Выбрать всех" },
+        ...sorted,
+      ]);
+    }
+  }, [isOpen, filteredOptions, safeSelected, initialSortedOptions]);
 
   // 🔒 Закрытие при клике вне
   useEffect(() => {
@@ -68,12 +75,23 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
         setIsOpen(false);
       }
     };
-
     document.addEventListener("click", handleClickOutside, true);
     return () => {
       document.removeEventListener("click", handleClickOutside, true);
     };
   }, []);
+
+  const optionsToRender = useMemo(() => {
+    if (!isOpen) return [];
+
+    const sorted = [...filteredOptions].sort((a, b) => {
+      const isASelected = safeSelected.includes(Number(a.id));
+      const isBSelected = safeSelected.includes(Number(b.id));
+      return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
+    });
+
+    return [{ id: "select_all", employeeFullName: "Выбрать всех" }, ...sorted];
+  }, [isOpen, filteredOptions, safeSelected]);
 
   return (
     <div ref={containerRef} className={styles.multiSelectEmployees}>
@@ -88,10 +106,10 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
 
       {isOpen && (
         <div className={styles.options}>
-          {filteredOptions.length === 0 ? (
+          {optionsToRender.length === 0 ? (
             <div className={styles.noData}>Нет данных</div>
           ) : (
-            sortedFilteredOptions.map((option) => {
+            optionsToRender.map((option) => {
               const isSelectAll = option.id === "select_all";
               return (
                 <div
@@ -106,23 +124,18 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
                     checked={
                       isSelectAll
                         ? safeSelected.length === options.length
-                        : safeSelected.includes(option.id)
+                        : safeSelected.includes(Number(option.id))
                     }
                     readOnly
                     className={styles.checkbox}
                   />
-
-                  {isSelectAll ? (
-                    <span>{option.employeeFullName}</span>
-                  ) : (
-                    <span>
-                      {option.departmentName
-                        ? `${option.departmentName || ""} - ${
-                            option.employeeFullName
-                          }`
+                  <span>
+                    {isSelectAll
+                      ? option.employeeFullName
+                      : option.departmentName
+                        ? `${option.departmentName} - ${option.employeeFullName}`
                         : option.employeeFullName}
-                    </span>
-                  )}
+                  </span>
                 </div>
               );
             })

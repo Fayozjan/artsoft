@@ -1,99 +1,100 @@
-import * as workScheduleModel from "./workSchedules.model.js";
-import * as workScheduleService from "./workSchedules.service.js";
+import { workScheduleService } from "./workSchedules.service.js";
 
-export const addWorkSchedule = async (req, res) => {
-  try {
-    const result = await workScheduleService.addWorkSchedule(req.body);
-    res.status(201).json(result);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      error: "Ошибка при добавлении графика",
-    });
-  }
-};
-
-export const getWorkSchedules = async (req, res) => {
-  try {
-    const { page, pageSize, filters } = req.query;
-
-    const result = await workScheduleService.getWorkSchedules({
-      page,
-      pageSize,
-      filters,
-    });
-
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error("Ошибка при получении графиков:", err);
-    res.status(500).json({
-      success: false,
-      error: "Ошибка при получении графиков",
-    });
-  }
-};
-
-export const getActiveWorkSchedules = async (req, res) => {
-  try {
-    const result = await workScheduleModel.getActiveWorkSchedules();
-    res.json({ success: true, data: result });
-  } catch (err) {
-    console.error("Ошибка при получении активных графиков:", err);
-    res.status(500).json({
-      success: false,
-      error: "Ошибка при получении активных графиков",
-    });
-  }
-};
-
-export const getWorkSchedule = async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const schedule = await workScheduleService.getWorkSchedule(id);
-
-    if (!schedule) {
-      return res.status(404).json({
-        success: false,
-        error: "График не найден",
+export const workScheduleController = {
+  create: async (req, res) => {
+    try {
+      const result = await workScheduleService.create(req.body);
+      res.status(201).json(result);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        error: "Ошибка при добавлении графика",
       });
     }
+  },
 
-    res.json({ success: true, data: schedule });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      error: "Ошибка при получении графика",
-    });
-  }
-};
+  getAll: async (req, res) => {
+    try {
+      const { page, pageSize, filters } = req.query;
 
-export const editWorkSchedule = async (req, res) => {
-  try {
-    const { id } = req.params;
+      const result = await workScheduleService.getAll({
+        page,
+        pageSize,
+        filters,
+      });
 
-    const updated = await workScheduleService.updateWorkSchedule(id, req.body);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при получении графиков:", err);
+      res.status(500).json({
+        success: false,
+        error: "Ошибка при получении графиков",
+      });
+    }
+  },
 
-    res.json({ success: true, data: updated });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      error: "Ошибка при обновлении графика",
-    });
-  }
-};
+  getActive: async (req, res) => {
+    try {
+      const result = await workScheduleService.getActive();
+      res.json({ success: true, data: result });
+    } catch (err) {
+      console.error("Ошибка при получении активных графиков:", err);
+      res.status(500).json({
+        success: false,
+        error: "Ошибка при получении активных графиков",
+      });
+    }
+  },
 
-export const removeWorkSchedule = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const schedule = await workScheduleModel.deleteWorkSchedule(id);
-    res.json({ success: true, data: schedule });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ success: false, error: "Ошибка при удалении графика" });
-  }
+  getById: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const schedule = await workScheduleService.getById(id);
+
+      if (!schedule) {
+        return res.status(404).json({
+          success: false,
+          error: "График не найден",
+        });
+      }
+
+      res.json({ success: true, data: schedule });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        error: "Ошибка при получении графика",
+      });
+    }
+  },
+
+  updateById: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const updated = await workScheduleService.updateById(id, req.body);
+
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({
+        success: false,
+        error: "Ошибка при обновлении графика",
+      });
+    }
+  },
+
+  deleteById: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const schedule = await workScheduleService.deleteById(id);
+      res.json({ success: true, data: schedule });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ success: false, error: "Ошибка при удалении графика" });
+    }
+  },
 };

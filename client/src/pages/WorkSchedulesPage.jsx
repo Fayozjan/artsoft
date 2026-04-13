@@ -1,12 +1,10 @@
-import axios from "axios";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
-import { useAuthStore } from "../stores/authStore";
 import { useAlertStore } from "../stores/alertStore";
 import { usePermissions } from "../hooks/usePermissions";
 
-import { getWorkSchedules } from "../api";
+import { deleteWorkScheduleById, getWorkSchedules } from "../api";
 
 import AddWorkSchedule from "../components/AddWorkSchedule";
 import EditWorkSchedule from "../components/EditWorkSchedule";
@@ -17,11 +15,11 @@ import Pagination from "../components/Pagination";
 import SortArrow from "../components/SortArrow";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
-import TableIcons from "../icons/tableIcons";
 import TableFilter from "../components/TableFilter";
 import DownloadButton from "../components/DownloadButton";
 
 import styles from "./WorkSchedulesPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
 
 const WorkSchedulesPage = () => {
   const { showAlert } = useAlertStore();
@@ -51,19 +49,20 @@ const WorkSchedulesPage = () => {
     setModalType("edit");
   };
 
-  const handleDeleteSchedule = async (id) => {
-    try {
-      const response = await axios(`/api/work-schedule/${id}`, {
-        method: "DELETE",
-      });
+  const handleDeleteClick = (itemId) => {
+    setSelectedItem(itemId);
+    setShowModal(true);
+  };
 
-      if (response.data.success) {
-        setData((prev) => prev.filter((schedule) => schedule.id !== id));
-        showAlert("Успешно", "success");
-        setShowModal(false);
-      }
-    } catch (error) {
-      console.error(error);
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteWorkScheduleById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
     }
   };
 
@@ -273,6 +272,15 @@ const WorkSchedulesPage = () => {
               <thead>
                 <tr>
                   <th>№</th>
+                  <th onClick={() => handleSort("id")}>
+                    <span className={styles.headerContent}>
+                      ID
+                      <SortArrow
+                        active={sortField === "id"}
+                        order={sortOrder}
+                      />
+                    </span>
+                  </th>
                   <th
                     className={styles.table_name_header}
                     onClick={() => handleSort("name")}
@@ -285,29 +293,30 @@ const WorkSchedulesPage = () => {
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("id")}>
+
+                  <th onClick={() => handleSort("type")}>
                     <span className={styles.headerContent}>
-                      ID
+                      Тип
                       <SortArrow
-                        active={sortField === "id"}
+                        active={sortField === "type"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("user_count")}>
+                  <th onClick={() => handleSort("weekly_hours")}>
+                    <span className={styles.headerContent}>
+                      Норма часов в неделю
+                      <SortArrow
+                        active={sortField === "weekly_hours"}
+                        order={sortOrder}
+                      />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("employee_count")}>
                     <span className={styles.headerContent}>
                       Сотрудники
                       <SortArrow
-                        active={sortField === "user_count"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("valid_from")}>
-                    <span className={styles.headerContent}>
-                      Действут с
-                      <SortArrow
-                        active={sortField === "valid_from"}
+                        active={sortField === "employee_count"}
                         order={sortOrder}
                       />
                     </span>
@@ -329,27 +338,23 @@ const WorkSchedulesPage = () => {
                   getSortedData().map((item, i) => (
                     <tr key={item.id}>
                       <td>{i + 1}</td>
-                      <td>{item.name}</td>
                       <td>{item.id}</td>
+                      <td>{item.name}</td>
+                      <td>{t(`scheduleType.${item.type}`)}</td>
+                      <td>{item.weekly_hours}</td>
                       <td>{item.employee_count}</td>
-                      <td>{item.valid_from}</td>
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (
@@ -367,7 +372,7 @@ const WorkSchedulesPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        tag="Удаление"
       />
 
       <OverlaySidebar

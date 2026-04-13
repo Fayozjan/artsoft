@@ -40,3 +40,14 @@ export const editDoor = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteDoorById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/doors/${id}`);
+
+  return {
+    success: res.data.success,
+    message: res.data.message || "Дверь удалена",
+  };
+};

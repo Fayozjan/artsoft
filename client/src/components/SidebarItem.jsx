@@ -1,125 +1,123 @@
-import React, { memo, useState, useRef } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { NavLink, useLocation, matchPath } from "react-router-dom";
+import { useMemo } from "react";
 import { Icons } from "../icons/icons";
 import styles from "./Sidebar.module.scss";
+import { useTranslation } from "react-i18next";
 
-const iconMap = {
-  dashboard: Icons.dashboard,
-  hr: Icons.hr,
-  employees: Icons.employees,
-  manufacturing: Icons.manufacturing,
-  settings: Icons.settings,
-};
+const SidebarItem = ({ item, type, toggleItem, isSubItemOpen }) => {
+  const location = useLocation();
+  const hasChildren = item.children && item.children.length > 0;
+  const Icon = Icons[item.name] || Icons.default;
+  const { t, i18n } = useTranslation();
 
-const isChildActive = (item) => {
-  if (!item.children) return false;
+  const handleClick = (e) => {
+    if (hasChildren) {
+      e.preventDefault();
+      toggleItem(item.id);
+    }
+  };
 
-  return item.children.some((child) => {
-    if (location.pathname.startsWith(child.path)) return true;
-    return isChildActive(child);
-  });
-};
+  const isActivePath = (path) => {
+    return matchPath({ path, end: false }, location.pathname);
+  };
 
-const SidebarItem = memo(
-  ({ item, type, toggleItem, isActive, isSubItemOpen, openItems }) => {
-    const { t } = useTranslation();
-    const location = useLocation();
-    const [showPopup, setShowPopup] = useState(false);
-    const hoverTimeout = useRef(null);
+  const renderMiniPopup = () => {
+    if (type !== "mini") return null;
 
-    const Icon = iconMap[item.name];
-    const hasChildren = item.children?.length > 0;
-
-    const childActive = isChildActive(item);
-    const parentActive = isActive || childActive;
-
-    const handleMouseEnter = () => {
-      if (type !== "mini" || !hasChildren) return;
-
-      hoverTimeout.current = setTimeout(() => {
-        setShowPopup(true);
-      }, 150);
-    };
-
-    const handleMouseLeave = () => {
-      if (hoverTimeout.current) {
-        clearTimeout(hoverTimeout.current);
-      }
-      setShowPopup(false);
-    };
+    if (!hasChildren) {
+      return (
+        <div className={styles.miniPopupWrapper}>
+          <p style={{ borderBottom: "none", marginBottom: 0 }}>
+            {t(item.name)}
+          </p>
+        </div>
+      );
+    }
 
     return (
-      <li
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={[
-          styles.menu,
-          parentActive ? styles.activeMenu : "",
-          isSubItemOpen ? styles.openSubmenu : "",
-          hasChildren ? styles.menuItemHasChildren : "",
-        ].join(" ")}
-      >
-        <NavLink
-          to={hasChildren ? "#" : item.path}
-          onClick={(e) => {
-            if (hasChildren) {
-              e.preventDefault();
-              if (type === "full") {
-                toggleItem(item.id);
-              }
-            }
-          }}
-        >
-          {Icon && Icon}
-          {type !== "mini" && <span>{t(item.name)}</span>}
-        </NavLink>
+      <div className={styles.miniPopupWrapper}>
+        <p>{t(item.name)}</p>
+        <ul className={styles.miniPopup}>
+          {item.children
+            .filter((child) => child.permissions?.view)
+            .map((child) => {
+              const isChildActive = isActivePath(child.path);
 
-        {/* Mini Popup (для свернутого сайдбара) */}
-        {type === "mini" && hasChildren && showPopup && (
-          <div className={styles.miniPopupWrapper}>
-            <p>{t(item.name)}</p>
-            <ul className={styles.miniPopup}>
-              {item.children.map((child) => (
+              return (
                 <li key={child.id}>
                   <NavLink
                     to={child.path}
-                    className={({ isActive }) =>
-                      isActive ? styles.active : ""
-                    }
+                    className={isChildActive ? styles.active : ""}
                   >
-                    {t(child.name)}
+                    <span>{t(child.name)}</span>
                   </NavLink>
                 </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Full Submenu (рекурсивный рендер) */}
-        {hasChildren && type !== "mini" && (
-          <ul
-            className={[
-              styles.submenuWrapper,
-              isSubItemOpen ? styles.show : "",
-            ].join(" ")}
-          >
-            {item.children.map((child) => (
-              <SidebarItem
-                key={child.id}
-                item={child}
-                type={type}
-                toggleItem={toggleItem}
-                isActive={location.pathname.startsWith(child.path)}
-                isSubItemOpen={!!openItems?.[child.id]}
-                openItems={openItems}
-              />
-            ))}
-          </ul>
-        )}
-      </li>
+              );
+            })}
+        </ul>
+      </div>
     );
-  },
-);
+  };
+
+  const renderSubmenu = useMemo(() => {
+    if (!hasChildren || type === "mini") return null;
+
+    return (
+      <ul className={styles.submenuWrapper}>
+        {item.children
+          .filter((child) => child.permissions?.view)
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((child) => {
+            const isChildActive = isActivePath(child.path);
+
+            return (
+              <li
+                key={child.id}
+                className={isChildActive ? styles.activeMenu : ""}
+              >
+                <NavLink
+                  to={child.path}
+                  className={({ isActive }) => (isActive ? styles.active : "")}
+                >
+                  <span>{t(child.name)}</span>
+                </NavLink>
+              </li>
+            );
+          })}
+      </ul>
+    );
+  }, [hasChildren, type, item.children, location.pathname, i18n.language]);
+
+  const isParentActive =
+    isActivePath(item.path) ||
+    (hasChildren && item.children.some((child) => isActivePath(child.path)));
+
+  const menuClasses = [
+    styles.menu,
+    isParentActive ? styles.activeMenu : "",
+    hasChildren ? styles.menuItemHasChildren : "",
+    isSubItemOpen ? styles.openSubmenu : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <li className={menuClasses}>
+      <NavLink
+        to={hasChildren ? "#" : item.path}
+        onClick={handleClick}
+        className={({ isActive }) =>
+          isActive && !hasChildren ? styles.active : ""
+        }
+      >
+        {Icon}
+        {type === "full" && <span>{t(item.name)}</span>}
+      </NavLink>
+
+      {type === "mini" && renderMiniPopup()}
+      {type === "full" && renderSubmenu}
+    </li>
+  );
+};
 
 export default SidebarItem;

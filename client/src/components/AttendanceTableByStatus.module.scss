@@ -80,8 +80,9 @@
 
 .tableContainer {
   flex: 1;
-  min-height: 0;
   overflow-y: auto;
+  min-height: 0;
+  position: relative;
 
   .table {
     width: 100%;

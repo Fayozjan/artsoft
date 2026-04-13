@@ -14,8 +14,11 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
     name: "",
     direction: "entry",
     device_ip: "",
-    port: "80",
+    port: 80,
     door_id: "",
+    serial_number: "",
+    password: "",
+    is_local: true,
   });
   const [doors, setDoors] = useState();
   const { showAlert } = useAlertStore();
@@ -38,9 +41,10 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "is_local" ? value === "true" : value,
     }));
   };
 
@@ -62,7 +66,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
     } catch (error) {
       console.error(
         "Ошибка при отправке данных:",
-        error.response ? error.response.data : error.message
+        error.response ? error.response.data : error.message,
       );
       showAlert("Ошибка", "error");
     }
@@ -86,9 +90,27 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
             required
           />
         </div>
+        <div>
+          <label>Пароль</label>
+          <input
+            type="text"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+          />
+        </div>
       </div>
 
       <div className={styles.row}>
+        <div>
+          <label>Серийный номер</label>
+          <input
+            type="text"
+            name="serial_number"
+            value={formData.serial_number}
+            onChange={handleChange}
+          />
+        </div>
         <div>
           <label for="name">Направление</label>
           <select
@@ -98,6 +120,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
           >
             <option value="entry">Вход</option>
             <option value="exit">Выход</option>
+            <option value="universal">Универсальный</option>
           </select>
         </div>
       </div>
@@ -113,9 +136,6 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
             required
           />
         </div>
-      </div>
-
-      <div className={styles.row}>
         <div>
           <label>Порт</label>
           <input
@@ -129,12 +149,24 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
+          <label>Локальное устройство</label>
+          <select
+            name="is_local"
+            value={formData.is_local}
+            onChange={handleChange}
+          >
+            <option value={true}>Да</option>
+            <option value={false}>Нет</option>
+          </select>
+        </div>
+        <div>
           <div className={styles.inputCol}>
             <label for="name">Дверь</label>
             <select
               name="door_id"
               value={formData.door_id}
               onChange={handleChange}
+              required
             >
               <option value="">Выберите дверь</option>
               {doors?.map((item) => (

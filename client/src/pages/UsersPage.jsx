@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { usePermissions } from "../hooks/usePermissions";
 
-import { getUsers } from "../api";
+import { deleteUserById, getUsers } from "../api";
 
 import Button from "../components/Button";
 import Badge from "../components/Badge";
@@ -12,13 +12,19 @@ import EditUser from "../components/EditUser";
 import Pagination from "../components/Pagination";
 import Loading from "../components/Loading";
 import SortArrow from "../components/SortArrow";
-import TableIcons from "../icons/tableIcons";
 import OverlaySidebar from "../components/OverlaySidebar";
 import CenterModal from "../components/CenterModal";
 import TableFilter from "../components/TableFilter";
 import DownloadButton from "../components/DownloadButton";
 
 import styles from "./UsersPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
+
+const accessLevelMap = {
+  absolute: "access_absolute",
+  branch: "access_branch",
+  department: "access_department",
+};
 
 const UsersPage = () => {
   const [data, setData] = useState([]);
@@ -45,6 +51,23 @@ const UsersPage = () => {
   const handleEditClick = (id) => {
     setSelectedItem(id);
     setModalType("edit");
+  };
+
+  const handleDeleteClick = (id) => {
+    setSelectedItem(id);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteUserById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   const fetchData = async (
@@ -303,29 +326,22 @@ const UsersPage = () => {
                       <td>{item.username}</td>
                       <td>{item.employeeFullName}</td>
                       <td>
-                        {{
-                          absolute: "Полный доступ",
-                          branch: "Ограничение по филиалу",
-                          department: "Ограничение по отделу",
-                        }[item.accessLevel] || "—"}
+                        {accessLevelMap[item.access_level]
+                          ? t(accessLevelMap[item.access_level])
+                          : "—"}
                       </td>
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (
@@ -349,7 +365,7 @@ const UsersPage = () => {
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}
         title={modalType === "add" ? t("addUser") : t("editUser")}
-        width="500px"
+        width="600px"
       >
         {modalType === "add" && (
           <AddUser

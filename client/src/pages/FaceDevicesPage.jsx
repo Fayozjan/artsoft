@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { usePermissions } from "../hooks/usePermissions";
-import { getFaceDevices } from "../api/index";
+import { deleteFaceDeviceById, getFaceDevices } from "../api/index";
 
 import AddFaceDevice from "../components/AddFaceDevice";
 import EditFaceDevice from "../components/EditFaceDevice";
@@ -18,6 +18,7 @@ import DownloadButton from "../components/DownloadButton";
 import TableIcons from "../icons/tableIcons";
 
 import styles from "./FaceDevicesPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
 
 const FaceDevicesPage = () => {
   const [data, setData] = useState([]);
@@ -45,6 +46,23 @@ const FaceDevicesPage = () => {
   const handleEditClick = (id) => {
     setSelectedItem(id);
     setModalType("edit");
+  };
+
+  const handleDeleteClick = (id) => {
+    setSelectedItem(id);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteFaceDeviceById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   const fetchData = async (
@@ -350,24 +368,19 @@ const FaceDevicesPage = () => {
                       <td>{item.device_ip}</td>
                       <td>{item.port}</td>
                       <td>{item.door.name}</td>
-                      <td>{item.direction === "entry" ? "Вход" : "Выход"}</td>
+                      <td>{t(item.direction)}</td>
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

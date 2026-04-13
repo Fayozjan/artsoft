@@ -31,3 +31,14 @@ export const editFaceDevice = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteFaceDeviceById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/face-devices/${id}`);
+
+  return {
+    success: res.data.success,
+    message: res.data.message || "Устройство удалено",
+  };
+};

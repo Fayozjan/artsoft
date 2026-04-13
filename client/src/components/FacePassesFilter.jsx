@@ -7,26 +7,22 @@ import EmployeeFilterForm from "./EmployeeFilterForm";
 
 import styles from "./FacePassesFilter.module.scss";
 
-const FacePassesFilter = ({ formData, setFormData, onSubmit, t }) => {
+const FacePassesFilter = ({
+  initialFormData,
+  formData,
+  setFormData,
+  onSubmit,
+  t,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [doors, setDoors] = useState([]);
-
-  const initialFormData = {
-    start_date: "",
-    end_date: "",
-    branch_id: null,
-    department_id: null,
-    position_id: null,
-    direction: "",
-    selectedDoorIds: [],
-  };
 
   const activeCount = Object.entries(formData).filter(
     ([key, value]) =>
       key !== "search" &&
       value != null &&
       value !== "" &&
-      (!Array.isArray(value) || value.length > 0)
+      (!Array.isArray(value) || value.length > 0),
   ).length;
 
   const wrapperRef = useRef(null);

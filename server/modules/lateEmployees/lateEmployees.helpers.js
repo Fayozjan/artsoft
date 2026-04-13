@@ -1,66 +1,5 @@
 import { DateTime } from "luxon";
 
-function adjustScheduledTimeForPermissions(scheduledTime, userId, timeOffMap) {
-  const userPermissions = timeOffMap[userId] || [];
-
-  for (const perm of userPermissions) {
-    const permFrom = parseLocalDateTime(perm.from);
-    const permTo = parseLocalDateTime(perm.to);
-
-    if (permFrom <= scheduledTime && permTo > scheduledTime) {
-      return {
-        scheduledTime: new Date(permTo),
-        havePermission: true,
-        permissionEndTime: perm.to,
-      };
-    }
-  }
-
-  return {
-    scheduledTime,
-    havePermission: false,
-    permissionEndTime: null,
-  };
-}
-
-export function formatDates(records) {
-  return records.map((r) => ({
-    ...r,
-    event_time: DateTime.fromJSDate(r.event_time, { zone: "utc" }).toFormat(
-      "yyyy-MM-dd HH:mm:ss"
-    ),
-  }));
-}
-
-function parseLocalDateTime(dateStr) {
-  return new Date(dateStr.replace(" ", "T"));
-}
-
-function formatTime(t) {
-  if (!t) return null;
-  return t.slice(0, 5);
-}
-
-function getShiftStart(ws, shiftType) {
-  switch (shiftType) {
-    case "first":
-      return ws.first_shift_start;
-    case "second":
-      return ws.second_shift_start;
-    case "third":
-      return ws.third_shift_start;
-    default:
-      return ws.shift_start;
-  }
-}
-
-function getDateFromDayIndex(dayIndex) {
-  const today = new Date();
-  const monthStr = String(today.getMonth() + 1).padStart(2, "0");
-  const yearStr = today.getFullYear();
-  return `${yearStr}-${monthStr}-${String(dayIndex).padStart(2, "0")}`;
-}
-
 export function getDateRange(mode, date) {
   const dt =
     typeof date === "string"
@@ -97,21 +36,9 @@ export function getMonthRangeFromDate(date) {
   };
 }
 
-export const findLateEmployeesByDay = async (
-  data,
-  targetDate,
-  holidays,
-  timeOffs
-) => {
-  if (!targetDate) {
-    throw new Error("targetDate обязателен для findLateEmployeesByDay");
-  }
+export const findLateEmployeesByDay = (data, targetDate) => {
+  if (!targetDate) throw new Error("targetDate обязателен");
 
-  const holidayDates = new Set(
-    holidays.map((h) => new Date(h.date_from).toISOString().split("T")[0])
-  );
-
-  const [year, month] = targetDate.split("-").map(Number);
   const lateEmployees = [];
 
   data.forEach((employee) => {
@@ -124,83 +51,61 @@ export const findLateEmployeesByDay = async (
       departmentName,
       positionName,
       workScheduleName,
-      workSchedule,
       sessions,
     } = employee;
 
-    if (!sessions || !workSchedule) return;
+    if (!sessions) return;
 
-    const shiftType = workSchedule.shift_type;
+    const session = sessions[targetDate];
+    if (!session) return;
 
-    Object.entries(sessions).forEach(([dayIndex, session]) => {
-      const date = `${year}-${String(month).padStart(2, "0")}-${String(
-        dayIndex
-      ).padStart(2, "0")}`;
+    const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
+      session;
 
-      // только нужная дата и не праздник
-      if (date !== targetDate || holidayDates.has(date)) return;
+    if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
+    if (!late || late === "00:00") return;
 
-      const { firstEntry, events } = session;
-      if (shiftType === "flexible" || !firstEntry || !events?.length) return;
+    const [h, m] = late.split(":").map(Number);
+    const lateMinutes = h * 60 + m;
 
-      const shiftStartTime = getShiftStart(workSchedule, shiftType);
-      if (!shiftStartTime) return;
+    if (lateMinutes <= 0) return;
 
-      let scheduledTime = parseLocalDateTime(
-        `${date} ${formatTime(shiftStartTime)}`
-      );
+    const firstEntryEvent =
+      events?.find((e) => e.direction === "entry") ?? null;
 
-      // разрешения / отгулы
-      const {
-        scheduledTime: adjustedScheduledTime,
-        havePermission,
-        permissionEndTime,
-      } = adjustScheduledTimeForPermissions(
-        scheduledTime,
-        employeeId,
-        timeOffs
-      );
-
-      scheduledTime = adjustedScheduledTime;
-
-      const actualTime = parseLocalDateTime(`${date} ${firstEntry}`);
-
-      if (actualTime > scheduledTime) {
-        const lateMinutes = Math.floor((actualTime - scheduledTime) / 60000);
-
-        const firstEntryEvent = events.find((e) => e.direction === "entry");
-
-        lateEmployees.push({
-          employeeId,
-          employeeNumber,
-          employeeFullName,
-          employeePhoto,
-          branchName,
-          departmentName,
-          positionName,
-          workScheduleName,
-          date,
-          shiftType,
-          scheduledStart: formatTime(shiftStartTime),
-          actualStart: firstEntry,
-          actualStartPhoto: firstEntryEvent?.event_photo || null,
-          lateMinutes,
-          havePermission,
-          permissionEndTime,
-        });
-      }
+    lateEmployees.push({
+      employeeId,
+      employeeNumber,
+      employeeFullName,
+      employeePhoto,
+      branchName,
+      departmentName,
+      positionName,
+      workScheduleName,
+      date: targetDate,
+      shiftType,
+      scheduledStart: scheduleStart,
+      actualStart: firstEntry,
+      actualStartPhoto: firstEntryEvent?.photo ?? null,
+      lateMinutes,
+      timeOff: timeOff
+        ? {
+            id: timeOff.id,
+            type: timeOff.type,
+            reason: timeOff.reason,
+            isCompanyPaid: timeOff.isCompanyPaid,
+            dateFrom: timeOff.date_from,
+            dateTo: timeOff.date_to,
+          }
+        : null,
     });
   });
 
   return lateEmployees;
 };
 
-export const findLateEmployeesByMonth = async (data, holidays, timeOffs) => {
-  const holidayDates = new Set(
-    holidays.map((h) => new Date(h.date_from).toISOString().split("T")[0])
-  );
-
-  const allLateRecords = [];
+export const findLateEmployeesByMonth = (data) => {
+  const grouped = {};
 
   data.forEach((employee) => {
     const {
@@ -212,48 +117,28 @@ export const findLateEmployeesByMonth = async (data, holidays, timeOffs) => {
       departmentName,
       positionName,
       workScheduleName,
-      workSchedule,
       sessions,
     } = employee;
 
-    if (!sessions || !workSchedule) return;
+    if (!sessions) return;
 
-    const shiftType = workSchedule.shift_type;
+    Object.entries(sessions).forEach(([dayKey, session]) => {
+      const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
+        session;
 
-    Object.entries(sessions).forEach(([dayIndex, session]) => {
-      const date = session.date || getDateFromDayIndex(dayIndex);
-      if (holidayDates.has(date)) return;
+      if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
+      if (!late || late === "00:00") return;
 
-      const { firstEntry, events } = session;
-      if (shiftType === "flexible" || !firstEntry || !events?.length) return;
+      const [h, m] = late.split(":").map(Number);
+      const lateMinutes = h * 60 + m;
 
-      const shiftStartTime = getShiftStart(workSchedule, shiftType);
-      if (!shiftStartTime) return;
+      if (lateMinutes <= 0) return;
 
-      let scheduledTime = parseLocalDateTime(
-        `${date} ${formatTime(shiftStartTime)}`
-      );
+      const firstEntryEvent =
+        events?.find((e) => e.direction === "entry") ?? null;
 
-      const {
-        scheduledTime: adjustedScheduledTime,
-        havePermission,
-        permissionEndTime,
-      } = adjustScheduledTimeForPermissions(
-        scheduledTime,
-        employeeId,
-        timeOffs
-      );
-
-      scheduledTime = adjustedScheduledTime;
-
-      const actualTime = parseLocalDateTime(`${date} ${firstEntry}`);
-
-      if (actualTime > scheduledTime) {
-        const lateMinutes = Math.floor((actualTime - scheduledTime) / 60000);
-
-        const firstEntryEvent = events.find((e) => e.direction === "entry");
-
-        allLateRecords.push({
+      if (!grouped[employeeId]) {
+        grouped[employeeId] = {
           employeeId,
           employeeNumber,
           employeeFullName,
@@ -262,52 +147,111 @@ export const findLateEmployeesByMonth = async (data, holidays, timeOffs) => {
           departmentName,
           positionName,
           workScheduleName,
-          date,
-          shiftType,
-          scheduledStart: formatTime(shiftStartTime),
-          actualStart: firstEntry,
-          actualStartPhoto: firstEntryEvent?.event_photo || null,
-          lateMinutes,
-          havePermission,
-          permissionEndTime,
-        });
+          monthlyLateCount: 0,
+          monthlyLateMinutes: 0,
+          details: [],
+        };
       }
+
+      const target = grouped[employeeId];
+      target.monthlyLateCount += 1;
+      target.monthlyLateMinutes += lateMinutes;
+      target.details.push({
+        date: dayKey,
+        shiftType,
+        scheduledStart: scheduleStart,
+        actualStart: firstEntry,
+        actualStartPhoto: firstEntryEvent?.photo ?? null,
+        lateMinutes,
+        timeOff: timeOff
+          ? {
+              id: timeOff.id,
+              type: timeOff.type,
+              reason: timeOff.reason,
+              isCompanyPaid: timeOff.isCompanyPaid,
+              dateFrom: timeOff.date_from,
+              dateTo: timeOff.date_to,
+            }
+          : null,
+      });
     });
-  });
-
-  // Группировка по сотруднику
-  const grouped = {};
-
-  allLateRecords.forEach((rec) => {
-    if (!grouped[rec.employeeId]) {
-      grouped[rec.employeeId] = {
-        employeeId: rec.employeeId,
-        employeeFullName: rec.employeeFullName,
-        employeePhoto: rec.employeePhoto,
-        branchName: rec.branchName,
-        departmentName: rec.departmentName,
-        positionName: rec.positionName,
-        monthlyLateCount: 0,
-        monthlyLateMinutes: 0,
-        details: [],
-      };
-    }
-
-    const target = grouped[rec.employeeId];
-    target.details.push({
-      date: rec.date,
-      shiftType: rec.shiftType,
-      scheduledStart: rec.scheduledStart,
-      actualStart: rec.actualStart,
-      actualStartPhoto: rec.actualStartPhoto,
-      lateMinutes: rec.lateMinutes,
-      havePermission: rec.havePermission,
-      permissionEndTime: rec.permissionEndTime,
-    });
-
-    target.monthlyLateCount += 1;
-    target.monthlyLateMinutes += rec.lateMinutes;
   });
 
   return Object.values(grouped);
+};
+
+export const findLateByBranchAndDay = (data) => {
+  const branchData = {};
+
+  data.forEach((employee) => {
+    const {
+      employeeId,
+      employeeNumber,
+      employeeFullName,
+      employeePhoto,
+      branchName,
+      departmentName,
+      positionName,
+      workScheduleName,
+      sessions,
+    } = employee;
+
+    if (!sessions) return;
+
+    Object.entries(sessions).forEach(([dayKey, session]) => {
+      const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
+        session;
+
+      if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
+      if (!late || late === "00:00") return;
+
+      const [h, m] = late.split(":").map(Number);
+      const lateMinutes = h * 60 + m;
+
+      if (lateMinutes <= 0) return;
+
+      const firstEntryEvent =
+        events?.find((e) => e.direction === "entry") ?? null;
+
+      if (!branchData[branchName]) branchData[branchName] = {};
+      if (!branchData[branchName][dayKey]) {
+        branchData[branchName][dayKey] = { count: 0, employees: [] };
+      }
+
+      branchData[branchName][dayKey].count += 1;
+      branchData[branchName][dayKey].employees.push({
+        employeeId,
+        employeeNumber,
+        employeeFullName,
+        employeePhoto,
+        departmentName,
+        positionName,
+        workScheduleName,
+        shiftType,
+        scheduledStart: scheduleStart,
+        actualStart: firstEntry,
+        actualStartPhoto: firstEntryEvent?.photo ?? null,
+        lateMinutes,
+        timeOff: timeOff
+          ? {
+              id: timeOff.id,
+              type: timeOff.type,
+              reason: timeOff.reason,
+              isCompanyPaid: timeOff.isCompanyPaid,
+              dateFrom: timeOff.date_from,
+              dateTo: timeOff.date_to,
+            }
+          : null,
+      });
+    });
+  });
+
+  return Object.entries(branchData).map(([branchName, days]) => ({
+    branchName,
+    days: Object.entries(days).map(([date, info]) => ({
+      date,
+      lateCount: info.count,
+      employees: info.employees,
+    })),
+  }));
 };

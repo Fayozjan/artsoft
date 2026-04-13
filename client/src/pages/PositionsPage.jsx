@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
-import { getPositions } from "../api";
+import { deletePositionById, getPositions } from "../api";
 import { usePermissions } from "../hooks/usePermissions";
 
 import Button from "../components/Button";
@@ -12,7 +12,6 @@ import EditPosition from "../components/EditPosition";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
 import SortArrow from "../components/SortArrow";
-import TableIcons from "../icons/tableIcons";
 
 import OverlaySidebar from "../components/OverlaySidebar";
 import CenterModal from "../components/CenterModal";
@@ -21,6 +20,7 @@ import DownloadButton from "../components/DownloadButton";
 
 import styles from "./PositionsPage.module.scss";
 import Search from "../components/Search";
+import { ActionCell } from "../components/ActionButtons";
 
 const PositionsPage = () => {
   const [data, setData] = useState([]);
@@ -48,6 +48,23 @@ const PositionsPage = () => {
   const handleEditClick = (id) => {
     setSelectedItem(id);
     setModalType("edit");
+  };
+
+  const handleDeleteClick = (id) => {
+    setSelectedItem(id);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deletePositionById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   const handleCloseModal = () => {
@@ -264,20 +281,15 @@ const PositionsPage = () => {
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

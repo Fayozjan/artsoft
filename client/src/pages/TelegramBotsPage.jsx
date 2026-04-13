@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
 import { usePermissions } from "../hooks/usePermissions";
-import { getTelegramBots } from "../api";
+import { deleteTelegramBotById, getTelegramBots } from "../api";
 
 import Button from "../components/Button";
 import Pagination from "../components/Pagination";
@@ -18,7 +17,7 @@ import OverlaySidebar from "../components/OverlaySidebar";
 import { useTranslation } from "react-i18next";
 import TableFilter from "../components/TableFilter";
 import DownloadButton from "../components/DownloadButton";
-import TableIcons from "../icons/tableIcons";
+import { ActionCell } from "../components/ActionButtons";
 
 const TelegramBotsPage = () => {
   const [data, setData] = useState([]);
@@ -45,6 +44,23 @@ const TelegramBotsPage = () => {
   const handleEditClick = (id) => {
     setSelectedItem(id);
     setModalType("edit");
+  };
+
+  const handleDeleteClick = (id) => {
+    setSelectedItem(id);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteTelegramBotById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   const fetchData = async (
@@ -316,20 +332,15 @@ const TelegramBotsPage = () => {
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

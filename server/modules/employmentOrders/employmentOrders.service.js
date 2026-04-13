@@ -1,9 +1,9 @@
-import prisma from "../../prisma/client.js";
-import { buildAccessWhere } from "../../utils/accessFilter.js";
 import { EmploymentOrdersModel } from "./employmentOrders.model.js";
 import { EmployeeService } from "../employees/employees.service.js";
 import { UserModel } from "../users/users.model.js";
-import { FaceDeviceService } from "../faceDevices/faceDevice.service.js";
+import { FaceDevicesService } from "../faceDevices/faceDevices.service.js";
+import { EmployeeModel } from "../employees/employees.model.js";
+import { buildEmploymentOrderAccess } from "./employmentOrders.helpers.js";
 
 export const EmploymentOrdersService = {
   create: async (data) => {
@@ -70,7 +70,7 @@ export const EmploymentOrdersService = {
       });
 
       if (!status) {
-        FaceDeviceService.syncEmployee(order.employee_id);
+        FaceDevicesService.syncEmployee(order.employee_id);
       }
     }
 
@@ -82,18 +82,11 @@ export const EmploymentOrdersService = {
     const currentPage = Math.max(Number(page), 1);
     const skip = (currentPage - 1) * limit;
 
-    const user = await prisma.users.findUnique({
-      where: { id: Number(userId) },
-      select: {
-        access_level: true,
-        branches: true,
-        departments: true,
-      },
-    });
+    const user = await UserModel.getById(Number(userId));
 
     if (!user) throw new Error("Пользователь не найден");
 
-    const where = buildAccessWhere(user);
+    const where = buildEmploymentOrderAccess(user);
 
     const { search, type, status } = filters;
 
@@ -141,14 +134,10 @@ export const EmploymentOrdersService = {
   },
 
   getByEmployeeId: async ({ userId, employeeId }) => {
-    const user = await UserModel.getUserById(Number(userId));
+    const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
 
     if (!employeeId) throw new Error("Employee ID is required");
-
-    const where = {
-      employee_id: Number(employeeId),
-    };
 
     const orders = await EmploymentOrdersModel.findByEmployee(
       Number(employeeId),
@@ -181,7 +170,7 @@ export const EmploymentOrdersService = {
       const status = latestOrder.type === "terminate" ? false : true;
 
       // 4️⃣ Обновляем данные сотрудника по последнему приказу
-      await EmployeeService.update(order.employee_id, {
+      await EmployeeModel.update(order.employee_id, {
         status,
         branch_id:
           latestOrder.branch_id !== undefined
@@ -204,7 +193,7 @@ export const EmploymentOrdersService = {
       });
 
       if (!status) {
-        FaceDeviceService.syncEmployee(order.employee_id);
+        FaceDevicesService.syncEmployee(order.employee_id);
       }
     }
 
@@ -215,7 +204,7 @@ export const EmploymentOrdersService = {
     const order = await EmploymentOrdersModel.findById(id);
     if (!order) throw new Error("Приказ не найден");
 
-    const user = await UserModel.getUserById(Number(userId));
+    const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
 
     // 2️⃣ Получаем все приказы сотрудника
@@ -268,7 +257,7 @@ export const EmploymentOrdersService = {
       });
 
       if (!status) {
-        FaceDeviceService.syncEmployee(order.employee_id);
+        FaceDevicesService.syncEmployee(order.employee_id);
       }
     } else {
       await EmployeeService.update(order.employee_id, {
@@ -278,7 +267,7 @@ export const EmploymentOrdersService = {
         position_id: null,
       });
 
-      FaceDeviceService.syncEmployee(order.employee_id);
+      FaceDevicesService.syncEmployee(order.employee_id);
     }
 
     return { success: true };

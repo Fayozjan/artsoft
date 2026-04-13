@@ -21,10 +21,9 @@ export const BranchController = {
 
   listActive: async (req, res) => {
     const userId = req.user.id;
+
     try {
-      const result = await BranchService.listActive({
-        userId,
-      });
+      const result = await BranchService.listActive({ userId });
       res.json({ success: true, ...result });
     } catch (err) {
       console.error(err);

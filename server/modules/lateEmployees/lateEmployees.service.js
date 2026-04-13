@@ -1,15 +1,16 @@
-import { getTimeOffsAllService } from "../timeOff/timeOff.service.js";
+import { TimeOffService } from "../timeOff/timeOff.service.js";
 
 import { generateAttendanceReport } from "../../utils/attendanceUtils.js";
 
 import {
+  findLateByBranchAndDay,
   findLateEmployeesByDay,
   findLateEmployeesByMonth,
   getDateRange,
   getMonthRangeFromDate,
 } from "./lateEmployees.helpers.js";
 
-import { getAllFacePasses } from "../facePasses/facePasses.service.js";
+import { FacePassesService } from "../facePasses/facePasses.service.js";
 import { getHolidaysService } from "../holidays/holidays.service.js";
 
 export async function getLateEmployeesService({ userId, filters }) {
@@ -21,37 +22,33 @@ export async function getLateEmployeesService({ userId, filters }) {
     // --- 1. Опоздавшие за день ---
     const [holidays, timeOffs, dayFacePasses] = await Promise.all([
       getHolidaysService(startDate, endDate),
-      getTimeOffsAllService({ userId, filters: { startDate, endDate } }),
-      getAllFacePasses({
+      TimeOffService.getAll({ userId, filters: { startDate, endDate } }),
+      FacePassesService.getAll({
         userId,
         filters: { ...filters, start_date: startDate, end_date: endDate },
       }),
     ]);
 
-    const dayData = generateAttendanceReport(dayFacePasses);
+    const dayData = generateAttendanceReport(dayFacePasses, timeOffs);
 
-    const lateEmployeesDay = await findLateEmployeesByDay(
-      dayData,
-      filters.date,
-      holidays.data,
-      timeOffs.data
-    );
+    const lateEmployeesDay = findLateEmployeesByDay(dayData, filters.date);
 
     if (!lateEmployeesDay.length) return { data: [], success: true };
 
     const lateEmployeeIds = lateEmployeesDay.map((e) => e.employeeId);
+
     const { monthStartDate, monthEndDate } = getMonthRangeFromDate(date);
 
     // --- 2. Данные за месяц только для этих сотрудников ---
     const [monthlyHolidays, monthlyTimeOffs, monthlyFacePasses] =
       await Promise.all([
         getHolidaysService(monthStartDate, monthEndDate),
-        getTimeOffsAllService({
+        TimeOffService.getAll({
           userId,
           filters: { startDate: monthStartDate, endDate: monthEndDate },
         }),
 
-        getAllFacePasses({
+        FacePassesService.getAll({
           userId,
           filters: {
             employeeIds: lateEmployeeIds,
@@ -61,17 +58,20 @@ export async function getLateEmployeesService({ userId, filters }) {
         }),
       ]);
 
-    const monthlyData = generateAttendanceReport(monthlyFacePasses);
+    const monthlyData = generateAttendanceReport(
+      monthlyFacePasses,
+      monthlyTimeOffs,
+    );
 
     const monthlyLateInfo = await findLateEmployeesByMonth(
       monthlyData,
       monthlyHolidays.data,
-      monthlyTimeOffs.data
+      monthlyTimeOffs.data,
     );
 
     // --- 3. Собираем финальный массив сотрудников ---
     const monthlyMap = new Map(
-      monthlyLateInfo.map((emp) => [emp.id, emp.monthlyLateCount])
+      monthlyLateInfo.map((emp) => [emp.id, emp.monthlyLateCount]),
     );
 
     return {
@@ -81,25 +81,38 @@ export async function getLateEmployeesService({ userId, filters }) {
       })),
       success: true,
     };
-  } else {
+  }
+
+  if (mode === "month") {
     const { startDate, endDate } = getDateRange("month", date);
     const [holidays, timeOffs, facePasses] = await Promise.all([
       getHolidaysService(startDate, endDate),
-      getTimeOffsAllService({ userId, filters: { startDate, endDate } }),
-      getAllFacePasses({
+      TimeOffService.getAll({ userId, filters: { startDate, endDate } }),
+      FacePassesService.getAll({
         userId,
         filters: { ...filters, start_date: startDate, end_date: endDate },
       }),
     ]);
 
-    const monthlyData = generateAttendanceReport(facePasses);
+    const monthlyData = generateAttendanceReport(facePasses, timeOffs);
 
-    const monthlyLateEmployees = await findLateEmployeesByMonth(
+    const lateEmployeesByMonth = findLateEmployeesByMonth(
       monthlyData,
       holidays.data,
-      timeOffs.data
+      timeOffs.data,
     );
 
-    return { data: monthlyLateEmployees, success: true };
+    const lateByBranchAndDay = findLateByBranchAndDay(
+      monthlyData,
+      holidays.data,
+      timeOffs.data,
+    );
+
+    return {
+      data: {
+        lateEmployeesByMonth,
+        lateByBranchAndDay,
+      },
+    };
   }
 }

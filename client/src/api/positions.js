@@ -39,3 +39,14 @@ export const editPositionById = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deletePositionById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/positions/${id}`);
+
+  return {
+    success: res.data.success,
+    message: res.data.message || "Должность удалена",
+  };
+};

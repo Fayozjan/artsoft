@@ -18,7 +18,11 @@ const ProfileSettings = ({ onClose }) => {
     new: false,
     confirm: false,
   });
-  const { theme: storedTheme, language: storedLanguage } = getUserSettings();
+  const {
+    theme: storedTheme,
+    language: storedLanguage,
+    sidebar,
+  } = getUserSettings();
 
   const [theme, setTheme] = useState(storedTheme || "light");
   const [language, setLanguage] = useState(storedLanguage || "ru");
@@ -47,6 +51,7 @@ const ProfileSettings = ({ onClose }) => {
       });
 
       if (response.success) {
+        setUserSettings({ theme, language, sidebar });
         showAlert("Успешно", "success");
         setTimeout(() => onClose(), 1000);
       }
@@ -112,7 +117,7 @@ const ProfileSettings = ({ onClose }) => {
             <label>Тема</label>
             <select value={theme} onChange={(e) => setTheme(e.target.value)}>
               <option value="light">Светлая</option>
-              <option value="dark">Тёмная</option>
+              {/* <option value="dark">Тёмная</option> */}
             </select>
           </div>
 

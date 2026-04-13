@@ -20,6 +20,12 @@ import MultiSelectBranches from "./MultiSelectBranches";
 
 import styles from "./AddUser.module.scss";
 
+const STATIC_MENUS = [
+  { key: "home", label: "Главная" },
+  { key: "finance", label: "Финансы" },
+  { key: "tasks", label: "Задачи" },
+];
+
 const EditUser = ({ id, handleClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlertStore();
@@ -28,9 +34,12 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
     password: "",
     employee_id: "",
     access_level: "",
-    branch_access: [],
-    department_access: [],
+    branches: [],
+    departments: [],
     status: true,
+    telegramId: "",
+    view_mode: "branch",
+    personal_menus: [],
   });
 
   const [userMenus, setUserMenus] = useState();
@@ -49,42 +58,61 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [
-        userRes,
-        employeesRes,
-        branchesRes,
-        departmentsRes,
-        userMenu,
-        allMenus,
-      ] = await Promise.all([
-        getUser(id),
-        EmployeeService.getActive(),
-        getActiveBranches(),
-        getActiveDepartments(),
-        getUserMenu(),
-        getMenus(),
-      ]);
+      const [userRes, employeesRes, branchesRes, departmentsRes, allMenusRes] =
+        await Promise.all([
+          getUser(id),
+          EmployeeService.getActive(),
+          getActiveBranches(),
+          getActiveDepartments(),
+          getMenus(),
+        ]);
 
-      setUserMenus(userMenu);
-      setAllMenus(allMenus);
+      const userData = userRes.data;
+      const savedMenus = userData.menuAccess || [];
 
-      setState({
+      const menuMap = {};
+      savedMenus.forEach((item) => {
+        menuMap[item.menu_id] = {
+          view: !!item.can_view,
+          add: !!item.can_add,
+          update: !!item.can_update,
+          delete: !!item.can_delete,
+        };
+      });
+
+      setAllMenus(allMenusRes);
+      setUserMenus(
+        savedMenus.map((m) => ({
+          id: m.menu_id,
+          permissions: {
+            view: m.can_view,
+            add: m.can_add,
+            update: m.can_update,
+            delete: m.can_delete,
+          },
+        })),
+      );
+
+      setFormData({
+        username: userData.username || "",
+        employee_id: userData.employee_id || "",
+        access_level: userData.access_level || "",
+        status: userData.status ?? true,
+        branches: userData.branch_access || [], // 👈 branch_access из БД → branches для сервиса
+        departments: userData.department_access || [], // 👈 department_access из БД → departments для сервиса
+        telegramId: userData.telegram_id || "", // 👈
+        view_mode: userData.view_mode || "branch", // 👈
+        personal_menus: userData.personal_menus || [], // 👈
+        password: "",
+        menu: menuMap,
+      });
+
+      setState((prev) => ({
+        ...prev,
         employees: employeesRes.data || employeesRes,
         branches: branchesRes.data || branchesRes,
         departments: departmentsRes.data || departmentsRes,
         loading: false,
-        showPassword: false,
-      });
-
-      setFormData((prev) => ({
-        ...prev,
-        username: userRes.data.username || "",
-        access_level: userRes.data.access_level || "",
-        employee_id: userRes.data.employee_id || "",
-        status: userRes.data.status ?? true,
-        branch_access: userRes.data.branch_access || [],
-        department_access: userRes.data.department_access || [],
-        menu: userRes.data.menu || [],
       }));
     } catch (error) {
       console.error(error);
@@ -104,33 +132,32 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
       ...prev,
       [name]: name === "status" ? value === "true" : value,
       ...(name === "access_level" && {
-        branch_access: [],
-        department_access: [],
+        branches: [],
+        departments: [],
       }),
     }));
   };
 
-  // Обновление меню
-  const handleMenuChange = useCallback((newMenuData) => {
+  const handleMenuChange = useCallback((updatedPermissions) => {
     setFormData((prev) => ({
       ...prev,
-      menu: newMenuData,
+      menu: updatedPermissions,
     }));
   }, []);
 
   const handleBranchesChange = (selected) => {
     setFormData((prevData) => ({
       ...prevData,
-      branch_access: selected,
-      department_access: [],
+      branches: selected,
+      departments: [],
     }));
   };
 
   const handleDepartmentChange = (selected) => {
     setFormData((prevData) => ({
       ...prevData,
-      branch_access: [],
-      department_access: selected,
+      branches: [],
+      departments: selected,
     }));
   };
 
@@ -211,6 +238,16 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
             defaultValue={formData.employee_id}
           />
         </div>
+
+        <div>
+          <label>Телеграм ID</label>
+          <input
+            type="text"
+            name="telegramId"
+            value={formData.telegramId}
+            onChange={handleChange}
+          />
+        </div>
       </div>
 
       <div className={styles.row}>
@@ -226,6 +263,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
             <option value="absolute">Полный доступ</option>
             <option value="branch">Филиал</option>
             <option value="department">Отдел</option>
+            <option value="employee">Сотрудник</option>
           </select>
         </div>
 
@@ -249,12 +287,12 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
             <label className={styles.label}>
               Филиалы
               <span className={styles.sticker}>
-                {formData.branch_access.length || 0}
+                {formData.branches?.length || 0}
               </span>
             </label>
             <MultiSelectBranches
               options={state.branches}
-              selected={formData.branch_access}
+              selected={formData.branches}
               onChange={handleBranchesChange}
               required
             />
@@ -266,12 +304,12 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
             <label className={styles.label}>
               Отделы
               <span className={styles.sticker}>
-                {formData.department_access.length || 0}
+                {formData.departments?.length || 0}
               </span>
             </label>
             <MultiSelectDepartments
               options={state.departments}
-              selected={formData.department_access}
+              selected={formData.departments}
               onChange={handleDepartmentChange}
               required
             />
@@ -279,11 +317,56 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         )}
       </div>
 
-      <PermissionsManager
-        allMenus={allMenus}
-        userMenus={userMenus}
-        onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
-      />
+      <div className={styles.row}>
+        <div>
+          <label>Режим отображения</label>
+          <select
+            name="view_mode"
+            value={formData.view_mode}
+            onChange={handleChange}
+          >
+            <option value="absolute">Все филиалы</option>
+            <option value="branch">Отдельно по филиалу</option>
+          </select>
+        </div>
+      </div>
+
+      {formData?.access_level !== "employee" && (
+        <>
+          <PermissionsManager
+            allMenus={allMenus}
+            userMenus={userMenus}
+            onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
+          />
+
+          <div className={styles.row}>
+            <div>
+              <label>Личный режим для меню</label>
+              <div className={styles.checkboxGroup}>
+                {STATIC_MENUS.map(({ key, label }) => (
+                  <label key={key} className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={formData.personal_menus?.includes(key) || false}
+                      onChange={(e) => {
+                        const current = formData.personal_menus || [];
+                        const updated = e.target.checked
+                          ? [...current, key]
+                          : current.filter((k) => k !== key);
+                        setFormData((prev) => ({
+                          ...prev,
+                          personal_menus: updated,
+                        }));
+                      }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </form>
   );
 };

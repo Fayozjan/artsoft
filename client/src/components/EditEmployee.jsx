@@ -39,7 +39,8 @@ const EditEmployee = ({
   const { t } = useTranslation();
   const { showAlert } = useAlertStore();
   const [loading, setLoading] = useState(true);
-  console.log("data", formData);
+  const lastOrder = formData?.employmentOrders?.at(-1);
+  const isEmployed = lastOrder && lastOrder.type !== "terminate";
 
   const today = () => new Date().toISOString().slice(0, 10);
 
@@ -143,7 +144,7 @@ const EditEmployee = ({
     try {
       await EmployeeService.update(id, formData);
 
-      showAlert(t("success"), "success");
+      await showAlert(t("success"), "success");
       onSuccess();
 
       setTimeout(() => {
@@ -151,6 +152,7 @@ const EditEmployee = ({
       }, 1000);
     } catch (err) {
       showAlert(t("error"), "error");
+      console.log("error", err);
     } finally {
       setLoading(false);
     }
@@ -199,7 +201,7 @@ const EditEmployee = ({
               src={
                 imagePreview?.startsWith("blob:")
                   ? imagePreview
-                  : `${imagePreview}?t=${new Date().getTime()}`
+                  : `/api/employees/image/${imagePreview}?t=${new Date().getTime()}`
               }
               alt="selectedPhoto"
               className={`${formData.status ? styles.active : styles.terminated}`}
@@ -585,7 +587,7 @@ const EditEmployee = ({
           </button>
         )}
 
-        {formData?.employmentOrders?.length ? (
+        {/* {formData?.employmentOrders?.length ? (
           <>
             <button
               type="button"
@@ -609,6 +611,37 @@ const EditEmployee = ({
           <button
             type="button"
             className={`${styles.hireBtn} ${styles.btn} `}
+            onClick={() => handleLeftPanel("hire", "addEmploymentOrder")}
+          >
+            {Icons.plus}
+            {t("hireEmployee")}
+          </button>
+        )} */}
+
+        {isEmployed ? (
+          <>
+            <button
+              type="button"
+              className={`${styles.transferBtn} ${styles.btn}`}
+              onClick={() => handleLeftPanel("transfer", "addEmploymentOrder")}
+            >
+              {Icons.transfer}
+              {t("transferEmployee")}
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.terminateBtn} ${styles.btn}`}
+              onClick={() => handleLeftPanel("terminate", "addEmploymentOrder")}
+            >
+              {Icons.terminate}
+              {t("terminateEmployee")}
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className={`${styles.hireBtn} ${styles.btn}`}
             onClick={() => handleLeftPanel("hire", "addEmploymentOrder")}
           >
             {Icons.plus}

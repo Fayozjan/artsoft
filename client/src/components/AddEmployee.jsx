@@ -89,7 +89,7 @@ const AddEmployee = ({ handleClose, onSuccess }) => {
     } catch (err) {
       const message =
         err.response?.data?.error || err.message || "Произошла ошибка";
-      showAlert(message, "error");
+      showAlert(t("error"), "error");
     }
   };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import * as XLSX from "xlsx";
+
 import { useTranslation } from "react-i18next";
 
 import { getLateEmployees } from "../api";
@@ -12,8 +12,13 @@ import LateCardListCarousel from "../components/LateCardListCarousel";
 import Pagination from "../components/Pagination";
 import DownloadButton from "../components/DownloadButton";
 
-import styles from "./LateEmployeesPage.module.scss";
 import { formatLateMinutesToHours } from "../helpers/time";
+import MonthlyLateReport from "../components/MonthlyLateReport";
+
+import styles from "./LateEmployeesPage.module.scss";
+import { DownloadLate } from "../utils/downloadDoc";
+import LateEmployeeModal from "../components/LateEmployeeModal";
+import { useAuthStore } from "../stores/authStore";
 
 function formatPermissionEndTime(dateString) {
   if (!dateString) return "";
@@ -25,84 +30,6 @@ function formatPermissionEndTime(dateString) {
     minute: "2-digit",
   });
 }
-
-const downloadLateExcel = (data, date) => {
-  const excelData = data.map((item, index) => ({
-    "№": index + 1,
-    ФИО: `${item.surname} ${item.name} ${item.patronymic} ${item.user_id}`,
-    Филиал: item.branch_name,
-    Отдел: item.department_name,
-    Должность: item.position_name,
-    "По граффику": item.scheduled_start?.substring(0, 5) || "",
-    Вход: item.actual_start || "",
-    "Опоздание (чч:мм)": formatLateMinutesToHours(item.late_minutes),
-  }));
-
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Опоздание");
-
-  const filename = `Опоздание за - ${date}.xlsx`;
-  XLSX.writeFile(workbook, filename);
-};
-
-const downloadLateMonthExcel = (data, date = "") => {
-  // Собираем все уникальные даты опозданий
-  const allDatesSet = new Set();
-  data.forEach((item) => {
-    item.lateDays.forEach((d) => {
-      allDatesSet.add(d.date);
-    });
-  });
-
-  const allDates = Array.from(allDatesSet).sort(); // сортируем по дате
-
-  // Сортируем по ФИО (по алфавиту, регистр не учитываем)
-  const sortedData = [...data].sort((a, b) =>
-    a.fullname.localeCompare(b.fullname, "ru", { sensitivity: "base" })
-  );
-
-  // Формируем данные для Excel
-  const excelData = sortedData.map((item, index) => {
-    const row = {
-      "№": index + 1,
-      ФИО: item.fullname,
-      Филиал: item.branch_name,
-      Отдел: item.department_name,
-      Должность: item.position_name,
-      "Опозданий за месяц": item.monthly_late_count,
-    };
-
-    // Добавляем колонки с датами
-    allDates.forEach((date) => {
-      const lateEntry = item.lateDays.find((d) => d.date === date);
-      if (lateEntry) {
-        const { scheduled, actual, minutesLate } = lateEntry;
-        const hours = Math.floor(minutesLate / 60);
-        const minutes = minutesLate % 60;
-        const formattedLate =
-          hours > 0 ? `${hours} ч. ${minutes} мин.` : `${minutes} мин.`;
-
-        row[date] = `${scheduled.slice(
-          0,
-          5
-        )} - ${actual} (Опоздание: ${formattedLate})`;
-      } else {
-        row[date] = "";
-      }
-    });
-
-    return row;
-  });
-
-  // Генерация Excel
-  const worksheet = XLSX.utils.json_to_sheet(excelData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "Опоздание");
-
-  const filename = `Опоздание за - ${date}.xlsx`;
-  XLSX.writeFile(workbook, filename);
-};
 
 const LateEmployeesPage = () => {
   const [data, setData] = useState([]);
@@ -123,15 +50,22 @@ const LateEmployeesPage = () => {
     position_id: "",
   });
   const [selectedMode, setSelectedMode] = useState("day");
+  const { viewMode, activeBranchId } =
+    useAuthStore((s) => s.userSettings) || {};
 
   const { t } = useTranslation();
 
-  const hasAnyPermission = data.some(
-    (item) => item.have_permission || item.permission_end_time
+  const hasAnyPermission = data?.lateEmployeesByMonth?.some(
+    (item) => item.have_permission || item.permission_end_time,
   );
 
   const dayColumns = [
     { label: "№", render: (_, __, i) => i + 1 },
+    {
+      label: "Дата",
+      accessor: "date",
+      style: { minWidth: "90px" },
+    },
     {
       label: "ФИО",
       accessor: "employeeFullName",
@@ -139,7 +73,12 @@ const LateEmployeesPage = () => {
         <div className={styles.employee}>
           <span>{item.employeeFullName}</span>
 
-          {item.employeePhoto && <img src={item.employeePhoto} alt="photo" />}
+          {item.employeePhoto && (
+            <img
+              src={`/api/employees/image/${item.employeePhoto}`}
+              alt="photo"
+            />
+          )}
         </div>
       ),
     },
@@ -156,12 +95,7 @@ const LateEmployeesPage = () => {
 
     ,
     { label: "Вход", accessor: "actualStart" },
-    {
-      label: "Фото входа",
-      accessor: "actualStartPhoto",
-      render: (value) =>
-        value ? <img src={value} alt="photo" /> : <div></div>,
-    },
+
     ...(hasAnyPermission
       ? [
           {
@@ -183,86 +117,87 @@ const LateEmployeesPage = () => {
       render: formatLateMinutesToHours,
     },
     {
-      label: "Опоздание в деньгах",
+      label: "Сумма за опоздание",
       accessor: "monthlyLateMoney",
     },
     {
       label: "Кол-во опозданий за месяц",
       accessor: "monthlyLateCount",
     },
-  ];
-
-  const monthColumns = [
-    { label: "№", render: (_, __, i) => i + 1 },
     {
-      label: "ФИО",
-      accessor: "fullName",
-      render: (_, item) => (
-        <div className={styles.employee}>
-          <span>{item.employeeFullName}</span>
-
-          {item.employeePhoto && <img src={item.employeePhoto} alt="photo" />}
-        </div>
-      ),
-    },
-    { label: "Филиал", accessor: "branchName" },
-    { label: "Отдел", accessor: "departmentName" },
-    { label: "Должность", accessor: "positionName" },
-    {
-      label: "Кол-во опозданий за месяц",
-      accessor: "monthlyLateCount",
-    },
-    {
-      label: "Суммарное опоздание (чч:мм)",
-      accessor: "monthlyLateMinutes",
-      render: (_, item) => {
-        return formatLateMinutesToHours(item.monthlyLateMinutes);
-      },
-    },
-    {
-      label: "Суммарное опоздание в деньгах",
-      accessor: "monthlyLateMoney",
-    },
-    {
-      label: "Действие",
-      render: (_, item) => (
-        <button className={styles.btnMore} onClick={() => setModalData(item)}>
-          Подробно
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
+      label: "Фото",
+      accessor: "actualStartPhoto",
+      render: (value) =>
+        value ? (
+          <a
+            href={`/api/face-passes/image/${value}`}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.photoLink}
           >
-            <path
-              fill="none"
-              stroke="currentColor"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="m10 17l5-5m0 0l-5-5"
-            />
-          </svg>
-        </button>
-      ),
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+            >
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 6l4-4a3 5 0 0 1 3 0l4 4"
+              />
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="m14 14l1-1a3 5 0 0 1 3 0l3 3"
+              />
+            </svg>
+            Фото
+          </a>
+        ) : null,
     },
   ];
 
   useEffect(() => {
     const now = new Date();
-    if (formData.mode === "day") {
-      const today = now.toISOString().slice(0, 10);
-      setFormData((prev) => ({ ...prev, date: today }));
-    } else if (formData.mode === "month") {
-      const currentMonth = now.toISOString().slice(0, 7);
-      setFormData((prev) => ({ ...prev, date: currentMonth }));
-    }
+
+    const newDate =
+      formData.mode === "day"
+        ? now.toISOString().slice(0, 10)
+        : now.toISOString().slice(0, 7);
+
+    // Сбрасываем данные таблицы
+    setData(
+      formData.mode === "day"
+        ? []
+        : { lateEmployeesByMonth: [], lateByBranchAndDay: [] },
+    );
+
+    // Полностью сбрасываем formData
+    setFormData({
+      mode: formData.mode,
+      date: newDate,
+      branch_id: "",
+      department_id: "",
+      employee_id: "",
+      position_id: "",
+      search: "",
+    });
+
+    // Сбрасываем viewType в дефолтное значение
+    setViewType(formData.mode === "day" ? "row" : "employees");
   }, [formData.mode]);
 
   const fetchData = async (
     page = currentPage,
     filters = formData,
-    size = pageSize
+    size = pageSize,
   ) => {
     setLoading(true);
     try {
@@ -284,6 +219,12 @@ const LateEmployeesPage = () => {
   };
 
   useEffect(() => {
+    if (viewMode === "branch") {
+      fetchData(1, formData, pageSize);
+    }
+  }, [activeBranchId]);
+
+  useEffect(() => {
     fetchData(currentPage);
   }, [currentPage, pageSize]);
 
@@ -297,7 +238,7 @@ const LateEmployeesPage = () => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setCurrentPage((prevPage) =>
-      Math.min(prevPage, Math.ceil(totalItems / size))
+      Math.min(prevPage, Math.ceil(totalItems / size)),
     );
   };
 
@@ -328,6 +269,24 @@ const LateEmployeesPage = () => {
 
     return () => clearInterval(interval);
   }, [autoRefresh, formData.date]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setModalData(null);
+      }
+    };
+
+    if (modalData) {
+      document.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [modalData]);
+
+  console.log("data", data);
 
   return (
     <div className={styles.lateEmployeesPage}>
@@ -411,29 +370,41 @@ const LateEmployeesPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              {selectedMode !== "month" && data.length > 0 && (
-                <>
-                  <select
-                    name="viewType"
-                    id="viewType"
-                    value={viewType}
-                    onChange={(e) => setViewType(e.target.value)}
-                  >
-                    <option value="row">Список</option>
-                    <option value="card">Карточки</option>
-                    <option value="carousel">Карусель</option>
-                  </select>
+              {selectedMode === "day" ? (
+                data?.length > 0 && (
+                  <>
+                    <select
+                      name="viewType"
+                      id="viewType"
+                      value={viewType}
+                      onChange={(e) => setViewType(e.target.value)}
+                    >
+                      <option value="row">Список</option>
+                      <option value="card">Карточки</option>
+                      <option value="carousel">Мониторинг</option>
+                    </select>
 
-                  <label className={styles.autoRefresh}>
-                    <span className={styles.label}>Автообновление</span>
-                    <input
-                      type="checkbox"
-                      checked={autoRefresh}
-                      onChange={(e) => setAutoRefresh(e.target.checked)}
-                      className={styles.toggle}
-                    />
-                  </label>
-                </>
+                    <label className={styles.autoRefresh}>
+                      <span className={styles.label}>Автообновление</span>
+                      <input
+                        type="checkbox"
+                        checked={autoRefresh}
+                        onChange={(e) => setAutoRefresh(e.target.checked)}
+                        className={styles.toggle}
+                      />
+                    </label>
+                  </>
+                )
+              ) : (
+                <select
+                  name="viewType"
+                  id="viewType"
+                  value={viewType}
+                  onChange={(e) => setViewType(e.target.value)}
+                >
+                  <option value="employees">Сотрудники</option>
+                  <option value="branches">Сводка по филиалам</option>
+                </select>
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
@@ -456,80 +427,59 @@ const LateEmployeesPage = () => {
                 <span>Обновить данные</span>
               </div>
 
-              {data.length > 0 && (
-                <DownloadButton
-                  text={t("save")}
-                  onClick={
-                    formData.mode === "month"
-                      ? () => downloadLateMonthExcel(data, formData.date)
-                      : () => downloadLateExcel(data, formData.date)
-                  }
-                />
-              )}
+              {formData.mode === "day"
+                ? data.length > 0 && (
+                    <DownloadButton
+                      text={t("save")}
+                      onClick={() => DownloadLate.day(data, formData.date)}
+                    />
+                  )
+                : data?.lateEmployeesByMonth?.length > 0 && (
+                    <DownloadButton
+                      text={t("save")}
+                      onClick={() =>
+                        viewType === "employees"
+                          ? DownloadLate.monthByEmployee(
+                              data?.lateEmployeesByMonth,
+                              formData.date,
+                            )
+                          : DownloadLate.monthByBranch(
+                              data?.lateByBranchAndDay,
+                              formData.date,
+                            )
+                      }
+                    />
+                  )}
             </div>
           </div>
 
           {selectedMode === "day" ? (
-            viewType === "row" ? (
-              <Table
-                columns={dayColumns}
-                data={data.sort((b, a) => a.late_minutes - b.late_minutes)}
-              />
-            ) : viewType === "card" ? (
-              <LateCardList
-                data={data.sort((b, a) => a.late_minutes - b.late_minutes)}
-              />
+            formData.date ? (
+              viewType === "row" ? (
+                <Table columns={dayColumns} data={data} />
+              ) : viewType === "card" ? (
+                <LateCardList data={Array.isArray(data) ? data : []} />
+              ) : (
+                <LateCardListCarousel data={Array.isArray(data) ? data : []} />
+              )
             ) : (
-              <LateCardListCarousel
-                data={data.sort((b, a) => a.late_minutes - b.late_minutes)}
-              />
+              <></>
             )
           ) : (
-            <Table
-              columns={monthColumns}
-              setModalData={setModalData}
-              data={data.sort((b, a) => a.late_minutes - b.late_minutes)}
+            <MonthlyLateReport
+              onMore={setModalData}
+              data={data || []}
+              viewType={viewType}
             />
           )}
-          {modalData && (
-            <div
-              className={styles.modalOverlay}
-              onClick={() => setModalData(null)}
-            >
-              <div
-                className={styles.modalContent}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <h3>{"Опоздание за месяц по дням"}</h3>
-
-                <p>{modalData.fullName}</p>
-
-                <table className={styles.lateTable}>
-                  <thead>
-                    <tr>
-                      <th>№</th>
-                      <th>Дата</th>
-                      <th>По графику</th>
-                      <th>Пришел</th>
-                      <th>Опоздание (чч:мм)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {modalData.details?.map((item, i) => (
-                      <tr key={i}>
-                        <td>{i + 1}</td>
-                        <td>{item.date}</td>
-                        <td>{item.scheduledStart}</td>
-                        <td>{item.actualStart}</td>
-                        <td>{formatLateMinutesToHours(item.lateMinutes)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
+      )}
+
+      {modalData && (
+        <LateEmployeeModal
+          modalData={modalData}
+          onClose={() => setModalData(null)}
+        />
       )}
     </div>
   );

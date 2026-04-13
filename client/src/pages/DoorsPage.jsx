@@ -10,15 +10,15 @@ import Badge from "../components/Badge";
 import Pagination from "../components/Pagination";
 import SortArrow from "../components/SortArrow";
 
-import { getDoors } from "../api/index";
+import { deleteDoorById, getDoors } from "../api/index";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
-import TableIcons from "../icons/tableIcons";
 import Loading from "../components/Loading";
 import TableFilter from "../components/TableFilter";
 import DownloadButton from "../components/DownloadButton";
 
 import styles from "./DoorsPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
 
 const DoorsPage = () => {
   const [data, setData] = useState([]);
@@ -136,6 +136,18 @@ const DoorsPage = () => {
   const handleSearch = () => {
     setCurrentPage(1);
     fetchData(1, formData, pageSize);
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      await deleteDoorById(itemId);
+      showAlert(t("success"), "success");
+      setShowModal(false);
+      fetchData();
+    } catch (err) {
+      console.error("Ошибка при удалении:", err);
+      showAlert(t("error"), "error");
+    }
   };
 
   return (
@@ -305,24 +317,19 @@ const DoorsPage = () => {
                       <td>{(currentPage - 1) * pageSize + i + 1}</td>
                       <td>{item.name}</td>
                       <td>{item.id}</td>
-                      <td>{item.employees_count}</td>
+                      <td>{item.employees_count || 0}</td>
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

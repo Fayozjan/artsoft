@@ -25,6 +25,8 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
     status: null,
   });
 
+  console.log("formData", formData);
+
   useEffect(() => {
     const fetchPosition = async () => {
       try {
@@ -57,7 +59,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
   const handleSelectionChange = (selected) => {
     setFormData((prevData) => ({
       ...prevData,
-      users: selected,
+      selectedEmployeeIds: selected,
     }));
   };
 
@@ -97,7 +99,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
   return (
     <form className={styles.addTelegramBot} onSubmit={handleSubmit}>
       <div className={styles.header}>
-        <h2>{t("addTelegramBot")}</h2>
+        <h2>{t("editTelegramBot")}</h2>
         <Button text={t("save")} type={"submit"} />
       </div>
 

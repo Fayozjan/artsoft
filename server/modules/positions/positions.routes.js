@@ -1,13 +1,17 @@
 import express from "express";
-import * as positionsContollers from "./positions.controller.js";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
+import { PositionsController } from "./positions.controller.js";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, positionsContollers.getPositions);
-router.get("/active", authMiddleware, positionsContollers.getActivePositions);
-router.get("/:id", authMiddleware, positionsContollers.getPositionById);
-router.post("/", authMiddleware, positionsContollers.addPosition);
-router.put("/:id", authMiddleware, positionsContollers.editPositionById);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", PositionsController.getPositions);
+router.get("/active", PositionsController.getActivePositions);
+router.get("/:id", PositionsController.getPositionById);
+router.post("/", PositionsController.addPosition);
+router.put("/:id", PositionsController.editPositionById);
 
 export default router;

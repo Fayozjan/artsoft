@@ -3,7 +3,16 @@ import TimesheetCell from "./TimesheetCell";
 import styles from "./Timesheet.module.scss";
 
 const TimesheetRow = React.memo(
-  ({ employee, id, daysArray, index, currentPage, pageSize, virtualRow }) => {
+  ({
+    employee,
+    id,
+    daysArray,
+    index,
+    currentPage,
+    pageSize,
+    virtualRow,
+    date,
+  }) => {
     return (
       <tr
         style={{
@@ -23,16 +32,19 @@ const TimesheetRow = React.memo(
         <td>{employee?.positionName}</td>
         <td>{employee?.workScheduleName}</td>
         <td>{employee?.totalWorkedDays || 0}</td>
-        <td>{employee?.totalWorkedHours || 0}</td>
+        <td>{employee?.totalWorkedHours || "00:00"}</td>
 
-        {daysArray.map((day) => (
-          <TimesheetCell
-            key={day}
-            day={day}
-            dayData={employee.sessions?.[day]}
-            employeeId={id}
-          />
-        ))}
+        {daysArray.map((day) => {
+          const dayKey = `${date}-${String(day).padStart(2, "0")}`;
+          return (
+            <TimesheetCell
+              key={day}
+              day={day}
+              dayData={employee.sessions?.[dayKey]}
+              employeeId={id}
+            />
+          );
+        })}
       </tr>
     );
   },
@@ -41,7 +53,8 @@ const TimesheetRow = React.memo(
     prevProps.virtualRow.start === nextProps.virtualRow.start &&
     prevProps.daysArray === nextProps.daysArray &&
     prevProps.currentPage === nextProps.currentPage &&
-    prevProps.pageSize === nextProps.pageSize
+    prevProps.pageSize === nextProps.pageSize &&
+    prevProps.date === nextProps.date,
 );
 
 TimesheetRow.displayName = "TimesheetRow";

@@ -1,14 +1,30 @@
 import { Router } from "express";
-import { authMiddleware } from "../../middlewares/authMiddleware.js";
-import * as facePassesController from "./facePasses.controller.js";
 import multer from "multer";
-const upload = multer().any();
+import {
+  authMiddleware,
+  authPhotoMiddleware,
+} from "../../middlewares/authMiddleware.js";
+import { FacePassesController } from "./facePasses.controller.js";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
+
+const upload = multer({ dest: "tmp/" });
 
 const router = Router();
 
-router.get("/", authMiddleware, facePassesController.getFacePasses);
-router.get("/:id", authMiddleware, facePassesController.getFacePassById);
-router.put("/:id", authMiddleware, facePassesController.editFacePass);
-router.delete("/:id", authMiddleware, facePassesController.removeFacePass);
+router.get(
+  "/image/*",
+  tenantMiddleware,
+  authPhotoMiddleware,
+  FacePassesController.getImage,
+);
+
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", FacePassesController.get);
+router.post("/", upload.any(), FacePassesController.create);
+router.get("/:id", FacePassesController.getById);
+router.put("/:id", FacePassesController.updateById);
+router.delete("/:id", FacePassesController.deleteById);
 
 export default router;

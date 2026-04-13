@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 
 import { getAge, formatDate } from "../utils/utils";
 
+import { EmployeeService } from "../api";
+
 import SortArrow from "../components/SortArrow";
 import Badge from "../components/Badge";
-import TableIcons from "../icons/tableIcons";
+import { ActionCell } from "./ActionButtons";
 
 import styles from "./EmployeesTable.module.scss";
 
@@ -187,8 +189,8 @@ const EmployeesTable = ({
 
                     {item.photo && (
                       <img
-                        src={`${item.photo}?t=${new Date()}`}
-                        alt="employeePhoto"
+                        src={`/api/employees/image/${item.photo}`}
+                        alt="employee"
                         className={
                           item.status ? styles.active : styles.terminated
                         }
@@ -211,20 +213,15 @@ const EmployeesTable = ({
                 <td>
                   <Badge text={item.status ? "active" : "terminated"} />
                 </td>
-                {(canEdit || canDelete) && (
-                  <td className={styles.actions}>
-                    {canEdit && (
-                      <TableIcons.edit
-                        onClick={() => handleEditClick(item.id)}
-                      />
-                    )}
-                    {canDelete && (
-                      <TableIcons.delete
-                        onClick={() => handleDeleteClick(item.id)}
-                      />
-                    )}
-                  </td>
-                )}
+                {
+                  <ActionCell
+                    item={item}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
+                    onEdit={handleEditClick}
+                    onDelete={handleDeleteClick}
+                  />
+                }
               </tr>
             ))
           ) : (

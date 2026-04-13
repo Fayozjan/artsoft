@@ -1,93 +1,87 @@
-import * as departmentsModel from "./departments.model.js";
-import { getActiveDepartmentsService } from "./departments.service.js";
+import { DepartmentsService } from "./departments.service.js";
 
-export const getDepartments = async (req, res) => {
-  const userId = req.user.id;
-  const { page, pageSize, filters } = req.query;
+export const DepartmentsController = {
+  getDepartments: async (req, res) => {
+    try {
+      const { page, pageSize, filters } = req.query;
+      const result = await DepartmentsService.getDepartments({
+        userId: req.user.id,
+        page: Number(page),
+        pageSize: Number(pageSize),
+        filters,
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: err.message || "Ошибка при получении отделов" });
+    }
+  },
 
-  try {
-    const result = await departmentsModel.getDepartments({
-      userId,
-      page,
-      pageSize,
-      filters,
-    });
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: err.message || "Ошибка при получении отделов" });
-  }
-};
+  getActiveDepartments: async (req, res) => {
+    try {
+      const result = await DepartmentsService.getActiveDepartments({
+        userId: req.user.id,
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: err.message || "Ошибка при получении отделов" });
+    }
+  },
 
-export const getActiveDepartments = async (req, res) => {
-  const userId = req.user.id;
+  getDepartment: async (req, res) => {
+    try {
+      const record = await DepartmentsService.getDepartmentById(req.params.id);
+      if (!record) return res.status(404).json({ error: "Отдел не найден" });
+      res.json({ success: true, data: record });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: err.message || "Ошибка при получении отдела" });
+    }
+  },
 
-  try {
-    const result = await getActiveDepartmentsService({
-      userId,
-    });
-    res.json({ success: true, ...result });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: err.message || "Ошибка при получении отделов" });
-  }
-};
+  addDepartment: async (req, res) => {
+    try {
+      const newRecord = await DepartmentsService.createDepartment(req.body);
+      res.status(201).json({ success: true, data: newRecord });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: err.message || "Ошибка при добавлении отдела" });
+    }
+  },
 
-export const getDepartment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const record = await departmentsModel.getDepartmentById(id);
-    if (!record) return res.status(404).json({ error: "Отдел не найден" });
+  editDepartment: async (req, res) => {
+    try {
+      const updated = await DepartmentsService.editDepartment(
+        req.params.id,
+        req.body,
+      );
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(500)
+        .json({ error: err.message || "Ошибка при обновлении отдела" });
+    }
+  },
 
-    res.json({ success: true, data: record });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: err.message || "Ошибка при получении отдела" });
-  }
-};
-
-export const addDepartment = async (req, res) => {
-  try {
-    const data = req.body;
-    const newRecord = await departmentsModel.createDepartment(data);
-    res.status(201).json({ success: true, data: newRecord });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: err.message || "Ошибка при добавлении отдела" });
-  }
-};
-
-export const editDepartment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const data = req.body;
-    const updated = await departmentsModel.editDepartment(id, data);
-    res.json({ success: true, data: updated });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: err.message || "Ошибка при обновлении отдела" });
-  }
-};
-
-export const deleteDepartment = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await departmentsModel.deleteDepartment(id);
-    res.json({ success: true, data: deleted });
-  } catch (err) {
-    console.error(err);
-    res
-      .status(400)
-      .json({ error: err.message || "Ошибка при удалении отдела" });
-  }
+  deleteDepartment: async (req, res) => {
+    try {
+      const deleted = await DepartmentsService.deleteDepartment(req.params.id);
+      res.json({ success: true, data: deleted });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при удалении отдела" });
+    }
+  },
 };

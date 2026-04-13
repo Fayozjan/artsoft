@@ -1,52 +1,44 @@
 import axios from "axios";
 import { useAuthStore } from "../stores/authStore";
 
-const api = axios.create({ baseURL: "/api", withCredentials: true });
-
-// --- Request interceptor ---
-api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) config.headers["Authorization"] = `Bearer ${token}`;
-  return config;
+const api = axios.create({
+  baseURL: "/api",
+  withCredentials: true,
 });
 
-// --- Response interceptor ---
+let refreshPromise = null;
+
 api.interceptors.response.use(
-  (response) => response, // успешные ответы
+  (res) => res,
   async (error) => {
     const originalRequest = error.config;
 
-    // Если access истёк (403) и ещё не пробовали рефреш
     if (
       [401, 403].includes(error.response?.status) &&
-      !originalRequest._retry
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/auth/refresh") &&
+      !originalRequest.url.includes("/auth/login")
     ) {
       originalRequest._retry = true;
+
       try {
-        // дергаем refresh (refresh токен хранится в cookie, потому withCredentials: true)
-        const res = await axios.post(
-          "/api/auth/refresh",
-          {},
-          { withCredentials: true }
-        );
+        // если refresh уже идёт — ждём его, не запускаем новый
+        if (!refreshPromise) {
+          refreshPromise = api.post("/auth/refresh").finally(() => {
+            refreshPromise = null;
+          });
+        }
 
-        const newAccessToken = res.data.accessToken;
-
-        // обновляем store
-        useAuthStore.getState().setAccessToken(newAccessToken);
-
-        // повторяем оригинальный запрос с новым токеном
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-        return api(originalRequest);
-      } catch (err) {
-        // refresh не сработал → выкидываем пользователя на логин
+        await refreshPromise;
+        return api(originalRequest); // повторяем оригинальный запрос
+      } catch {
         useAuthStore.getState().logout();
         window.location.href = "/";
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

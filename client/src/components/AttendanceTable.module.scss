@@ -41,7 +41,6 @@
       height: 32px;
       padding: 0 10px;
       font-weight: 600;
-
       box-sizing: border-box;
       transition: all 0.2s ease;
 
@@ -53,7 +52,6 @@
 
       svg {
         cursor: pointer;
-
         &:hover {
           transform: scale(1.1);
         }
@@ -70,14 +68,252 @@
       }
     }
 
+    /* ─── Группа кнопок-фильтров по статусу ─────────────────────── */
+    .statusFilters {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .statusFilterBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px 4px 8px;
+      height: 32px;
+      border-radius: 20px;
+      border: 1.5px solid var(--filter-border);
+      background-color: var(--filter-bg);
+      color: var(--filter-color);
+      font-size: var(--font-small);
+      font-weight: 500;
+      cursor: pointer;
+      transition:
+        background-color 0.18s ease,
+        border-color 0.18s ease,
+        color 0.18s ease,
+        box-shadow 0.18s ease,
+        transform 0.12s ease;
+      white-space: nowrap;
+      user-select: none;
+
+      &:hover {
+        filter: brightness(0.94);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+
+      .filterIcon {
+        font-size: 11px;
+        line-height: 1;
+      }
+
+      .filterLabel {
+        line-height: 1;
+      }
+
+      .filterBadge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 4px;
+        border-radius: 10px;
+        background-color: rgba(0, 0, 0, 0.08);
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1;
+        transition: background-color 0.18s ease;
+      }
+    }
+
+    /* Активное состояние кнопки-фильтра */
+    .statusFilterBtnActive {
+      background-color: var(--filter-active-bg) !important;
+      border-color: var(--filter-active-bg) !important;
+      color: #fff !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+
+      .filterBadge {
+        background-color: rgba(255, 255, 255, 0.25);
+        color: #fff;
+      }
+
+      &:hover {
+        filter: brightness(0.9);
+      }
+    }
+
+    /* Кнопка сброса всех фильтров */
+    .clearFiltersBtn {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 20px;
+      border: 1.5px dashed rgba(162, 161, 168, 0.5);
+      background: transparent;
+      color: #6b7280;
+      font-size: var(--font-small);
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+
+      &:hover {
+        border-color: #dc2626;
+        color: #dc2626;
+        background: #fef2f2;
+      }
+    }
+
     .buttonsWrapper {
       display: flex;
       align-items: center;
       gap: 10px;
     }
+
+    .customDropdown {
+      position: relative;
+      display: inline-block;
+      width: 150px;
+
+      button {
+        width: 100%;
+        height: 32px;
+        padding: 0 6px;
+        font-size: var(--font-small);
+        font-weight: 500;
+        border-radius: 4px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        background-color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        box-sizing: border-box;
+        gap: 8px;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
+      ul {
+        font-size: var(--font-small);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        width: 100%;
+        margin: 4px 0 0 0;
+        padding: 4px 0;
+        list-style: none;
+        background-color: white;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        border-radius: 4px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+
+        li {
+          padding: 6px 10px;
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          transition: background 0.2s;
+
+          &:hover {
+            background-color: #f0f0f0;
+          }
+
+          svg {
+            margin-right: 6px;
+            width: 16px;
+            height: 16px;
+          }
+        }
+      }
+    }
   }
 }
 
+/* ─── Строка активных фильтров ────────────────────────────────────── */
+.activeFiltersBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f8f9fc;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  font-size: var(--font-small);
+  animation: slideDown 0.2s ease;
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .activeFiltersLabel {
+    color: #6b7280;
+    font-weight: 500;
+    margin-right: 2px;
+  }
+
+  .activeFilterTag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 6px 2px 8px;
+    border-radius: 12px;
+    background-color: var(--filter-bg);
+    color: var(--filter-color);
+    font-weight: 600;
+    font-size: 12px;
+    border: 1px solid currentColor;
+
+    .removeTagBtn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 14px;
+      height: 14px;
+      border: none;
+      background: none;
+      color: currentColor;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0;
+      opacity: 0.7;
+      border-radius: 50%;
+      transition: opacity 0.15s;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  .filteredCount {
+    margin-left: auto;
+    color: #6b7280;
+    font-weight: 500;
+  }
+}
+
+/* ─── Контейнер таблицы ───────────────────────────────────────────── */
 .tableContainer {
   flex: 1;
   min-height: 0;
@@ -107,10 +343,16 @@
       }
     }
 
-    .headerCell {
+    .headerContent {
       display: inline-flex;
       align-items: center;
-      gap: 2px;
+      gap: 4px;
+    }
+
+    .headerContent svg {
+      width: 14px;
+      height: 14px;
+      display: block;
     }
 
     th {
@@ -124,6 +366,11 @@
       text-align: center;
     }
 
+    td:nth-child(2),
+    td:nth-child(3) {
+      text-align: left;
+    }
+
     .employee {
       display: flex;
       align-items: center;
@@ -131,9 +378,9 @@
     }
 
     td img {
-      min-width: 35px;
-      width: 35px;
-      height: 35px;
+      min-width: 50px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       margin-left: 10px;
       object-fit: cover;
@@ -146,6 +393,58 @@
       :first-child {
         padding-left: 18px;
       }
+    }
+
+    .toggleCell {
+      padding: 4px 8px !important;
+    }
+
+    .toggleBtn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1.5px solid #e0e4f0;
+      background: #f8f9fc;
+      color: #4f6ef7;
+      font-size: var(--font-small);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      white-space: nowrap;
+
+      &:hover {
+        background: #eef1ff;
+        border-color: #c7d2fe;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(79, 110, 247, 0.12);
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
+
+    .toggleBtnOpen {
+      background: #eef1ff;
+      border-color: #a5b4fc;
+      color: #4338ca;
+
+      &:hover {
+        background: #e0e7ff;
+        border-color: #818cf8;
+      }
+
+      .toggleIcon {
+        transform: rotate(180deg);
+      }
+    }
+
+    .toggleIcon {
+      flex-shrink: 0;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      color: currentColor;
     }
   }
 }

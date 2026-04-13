@@ -1,558 +1,349 @@
-import { DateTime } from "luxon";
+export function processEvents() {}
 
-// 📌 Кеши для ускорения
-const dateCache = new Map();
-const shiftCache = new Map();
-
-function parseEventTime(str) {
-  if (!dateCache.has(str)) {
-    dateCache.set(str, DateTime.fromFormat(str, "yyyy-MM-dd HH:mm:ss"));
-  }
-  return dateCache.get(str);
+function parseCustomDate(dateStr) {
+  if (!dateStr) return null;
+  const [datePart, timePart] = dateStr.split(", ");
+  const [day, month, year] = datePart.split(".").map(Number);
+  const [hours, minutes, seconds] = timePart.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, seconds);
 }
 
-function getCachedShift(event) {
-  const key = `${event.employee_id}_${event.event_time_string}`;
-  if (!shiftCache.has(key)) {
-    shiftCache.set(
-      key,
-      determineShift(parseEventTime(event.event_time_string), event)
-    );
-  }
-  return shiftCache.get(key);
+function formatTime(date) {
+  if (!date) return null;
+  const h = date.getHours().toString().padStart(2, "0");
+  const m = date.getMinutes().toString().padStart(2, "0");
+  return `${h}:${m}`;
 }
 
-export function processEvents(events, tripsMap = {}) {
-  if (!events.length) return [];
-
-  const groupedByEmployee = {};
-
-  for (const event of events) {
-    if (!groupedByEmployee[event.employee_id])
-      groupedByEmployee[event.employee_id] = [];
-    groupedByEmployee[event.employee_id].push(event);
-  }
-
-  const result = [];
-
-  for (const employeeId in groupedByEmployee) {
-    const userEvents = groupedByEmployee[employeeId];
-
-    userEvents.sort(
-      (a, b) =>
-        parseEventTime(a.event_time_string).toMillis() -
-        parseEventTime(b.event_time_string).toMillis()
-    );
-
-    const sessions = [];
-    let currentSession = null;
-    let currentEvents = [];
-
-    for (const event of userEvents) {
-      const eventTime = parseEventTime(event.event_time_string);
-      if (!eventTime.isValid) continue;
-
-      if (event.shift_type === "normal") {
-        if (!currentSession || eventTime.toISODate() !== currentSession.date) {
-          if (currentEvents.length > 0) {
-            sessions.push(
-              createSession(
-                currentSession,
-                currentEvents,
-                tripsMap?.[employeeId] || []
-              )
-            );
-          }
-          currentSession = createNewSession(eventTime, event);
-          currentEvents = [event];
-        } else {
-          currentEvents.push(event);
-        }
-        continue;
-      }
-
-      if (event.shift_type === "shift") {
-        if (event.event_type === "entry") {
-          if (!currentSession) {
-            currentSession = createNewSession(eventTime, event);
-            currentEvents = [event];
-          } else {
-            const duration = eventTime.diff(
-              currentSession.start,
-              "minutes"
-            ).minutes;
-            if (duration > 8 * 60) {
-              sessions.push(createSession(currentSession, currentEvents));
-              currentSession = createNewSession(eventTime, event);
-              currentEvents = [event];
-            } else {
-              currentEvents.push(event);
-            }
-          }
-          continue;
-        }
-
-        if (event.event_type === "exit") {
-          if (!currentSession) continue;
-          currentEvents.push(event);
-          if (isSessionEnded(currentSession, eventTime, event.event_type)) {
-            sessions.push(createSession(currentSession, currentEvents));
-            currentSession = null;
-            currentEvents = [];
-          }
-          continue;
-        }
-      }
-    }
-
-    if (currentEvents.length > 0) {
-      sessions.push(
-        createSession(currentSession, currentEvents, tripsMap[employeeId] || [])
-      );
-    }
-
-    const employeeInfo = {
-      position_name: userEvents[0]?.position_name ?? null,
-      branch_name: userEvents[0]?.branch_name ?? null,
-      department_name: userEvents[0]?.department_name ?? null,
-      department_id: userEvents[0]?.department_id ?? null,
-      name: userEvents[0]?.name ?? null,
-      surname: userEvents[0]?.surname ?? null,
-      patronymic: userEvents[0]?.patronymic ?? null,
-      employee_number: userEvents[0]?.employee_number ?? null,
-    };
-
-    const groupedResult = {
-      employee_id: employeeId,
-      employee_info: employeeInfo,
-      sessions_by_date: {},
-    };
-
-    const temp = {};
-    for (const session of sessions) {
-      if (!temp[session.date]) temp[session.date] = [];
-      temp[session.date].push(session);
-    }
-
-    for (const date in temp) {
-      const daySessions = temp[date];
-
-      if (daySessions.length > 1) {
-        const allEvents = daySessions.flatMap((s) => s.events);
-        allEvents.sort(
-          (a, b) =>
-            parseEventTime(a.event_time_string).toMillis() -
-            parseEventTime(b.event_time_string).toMillis()
-        );
-
-        const firstEntry = allEvents.find((e) => e.event_type === "entry");
-        const lastExit = findLastEvent(allEvents, "exit");
-
-        const firstTime = firstEntry
-          ? parseEventTime(firstEntry.event_time_string)
-          : null;
-        const lastTime = lastExit
-          ? parseEventTime(lastExit.event_time_string)
-          : null;
-
-        groupedResult.sessions_by_date[date] = [
-          {
-            firstEntry: firstTime?.toFormat("HH:mm") || null,
-            lastExit: lastTime?.toFormat("HH:mm") || null,
-            shiftType: "combined",
-            workDuration:
-              firstTime && lastTime
-                ? calculateWorkDuration(
-                    firstTime,
-                    lastTime,
-                    allEvents[0].break_minutes
-                  )
-                : "00:00",
-            hasPermission: allEvents.some((e) => e.leave_request) ?? false,
-            events: allEvents.map((e) => ({
-              ...e,
-              determinedShift:
-                e.shift_type === "shift" ? getCachedShift(e) : "normal",
-            })),
-          },
-        ];
-      } else {
-        groupedResult.sessions_by_date[date] = daySessions.map((s) => ({
-          firstEntry: s.firstEntry,
-          lastExit: s.lastExit,
-          firstEntryPhoto: s.firstEntryPhoto,
-          lastExitPhoto: s.lastExitPhoto,
-          shiftType: s.shiftType,
-          workDuration: s.workDuration,
-          hasPermission:
-            s.havePermission ?? s.events.some((e) => e.leave_request),
-          events: s.events,
-        }));
-      }
-    }
-
-    result.push(groupedResult);
-  }
-
-  return result;
+function timeToMinutes(timeStr) {
+  const [h, m] = timeStr.split(":").map(Number);
+  return h * 60 + m;
 }
 
-function findLastEvent(events, type) {
-  for (let i = events.length - 1; i >= 0; i--) {
-    if (events[i].event_type === type) return events[i];
-  }
-  return null;
+function dateToYMD(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
-// Функция для создания новой смены
-function createNewSession(eventTime, event) {
-  if (event.shift_type === "shift") {
-    const eventShift = determineShift(eventTime, event);
-    return {
-      type: "shift",
-      shiftType: eventShift,
-      start: getShiftStartTime(eventTime, eventShift, event),
-      end: getShiftEndTime(eventTime, eventShift, event),
-    };
-  } else {
-    return {
-      type: "normal",
-      date: eventTime.toISODate(),
-    };
-  }
+function formatDurationFromSeconds(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  return [
+    hours.toString().padStart(2, "0"),
+    minutes.toString().padStart(2, "0"),
+  ].join(":");
 }
 
-// Функции для проверки события выход на закрытии смены
-function isSessionEnded(session, eventTime, eventType) {
-  if (session.type === "shift" && eventType === "exit") {
-    const ended = eventTime.toMillis() > session.end.toMillis();
-    return ended;
-  } else {
-    return eventTime.toISODate() !== session.date;
-  }
-}
+function getScheduleForDate(date, history = []) {
+  const targetYMD = dateToYMD(date);
 
-function addMinutesToDuration(durationStr, minutesToAdd = 0) {
-  const [h, m] = durationStr.split(":").map(Number);
-  let total = h * 60 + m + minutesToAdd;
-  const hours = String(Math.floor(total / 60)).padStart(2, "0");
-  const minutes = String(total % 60).padStart(2, "0");
-  return `${hours}:${minutes}`;
-}
+  const sortedHistory = [...history].sort(
+    (a, b) => new Date(a.date_from) - new Date(b.date_from),
+  );
 
-function createSession(session, events, tripsForUser) {
-  const currentDate =
-    session.type === "normal"
-      ? session.date
-      : DateTime.fromFormat(
-          events[0].event_time_string,
-          "yyyy-MM-dd HH:mm:ss"
-        ).toISODate();
+  const record = sortedHistory.find((h) => {
+    const from = new Date(h.date_from);
+    const to = h.date_to ? new Date(h.date_to) : null;
+    const fromYMD = dateToYMD(from);
+    const toYMD = to ? dateToYMD(to) : null;
 
-  // Ищем командировку/отгул для этого дня
-  const leaveRequest = tripsForUser?.find((trip) => {
-    const leaveStart = DateTime.fromFormat(
-      trip.date_from,
-      "yyyy-MM-dd HH:mm:ss"
-    );
-    const leaveEnd = DateTime.fromFormat(trip.date_to, "yyyy-MM-dd HH:mm:ss");
-
-    return (
-      currentDate >= leaveStart.toISODate() &&
-      currentDate <= leaveEnd.toISODate()
-    );
+    if (toYMD) return targetYMD >= fromYMD && targetYMD <= toYMD;
+    return targetYMD >= fromYMD;
   });
 
-  if (session.type === "normal") {
-    const { firstEntry, lastExit, allEvents } = getNormalSessionEvents(events);
+  return record?.workSchedule || null;
+}
 
-    const firstEntryTime = firstEntry
-      ? DateTime.fromFormat(firstEntry.event_time_string, "yyyy-MM-dd HH:mm:ss")
-      : null;
+function determineShiftForEvent(eventDate, shifts) {
+  if (!eventDate) return null;
+  const minutes = eventDate.getHours() * 60 + eventDate.getMinutes();
+  const EARLY_TOLERANCE = 60; // допуск раннего прихода (минут до начала смены)
 
-    const lastExitTime = lastExit
-      ? DateTime.fromFormat(lastExit.event_time_string, "yyyy-MM-dd HH:mm:ss")
-      : null;
+  const dayShifts = shifts.filter(
+    (s) => timeToMinutes(s.end) >= timeToMinutes(s.start),
+  );
+  const nightShifts = shifts.filter(
+    (s) => timeToMinutes(s.end) < timeToMinutes(s.start),
+  );
 
-    const base = {
-      user_id: events[0].user_id,
-      date: session.date,
-      firstEntry: firstEntryTime?.toFormat("HH:mm") || null,
-      lastExit: lastExitTime?.toFormat("HH:mm") || null,
-      firstEntryPhoto: firstEntry?.event_photo || null,
-      lastExitPhoto: lastExit?.event_photo || null,
-      shiftType: "normal",
-      workDuration:
-        firstEntryTime && lastExitTime
-          ? calculateWorkDuration(
-              firstEntryTime,
-              lastExitTime,
-              events[0].break_minutes
-            )
-          : "00:00",
-      events: allEvents.map((e) => ({
-        ...e,
-        determinedShift: "normal",
-      })),
-    };
+  // 1. Точное попадание в дневную смену
+  const exactDay = dayShifts.find((shift) => {
+    const start = timeToMinutes(shift.start);
+    const end = timeToMinutes(shift.end);
+    return minutes >= start && minutes <= end;
+  });
+  if (exactDay) return exactDay;
 
-    if (leaveRequest && leaveRequest.is_company_paid) {
-      const leaveStart = DateTime.fromFormat(
-        leaveRequest.date_from,
-        "yyyy-MM-dd HH:mm:ss"
-      );
+  // 2. Ранний приход на дневную смену (в пределах EARLY_TOLERANCE до начала)
+  const earlyDay = dayShifts.find((shift) => {
+    const start = timeToMinutes(shift.start);
+    return minutes >= start - EARLY_TOLERANCE && minutes < start;
+  });
+  if (earlyDay) return earlyDay;
 
-      const leaveEnd = DateTime.fromFormat(
-        leaveRequest.date_to,
-        "yyyy-MM-dd HH:mm:ss"
-      );
+  // 3. Ночная смена (основное окно >= start или хвост <= end)
+  return (
+    nightShifts.find((shift) => {
+      const start = timeToMinutes(shift.start);
+      const end = timeToMinutes(shift.end);
+      return minutes >= start || minutes <= end;
+    }) || null
+  );
+}
 
-      let minutesToAdd = 0;
+function calculateWorkDurationByShift(events, shiftStart, shiftEnd, MAX_GAP) {
+  let totalSeconds = 0;
+  let isInside = false;
+  let currentEntry = null;
+  let firstEntryEvent = null;
+  let lastExitEvent = null;
 
-      if (leaveStart.hasSame(leaveEnd, "day")) {
-        minutesToAdd = leaveEnd.diff(leaveStart, "minutes").minutes;
+  events.forEach((event, i) => {
+    if (event.direction === "entry") {
+      if (!isInside) {
+        currentEntry = event;
+        isInside = true;
+        if (!firstEntryEvent) firstEntryEvent = event;
       } else {
-        if (currentDate === leaveStart.toISODate()) {
-          minutesToAdd = 24 * 60 - leaveStart.hour * 60 - leaveStart.minute;
-        } else if (currentDate === leaveEnd.toISODate()) {
-          minutesToAdd = leaveEnd.hour * 60 + leaveEnd.minute;
+        const gap = (event.parsedDate - currentEntry.parsedDate) / 1000;
+        if (gap > MAX_GAP) currentEntry = event;
+      }
+    }
+
+    if (event.direction === "exit") {
+      if (!isInside || !currentEntry) return;
+
+      let diff = (event.parsedDate - currentEntry.parsedDate) / 1000;
+      if (diff <= 0) {
+        isInside = false;
+        currentEntry = null;
+        return;
+      }
+
+      if (i > 0 && events[i - 1].direction === "exit") {
+        const gap = (event.parsedDate - events[i - 1].parsedDate) / 1000;
+        if (gap <= MAX_GAP) return;
+      }
+
+      totalSeconds += diff;
+      lastExitEvent = event;
+      isInside = false;
+      currentEntry = null;
+    }
+  });
+
+  return { totalSeconds, firstEntryEvent, lastExitEvent };
+}
+
+export function generateAttendanceReport(attendanceData, timeOffs) {
+  const MAX_GAP_BETWEEN_EVENTS = 15 * 60;
+
+  return attendanceData.map((data) => {
+    const sortedEvents = (data.events || [])
+      .filter((e) => e.date)
+      .map((e) => ({ ...e, parsedDate: parseCustomDate(e.date) }))
+      .sort((a, b) => a.parsedDate - b.parsedDate);
+
+    const sessionsMap = {};
+    let totalSecondsWorked = 0;
+
+    // ── Шаг 1: группировка по календарному дню ────────────────────────────────
+    const eventsByDay = {};
+    sortedEvents.forEach((e) => {
+      const dayKey = e.parsedDate.getDate().toString();
+      if (!eventsByDay[dayKey]) eventsByDay[dayKey] = [];
+      eventsByDay[dayKey].push(e);
+    });
+
+    // ── Шаг 2: перенос событий ночной смены в «свой» день ────────────────────
+    const sortedDayKeys = Object.keys(eventsByDay).sort(
+      (a, b) => Number(a) - Number(b),
+    );
+
+    sortedDayKeys.forEach((dayKey) => {
+      const dailyEvents = eventsByDay[dayKey];
+      if (!dailyEvents || dailyEvents.length === 0) return;
+
+      const date = dailyEvents[0].parsedDate;
+      const scheduleForDay = getScheduleForDate(date, data.workSchedule);
+      if (scheduleForDay?.type !== "shift") return;
+
+      const firstEntry = dailyEvents.find((e) => e.direction === "entry");
+      if (!firstEntry) return;
+
+      const shift = determineShiftForEvent(
+        firstEntry.parsedDate,
+        scheduleForDay.shifts || [],
+      );
+      if (!shift) return;
+
+      const shiftStartMins = timeToMinutes(shift.start);
+      const shiftEndMins = timeToMinutes(shift.end);
+      const isNightShift = shiftEndMins < shiftStartMins;
+      if (!isNightShift) return;
+
+      const nextDayKey = (Number(dayKey) + 1).toString();
+      if (!eventsByDay[nextDayKey]) return;
+
+      // Переносим только если текущий день заканчивается с открытой сессией
+      let tempInside = false;
+      for (const e of dailyEvents) {
+        if (e.direction === "entry") tempInside = true;
+        if (e.direction === "exit") tempInside = false;
+      }
+      if (!tempInside) return;
+
+      const toMove = [];
+      const toKeep = [];
+      let sessionClosed = false;
+
+      eventsByDay[nextDayKey].forEach((e) => {
+        const mins = e.parsedDate.getHours() * 60 + e.parsedDate.getMinutes();
+        if (!sessionClosed && mins <= shiftEndMins) {
+          toMove.push(e);
+          if (e.direction === "exit") sessionClosed = true;
+        } else {
+          toKeep.push(e);
+        }
+      });
+
+      if (toMove.length > 0) {
+        eventsByDay[dayKey] = [...dailyEvents, ...toMove].sort(
+          (a, b) => a.parsedDate - b.parsedDate,
+        );
+
+        if (toKeep.length === 0) {
+          delete eventsByDay[nextDayKey];
+        } else {
+          eventsByDay[nextDayKey] = toKeep;
         }
       }
-
-      base.workDuration = addMinutesToDuration(base.workDuration, minutesToAdd);
-
-      base.events.push({
-        leave_request: {
-          date_from: leaveStart.toFormat("dd.MM.yyyy HH:mm"),
-          date_to: leaveEnd.toFormat("dd.MM.yyyy HH:mm"),
-          description: leaveRequest.reason,
-          permission_number: leaveRequest.permission_number,
-          company_paid: leaveRequest.is_company_paid,
-        },
-      });
-    }
-
-    return base;
-  }
-
-  // Логика для смен
-  const firstEntry = events.find(
-    (e) => e.event_type === "entry" || e.event_type === "start"
-  );
-  const lastExit = [...events].reverse().find((e) => e.event_type === "exit");
-
-  const firstEntryTime = firstEntry
-    ? DateTime.fromFormat(firstEntry.event_time_string, "yyyy-MM-dd HH:mm:ss")
-    : null;
-
-  const lastExitTime = lastExit
-    ? DateTime.fromFormat(lastExit.event_time_string, "yyyy-MM-dd HH:mm:ss")
-    : null;
-
-  const base = {
-    user_id: events[0].user_id,
-    date: currentDate,
-    firstEntry: firstEntryTime?.toFormat("HH:mm") || null,
-    lastExit: lastExitTime?.toFormat("HH:mm") || null,
-    firstEntryPhoto: firstEntry?.event_photo || null,
-    lastExitPhoto: lastExit?.event_photo || null,
-    shiftType: session.shiftType,
-    workDuration:
-      firstEntryTime && lastExitTime
-        ? calculateWorkDuration(
-            firstEntryTime,
-            lastExitTime,
-            events[0].break_minutes
-          )
-        : "00:00",
-    events: events.map((e) => ({
-      ...e,
-      determinedShift: determineShift(
-        DateTime.fromFormat(e.event_time_string, "yyyy-MM-dd HH:mm:ss"),
-        e
-      ),
-    })),
-  };
-
-  // Если есть командировка/отгул
-  if (leaveRequest && leaveRequest.is_company_paid) {
-    const leaveStart = DateTime.fromFormat(
-      leaveRequest.date_from,
-      "yyyy-MM-dd HH:mm:ss"
-    );
-
-    const leaveEnd = DateTime.fromFormat(
-      leaveRequest.date_to,
-      "yyyy-MM-dd HH:mm:ss"
-    );
-
-    let minutesToAdd = 0;
-
-    if (leaveStart.hasSame(leaveEnd, "day")) {
-      minutesToAdd = leaveEnd.diff(leaveStart, "minutes").minutes;
-    } else {
-      if (currentDate === leaveStart.toISODate()) {
-        minutesToAdd = 24 * 60 - leaveStart.hour * 60 - leaveStart.minute;
-      } else if (currentDate === leaveEnd.toISODate()) {
-        minutesToAdd = leaveEnd.hour * 60 + leaveEnd.minute;
-      }
-    }
-
-    base.havePermission = true;
-
-    base.workDuration = addMinutesToDuration(base.workDuration, minutesToAdd);
-
-    base.events.push({
-      leave_request: {
-        date_from: leaveStart,
-        date_to: leaveEnd,
-        description: leaveRequest.reason,
-        permission_number: leaveRequest.permission_number,
-        company_paid: leaveRequest.is_company_paid,
-      },
     });
-  }
 
-  return base;
-}
+    // ── Шаг 3: обработка каждого дня ──────────────────────────────────────────
+    Object.keys(eventsByDay)
+      .sort((a, b) => Number(a) - Number(b))
+      .forEach((dayKey) => {
+        const dailyEvents = eventsByDay[dayKey];
+        const date = dailyEvents[0].parsedDate;
+        const scheduleForDay = getScheduleForDate(date, data.workSchedule);
+        const scheduleType = scheduleForDay?.type || null;
 
-// Функция для вычисления продолжительности работы в формате HH:mm
-function calculateWorkDuration(start, end, break_minutes = 0) {
-  if (end < start) return "00:00";
+        let scheduleStart = null;
+        let scheduleEnd = null;
+        let determinedShift = null;
+        let breakMinutes = 0;
 
-  // Общая продолжительность в минутах
-  let durationInMinutes = end.diff(start, "minutes").minutes;
+        if (scheduleType === "fixed") {
+          const jsDay = date.getDay() === 0 ? 7 : date.getDay();
+          const workDay = scheduleForDay.work_days?.find(
+            (d) => d.day === jsDay,
+          );
+          if (workDay) {
+            scheduleStart = workDay.start;
+            scheduleEnd = workDay.end;
+            breakMinutes = workDay.break_minutes || 0;
+          }
+        }
 
-  // Вычитаем перерыв
-  if (durationInMinutes >= 300 && break_minutes) {
-    durationInMinutes -= break_minutes;
-  }
+        if (scheduleType === "shift") {
+          determinedShift = determineShiftForEvent(
+            dailyEvents.find((e) => e.direction === "entry")?.parsedDate,
+            scheduleForDay.shifts || [],
+          );
+          if (determinedShift) {
+            scheduleStart = determinedShift.start;
+            scheduleEnd = determinedShift.end;
+            breakMinutes = determinedShift.break_minutes || 0;
+          }
+        }
 
-  // Если результат меньше 0 — устанавливаем 0
-  if (durationInMinutes < 0) durationInMinutes = 0;
+        if (scheduleType === "flexible") {
+          scheduleStart = null;
+          scheduleEnd = null;
+        }
 
-  const hours = Math.floor(durationInMinutes / 60);
-  const minutes = Math.round(durationInMinutes % 60);
+        const result = calculateWorkDurationByShift(
+          dailyEvents,
+          scheduleStart,
+          scheduleEnd,
+          MAX_GAP_BETWEEN_EVENTS,
+        );
 
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-    2,
-    "0"
-  )}`;
-}
+        // Вычитаем перерыв из фактически отработанного времени
+        const breakSeconds = breakMinutes * 60;
+        const netSeconds = Math.max(0, result.totalSeconds - breakSeconds);
 
-// Функции для нормальной смены (normal)
-function getNormalSessionEvents(events) {
-  // Фильтруем только входы и выходы
-  const entryExitEvents = events.filter(
-    (e) => e.event_type === "entry" || e.event_type === "exit"
-  );
+        totalSecondsWorked += netSeconds;
 
-  // Находим первый вход и последний выход
-  const firstEntry = entryExitEvents.find((e) => e.event_type === "entry");
-  const lastExit = [...entryExitEvents]
-    .reverse()
-    .find((e) => e.event_type === "exit");
+        // Опоздание и ранний уход
+        let late = null;
+        let earlyLeave = null;
 
-  return {
-    firstEntry,
-    lastExit,
-    allEvents: events,
-  };
-}
+        if (scheduleStart && result.firstEntryEvent) {
+          const startMinutes = timeToMinutes(scheduleStart);
+          const entryMinutes =
+            result.firstEntryEvent.parsedDate.getHours() * 60 +
+            result.firstEntryEvent.parsedDate.getMinutes();
+          const diff = Math.max(0, entryMinutes - startMinutes);
+          late = `${String(Math.floor(diff / 60)).padStart(2, "0")}:${String(diff % 60).padStart(2, "0")}`;
+        }
 
-// Функции для сменной работы (shift)
-function getShiftStartTime(eventTime, shiftType, event) {
-  if (!event) throw new Error("Event is required");
-  const dateStr = eventTime.toISODate();
-  return shiftType === "first"
-    ? DateTime.fromFormat(
-        `${dateStr} ${event.first_shift_start}`,
-        "yyyy-MM-dd HH:mm:ss"
-      )
-    : DateTime.fromFormat(
-        `${dateStr} ${event.second_shift_start}`,
-        "yyyy-MM-dd HH:mm:ss"
-      );
-}
+        if (scheduleEnd && result.lastExitEvent) {
+          let endMinutes = timeToMinutes(scheduleEnd);
+          const scheduleStartMinutes = scheduleStart
+            ? timeToMinutes(scheduleStart)
+            : 0;
+          const exitMinutes =
+            result.lastExitEvent.parsedDate.getHours() * 60 +
+            result.lastExitEvent.parsedDate.getMinutes();
 
-function getShiftEndTime(eventTime, shiftType, event) {
-  if (!event) throw new Error("Event is required");
-  const dateStr = eventTime.toISODate();
-  return shiftType === "first"
-    ? DateTime.fromFormat(
-        `${dateStr} ${event.first_shift_end}`,
-        "yyyy-MM-dd HH:mm:ss"
-      )
-    : DateTime.fromFormat(
-        `${dateStr} ${event.second_shift_end}`,
-        "yyyy-MM-dd HH:mm:ss"
-      ).plus({ days: 1 }); // если вторая смена завершается после полуночи
-}
+          if (endMinutes < scheduleStartMinutes) endMinutes += 24 * 60;
+          let actualExit = exitMinutes;
+          if (exitMinutes < scheduleStartMinutes) actualExit += 24 * 60;
 
-function determineShift(eventTime, event) {
-  const dateStr = eventTime.toISODate();
+          const diff = Math.max(0, endMinutes - actualExit);
+          earlyLeave = `${String(Math.floor(diff / 60)).padStart(2, "0")}:${String(diff % 60).padStart(2, "0")}`;
+        }
 
-  const firstShiftStart = DateTime.fromFormat(
-    `${dateStr} ${event.first_shift_start}`,
-    "yyyy-MM-dd HH:mm:ss"
-  );
-  const firstShiftEnd = DateTime.fromFormat(
-    `${dateStr} ${event.first_shift_end}`,
-    "yyyy-MM-dd HH:mm:ss"
-  );
+        sessionsMap[dayKey] = {
+          firstEntry: result.firstEntryEvent
+            ? formatTime(result.firstEntryEvent.parsedDate)
+            : null,
+          lastExit: result.lastExitEvent
+            ? formatTime(result.lastExitEvent.parsedDate)
+            : null,
+          workDuration:
+            netSeconds > 0 ? formatDurationFromSeconds(netSeconds) : "00:00",
+          breakMinutes,
+          shiftType: scheduleType,
+          scheduleStart,
+          scheduleEnd,
+          determinedShift: determinedShift?.shift_number || null,
+          late,
+          earlyLeave,
+          events: dailyEvents,
+        };
+      });
 
-  const secondShiftStart = DateTime.fromFormat(
-    `${dateStr} ${event.second_shift_start}`,
-    "yyyy-MM-dd HH:mm:ss"
-  );
-  const secondShiftEnd = DateTime.fromFormat(
-    `${dateStr} ${event.second_shift_end}`,
-    "yyyy-MM-dd HH:mm:ss"
-  ).plus({ days: 1 });
+    const workedDaysCount = Object.values(sessionsMap).filter(
+      (s) => s.workDuration !== "00:00",
+    ).length;
 
-  const thirdShiftStart = DateTime.fromFormat(
-    `${dateStr} ${event.third_shift_start}`,
-    "yyyy-MM-dd HH:mm:ss"
-  );
-  const thirdShiftEnd = DateTime.fromFormat(
-    `${dateStr} ${event.third_shift_end}`,
-    "yyyy-MM-dd HH:mm:ss"
-  ).plus({ days: 1 });
-
-  let diffs = [];
-
-  if (event.event_type === "entry") {
-    diffs = [
-      {
-        shift: "first",
-        diff: Math.abs(eventTime.diff(firstShiftStart, "minutes").minutes),
-      },
-      {
-        shift: "second",
-        diff: Math.abs(eventTime.diff(secondShiftStart, "minutes").minutes),
-      },
-      {
-        shift: "third",
-        diff: Math.abs(eventTime.diff(thirdShiftStart, "minutes").minutes),
-      },
-    ];
-  } else if (event.event_type === "exit") {
-    diffs = [
-      {
-        shift: "first",
-        diff: Math.abs(eventTime.diff(firstShiftEnd, "minutes").minutes),
-      },
-      {
-        shift: "second",
-        diff: Math.abs(eventTime.diff(secondShiftEnd, "minutes").minutes),
-      },
-      {
-        shift: "third",
-        diff: Math.abs(eventTime.diff(thirdShiftEnd, "minutes").minutes),
-      },
-    ];
-  }
-
-  diffs.sort((a, b) => a.diff - b.diff);
-  return diffs[0]?.shift || "unknown";
+    return {
+      employeeId: data.employeeId.toString(),
+      employeeNumber: data.employeeNumber,
+      employeeFullName: data.employeeFullName,
+      employeePhoto: data.employeePhoto || null,
+      branchName: data.branchName,
+      departmentName: data.departmentName,
+      positionName: data.positionName,
+      workScheduleName: data.workScheduleName,
+      totalWorkedDays: workedDaysCount,
+      totalWorkedHours: formatDurationFromSeconds(totalSecondsWorked),
+      sessions: sessionsMap,
+    };
+  });
 }

@@ -1,4 +1,6 @@
+import ExcelJS from "exceljs/dist/exceljs.min.js";
 import { saveAs } from "file-saver";
+
 import {
   Document,
   Packer,
@@ -12,6 +14,7 @@ import {
   WidthType,
   BorderStyle,
 } from "docx";
+import { formatLateMinutesToHours } from "../helpers/time";
 
 const uzbekMonths = [
   "январ",
@@ -114,8 +117,6 @@ function uzbekLatinToCyrillic(text) {
   replacements.forEach(({ from, to }) => (result = result.replace(from, to)));
   return result;
 }
-
-// ---------- BASE DOC CREATOR ----------
 
 export const DownloadOrder = {
   hire: async (data) => {
@@ -879,5 +880,417 @@ export const DownloadOrder = {
 
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `Уволнение ${employeeName}.docx`);
+  },
+};
+
+export const DownloadLate = {
+  employeeMonth: async (modalData, monthDate) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Опоздания");
+
+    // ===== Информация о сотруднике (заголовок) =====
+    worksheet.addRow([`${modalData.employeeFullName}`]);
+    const titleRow = worksheet.getRow(1);
+    titleRow.font = { bold: true, size: 14 };
+    titleRow.alignment = { horizontal: "left", vertical: "middle" };
+
+    worksheet.addRow([]);
+
+    // Информация о сотруднике
+    worksheet.addRow(["Филиал:", modalData.branchName]);
+    worksheet.addRow(["Отдел:", modalData.departmentName]);
+    worksheet.addRow(["Должность:", modalData.positionName]);
+
+    // Стилизация информационных строк
+    for (let i = 3; i <= 5; i++) {
+      const row = worksheet.getRow(i);
+      row.getCell(1).font = { bold: true };
+    }
+
+    worksheet.addRow([]);
+
+    // ===== Статистика =====
+    const statsStartRow = 7;
+    worksheet.addRow(["Статистика за месяц"]);
+    const statsHeaderRow = worksheet.getRow(statsStartRow);
+    statsHeaderRow.font = { bold: true, size: 12 };
+
+    worksheet.addRow([
+      "Количество опозданий:",
+      modalData.monthlyLateCount || 0,
+    ]);
+    worksheet.addRow([
+      "Суммарное время опоздания:",
+      formatLateMinutesToHours(modalData.monthlyLateMinutes),
+    ]);
+    worksheet.addRow([
+      "Сумма за опоздания:",
+      modalData.monthlyLateMoney || "0",
+    ]);
+
+    // Стилизация статистики
+    for (let i = statsStartRow + 1; i <= statsStartRow + 3; i++) {
+      const row = worksheet.getRow(i);
+      row.getCell(1).font = { bold: true };
+    }
+
+    worksheet.addRow([]);
+
+    // ===== Таблица деталей =====
+    const tableHeaderRow = statsStartRow + 5;
+    const headers = [
+      "№",
+      "Дата",
+      "По графику",
+      "Фактический вход",
+      "Опоздание (чч:мм)",
+    ];
+
+    worksheet.addRow(headers);
+
+    const headerRow = worksheet.getRow(tableHeaderRow);
+    headerRow.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+
+    // Применяем стили ТОЛЬКО к ячейкам с содержимым таблицы
+    headers.forEach((header, colIndex) => {
+      const cell = headerRow.getCell(colIndex + 1);
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4F6EF7" }, // Синий цвет
+      };
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // Добавляем данные
+    modalData.details?.forEach((item, index) => {
+      const row = [
+        index + 1,
+        item.date,
+        item.scheduledStart || "",
+        item.actualStart || "",
+        formatLateMinutesToHours(item.lateMinutes),
+      ];
+
+      const newRow = worksheet.addRow(row);
+
+      // Стилизация строк таблицы - применяем только к ячейкам с данными
+      row.forEach((value, colIndex) => {
+        const cell = newRow.getCell(colIndex + 1);
+        cell.border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+
+      // Подсвечиваем строки с опозданиями без разрешения - только конкретные ячейки
+      if (!item.havePermission) {
+        row.forEach((value, colIndex) => {
+          const cell = newRow.getCell(colIndex + 1);
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: "FFFFFF" },
+          };
+        });
+      }
+    });
+
+    // ===== Авто-ширина колонок =====
+    worksheet.columns.forEach((col, i) => {
+      let maxLength = headers[i]?.length || 10;
+      col.eachCell({ includeEmpty: true }, (cell) => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > maxLength) maxLength = len;
+      });
+      col.width = Math.min(maxLength + 3, 25); // Макс. ширина 25
+    });
+
+    // Закрепляем заголовок таблицы
+    worksheet.views = [{ state: "frozen", ySplit: tableHeaderRow }];
+
+    // Сохраняем файл
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fileName = `Опоздания_${modalData.employeeFullName}_${monthDate}.xlsx`;
+
+    saveAs(new Blob([buffer], { type: "application/octet-stream" }), fileName);
+  },
+  day: async (data, date) => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Опоздание");
+
+    // заголовки
+    const headers = [
+      "№",
+      "ФИО",
+      "Филиал",
+      "Отдел",
+      "Должность",
+      "По граффику",
+      "Вход",
+      "Опоздание (чч:мм)",
+    ];
+
+    // добавляем заголовок
+    worksheet.addRow(headers);
+
+    // стили для шапки
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+    headerRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // добавляем данные
+    data.forEach((item, index) => {
+      const row = [
+        index + 1,
+        item.employeeFullName,
+        item.branchName,
+        item.departmentName,
+        item.positionName,
+        item.scheduledStart || "",
+        item.actualStart || "",
+        formatLateMinutesToHours(item.lateMinutes),
+      ];
+
+      const newRow = worksheet.addRow(row);
+
+      // границы и выравнивание
+      newRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    });
+
+    // авто-ширина колонок
+    worksheet.columns.forEach((col, i) => {
+      let maxLength = headers[i].length;
+      col.eachCell({ includeEmpty: true }, (cell) => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > maxLength) maxLength = len;
+      });
+      col.width = maxLength + 2; // немного отступа
+    });
+
+    // закрепляем верхнюю строку
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    // создаем excel в браузере
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/octet-stream" }),
+      `Опоздание за - ${date}.xlsx`,
+    );
+  },
+  monthByEmployee: async (data, date) => {
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn("Нет данных для экспорта по филиалам");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Опоздание");
+
+    // заголовки
+    const headers = [
+      "№",
+      "ФИО",
+      "Филиал",
+      "Отдел",
+      "Должность",
+      "Кол-во опозданий за месяц",
+      "Суммарное опоздание (чч:мм)",
+      "Суммарное опоздание в деньгах",
+    ];
+
+    // добавляем заголовок
+    worksheet.addRow(headers);
+
+    // стили для шапки
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+    headerRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // добавляем данные
+    data.forEach((item, index) => {
+      const row = [
+        index + 1,
+        item.employeeFullName,
+        item.branchName,
+        item.departmentName,
+        item.positionName,
+        item.monthlyLateCount || "",
+        formatLateMinutesToHours(item.monthlyLateMinutes),
+        "",
+      ];
+
+      const newRow = worksheet.addRow(row);
+
+      // границы и выравнивание
+      newRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    });
+
+    // авто-ширина колонок
+    worksheet.columns.forEach((col, i) => {
+      let maxLength = headers[i].length;
+      col.eachCell({ includeEmpty: true }, (cell) => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > maxLength) maxLength = len;
+      });
+      col.width = maxLength + 2; // немного отступа
+    });
+
+    // закрепляем верхнюю строку
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    // создаем excel в браузере
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/octet-stream" }),
+      `Опоздание за - ${date}.xlsx`,
+    );
+  },
+  monthByBranch: async (data, date) => {
+    if (!Array.isArray(data) || data.length === 0) {
+      console.warn("Нет данных для экспорта по филиалам");
+      return;
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Опоздание");
+
+    const targetDate = new Date(date);
+    const year = targetDate.getFullYear();
+    const month = targetDate.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const allDates = [];
+    for (let day = 1; day <= daysInMonth; day++) {
+      allDates.push(day.toString());
+    }
+
+    // Добавляем колонку Итого
+    const headers = ["Филиал", ...allDates, "Итого"];
+    worksheet.addRow(headers);
+
+    // ===== Шапка =====
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true };
+    headerRow.alignment = { horizontal: "center", vertical: "middle" };
+    headerRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    let totalByDays = new Array(daysInMonth).fill(0);
+    let grandTotal = 0;
+
+    // ===== Данные по филиалам =====
+    data.forEach((branch) => {
+      const row = [branch.branchName];
+      let rowTotal = 0;
+
+      allDates.forEach((dayNumber, index) => {
+        const dayData = branch.days.find((d) => {
+          const dDate = new Date(d.date);
+          return dDate.getDate() === Number(dayNumber);
+        });
+
+        const value = dayData ? dayData.lateCount : 0;
+
+        row.push(value);
+        rowTotal += value;
+        totalByDays[index] += value;
+      });
+
+      row.push(rowTotal);
+      grandTotal += rowTotal;
+
+      const newRow = worksheet.addRow(row);
+
+      newRow.eachCell((cell) => {
+        cell.border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
+    });
+
+    // ===== Общий итог =====
+    const totalRow = ["Итого", ...totalByDays, grandTotal];
+    const finalRow = worksheet.addRow(totalRow);
+
+    finalRow.font = { bold: true };
+    finalRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+    });
+
+    // ===== Авто-ширина =====
+    worksheet.columns.forEach((col, i) => {
+      let maxLength = headers[i].length;
+      col.eachCell({ includeEmpty: true }, (cell) => {
+        const len = cell.value ? cell.value.toString().length : 0;
+        if (len > maxLength) maxLength = len;
+      });
+      col.width = maxLength + 2;
+    });
+
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(
+      new Blob([buffer], { type: "application/octet-stream" }),
+      `Опоздание за - ${date}.xlsx`,
+    );
   },
 };

@@ -5,36 +5,67 @@ import { ru } from "date-fns/locale";
 import Loading from "./Loading";
 import styles from "./EmployeeWorkSchedulesHistory.module.scss";
 import { EmployeeService, workScheduleHistoryApi } from "../api";
+import { t } from "i18next";
 
-const SHIFT_TYPE_LABELS = {
-  normal: "Офисный",
-  flexible: "Свободный",
-  shift: "Сменный",
-};
+const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const formatWorkScheduleTime = (schedule) => {
   if (!schedule) return "—";
 
-  switch (schedule.shift_type) {
-    case "normal":
-      return schedule.shift_start && schedule.shift_end
-        ? `${schedule.shift_start} – ${schedule.shift_end}`
-        : "—";
+  switch (schedule.type) {
+    case "fixed": {
+      if (!schedule.work_days?.length) return "—";
+
+      // Берём только заполненные дни
+      const activeDays = schedule.work_days.filter((d) => d.start && d.end);
+
+      if (!activeDays.length) return "—";
+
+      // Группируем дни по времени
+      const groups = {};
+
+      activeDays.forEach((day) => {
+        const key = `${day.start}-${day.end}`;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(day.day);
+      });
+
+      const result = Object.entries(groups).map(([time, days], i) => {
+        const [start, end] = time.split("-");
+
+        const sortedDays = days.sort((a, b) => a - b);
+
+        // если дни идут подряд — показываем диапазоном
+        const isSequential =
+          sortedDays[sortedDays.length - 1] - sortedDays[0] + 1 ===
+          sortedDays.length;
+
+        const daysLabel = isSequential
+          ? `${dayNames[sortedDays[0] - 1]}–${
+              dayNames[sortedDays[sortedDays.length - 1] - 1]
+            }`
+          : sortedDays.map((d) => dayNames[d - 1]).join(", ");
+
+        return (
+          <span key={i}>
+            {daysLabel}: {start} – {end}
+          </span>
+        );
+      });
+
+      return result;
+    }
 
     case "shift": {
-      const shifts = [
-        schedule.first_shift_start &&
-          schedule.first_shift_end &&
-          `1 смена: ${schedule.first_shift_start} – ${schedule.first_shift_end}`,
-        schedule.second_shift_start &&
-          schedule.second_shift_end &&
-          `2 смена: ${schedule.second_shift_start} – ${schedule.second_shift_end}`,
-        schedule.third_shift_start &&
-          schedule.third_shift_end &&
-          `3 смена: ${schedule.third_shift_start} – ${schedule.third_shift_end}`,
-      ].filter(Boolean);
+      const shifts = schedule.shifts
+        ?.filter((s) => s.start && s.end)
+        .map((s) => (
+          <div key={s.shift_number}>
+            {s.shift_number} смена: {s.start} – {s.end}
+          </div>
+        ));
 
-      return shifts.length ? shifts.map((s, i) => <div key={i}>{s}</div>) : "—";
+      return shifts?.length ? shifts : "—";
     }
 
     case "flexible":
@@ -87,6 +118,8 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
       setLoading(false);
     }
   };
+
+  console.log("history", history);
 
   return (
     <div className={styles.container}>
@@ -180,9 +213,8 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
                         <span>Название:</span> {item?.workSchedule?.name}
                       </p>
                       <p>
-                        <span>Тип:</span>{" "}
-                        {SHIFT_TYPE_LABELS[item?.workSchedule?.shift_type] ||
-                          "—"}
+                        <span>Тип:</span>
+                        {t(`scheduleType.${item?.workSchedule?.type}`)}
                       </p>
                       <p>
                         <span>Режим работы:</span>{" "}

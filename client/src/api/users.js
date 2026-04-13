@@ -24,6 +24,11 @@ export const getUser = async (id) => {
   };
 };
 
+export const getUserAccess = async () => {
+  const res = await api.get("/users/me/access");
+  return res.data.data;
+};
+
 export const updateProfile = async (data = {}) => {
   const res = await api.put("/users/me", data);
   return { data: res.data.data, success: res.data.success };
@@ -42,4 +47,15 @@ export const getUserMenu = async () => {
 export const getUserInfo = async () => {
   const res = await api.get("/users/me");
   return res.data;
+};
+
+export const deleteUserById = async (id) => {
+  if (!id) throw new Error("ID не передан");
+
+  const res = await api.delete(`/users/${id}`);
+
+  return {
+    success: res.data.success,
+    message: res.data.message || "Пользователь удалён",
+  };
 };

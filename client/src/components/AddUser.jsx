@@ -9,6 +9,7 @@ import {
   EmployeeService,
   getMenus,
   getUserMenu,
+  addUser,
 } from "../api";
 
 import Button from "./Button";
@@ -19,14 +20,18 @@ import MultiSelectBranches from "./MultiSelectBranches";
 
 import styles from "./AddUser.module.scss";
 
-const AddUser = ({ cancelButton }) => {
+const STATIC_MENUS = [
+  { key: "home", label: "Главная" },
+  { key: "finance", label: "Финансы" },
+  { key: "tasks", label: "Задачи" },
+];
+
+const AddUser = ({ handleClose, onSuccess }) => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     employee_id: "",
-    access_level: "",
-    branches: [],
-    departments: [],
+    access_level: "absolute",
   });
 
   const { showAlert } = useAlertStore();
@@ -61,7 +66,7 @@ const AddUser = ({ cancelButton }) => {
         setAllMenus(allMenus);
 
         setState({
-          employee: employeeRes.data || employeeRes,
+          employees: employeeRes.data || employeeRes,
           branches: branchesRes.data || branchesRes,
           departments: departmentsRes.data || departmentsRes,
           loading: false,
@@ -117,11 +122,12 @@ const AddUser = ({ cancelButton }) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post(`/api/logins/add`, formData);
+      const res = await addUser(formData);
 
-      if (res.data.success) {
-        showAlert("Успешно", "success");
-        setTimeout(() => cancelButton(), 1500);
+      if (res.success) {
+        showAlert(t("success"), "success");
+        setTimeout(handleClose, 1500);
+        onSuccess();
       }
     } catch (error) {
       showAlert("Ошибка", "error");
@@ -172,13 +178,26 @@ const AddUser = ({ cancelButton }) => {
         <div>
           <label>Пользователь</label>
           <SelectEmployee
-            data="person"
-            options={state.persons}
+            data="employee"
+            options={state.employees}
             setFormData={setFormData}
-            defaultValue={formData.person_id}
+            defaultValue={formData.employee_id}
           />
         </div>
 
+        <div>
+          <label>Телеграм ID</label>
+          <input
+            type="text"
+            name="telegramId"
+            value={formData.telegramId}
+            onChange={handleChange}
+            required
+          />
+        </div>
+      </div>
+
+      <div className={styles.row}>
         <div>
           <label>Доступ</label>
           <select
@@ -189,17 +208,16 @@ const AddUser = ({ cancelButton }) => {
             <option value="absolute">Полный доступ</option>
             <option value="branch">Филиал</option>
             <option value="department">Отдел</option>
+            <option value="employee">Сотрудник</option>
           </select>
         </div>
-      </div>
 
-      <div className={styles.row}>
         {formData.access_level === "branch" && (
           <div>
             <label className={styles.label}>
               Филиалы
               <span className={styles.sticker}>
-                {formData.branches.length || 0}
+                {formData?.branches?.length || 0}
               </span>
             </label>
             <MultiSelectBranches
@@ -216,7 +234,7 @@ const AddUser = ({ cancelButton }) => {
             <label className={styles.label}>
               Отделы
               <span className={styles.sticker}>
-                {formData.departments.length || 0}
+                {formData?.departments?.length || 0}
               </span>
             </label>
             <MultiSelectDepartments
@@ -229,11 +247,56 @@ const AddUser = ({ cancelButton }) => {
         )}
       </div>
 
-      <PermissionsManager
-        allMenus={allMenus}
-        userMenus={userMenus}
-        onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
-      />
+      <div className={styles.row}>
+        <div>
+          <label>Режим отображения</label>
+          <select
+            name="view_mode"
+            value={formData.view_mode}
+            onChange={handleChange}
+          >
+            <option value="absolute">Все филиалы</option>
+            <option value="branch">Отдельно по филиалу</option>
+          </select>
+        </div>
+      </div>
+
+      {formData?.access_level !== "employee" && (
+        <>
+          <PermissionsManager
+            allMenus={allMenus}
+            userMenus={userMenus}
+            onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
+          />
+
+          <div className={styles.row}>
+            <div>
+              <label>Личный режим для меню</label>
+              <div className={styles.checkboxGroup}>
+                {STATIC_MENUS.map(({ key, label }) => (
+                  <label key={key} className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={formData.personal_menus?.includes(key) || false}
+                      onChange={(e) => {
+                        const current = formData.personal_menus || [];
+                        const updated = e.target.checked
+                          ? [...current, key]
+                          : current.filter((k) => k !== key);
+                        setFormData((prev) => ({
+                          ...prev,
+                          personal_menus: updated,
+                        }));
+                      }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </form>
   );
 };

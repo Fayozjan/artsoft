@@ -1,9 +1,9 @@
 import { useState } from "react";
 import styles from "./Table.module.scss";
 
-const Table = ({ columns, data }) => {
+const Table = ({ columns, data = [] }) => {
   const [sortConfig, setSortConfig] = useState({
-    key: "employee_full_name",
+    key: "employeeFullName",
     direction: "asc",
   });
 
@@ -101,7 +101,8 @@ const Table = ({ columns, data }) => {
             sortedData.map((item, i) => (
               <tr key={item.identifier || i} className="fade-in">
                 {columns.map((col, j) => (
-                  <td key={j}>
+                  <td key={j} style={col.style}>
+                    {" "}
                     {col.render
                       ? col.render(item[col.accessor], item, i)
                       : item[col.accessor]}

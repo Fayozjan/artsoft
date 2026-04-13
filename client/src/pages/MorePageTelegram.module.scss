@@ -1,0 +1,168 @@
+// ─── Page layout ──────────────────────────────────────────────────────────────
+
+.page {
+  position: relative;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(18, 18, 18, 0.9);
+}
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 16px 16px 10px;
+  background: rgba(18, 18, 18, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  padding-top: calc(
+    var(--tg-safe-area-inset-top, 0px) +
+      var(--tg-content-safe-area-inset-top, 0px)
+  );
+}
+
+.headerTitle {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f3f1f1;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+// ─── Scrollable body ──────────────────────────────────────────────────────────
+
+.main {
+  width: 100%;
+  height: calc(100% - 54px);
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ─── Card list wrapper ────────────────────────────────────────────────────────
+
+.cardList {
+  padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 80px);
+}
+
+.empty {
+  text-align: center;
+  color: #555;
+  margin-top: 40px;
+  font-size: 14px;
+}
+
+// ─── List container ───────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+// ─── List item ────────────────────────────────────────────────────────────────
+
+.listItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.05);
+  outline: none;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// ─── Item icon ────────────────────────────────────────────────────────────────
+
+.itemIcon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.iconBlue {
+  background: rgba(36, 129, 204, 0.22);
+  color: #4a90e2;
+}
+
+.iconGreen {
+  background: rgba(22, 163, 74, 0.22);
+  color: #16a34a;
+}
+
+.iconPurple {
+  background: rgba(127, 119, 221, 0.22);
+  color: #7f77dd;
+}
+
+.iconAmber {
+  background: rgba(186, 117, 23, 0.22);
+  color: #f59e0b;
+}
+
+// ─── Item body ────────────────────────────────────────────────────────────────
+
+.itemBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.itemTitle {
+  font-size: 15px;
+  font-weight: 500;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.itemSub {
+  font-size: 12px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+// ─── Chevron ──────────────────────────────────────────────────────────────────
+
+.itemChevron {
+  flex-shrink: 0;
+  color: #444;
+  display: flex;
+  align-items: center;
+}

@@ -1,6 +1,9 @@
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
+// Получить список праздников
 export async function getHolidays({ where }) {
+  const prisma = prismaContext.get();
+
   return prisma.holidays.findMany({
     where,
     orderBy: { date_from: "asc" },
@@ -26,18 +29,24 @@ export async function getHolidays({ where }) {
 
 // Получить праздник по ID
 export async function getHolidayById(id) {
-  return prisma.holidays.findUnique({ where: { id: Number(id) } });
-}
+  const prisma = prismaContext.get();
 
-// Создать праздник
-export async function createHoliday(data) {
-  return prisma.holidays.create({
-    data,
+  return prisma.holidays.findUnique({
+    where: { id: Number(id) },
   });
 }
 
+// Создать праздник
+export async function createHoliday(data, tx = null) {
+  const prisma = tx || prismaContext.get();
+
+  return prisma.holidays.create({ data });
+}
+
 // Обновить праздник
-export async function updateHoliday(id, data) {
+export async function updateHoliday(id, data, tx = null) {
+  const prisma = tx || prismaContext.get();
+
   return prisma.holidays.update({
     where: { id: Number(id) },
     data,
@@ -45,7 +54,9 @@ export async function updateHoliday(id, data) {
 }
 
 // Удалить праздник
-export async function deleteHoliday(id) {
+export async function deleteHoliday(id, tx = null) {
+  const prisma = tx || prismaContext.get();
+
   return prisma.holidays.delete({
     where: { id: Number(id) },
   });

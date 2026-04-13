@@ -1,75 +1,219 @@
-.profile {
+.profileWrapper {
   padding: 10px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--profile-bg);
-  box-sizing: border-box;
-
-  .userInfo {
-    display: flex;
-    flex-direction: column;
-    padding-left: 5px;
-
-    p {
-      margin: 0;
-      font-weight: bold;
-      font-size: clamp(12px, 0.7vw, 14px);
-    }
-
-    span {
-      font-size: clamp(10px, 0.7vw, 11px);
-    }
-  }
-
-  .buttons {
-    display: flex;
-    gap: 10px;
-
-    svg {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      transition: all 0.1s;
-      color: var(--text-color);
-      fill: var(--text-color);
-
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
-  }
-}
-
-.profile_mini {
-  padding: 8px;
+  border-top: 1px solid #f3f4f6;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 
-  .buttons {
+  &:hover,
+  &.active {
+    background: #f9fafb;
+  }
+
+  .profile {
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    gap: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+  }
+
+  // ─── Попап ────────────────────────────────────────────────
+  .popup {
+    width: 240px;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 10px;
+    right: 8px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow:
+      0 8px 30px rgba(0, 0, 0, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.06);
+    z-index: 100;
+
+    // Анимация появления снизу вверх
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+    pointer-events: none;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+
+    &.popupVisible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+  }
+
+  .popupHeader {
     display: flex;
     align-items: center;
-    flex-direction: column;
     gap: 10px;
+    padding: 12px 14px;
+  }
 
-    :nth-child(2) {
-      margin-right: 5px;
+  .popupAvatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-small);
+    color: #4f46e5;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
     }
+  }
+
+  .popupUserInfo {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .popupName {
+    font-size: var(--font-small);
+    font-weight: 600;
+    color: #111827;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .popupPosition {
+    font-size: calc(var(--font-small) - 1px);
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+
+  .popupDivider {
+    height: 1px;
+    background: #f3f4f6;
+    margin: 0;
+  }
+
+  .popupMenu {
+    padding: 6px;
+  }
+
+  .popupItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #374151;
+    text-align: left;
+    transition: background 0.1s;
 
     svg {
-      width: 20px;
-      height: 20px;
-      cursor: pointer;
-      transition: all 0.1s;
-      color: var(--text-color);
-      fill: var(--text-color);
+      color: #6b7280;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: #f3f4f6;
+    }
+
+    &.popupItemDanger {
+      color: #dc2626;
+
+      svg {
+        color: #dc2626;
+      }
 
       &:hover {
-        transform: scale(1.1);
+        background: #fef2f2;
       }
+    }
+  }
+
+  // ─── Аватар и инфо (триггер) ──────────────────────────────
+  .profileAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #4f46e5;
+    flex-shrink: 0;
+
+    img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+  }
+
+  .profileInfo {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+
+    .profileName {
+      font-size: var(--font-small);
+      font-weight: 600;
+      color: #111827;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .profileRole {
+      font-size: calc(var(--font-small) - 1px);
+      color: #9ca3af;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // ─── Mini режим ───────────────────────────────────────────
+  &.mini {
+    .profile {
+      gap: 0;
+    }
+
+    .profileInfo {
+      display: none;
+    }
+
+    .profileAvatar {
+      width: 36px;
+      height: 36px;
+    }
+
+    // В mini попап выравниваем по левому краю аватара
+    .popup {
+      left: 10px;
+      right: 8px;
+      width: 240px;
     }
   }
 }

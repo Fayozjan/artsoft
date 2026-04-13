@@ -1,9 +1,12 @@
-import prisma from "../../prisma/client.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 import dotenv from "dotenv";
 import { parseDateOnly } from "./employee.helpers.js";
+
 dotenv.config();
 
 export async function addEmployeeRaw(body) {
+  const prisma = prismaContext.get();
+
   const { id, first_name, branch_id, status } = body;
 
   await prisma.$executeRaw`
@@ -13,11 +16,14 @@ export async function addEmployeeRaw(body) {
 }
 
 export const EmployeeModel = {
-  create: async (data, tx = prisma) => {
-    return tx.employees.create({ data });
+  create: async (data, tx = null) => {
+    const prisma = tx || prismaContext.get();
+    return prisma.employees.create({ data });
   },
 
   update: async (id, data) => {
+    const prisma = prismaContext.get();
+
     return prisma.employees.update({
       where: { id: Number(id) },
       data,
@@ -25,6 +31,8 @@ export const EmployeeModel = {
   },
 
   getAll: async (where = {}, skip = 0, take = 50) => {
+    const prisma = prismaContext.get();
+
     const [data, total] = await Promise.all([
       prisma.employees.findMany({
         where,
@@ -45,6 +53,8 @@ export const EmployeeModel = {
   },
 
   getById: async (id) => {
+    const prisma = prismaContext.get();
+
     return prisma.employees.findUnique({
       where: { id: Number(id) },
       include: {
@@ -53,9 +63,7 @@ export const EmployeeModel = {
         position: true,
         employmentOrders: true,
         employeeScheduleHistory: {
-          orderBy: {
-            date_from: "asc",
-          },
+          orderBy: { date_from: "asc" },
           include: {
             workSchedule: true,
             addedBy: {
@@ -80,6 +88,8 @@ export const EmployeeModel = {
   },
 
   getActive: async (where) => {
+    const prisma = prismaContext.get();
+
     return prisma.employees.findMany({
       where,
       orderBy: { last_name: "asc" },
@@ -98,6 +108,8 @@ export const EmployeeModel = {
   },
 
   getAllIds: async () => {
+    const prisma = prismaContext.get();
+
     try {
       const employees = await prisma.employees.findMany({
         select: { id: true },
@@ -111,10 +123,10 @@ export const EmployeeModel = {
   },
 
   getCurrentWorkSchedule: async (employeeId) => {
+    const prisma = prismaContext.get();
+
     return prisma.employees.findUnique({
-      where: {
-        id: Number(employeeId),
-      },
+      where: { id: Number(employeeId) },
       select: {
         work_schedule_id: true,
         workSchedule: true,
@@ -128,12 +140,13 @@ export const EmployeeModel = {
     userId,
     workScheduleStartDate,
   ) => {
+    const prisma = prismaContext.get();
+
     const startDate = parseDateOnly(workScheduleStartDate);
     const endDate = new Date(startDate);
     endDate.setUTCDate(endDate.getUTCDate() - 1);
 
     return prisma.$transaction(async (tx) => {
-      // 1️⃣ Получаем все истории
       const histories = await tx.employee_schedule_history.findMany({
         where: {
           employee_id: employeeId,
@@ -151,11 +164,12 @@ export const EmployeeModel = {
             data: { date_to: endDate },
           });
         } else if (h.date_from >= startDate) {
-          await tx.employee_schedule_history.delete({ where: { id: h.id } });
+          await tx.employee_schedule_history.delete({
+            where: { id: h.id },
+          });
         }
       }
 
-      // 2️⃣ Создаём новый график
       return tx.employee_schedule_history.create({
         data: {
           employee_id: employeeId,
@@ -168,6 +182,10 @@ export const EmployeeModel = {
   },
 
   delete: async (id) => {
-    return prisma.employees.delete({ where: { id: Number(id) } });
+    const prisma = prismaContext.get();
+
+    return prisma.employees.delete({
+      where: { id: Number(id) },
+    });
   },
 };

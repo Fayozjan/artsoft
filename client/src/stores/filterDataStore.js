@@ -5,10 +5,11 @@ import {
   getActivePositions,
 } from "../api";
 
-export const useFilterDataStore = create((set) => ({
+export const useFilterDataStore = create((set, get) => ({
   branches: [],
   departments: [],
   positions: [],
+  employees: [],
 
   fetchAllData: async () => {
     try {
@@ -22,24 +23,24 @@ export const useFilterDataStore = create((set) => ({
         branches: branchesRes?.data || [],
         departments: departmentsRes?.data || [],
         positions: positionsRes?.data || [],
-        loading: false,
       });
     } catch (error) {
       console.error("Ошибка при загрузке данных:", error);
-      set({ loading: false });
     }
   },
 
   deleteUser: (id) => {
     set((state) => ({
+      // Проверь, чтобы имя массива совпадало с тем, что в state
       employees: state.employees.filter((e) => e.employee_id !== id),
     }));
   },
 
   updateUser: (updatedUser) => {
     set((state) => ({
-      employees: state.users.map((u) =>
-        e.employee_id === updatedUser.user_id ? updatedUser : u
+      employees: state.employees.map((u) =>
+        // Исправлена опечатка с 'e' на 'u' и консистентность ID
+        u.employee_id === updatedUser.employee_id ? updatedUser : u,
       ),
     }));
   },

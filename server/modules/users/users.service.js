@@ -1,69 +1,75 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { UserModel } from "./users.model.js";
 import { MenuModel } from "../menus/menus.model.js";
 
 export const UserService = {
-  editUserById: async (id, data) => {
+  create: async (data) => {
     const {
       username,
       password,
       employee_id,
       access_level,
-      branch_access,
-      department_access,
+      branches,
+      departments,
       status,
       menu,
+      personal_menus,
+      telegramId,
+      view_mode,
     } = data;
 
-    // 2️⃣ Подготовка данных для обновления
-    const dataToUpdate = {
+    if (
+      ["branch", "department"].includes(access_level) &&
+      (!Array.isArray(
+        { branch: branches, department: departments }[access_level],
+      ) ||
+        { branch: branches, department: departments }[access_level].length ===
+          0)
+    ) {
+      const error = new Error(
+        "Необходимо выбрать хотя бы один элемент для данного уровня доступа.",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const menuAccess = Object.entries(menu).map(([menu_id, perms]) => ({
+      menu_id: Number(menu_id),
+      can_view: perms.view,
+      can_add: perms.add,
+      can_update: perms.update,
+      can_delete: perms.delete,
+    }));
+
+    return UserModel.create({
       username,
+      password: hashedPassword,
       employee_id: Number(employee_id),
       access_level,
-      branch_access,
-      department_access,
+      branch_access: branches || [],
+      department_access: departments || [],
+      personal_menus: personal_menus || [],
+      telegram_id: telegramId,
+      view_mode: view_mode || "branch",
       status,
-    };
-
-    if (password && password.trim() !== "") {
-      dataToUpdate.password = await bcrypt.hash(password, 10);
-    }
-
-    const menuAccessOperations =
-      menu && Object.keys(menu).length
-        ? Object.entries(menu).map(([menu_id, menuItem]) => ({
-            user_id: Number(id),
-            menu_id: Number(menu_id),
-            can_view: !!menuItem.view,
-            can_add: !!menuItem.add,
-            can_update: !!menuItem.update,
-            can_delete: !!menuItem.delete,
-          }))
-        : [];
-
-    // 3️⃣ Обновление через модель
-    const updatedUser = await UserModel.editUserById(
-      id,
-      dataToUpdate,
-      menuAccessOperations,
-    );
-
-    if (!updatedUser) {
-      const err = new Error("Пользователь не найден");
-      err.code = "NOT_FOUND";
-      throw err;
-    }
-
-    return updatedUser;
+      menuAccess: {
+        create: menuAccess,
+      },
+    });
   },
 
-  getUsers: async (page, limit, filters = {}) => {
-    const pageNumber = Math.max(parseInt(page, 10) || 1, 1);
-    const limitNumber = Math.max(parseInt(limit, 10) || 50, 1);
+  get: async (page, limit, filters = {}) => {
+    const pageNumber = Math.max(parseInt(page) || 1, 1);
+    const limitNumber = Math.max(parseInt(limit) || 50, 1);
     const skip = (pageNumber - 1) * limitNumber;
 
     const { search, status } = filters || {};
-    const where = {};
+
+    const where = {
+      NOT: { username: "root" },
+    };
 
     if (search) {
       where.OR = [
@@ -85,28 +91,27 @@ export const UserService = {
     }
 
     const [data, total] = await Promise.all([
-      UserModel.findUsers({ skip, take: limitNumber, where }),
-      UserModel.countUsers(where),
+      UserModel.getList({ skip, take: limitNumber, where }),
+      UserModel.count(where),
     ]);
 
-    const formatedData = data.map((user) => {
-      const { employee, access_level, ...rest } = user;
+    const formattedData = data.map((item) => {
+      const employee = item.employee;
 
       const employeeFullName = employee
-        ? [employee.last_name, employee.first_name, employee.middle_name]
-            .filter(Boolean)
-            .join(" ")
+        ? `${employee.last_name} ${employee.first_name}${
+            employee.middle_name ? " " + employee.middle_name : ""
+          } (${employee.id})`
         : null;
 
       return {
-        ...rest,
+        ...item,
         employeeFullName,
-        accessLevel: access_level,
       };
     });
 
     return {
-      data: formatedData,
+      data: formattedData,
       pagination: {
         totalItems: total,
         currentPage: pageNumber,
@@ -116,32 +121,104 @@ export const UserService = {
     };
   },
 
-  getUserById: async (id) => {
-    const user = await UserModel.getUserById(Number(id));
-
-    if (!user) return null;
-
-    return user;
+  getById: async (id) => {
+    return UserModel.getById(Number(id));
   },
 
-  getUserMenu: async (userId) => {
-    // 1️⃣ Данные из модели
+  getInfo: async (id) => {
+    return UserModel.getInfo(Number(id));
+  },
+
+  getAccess: async (userId) => {
+    const access = await UserModel.getAccess(userId);
+
+    if (!access) {
+      const err = new Error("Пользователь не найден");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    return access;
+  },
+
+  updateById: async (id, data) => {
+    const {
+      username,
+      password,
+      employee_id,
+      access_level,
+      branches,
+      departments,
+      status,
+      menu,
+      personal_menus,
+      telegramId,
+      view_mode,
+    } = data;
+
+    if (
+      ["branch", "department"].includes(access_level) &&
+      (!Array.isArray(
+        { branch: branches, department: departments }[access_level],
+      ) ||
+        { branch: branches, department: departments }[access_level].length ===
+          0)
+    ) {
+      const error = new Error(
+        "Необходимо выбрать хотя бы один элемент для данного уровня доступа.",
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const updateData = {
+      username,
+      employee_id: Number(employee_id),
+      access_level,
+      branch_access: branches || [],
+      department_access: departments || [],
+      personal_menus: personal_menus || [],
+      telegram_id: telegramId,
+      view_mode: view_mode || "branch",
+      status,
+    };
+
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
+    const menuAccessOperations =
+      menu && Object.keys(menu).length
+        ? Object.entries(menu).map(([menu_id, m]) => ({
+            user_id: Number(id),
+            menu_id: Number(menu_id),
+            can_view: !!m.view,
+            can_add: !!m.add,
+            can_update: !!m.update,
+            can_delete: !!m.delete,
+          }))
+        : [];
+
+    return UserModel.updateById(id, updateData, menuAccessOperations);
+  },
+
+  getMenu: async (userId) => {
     const [accesses, menus] = await Promise.all([
-      UserModel.getUserMenuAccesses(Number(userId)),
+      UserModel.getMenuAccess(userId),
       MenuModel.getAllMenus(),
     ]);
 
-    // 2️⃣ Мапа доступов
     const accessMap = new Map();
     accesses.forEach((a) => accessMap.set(a.menu_id, a));
 
-    // 3️⃣ Построение дерева
     const buildTree = (parentId = null) => {
       return menus
-        .filter((menu) => menu.parent_id === parentId)
+        .filter((m) => m.parent_id === parentId)
+        .sort((a, b) => a.sort_order - b.sort_order)
         .map((menu) => {
           const children = buildTree(menu.id);
           const perms = accessMap.get(menu.id);
+
           const canView = (perms && perms.can_view) || children.length > 0;
 
           if (!canView) return null;
@@ -150,7 +227,6 @@ export const UserService = {
             id: menu.id,
             name: menu.name,
             path: menu.path,
-            parent_id: menu.parent_id,
             sort_order: menu.sort_order,
             permissions: {
               view: !!perms?.can_view,
@@ -168,41 +244,43 @@ export const UserService = {
   },
 
   updateProfile: async (userId, data) => {
-    const { currentPassword, newPassword, theme, language } = data;
+    const {
+      currentPassword,
+      newPassword,
+      theme,
+      language,
+      view_mode,
+      active_branch_id,
+    } = data;
 
-    const user = await UserModel.getUserWithPasswordById(userId);
+    const user = await UserModel.getWithPassword(userId);
 
     if (!user) {
-      const error = new Error("Пользователь не найден");
-      error.statusCode = 404;
-      throw error;
+      const err = new Error("Пользователь не найден");
+      err.statusCode = 404;
+      throw err;
     }
 
     const updateData = {};
 
-    // 🔐 Проверка пароля
     if (newPassword) {
-      if (!currentPassword) {
-        const error = new Error("Введите текущий пароль");
-        error.statusCode = 400;
-        throw error;
-      }
-
       const isMatch = await bcrypt.compare(currentPassword, user.password);
 
       if (!isMatch) {
-        const error = new Error("Текущий пароль неверный");
-        error.statusCode = 400;
-        throw error;
+        const err = new Error("Текущий пароль неверный");
+        err.statusCode = 400;
+        throw err;
       }
 
       updateData.password = await bcrypt.hash(newPassword, 10);
     }
 
-    // 🎨 Настройки
     if (theme !== undefined) updateData.theme = theme;
     if (language !== undefined) updateData.language = language;
+    if (view_mode !== undefined) updateData.view_mode = view_mode;
+    if (active_branch_id !== undefined)
+      updateData.active_branch_id = active_branch_id;
 
-    return await UserModel.updateProfile(userId, updateData);
+    return UserModel.updateProfile(userId, updateData);
   },
 };

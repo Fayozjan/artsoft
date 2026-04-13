@@ -26,13 +26,22 @@ export const EmployeeService = {
     const formData = new FormData();
 
     Object.entries(data).forEach(([key, value]) => {
-      if (value === undefined || value === null) return;
-
-      if (value instanceof File) {
-        formData.append(key, value);
-      } else {
-        formData.append(key, value);
+      if (key === "photo") {
+        if (value instanceof File) formData.append(key, value);
+        else formData.append(key, "");
+        return;
       }
+
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          formData.append(`${key}[]`, "");
+        } else {
+          value.forEach((v) => formData.append(`${key}[]`, v));
+        }
+        return;
+      }
+
+      formData.append(key, value ?? "");
     });
 
     const res = await api.post("/employees", formData, {

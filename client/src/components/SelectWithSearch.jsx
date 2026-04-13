@@ -63,7 +63,7 @@ function SelectWithSearch({
       (p) =>
         name.includes(p) ||
         option.id?.toString() === p ||
-        option.employee_number?.toString() === p
+        option.employee_number?.toString() === p,
     );
   });
 

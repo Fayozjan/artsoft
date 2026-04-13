@@ -1,13 +1,17 @@
 import express from "express";
 import * as holidaysController from "./holidays.controller.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", authMiddleware, holidaysController.getHolidays);
-router.get("/:id", authMiddleware, holidaysController.getHoliday);
-router.post("/", authMiddleware, holidaysController.addHoliday);
-router.put("/:id", authMiddleware, holidaysController.updateHoliday);
-router.delete("/:id", authMiddleware, holidaysController.removeHoliday);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", holidaysController.getHolidays);
+router.get("/:id", holidaysController.getHoliday);
+router.post("/", holidaysController.addHoliday);
+router.put("/:id", holidaysController.updateHoliday);
+router.delete("/:id", holidaysController.removeHoliday);
 
 export default router;

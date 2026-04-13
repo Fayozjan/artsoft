@@ -8,10 +8,9 @@ export default function CenterModal({
   isOpen,
   onClose,
   onAccept,
-  title = "Вы уверены?",
-  text = "",
+  tag = "Подтверждение",
   acceptText = "Да",
-  cancelText = "Нет",
+  cancelText = "Отмена",
 }) {
   const [portalContainer, setPortalContainer] = useState(null);
 
@@ -19,35 +18,18 @@ export default function CenterModal({
     const container = document.createElement("div");
     document.body.appendChild(container);
     setPortalContainer(container);
-
-    return () => {
-      document.body.removeChild(container);
-    };
+    return () => document.body.removeChild(container);
   }, []);
 
   useEffect(() => {
-    const handleEsc = (event) => {
-      if (event.key === "Escape") {
-        onClose();
-      }
+    const handleEsc = (e) => {
+      if (e.key === "Escape") onClose();
     };
-
-    if (isOpen) {
-      window.addEventListener("keydown", handleEsc);
-    }
-
-    return () => {
-      window.removeEventListener("keydown", handleEsc);
-    };
+    if (isOpen) window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [isOpen, onClose]);
 
   if (!portalContainer) return null;
-
-  const modalVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: { opacity: 1, scale: 1 },
-    exit: { opacity: 0, scale: 0.8 },
-  };
 
   return createPortal(
     <AnimatePresence>
@@ -62,15 +44,25 @@ export default function CenterModal({
         >
           <motion.div
             className={styles.modal}
-            variants={modalVariants}
-            initial="hidden"
-            animate="visible"
-            exit="exit"
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.92, y: 8 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2>{title}</h2>
-            <p>{text}</p>
+            {tag && (
+              <div className={styles.tag}>
+                <span className={styles.tagDot} />
+                {tag}
+              </div>
+            )}
+
+            {
+              <p className={styles.text}>
+                Это действие нельзя будет отменить после подтверждения.
+              </p>
+            }
+
             <div className={styles.actions}>
               <button className={styles.accept} onClick={onAccept}>
                 {acceptText}

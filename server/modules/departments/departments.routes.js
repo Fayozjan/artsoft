@@ -1,18 +1,18 @@
 import { Router } from "express";
+import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 import { authMiddleware } from "../../middlewares/authMiddleware.js";
-import * as departmentsController from "./departments.controller.js";
+import { DepartmentsController } from "./departments.controller.js";
 
 const router = Router();
 
-router.get("/", authMiddleware, departmentsController.getDepartments);
-router.get(
-  "/active",
-  authMiddleware,
-  departmentsController.getActiveDepartments
-);
-router.get("/:id", authMiddleware, departmentsController.getDepartment);
-router.post("/", authMiddleware, departmentsController.addDepartment);
-router.put("/:id", authMiddleware, departmentsController.editDepartment);
-router.delete("/:id", authMiddleware, departmentsController.deleteDepartment);
+router.use(tenantMiddleware);
+router.use(authMiddleware);
+
+router.get("/", DepartmentsController.getDepartments);
+router.get("/active", DepartmentsController.getActiveDepartments);
+router.get("/:id", DepartmentsController.getDepartment);
+router.post("/", DepartmentsController.addDepartment);
+router.put("/:id", DepartmentsController.editDepartment);
+router.delete("/:id", DepartmentsController.deleteDepartment);
 
 export default router;

@@ -1,0 +1,435 @@
+// ─── table (employees view) ───────────────────────────────────────────────────
+
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-small);
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: white;
+      z-index: 10;
+    }
+
+    .headerContent {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    th {
+      font-weight: 600;
+    }
+
+    th,
+    td {
+      padding: 2px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: center;
+    }
+
+    th:nth-child(1),
+    td:nth-child(1) {
+      margin-right: 10px;
+    }
+
+    .employee {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-sizing: border-box;
+
+      img {
+        min-width: 35px;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        margin-left: 10px;
+        object-fit: cover;
+        box-sizing: border-box;
+      }
+    }
+
+    td img {
+      min-width: 35px;
+      width: 40px;
+      height: 40px;
+      border-radius: 20%;
+      margin-left: 10px;
+      object-fit: cover;
+      box-sizing: border-box;
+    }
+
+    .active {
+      border: 2px solid #28a745;
+    }
+
+    .terminated {
+      border: 2px solid #dc3545;
+    }
+
+    .actions svg {
+      margin-left: 5px;
+      cursor: pointer;
+      transition: 0.1s;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+}
+
+.btnMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary, #4f6ef7);
+  color: #fff;
+  font-size: var(--font-small);
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+// ─── branches grid view ───────────────────────────────────────────────────────
+
+.gridWrapper {
+  overflow: auto;
+  padding: 10px 5px;
+}
+
+.gridTable {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: var(--font-small);
+
+  th,
+  td {
+    border: 1px solid var(--border-color, #e5e7eb);
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+.gridBranchTh {
+  text-align: left !important;
+  padding: 8px;
+  font-weight: 600;
+  background: #f8f9fc;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.gridDayTh {
+  padding: 2px;
+  background: #f8f9fc;
+  font-weight: 600;
+  min-width: 25px;
+}
+
+.gridDayNum {
+  display: block;
+  font-size: var(--font-small);
+  color: #1e2230;
+}
+
+.gridDayName {
+  display: block;
+  font-size: calc(var(--font-small) - 4px);
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+
+.gridTotalTh {
+  padding: 2px;
+  background: #f0f2fa;
+  font-weight: 600;
+  color: #4f6ef7;
+}
+
+.gridRow {
+  &:hover .gridBranchCell {
+    background: #f4f5fa;
+  }
+}
+
+.gridBranchCell {
+  text-align: left !important;
+  padding: 8px;
+  font-weight: 600;
+  background: #f8f9fc;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.gridCell {
+  padding: 2px;
+  transition: background 0.12s;
+}
+
+.gridCellActive {
+  background: #eff1fd;
+}
+
+.gridEmptyCell {
+  padding: 8px;
+}
+
+.gridZero {
+  font-size: 13px;
+  font-weight: 500;
+  color: #d1d5db;
+}
+
+// Clickable button inside cell
+
+.gridCellBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+
+  &:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+  }
+}
+
+.gridCellBtnActive {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+
+.gridCount {
+  line-height: 1;
+}
+
+.gridChevron {
+  color: #f87171;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.gridChevronOpen {
+  transform: rotate(180deg);
+}
+
+.gridTotalCell {
+  padding: 4px;
+  background: #f0f2fa;
+}
+
+.gridTotalBadge {
+  display: inline-block;
+  font-weight: 700;
+  font-size: var(--font-small);
+  color: #4f6ef7;
+}
+
+.gridExpandRow {
+  background: #fafbff;
+}
+
+.gridExpandCell {
+  padding: 0 !important;
+  border-top: 2px solid #c7d2fe !important;
+  text-align: left !important;
+}
+
+.gridExpandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px 8px;
+  font-weight: 600;
+  font-size: var(--font-small);
+  color: #374151;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  background: #eef0fb;
+}
+
+.gridExpandClose {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 4px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: #e0e4f8;
+    color: #4f6ef7;
+  }
+}
+
+.employeeList {
+  display: flex;
+  flex-direction: column;
+  background: #fafbff;
+}
+
+.employeeCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px dashed var(--border-color, #e5e7eb);
+  font-size: var(--font-small);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.empLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.empPhoto {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.empPhotoPlaceholder {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e0e4f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #4f6ef7;
+  flex-shrink: 0;
+}
+
+.empInfo {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.empName {
+  font-weight: 500;
+  color: #1e2230;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empMeta {
+  font-size: var(--font-small);
+  color: #9ca3af;
+}
+
+// Time blocks
+
+.empTimes {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.timeBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timeLabel {
+  font-size: var(--font-small);
+  color: #9ca3af;
+}
+
+.timeValue {
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: #374151;
+}
+
+.timeActual {
+  color: #ef4444;
+}
+
+.timeArrow {
+  color: #d1d5db;
+  font-size: 14px;
+}
+
+// Late badge
+
+.lateBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: #dc2626;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 3px 10px;
+  flex-shrink: 0;
+}
+
+.permissionTag {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: #16a34a;
+  background: #dcfce7;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+// Photo link
+
+.photoLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-small);
+  color: #4f6ef7;
+  text-decoration: none;
+  flex-shrink: 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

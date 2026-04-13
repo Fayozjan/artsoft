@@ -55,7 +55,9 @@
   }
 
   .sticker {
-    margin-bottom: 5px;
+    position: absolute;
+    left: 62px;
+    bottom: 4px;
     color: var(--third-color);
     display: flex;
     justify-content: center;
@@ -76,7 +78,9 @@
       border: 1px solid #ccc;
       border-radius: 6px;
       outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
 
       &:focus {
         border-color: var(--third-color);
@@ -101,6 +105,51 @@
 
       &:active {
         transform: scale(0.95);
+      }
+    }
+  }
+
+  // В AddUser.module.scss добавить:
+
+  .checkboxGroup {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+
+    .checkboxLabel {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: var(--font-small);
+      font-weight: 500;
+      color: #444;
+      transition: all 0.15s ease;
+      user-select: none;
+
+      input[type="checkbox"] {
+        width: 14px;
+        height: 14px;
+        min-width: 14px;
+        accent-color: var(--third-color);
+        cursor: pointer;
+        border: none;
+        padding: 0;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+
+      &:has(input:checked) {
+        border-color: var(--third-color);
+        background-color: rgba(59, 130, 246, 0.08);
+        color: var(--third-color);
       }
     }
   }

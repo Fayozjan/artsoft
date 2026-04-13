@@ -15,11 +15,11 @@ import Loading from "../components/Loading";
 import OverlaySidebar from "../components/OverlaySidebar";
 import CenterModal from "../components/CenterModal";
 import SortArrow from "../components/SortArrow";
-import TableIcons from "../icons/tableIcons";
 import DownloadButton from "../components/DownloadButton";
 import TableFilter from "../components/TableFilter";
 
 import styles from "./BranchesPage.module.scss";
+import { ActionCell } from "../components/ActionButtons";
 
 const BranchesPage = () => {
   const currentPath = window.location.pathname;
@@ -353,20 +353,15 @@ const BranchesPage = () => {
                         <Badge text={item.status} />
                       </td>
 
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (

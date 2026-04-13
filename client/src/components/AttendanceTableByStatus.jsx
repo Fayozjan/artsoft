@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import SortArrow from "./SortArrow";
@@ -6,6 +6,8 @@ import DownloadButton from "./DownloadButton";
 
 import styles from "./AttendanceTableByStatus.module.scss";
 import { formatLateMinutesToHours } from "../helpers/time";
+
+const PAGE_SIZE = 50;
 
 const searchFields = [
   "employeeFullName",
@@ -70,7 +72,12 @@ export const employeesColumns = [
     render: (row) => (
       <div className={styles.employee}>
         {row.employeeFullName}
-        {row.photo && <img src={row.photo} alt="employee" />}
+        {row.employeePhoto && (
+          <img
+            src={`/api/employees/image/${row.employeePhoto}`}
+            alt="employee"
+          />
+        )}
       </div>
     ),
   },
@@ -109,7 +116,12 @@ export const presentColumns = [
     render: (row) => (
       <div className={styles.employee}>
         {row.employeeFullName}
-        {row.employeePhoto && <img src={row.employeePhoto} alt="employee" />}
+        {row.employeePhoto && (
+          <img
+            src={`/api/employees/image/${row.employeePhoto}`}
+            alt="employee"
+          />
+        )}
       </div>
     ),
   },
@@ -156,7 +168,7 @@ export const lateColumns = [
     render: (row) => (
       <div className={styles.employee}>
         {row.employeeFullName}
-        {row.employeePhoto && <img src={row.employeePhoto} alt="employee" />}
+        <img src={`/api/employees/image/${row.employeePhoto}`} alt="employee" />
       </div>
     ),
   },
@@ -211,7 +223,12 @@ export const leftColumns = [
     render: (row) => (
       <div className={styles.employee}>
         {row.employeeFullName}
-        {row.employeePhoto && <img src={row.employeePhoto} alt="employee" />}
+        {row.employeePhoto && (
+          <img
+            src={`/api/employees/image/${row.employeePhoto}`}
+            alt="employee"
+          />
+        )}
       </div>
     ),
   },
@@ -253,16 +270,33 @@ const columns = {
   left: leftColumns,
 };
 
+const defaultSorts = {
+  branches: { field: "name", order: "asc" },
+  departments: { field: "branchName", order: "asc" },
+  employees: { field: "employeeFullName", order: "asc" },
+  present: { field: "employeeFullName", order: "asc" },
+  absent: { field: "employeeFullName", order: "asc" },
+  late: { field: "employeeFullName", order: "asc" },
+  inside: { field: "employeeFullName", order: "asc" },
+  left: { field: "employeeFullName", order: "asc" },
+};
+
 const AttendanceTableByStatus = ({
   data = [],
   modalType = "",
   modalTitle = "",
   emptyText = "Нет данных",
 }) => {
-  const [sortField, setSortField] = useState("employeeFullName" || "name");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortField, setSortField] = useState(
+    () => defaultSorts[modalType]?.field ?? "employeeFullName",
+  );
+  const [sortOrder, setSortOrder] = useState(
+    () => defaultSorts[modalType]?.order ?? "asc",
+  );
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loaderRef = useRef(null);
 
   const filteredData = useMemo(() => {
     if (!search.trim()) return data[modalType];
@@ -273,8 +307,8 @@ const AttendanceTableByStatus = ({
       searchFields.some((field) =>
         String(row[field] ?? "")
           .toLowerCase()
-          .includes(lower)
-      )
+          .includes(lower),
+      ),
     );
   }, [search, data[modalType], searchFields]);
 
@@ -333,6 +367,27 @@ const AttendanceTableByStatus = ({
       setSortOrder("asc");
     }
   };
+
+  const visibleData = useMemo(
+    () => sortedData.slice(0, visibleCount),
+    [sortedData, visibleCount],
+  );
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) =>
+            Math.min(prev + PAGE_SIZE, sortedData.length),
+          );
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [sortedData.length]);
 
   return (
     <div className={styles.wrapper}>
@@ -404,16 +459,28 @@ const AttendanceTableByStatus = ({
             </tr>
           </thead>
           <tbody>
-            {sortedData.length ? (
-              sortedData.map((row, i) => (
-                <tr key={row.id ?? i}>
-                  {columns[modalType].map((col) => (
-                    <td key={col.key}>
-                      {col.render ? col.render(row, i) : row[col.key]}
+            {visibleData.length ? (
+              <>
+                {visibleData.map((row, i) => (
+                  <tr key={row.id ?? i}>
+                    {columns[modalType].map((col) => (
+                      <td key={col.key}>
+                        {col.render ? col.render(row, i) : row[col.key]}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+                {visibleCount < sortedData.length && (
+                  <tr ref={loaderRef}>
+                    <td
+                      colSpan={columns[modalType].length}
+                      style={{ textAlign: "center", padding: "12px" }}
+                    >
+                      Загрузка...
                     </td>
-                  ))}
-                </tr>
-              ))
+                  </tr>
+                )}
+              </>
             ) : (
               <tr>
                 <td colSpan={columns[modalType].length}>{emptyText}</td>

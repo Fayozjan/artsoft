@@ -1,66 +1,216 @@
 .container {
-  max-height: 500px;
-  overflow: auto;
-  font-size: clamp(13px, 0.7vw, 14px);
-  background-color: #fff;
-  color: #000;
+  font-size: var(--font-small);
+  padding: 5px;
+}
 
-  &::-webkit-scrollbar {
-    width: 6px;
+.toolbar {
+  padding: 8px;
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+}
+
+.toolbarTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+
+  .toolbarTitle {
+    font-weight: 500;
+    color: #111;
   }
 
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(0, 0, 0, 0.25);
-    border-radius: 4px;
-  }
+  .stats {
+    display: flex;
+    gap: 5px;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    margin-top: -1px;
 
-  .permissionsTable {
-    width: 100%;
-    border-collapse: collapse;
-    border: 1px solid #ccc;
-
-    th,
-    td {
-      border: 1px solid #b5b5b5;
-      text-align: left;
-    }
-
-    th {
-      position: sticky;
-      top: 0;
-      background: #1a1a1a;
-      color: #fff;
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
       font-weight: 500;
-      z-index: 2;
-      text-align: center;
-    }
 
-    td.center {
-      text-align: center;
-    }
+      &:nth-child(1) {
+        background: #e0e0e0;
+        color: #333;
+      }
 
-    .menuRow:hover {
-      background-color: #f0f0f0;
-    }
+      &:nth-child(2) {
+        background: #22c55e;
+        color: #fff;
+      }
 
-    .expandArrow {
-      display: inline-block;
-      margin-right: 6px;
-      cursor: pointer;
-      transition: transform 0.2s ease;
-      font-size: 12px;
-      color: #000;
+      &:nth-child(3) {
+        background: #ef4444;
+        color: #fff;
+      }
 
-      &.expanded {
-        transform: rotate(90deg);
+      &:nth-child(4) {
+        background: #f59e0b;
+        color: #fff;
       }
     }
+  }
+}
 
-    input[type="checkbox"] {
-      cursor: pointer;
-      width: 16px;
-      height: 16px;
-      accent-color: #000; // делает чекбокс черным (работает во всех современных браузерах)
+.toolbarBottom {
+  width: 100%;
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.search {
+  min-width: 100px;
+  height: 28px;
+  padding: 0 10px 0 28px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+
+  outline: none;
+  background: #fff;
+
+  &:focus {
+    border-color: #4f8ef7;
+    box-shadow: 0 0 0 2px rgba(79, 142, 247, 0.15);
+  }
+}
+
+.ctrlBtn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fff;
+  color: #555;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #111;
+    border-color: #bbb;
+  }
+}
+
+.tableWrap {
+  border: 1px solid #e0e0e0;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  thead tr {
+    background: #f9f9f9;
+  }
+
+  th {
+    padding: 8px 2px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+    border-bottom: 1px solid #333;
+    white-space: nowrap;
+
+    &.colMenu {
+      text-align: left;
+      width: 35%;
     }
   }
+
+  td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    text-align: center;
+    vertical-align: middle;
+
+    &:first-child {
+      text-align: left;
+    }
+  }
+
+  tr:last-child td {
+    border-bottom: none;
+  }
+
+  tr:hover td {
+    background: #fafafa;
+  }
+
+  input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: #1a56db;
+  }
+}
+
+.rootRow > td:first-child .menuName {
+  font-weight: 500;
+  color: #111;
+}
+
+.childRow td {
+  background: #fdfdfd;
+}
+
+.menuCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  font-size: 9px;
+  color: #999;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.15s;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #f0f0f0;
+    color: #333;
+  }
+
+  &.open {
+    transform: rotate(90deg);
+  }
+
+  &.leaf {
+    cursor: default;
+    color: transparent;
+  }
+}
+
+.menuName {
+  font-size: 12px;
+  color: #333;
+}
+
+.empty {
+  padding: 24px;
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
 }

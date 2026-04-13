@@ -19,6 +19,7 @@ import styles from "./DepartmentsPage.module.scss";
 import Loading from "../components/Loading";
 import DownloadButton from "../components/DownloadButton";
 import DepartmentFilter from "../components/DepartmentFilter";
+import { ActionCell } from "../components/ActionButtons";
 
 const DepartmentPage = () => {
   const [loading, setLoading] = useState(true);
@@ -341,20 +342,15 @@ const DepartmentPage = () => {
                       <td>
                         <Badge text={item.status} />
                       </td>
-                      {(canEdit || canDelete) && (
-                        <td className={styles.actions}>
-                          {canEdit && (
-                            <TableIcons.edit
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                          {canDelete && (
-                            <TableIcons.delete
-                              onClick={() => handleEditClick(item.id)}
-                            />
-                          )}
-                        </td>
-                      )}
+                      {
+                        <ActionCell
+                          item={item}
+                          canEdit={canEdit}
+                          canDelete={canDelete}
+                          onEdit={handleEditClick}
+                          onDelete={handleDeleteClick}
+                        />
+                      }
                     </tr>
                   ))
                 ) : (
