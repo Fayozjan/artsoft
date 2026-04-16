@@ -5,8 +5,9 @@ import SidebarItem from "./SidebarItem";
 import Profile from "./Profile";
 import { Icons } from "../icons/icons";
 
-import styles from "./Sidebar.module.scss";
 import { BranchSwitcher } from "./BranchSwitcher";
+
+import styles from "./Sidebar.module.scss";
 
 const Sidebar = ({ menuData }) => {
   const userSettings = useAuthStore((state) => state.userSettings);

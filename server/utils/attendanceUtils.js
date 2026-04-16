@@ -80,7 +80,7 @@ function getScheduledSecondsForDate(date, workSchedule) {
 
   let shift = null;
 
-  if (schedule.type === "fixed") {
+  if (schedule.type === "fixed" || schedule.type === "remote") {
     const jsDay = date.getUTCDay() === 0 ? 7 : date.getUTCDay();
     shift = schedule.work_days?.find((d) => d.day === jsDay);
   } else if (schedule.type === "shift") {
@@ -96,6 +96,92 @@ function getScheduledSecondsForDate(date, workSchedule) {
     endMins > startMins ? endMins - startMins : endMins + 24 * 60 - startMins;
 
   return Math.max(0, durationMins - breakMins) * 60;
+}
+
+/**
+ * Вычисляет количество минут перерыва по break_start/break_end.
+ * Если они не заданы — возвращает fallback (break_minutes).
+ */
+function resolveBreakMinutes(shift) {
+  if (shift?.break_start && shift?.break_end) {
+    return Math.max(
+      0,
+      timeToMinutes(shift.break_end) - timeToMinutes(shift.break_start),
+    );
+  }
+  return shift?.break_minutes || 0;
+}
+
+/**
+ * Вычисляет пересечение (в минутах) рабочей сессии и плановго перерыва.
+ * Оба интервала выражены в минутах от полуночи.
+ * Возвращает 0, если пересечения нет.
+ *
+ * Пример: сессия 09:27–12:02 (567–722) ∩ перерыв 12:00–13:00 (720–780) = 2 мин.
+ *
+ * @param {number} workStartMins  - Начало сессии, минуты от полуночи
+ * @param {number} workEndMins    - Конец сессии, минуты от полуночи
+ * @param {number} breakStartMins - Начало перерыва, минуты от полуночи
+ * @param {number} breakEndMins   - Конец перерыва, минуты от полуночи
+ * @returns {number} Продолжительность пересечения в минутах
+ */
+export function calcBreakOverlap(workStartMins, workEndMins, breakStartMins, breakEndMins) {
+  const overlapStart = Math.max(workStartMins, breakStartMins);
+  const overlapEnd = Math.min(workEndMins, breakEndMins);
+  return Math.max(0, overlapEnd - overlapStart);
+}
+
+/**
+ * Определяет опоздание после перерыва.
+ *
+ * "Anchor" rule: если сотрудник отсутствовал во время обеденного окна
+ * [break_start, break_end], крайний срок возврата = break_end (13:00).
+ *
+ * Поиск «обеденного выхода»: первый exit-event, при котором поездка
+ * [exit, return] пересекается с окном [breakStart, breakEnd]:
+ *   - exit < breakEnd   (вышел до окончания обеда)
+ *   - return > breakStart (вернулся после начала обеда → пересечение есть)
+ *
+ * Пример A (баг): выход 11:46, возврат 13:38 → опоздание 38 мин.
+ * Пример B (не обед): выход 14:00, возврат 15:00 → 0 мин (exit ≥ breakEnd).
+ */
+function detectBreakReturnLate(events, breakStart, breakEnd) {
+  if (!breakStart || !breakEnd)
+    return { lateMinutes: 0, actualReturn: null };
+
+  const breakStartMins = timeToMinutes(breakStart);
+  const breakEndMins = timeToMinutes(breakEnd);
+
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i];
+    if (e.direction !== "exit") continue;
+
+    const exitMins =
+      e.parsedDate.getUTCHours() * 60 + e.parsedDate.getUTCMinutes();
+
+    // Exit must be before lunch ends; otherwise it's a post-lunch trip
+    if (exitMins >= breakEndMins) continue;
+
+    const returnEntry = events
+      .slice(i + 1)
+      .find((ev) => ev.direction === "entry");
+    if (!returnEntry) continue;
+
+    const returnMins =
+      returnEntry.parsedDate.getUTCHours() * 60 +
+      returnEntry.parsedDate.getUTCMinutes();
+
+    // Trip must overlap with lunch window: return > breakStart
+    // (if returned before lunch even started → not a lunch trip, keep searching)
+    if (returnMins <= breakStartMins) continue;
+
+    // Found the lunch trip — anchor deadline is breakEnd
+    const lateMinutes = Math.max(0, returnMins - breakEndMins);
+    const actualReturn = formatTime(returnEntry.parsedDate);
+    return { lateMinutes, actualReturn };
+  }
+
+  return { lateMinutes: 0, actualReturn: null };
 }
 
 // ── Shift determination ────────────────────────────────────────────────────────
@@ -186,6 +272,66 @@ function calculateWorkDuration(events, MAX_GAP) {
   });
 
   return { totalSeconds, firstEntryEvent, lastExitEvent };
+}
+
+/**
+ * Считает количество рабочих дней по графику в диапазоне [fromDate, toDate].
+ * Используется для вычисления плановых дней на сервере.
+ */
+export function countScheduledDays(fromDate, toDate, workSchedule) {
+  if (!workSchedule?.length) return 0;
+
+  const from = toUTCPlus5(new Date(fromDate));
+  const to = toUTCPlus5(new Date(toDate));
+
+  // Нормализуем до начала дня (только год/месяц/день в UTC-координатах UTC+5)
+  const fromDay = new Date(
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()),
+  );
+  const toDay = new Date(
+    Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()),
+  );
+
+  let count = 0;
+  for (
+    let d = new Date(fromDay);
+    d <= toDay;
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    // Сдвигаем на +5ч чтобы getUTCDay() вернул правильный день недели в UTC+5
+    const dateUTC5 = toUTCPlus5(d);
+    if (getScheduledSecondsForDate(dateUTC5, workSchedule) > 0) count++;
+  }
+  return count;
+}
+
+/**
+ * Считает суммарные плановые минуты работы по графику в диапазоне [fromDate, toDate].
+ * Используется для вычисления нормы часов за месяц.
+ */
+export function countScheduledMinutes(fromDate, toDate, workSchedule) {
+  if (!workSchedule?.length) return 0;
+
+  const from = toUTCPlus5(new Date(fromDate));
+  const to = toUTCPlus5(new Date(toDate));
+
+  const fromDay = new Date(
+    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()),
+  );
+  const toDay = new Date(
+    Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()),
+  );
+
+  let totalSeconds = 0;
+  for (
+    let d = new Date(fromDay);
+    d <= toDay;
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    const dateUTC5 = toUTCPlus5(d);
+    totalSeconds += getScheduledSecondsForDate(dateUTC5, workSchedule);
+  }
+  return Math.round(totalSeconds / 60);
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -352,8 +498,15 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         let scheduleEnd = null;
         let determinedShift = null;
         let breakMinutes = 0;
+        let breakStart = null;
+        let breakEnd = null;
 
-        if (scheduleType === "fixed") {
+        // Допустимые окна из графика (минуты)
+        const lateTolerance = scheduleForDay?.late_tolerance_minutes || 0;
+        const earlyLeaveTolerance = scheduleForDay?.early_leave_tolerance_minutes || 0;
+        const lateLeaveTolerance = scheduleForDay?.late_leave_tolerance_minutes || 0;
+
+        if (scheduleType === "fixed" || scheduleType === "remote") {
           const jsDay = date.getDay() === 0 ? 7 : date.getDay();
           const workDay = scheduleForDay.work_days?.find(
             (d) => d.day === jsDay,
@@ -361,7 +514,9 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           if (workDay) {
             scheduleStart = workDay.start;
             scheduleEnd = workDay.end;
-            breakMinutes = workDay.break_minutes || 0;
+            breakStart = workDay.break_start || null;
+            breakEnd = workDay.break_end || null;
+            breakMinutes = resolveBreakMinutes(workDay);
           }
         } else if (scheduleType === "shift") {
           determinedShift = determineShiftForEvent(
@@ -371,7 +526,19 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           if (determinedShift) {
             scheduleStart = determinedShift.start;
             scheduleEnd = determinedShift.end;
-            breakMinutes = determinedShift.break_minutes || 0;
+            breakStart = determinedShift.break_start || null;
+            breakEnd = determinedShift.break_end || null;
+            breakMinutes = resolveBreakMinutes(determinedShift);
+          }
+        }
+
+        // Lunch anchor fallback: schedules that only have break_minutes (no explicit
+        // break_start/break_end) get the standard 12:00–13:00 window as anchor.
+        // Applied only for day shifts (schedule start strictly before 12:00).
+        if (!breakStart && !breakEnd && breakMinutes > 0 && scheduleStart) {
+          if (timeToMinutes(scheduleStart) < 720) {
+            breakStart = "12:00";
+            breakEnd = "13:00";
           }
         }
 
@@ -390,7 +557,23 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             ? dailyEvents.at(-1).parsedDate
             : null;
 
-        let netSeconds = Math.max(0, result.totalSeconds - breakMinutes * 60);
+        // Вычитаем только реальное пересечение сессии с окном перерыва.
+        // Если break_start/break_end заданы — считаем точное перекрытие [entry, exit] ∩ [break_start, break_end].
+        // Иначе — откатываемся к полному break_minutes (старое поведение).
+        let effectiveBreakMins = breakMinutes;
+        if (breakStart && breakEnd && firstEntryTime && lastExitTime) {
+          const workStartMins =
+            firstEntryTime.getUTCHours() * 60 + firstEntryTime.getUTCMinutes();
+          const workEndMins =
+            lastExitTime.getUTCHours() * 60 + lastExitTime.getUTCMinutes();
+          effectiveBreakMins = calcBreakOverlap(
+            workStartMins,
+            workEndMins,
+            timeToMinutes(breakStart),
+            timeToMinutes(breakEnd),
+          );
+        }
+        let netSeconds = Math.max(0, result.totalSeconds - effectiveBreakMins * 60);
         netSeconds += companyPaidHourSeconds;
 
         // Опоздание
@@ -401,12 +584,13 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             result.firstEntryEvent.parsedDate.getUTCMinutes();
           const rawDiff = Math.max(0, entryMins - timeToMinutes(scheduleStart));
           late = minutesToLateString(
-            Math.max(0, rawDiff - permittedLateMinutes),
+            Math.max(0, rawDiff - permittedLateMinutes - lateTolerance),
           );
         }
 
-        // Ранний уход
+        // Ранний уход / Поздний уход
         let earlyLeave = null;
+        let lateLeave = null;
         if (scheduleEnd && result.lastExitEvent) {
           const scheduleStartMins = scheduleStart
             ? timeToMinutes(scheduleStart)
@@ -419,22 +603,33 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           if (endMins < scheduleStartMins) endMins += 24 * 60;
           if (exitMins < scheduleStartMins) exitMins += 24 * 60;
 
-          earlyLeave = minutesToLateString(Math.max(0, endMins - exitMins));
+          earlyLeave = minutesToLateString(Math.max(0, endMins - exitMins - earlyLeaveTolerance));
+          lateLeave = minutesToLateString(Math.max(0, exitMins - endMins - lateLeaveTolerance));
         }
+
+        // Опоздание после перерыва
+        const breakResult = detectBreakReturnLate(dailyEvents, breakStart, breakEnd);
+        const breakReturnLate = minutesToLateString(breakResult.lateMinutes);
+        const actualBreakReturn = breakResult.actualReturn;
 
         sessionsMap[dayKey] = {
           firstEntry: formatTime(firstEntryTime),
           lastExit: formatTime(lastExitTime),
           workDuration: formatDurationFromSeconds(netSeconds),
           breakMinutes,
+          breakStart,
+          breakEnd,
           shiftType: scheduleType,
           scheduleStart,
           scheduleEnd,
           determinedShift: determinedShift?.shift_number || null,
           late,
           earlyLeave,
+          lateLeave,
+          breakReturnLate,
+          actualBreakReturn,
           events: dailyEvents,
-          hadAttendance: true,
+          hadAttendance: netSeconds > 0 || firstEntryTime !== null || lastExitTime !== null,
           timeOff: dayOffRecord
             ? {
                 id: dayOffRecord.id,
@@ -492,7 +687,7 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             let scheduleStart = null;
             let scheduleEnd = null;
 
-            if (scheduleType === "fixed") {
+            if (scheduleType === "fixed" || scheduleType === "remote") {
               const jsDay =
                 currentDate.getDay() === 0 ? 7 : currentDate.getDay();
               const workDay = scheduleForDay?.work_days?.find(

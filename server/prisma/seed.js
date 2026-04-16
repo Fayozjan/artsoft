@@ -23,10 +23,10 @@ export default async function seed() {
     });
 
     // === ОСНОВНЫЕ МЕНЮ ===
-    const dashboard = await prisma.menus.upsert({
-      where: { name: "dashboard" },
+    const home = await prisma.menus.upsert({
+      where: { name: "home" },
       update: {},
-      create: { name: "dashboard", path: "/dashboard", sort_order: 1 },
+      create: { name: "home", path: "/home", sort_order: 1 },
     });
 
     const hr = await prisma.menus.upsert({

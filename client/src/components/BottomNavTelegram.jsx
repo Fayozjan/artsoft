@@ -9,7 +9,7 @@ import { useOpenAddFacePassTelegram } from "../hooks/useOpenAddFacePassTelegram"
 import styles from "./BottomNavTelegram.module.scss";
 
 const MENU_ITEMS = [
-  { name: "main", path: "/tg/main", icon: "main" },
+  { name: "home", path: "/tg/home", icon: "homeTelegram" },
   { name: "finance", path: "/tg/finance", icon: "finance" },
   { name: "tasks", path: "/tg/tasks", icon: "tasks" },
   { name: "more", path: "/tg/more", icon: "more" },

@@ -29,6 +29,7 @@ const FacePassesPageWeb = () => {
     department_id: null,
     position_id: null,
     direction: "",
+    source: "",
     selectedDoorIds: [],
   };
 
@@ -39,6 +40,7 @@ const FacePassesPageWeb = () => {
     department_id: null,
     position_id: null,
     direction: "",
+    source: "",
     selectedDoorIds: [],
   });
 

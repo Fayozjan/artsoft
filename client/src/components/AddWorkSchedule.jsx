@@ -16,14 +16,16 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     day: i + 1,
     start: "",
     end: "",
-    break_minutes: 0,
+    break_start: "",
+    break_end: "",
   }));
 
   const shifts = Array.from({ length: 3 }, (_, i) => ({
     shift_number: i + 1,
     start: "",
     end: "",
-    break_minutes: 0,
+    break_start: "",
+    break_end: "",
   }));
 
   const [formData, setFormData] = useState({
@@ -33,31 +35,43 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     weekly_hours: 40,
     work_days: workDaysTemplate,
     shifts: shifts,
+    late_tolerance_minutes: 0,
+    early_leave_tolerance_minutes: 0,
+    late_leave_tolerance_minutes: 0,
   });
 
-  // Функция для подсчета минут между start и end с учётом перерыва
-  const getMinutesWorked = (start, end, breakMinutes = 0) => {
+  // Подсчёт минут перерыва из break_start/break_end
+  const getBreakMinutes = (breakStart, breakEnd) => {
+    if (!breakStart || !breakEnd) return 0;
+    const [bsh, bsm] = breakStart.split(":").map(Number);
+    const [beh, bem] = breakEnd.split(":").map(Number);
+    return Math.max(0, (beh * 60 + bem) - (bsh * 60 + bsm));
+  };
+
+  // Функция для подсчета рабочих минут (с вычетом перерыва)
+  const getMinutesWorked = (start, end, breakStart, breakEnd) => {
     if (!start || !end) return 0;
     const [sh, sm] = start.split(":").map(Number);
     const [eh, em] = end.split(":").map(Number);
-    let minutes = (eh - sh) * 60 + (em - sm) - Number(breakMinutes || 0);
+    const breakMins = getBreakMinutes(breakStart, breakEnd);
+    let minutes = (eh - sh) * 60 + (em - sm) - breakMins;
     return minutes > 0 ? minutes : 0;
   };
 
   // Подсчет всех часов в неделю
   const totalMinutes = useMemo(() => {
-    if (formData.type === "fixed") {
+    if (formData.type === "fixed" || formData.type === "remote") {
       return formData.work_days
         .slice(0, formData.weekly_days)
         .reduce(
           (sum, day) =>
-            sum + getMinutesWorked(day.start, day.end, day.break_minutes),
+            sum + getMinutesWorked(day.start, day.end, day.break_start, day.break_end),
           0,
         );
     } else if (formData.type === "shift") {
       return formData.shifts.reduce(
         (sum, shift) =>
-          sum + getMinutesWorked(shift.start, shift.end, shift.break_minutes),
+          sum + getMinutesWorked(shift.start, shift.end, shift.break_start, shift.break_end),
         0,
       );
     }
@@ -134,7 +148,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
       // Создаём объект для отправки
       const dataToSend = { ...formData };
 
-      if (formData.type === "fixed") {
+      if (formData.type === "fixed" || formData.type === "remote") {
         delete dataToSend.shifts;
       } else if (formData.type === "shift") {
         delete dataToSend.work_days;
@@ -183,6 +197,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             <option value="fixed">Фиксированный</option>
             <option value="shift">Сменный</option>
             <option value="flexible">Гибкий</option>
+            <option value="remote">Дистанционный</option>
           </select>
         </div>
       </div>
@@ -199,7 +214,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
           />
         </div>
 
-        {formData.type === "fixed" && (
+        {(formData.type === "fixed" || formData.type === "remote") && (
           <div>
             <label>Рабочая неделя</label>
             <select
@@ -215,8 +230,8 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
         )}
       </div>
 
-      {/* Fixed: график по дням */}
-      {formData.type === "fixed" && (
+      {/* Fixed / Remote: график по дням */}
+      {(formData.type === "fixed" || formData.type === "remote") && (
         <div className={styles.workDays}>
           {formData.work_days
             .slice(0, formData.weekly_days)
@@ -245,13 +260,23 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
                 </div>
 
                 <div>
-                  <label>Перерыв (мин)</label>
+                  <label>Перерыв с</label>
                   <input
-                    type="number"
-                    min={0}
-                    value={day.break_minutes}
+                    type="time"
+                    value={day.break_start}
                     onChange={(e) =>
-                      handleDayChange(index, "break_minutes", e.target.value)
+                      handleDayChange(index, "break_start", e.target.value)
+                    }
+                  />
+                </div>
+
+                <div>
+                  <label>Перерыв по</label>
+                  <input
+                    type="time"
+                    value={day.break_end}
+                    onChange={(e) =>
+                      handleDayChange(index, "break_end", e.target.value)
                     }
                   />
                 </div>
@@ -290,20 +315,66 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             </div>
 
             <div>
-              <label>{`Перерыв ${shift.shift_number} смены (мин)`}</label>
+              <label>{`Перерыв ${shift.shift_number} с`}</label>
               <input
-                type="number"
-                min={0}
-                value={shift.break_minutes}
+                type="time"
+                value={shift.break_start}
                 onChange={(e) => {
                   const newShifts = [...formData.shifts];
-                  newShifts[index].break_minutes = e.target.value;
+                  newShifts[index].break_start = e.target.value;
+                  setFormData({ ...formData, shifts: newShifts });
+                }}
+              />
+            </div>
+
+            <div>
+              <label>{`Перерыв ${shift.shift_number} по`}</label>
+              <input
+                type="time"
+                value={shift.break_end}
+                onChange={(e) => {
+                  const newShifts = [...formData.shifts];
+                  newShifts[index].break_end = e.target.value;
                   setFormData({ ...formData, shifts: newShifts });
                 }}
               />
             </div>
           </div>
         ))}
+
+      {/* Допустимые окна */}
+      <div className={styles.row}>
+        <div>
+          <label>Допуск опоздания (мин)</label>
+          <input
+            type="number"
+            min={0}
+            name="late_tolerance_minutes"
+            value={formData.late_tolerance_minutes}
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label>Допуск раннего ухода (мин)</label>
+          <input
+            type="number"
+            min={0}
+            name="early_leave_tolerance_minutes"
+            value={formData.early_leave_tolerance_minutes}
+            onChange={handleChange}
+          />
+        </div>
+        <div>
+          <label>Допуск позднего ухода (мин)</label>
+          <input
+            type="number"
+            min={0}
+            name="late_leave_tolerance_minutes"
+            value={formData.late_leave_tolerance_minutes}
+            onChange={handleChange}
+          />
+        </div>
+      </div>
 
       <div className={styles.row}>
         <div

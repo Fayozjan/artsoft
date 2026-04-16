@@ -4,7 +4,6 @@ import { FacePassesService } from "./facePasses.service.js";
 
 export const FacePassesController = {
   create: async (req, res) => {
-    console.log("req.body", req.body);
     const userId = req.user.id;
     const tenant = req.tenant.schema;
     const { latitude, longitude, direction } = req.body;
@@ -46,8 +45,7 @@ export const FacePassesController = {
       );
       return res.status(200).json({ success: true, data: result });
     } catch (error) {
-      console.log("createFromHikvision ERROR", error);
-      return res.status(500).json({ success: false });
+      return res.status(500).json({ success: false, message: error.message });
     }
   },
 

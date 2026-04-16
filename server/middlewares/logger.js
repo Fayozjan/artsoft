@@ -21,7 +21,7 @@ function getTashkentTime() {
 export function logger(req, _res, next) {
   const line = `[${getTashkentTime()}] ${req.method} ${req.url} ${req.ip}`;
 
-  console.log(line);
+  //  console.log(line);
 
   fs.appendFile(logFile, line + "\n", (err) => {
     if (err) console.error("Log write error:", err);

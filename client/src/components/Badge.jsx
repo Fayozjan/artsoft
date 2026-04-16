@@ -15,7 +15,7 @@ const Badge = ({ text }) => {
     exit: { text: t("exit"), className: styles.inactive },
   };
 
-  const value = String(text);
+  const value = String(text).toLowerCase();
   const status = map[value];
 
   if (!status) {

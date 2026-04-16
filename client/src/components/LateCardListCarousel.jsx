@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./LateCardListCarousel.module.scss";
 import LateMonitoringCard from "./LateMonitoringCard";
 
-const CardListCarousel = ({ data = [] }) => {
+const CardListCarousel = ({ data = [], includeLunch }) => {
   const containerRef = useRef(null);
   const [shouldScroll, setShouldScroll] = useState(false);
   const scrollSpeed = 0.5;
@@ -53,7 +53,9 @@ const CardListCarousel = ({ data = [] }) => {
     <div className={styles.carouselWrapper} ref={containerRef}>
       <div className={styles.cardGrid}>
         {data?.length > 0 &&
-          duplicatedData.map((item, i) => <LateMonitoringCard item={item} />)}
+          duplicatedData.map((item, i) => (
+            <LateMonitoringCard item={item} includeLunch={includeLunch} />
+          ))}
       </div>
     </div>
   );

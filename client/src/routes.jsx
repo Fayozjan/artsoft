@@ -1,6 +1,6 @@
 import { Route } from "react-router-dom";
 
-import DashboardPage from "./pages/DashboardPage";
+import HomePage from "./pages/HomePage";
 import BranchesPage from "./pages/BranchesPage";
 import DepartmentsPage from "./pages/DepartmentsPage";
 import EmployeesPage from "./pages/EmployeesPage";
@@ -23,7 +23,7 @@ import VehicleCamerasPage from "./pages/VehicleCamerasPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const Routes = [
-  <Route path="dashboard" element={<DashboardPage />} key="dashboard" />,
+  <Route path="home" element={<HomePage />} key="home" />,
   <Route path="branches" element={<BranchesPage />} key="branches" />,
   <Route path="departments" element={<DepartmentsPage />} key="departments" />,
   <Route path="employees" element={<EmployeesPage />} key="employees" />,

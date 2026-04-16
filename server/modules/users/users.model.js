@@ -58,6 +58,7 @@ export const UserModel = {
         active_branch_id: true,
         personal_menus: true,
         status: true,
+        ignore_gps_check: true,
         menuAccess: {
           select: {
             menu_id: true,
@@ -147,6 +148,7 @@ export const UserModel = {
     const user = await prisma.users.findUnique({
       where: { id },
       select: {
+        employee_id: true,
         branch_access: true,
         department_access: true,
         access_level: true,
@@ -205,6 +207,7 @@ export const UserModel = {
     }));
 
     return {
+      employee_id: user.employee_id,
       access_level: user.access_level,
       view_mode: user.view_mode,
       active_branch_id: user.active_branch_id,

@@ -110,8 +110,8 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
 
             <div>
               <h2>Направление</h2>
-              <div className={styles.status}>
-                <label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name=""
@@ -124,7 +124,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Все
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"
@@ -137,7 +137,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Вход
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"
@@ -154,8 +154,8 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
 
             <div>
               <h2>Статус</h2>
-              <div className={styles.status}>
-                <label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name=""
@@ -168,7 +168,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Все
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="status"
@@ -181,7 +181,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Включен
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="status"

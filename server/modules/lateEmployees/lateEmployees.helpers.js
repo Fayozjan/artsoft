@@ -36,7 +36,13 @@ export function getMonthRangeFromDate(date) {
   };
 }
 
-export const findLateEmployeesByDay = (data, targetDate) => {
+const parseHHMM = (str) => {
+  if (!str || str === "00:00") return 0;
+  const [h, m] = str.split(":").map(Number);
+  return h * 60 + m;
+};
+
+export const findLateEmployeesByDay = (data, targetDate, includeLunchLate = false) => {
   if (!targetDate) throw new Error("targetDate обязателен");
 
   const lateEmployees = [];
@@ -59,16 +65,28 @@ export const findLateEmployeesByDay = (data, targetDate) => {
     const session = sessions[targetDate];
     if (!session) return;
 
-    const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
-      session;
+    const {
+      firstEntry,
+      events,
+      shiftType,
+      scheduleStart,
+      late,
+      breakReturnLate,
+      breakEnd,
+      actualBreakReturn,
+      timeOff,
+    } = session;
 
     if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
-    if (!late || late === "00:00") return;
 
-    const [h, m] = late.split(":").map(Number);
-    const lateMinutes = h * 60 + m;
+    const lateMinutes = parseHHMM(late);
+    const breakReturnLateMinutes = parseHHMM(breakReturnLate);
 
-    if (lateMinutes <= 0) return;
+    if (includeLunchLate) {
+      if (lateMinutes <= 0 && breakReturnLateMinutes <= 0) return;
+    } else {
+      if (lateMinutes <= 0) return;
+    }
 
     const firstEntryEvent =
       events?.find((e) => e.direction === "entry") ?? null;
@@ -88,6 +106,9 @@ export const findLateEmployeesByDay = (data, targetDate) => {
       actualStart: firstEntry,
       actualStartPhoto: firstEntryEvent?.photo ?? null,
       lateMinutes,
+      breakReturnLateMinutes,
+      scheduledBreakEnd: breakEnd ?? null,
+      actualBreakReturn: actualBreakReturn ?? null,
       timeOff: timeOff
         ? {
             id: timeOff.id,
@@ -104,7 +125,7 @@ export const findLateEmployeesByDay = (data, targetDate) => {
   return lateEmployees;
 };
 
-export const findLateEmployeesByMonth = (data) => {
+export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunchLate = false) => {
   const grouped = {};
 
   data.forEach((employee) => {
@@ -123,16 +144,28 @@ export const findLateEmployeesByMonth = (data) => {
     if (!sessions) return;
 
     Object.entries(sessions).forEach(([dayKey, session]) => {
-      const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
-        session;
+      const {
+        firstEntry,
+        events,
+        shiftType,
+        scheduleStart,
+        late,
+        breakReturnLate,
+        breakEnd,
+        actualBreakReturn,
+        timeOff,
+      } = session;
 
       if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
-      if (!late || late === "00:00") return;
 
-      const [h, m] = late.split(":").map(Number);
-      const lateMinutes = h * 60 + m;
+      const lateMinutes = parseHHMM(late);
+      const breakReturnLateMinutes = parseHHMM(breakReturnLate);
 
-      if (lateMinutes <= 0) return;
+      if (includeLunchLate) {
+        if (lateMinutes <= 0 && breakReturnLateMinutes <= 0) return;
+      } else {
+        if (lateMinutes <= 0) return;
+      }
 
       const firstEntryEvent =
         events?.find((e) => e.direction === "entry") ?? null;
@@ -147,15 +180,19 @@ export const findLateEmployeesByMonth = (data) => {
           departmentName,
           positionName,
           workScheduleName,
-          monthlyLateCount: 0,
+          monthlyArrivalLateCount: 0,
+          monthlyLunchLateCount: 0,
           monthlyLateMinutes: 0,
+          monthlyBreakReturnLateMinutes: 0,
           details: [],
         };
       }
 
       const target = grouped[employeeId];
-      target.monthlyLateCount += 1;
+      if (lateMinutes > 0) target.monthlyArrivalLateCount += 1;
+      if (breakReturnLateMinutes > 0) target.monthlyLunchLateCount += 1;
       target.monthlyLateMinutes += lateMinutes;
+      target.monthlyBreakReturnLateMinutes += breakReturnLateMinutes;
       target.details.push({
         date: dayKey,
         shiftType,
@@ -163,6 +200,9 @@ export const findLateEmployeesByMonth = (data) => {
         actualStart: firstEntry,
         actualStartPhoto: firstEntryEvent?.photo ?? null,
         lateMinutes,
+        breakReturnLateMinutes,
+        scheduledBreakEnd: breakEnd ?? null,
+        actualBreakReturn: actualBreakReturn ?? null,
         timeOff: timeOff
           ? {
               id: timeOff.id,
@@ -180,7 +220,7 @@ export const findLateEmployeesByMonth = (data) => {
   return Object.values(grouped);
 };
 
-export const findLateByBranchAndDay = (data) => {
+export const findLateByBranchAndDay = (data, _holidays, _timeOffs, includeLunchLate = false) => {
   const branchData = {};
 
   data.forEach((employee) => {
@@ -199,16 +239,28 @@ export const findLateByBranchAndDay = (data) => {
     if (!sessions) return;
 
     Object.entries(sessions).forEach(([dayKey, session]) => {
-      const { firstEntry, events, shiftType, scheduleStart, late, timeOff } =
-        session;
+      const {
+        firstEntry,
+        events,
+        shiftType,
+        scheduleStart,
+        late,
+        breakReturnLate,
+        breakEnd,
+        actualBreakReturn,
+        timeOff,
+      } = session;
 
       if (!firstEntry || !scheduleStart || shiftType === "flexible") return;
-      if (!late || late === "00:00") return;
 
-      const [h, m] = late.split(":").map(Number);
-      const lateMinutes = h * 60 + m;
+      const lateMinutes = parseHHMM(late);
+      const breakReturnLateMinutes = parseHHMM(breakReturnLate);
 
-      if (lateMinutes <= 0) return;
+      if (includeLunchLate) {
+        if (lateMinutes <= 0 && breakReturnLateMinutes <= 0) return;
+      } else {
+        if (lateMinutes <= 0) return;
+      }
 
       const firstEntryEvent =
         events?.find((e) => e.direction === "entry") ?? null;
@@ -232,6 +284,9 @@ export const findLateByBranchAndDay = (data) => {
         actualStart: firstEntry,
         actualStartPhoto: firstEntryEvent?.photo ?? null,
         lateMinutes,
+        breakReturnLateMinutes,
+        scheduledBreakEnd: breakEnd ?? null,
+        actualBreakReturn: actualBreakReturn ?? null,
         timeOff: timeOff
           ? {
               id: timeOff.id,

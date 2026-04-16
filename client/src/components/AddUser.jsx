@@ -1,4 +1,3 @@
-import axios from "axios";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -32,6 +31,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
     password: "",
     employee_id: "",
     access_level: "absolute",
+    ignore_gps_check: false,
   });
 
   const { showAlert } = useAlertStore();
@@ -258,6 +258,24 @@ const AddUser = ({ handleClose, onSuccess }) => {
             <option value="absolute">Все филиалы</option>
             <option value="branch">Отдельно по филиалу</option>
           </select>
+        </div>
+      </div>
+
+      <div className={styles.row}>
+        <div style={{ flex: "0 0 49%" }}>
+          <label className={styles.checkboxLabel}>
+            <input
+              type="checkbox"
+              checked={formData.ignore_gps_check || false}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  ignore_gps_check: e.target.checked,
+                }))
+              }
+            />
+            Игнорировать GPS-проверку
+          </label>
         </div>
       </div>
 

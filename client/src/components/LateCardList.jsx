@@ -2,7 +2,7 @@ import LateMonitoringCard from "./LateMonitoringCard";
 
 import styles from "./LateCardList.module.scss";
 
-const CardList = ({ data = [] }) => {
+const CardList = ({ data = [], includeLunch }) => {
   const sortedData = [...data].sort((a, b) =>
     a.employeeFullName.localeCompare(b.employeeFullName),
   );
@@ -10,7 +10,7 @@ const CardList = ({ data = [] }) => {
   return (
     <div className={styles.cardGrid}>
       {sortedData.map((item, i) => (
-        <LateMonitoringCard item={item} />
+        <LateMonitoringCard item={item} includeLunch={includeLunch} />
       ))}
     </div>
   );

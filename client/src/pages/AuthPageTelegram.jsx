@@ -24,7 +24,7 @@ const AuthPageTelegram = () => {
     const result = await loginTelegram(user);
 
     if (result.success) {
-      navigate("/tg/main", { replace: true });
+      navigate("/tg/home", { replace: true });
       return;
     }
 

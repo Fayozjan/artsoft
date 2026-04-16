@@ -15,6 +15,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
     department_id: null,
     employee_id: null,
     position_id: null,
+    include_lunch_late: false,
   };
 
   const handleChange = (e) => {
@@ -23,7 +24,8 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
   };
 
   const activeCount = Object.entries(formData).filter(
-    ([key, value]) => key !== "search" && value !== "",
+    ([key, value]) =>
+      key !== "search" && key !== "include_lunch_late" && value !== "",
   ).length;
 
   const toggleOpen = () => setIsOpen((prev) => !prev);
@@ -157,6 +159,22 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
               formData={formData}
               setFormData={setFormData}
             />
+
+            <div className={styles.checkboxRow}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={!!formData.include_lunch_late}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      include_lunch_late: e.target.checked,
+                    }))
+                  }
+                />
+                Учитывать опоздания после обеда
+              </label>
+            </div>
 
             <div className={styles.actions}>
               <button type="button" onClick={handleReset}>

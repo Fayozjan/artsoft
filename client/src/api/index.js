@@ -19,3 +19,4 @@ export * from "./manufacturingOrders";
 export * from "./menus";
 export * from "./employmentOrders";
 export * from "./workScheduleHistory";
+export * from "./dashboard";

@@ -381,7 +381,7 @@ const WorkSchedulesPage = () => {
         title={
           modalType === "add" ? t("addWorkSchedule") : t("editWorkSchedule")
         }
-        width="500px"
+        width="600px"
       >
         {modalType === "add" && (
           <AddWorkSchedule

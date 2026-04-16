@@ -80,6 +80,7 @@ export const EmployeeModel = {
             },
           },
         },
+        workSchedule: true,
         doors: {
           include: { faceDevices: true },
         },

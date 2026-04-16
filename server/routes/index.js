@@ -24,6 +24,7 @@ import anprCamerasRoutes from "../modules/anprCameras/anprCameras.routes.js";
 import employeeDoorTasks from "../modules/employeeDoorTasks/employeeDoorTasks.routes.js";
 import menusRoutes from "../modules/menus/menus.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";
+import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use("/face-devices", faceDevicesRoutes);
 router.use("/anpr-cameras", anprCamerasRoutes);
 router.use("/employee-door-tasks", employeeDoorTasks);
 router.use("/menus", menusRoutes);
+router.use("/dashboard", dashboardRoutes);
 
 export default router;

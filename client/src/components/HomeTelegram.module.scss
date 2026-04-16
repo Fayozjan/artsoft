@@ -5,6 +5,7 @@
 .page {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: 10px;
   padding: calc(
       var(--tg-safe-area-inset-top, 0px) +
@@ -25,6 +26,22 @@
   &::-webkit-scrollbar {
     display: none;
   }
+}
+
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(
+    var(--tg-safe-area-inset-top, 0px) +
+      var(--tg-content-safe-area-inset-top, 0px)
+  );
+  z-index: 200;
+  pointer-events: none;
+  background: rgba(18, 18, 18, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 // ─── Card ────────────────────────────────────────────────────────────────────
@@ -57,6 +74,38 @@
   }
 }
 
+.shiftMainRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// ─── Check-in / Check-out two-column block ────────────────────────────────────
+.checkInOutRow {
+  display: flex;
+  gap: 24px;
+}
+
+.checkCol {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkColLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 2px;
+}
+
+.checkColSched {
+  font-size: 11px;
+  color: #555;
+  font-weight: 400;
+}
+
 // ─── Row ─────────────────────────────────────────────────────────────────────
 .row {
   display: flex;
@@ -75,6 +124,28 @@
   font-weight: 600;
   color: #e8e8e8;
   text-align: right;
+}
+
+.rowValueSched {
+  color: #5dba7d;
+}
+
+.timeBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.timeBlockRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.timeBlockSched {
+  font-size: 11px;
+  color: #5dba7d;
 }
 
 .divider {
@@ -162,13 +233,12 @@
 // ─── Employee ─────────────────────────────────────────────────────────────────
 .empHead {
   display: flex;
-  align-items: center;
   gap: 12px;
 }
 
 .avatar {
-  width: 46px;
-  height: 46px;
+  width: 50px;
+  height: 50px;
   border-radius: 50%;
   background: rgba(37, 99, 235, 0.15);
   border: 1.5px solid rgba(37, 99, 235, 0.25);
@@ -180,6 +250,13 @@
   color: #60a5fa;
   flex-shrink: 0;
   letter-spacing: 0.5px;
+
+  .avatarImage {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover; // Важно, чтобы фото не искажалось
+  }
 }
 
 .empInfo {
@@ -188,13 +265,10 @@
 }
 
 .empName {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #f0f0f0;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .empPosition {
@@ -208,18 +282,19 @@
 
 // ─── Current shift big time ───────────────────────────────────────────────────
 .bigTime {
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 700;
   color: #f0f0f0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
   line-height: 1;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .bigTimeSub {
-  font-size: 11px;
+  font-weight: 500;
+  font-size: 10px;
   color: #555;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 // ─── Month nav ────────────────────────────────────────────────────────────────
@@ -383,7 +458,6 @@
   background: #252525;
   display: flex;
   overflow: hidden;
-  gap: 1px;
 }
 
 .totalBarSegment {
@@ -463,7 +537,7 @@
 .deptLabel {
   font-size: 11px;
   color: #666;
-  width: 72px;
+  width: 65%;
   flex-shrink: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -502,4 +576,470 @@
 .deptTotal {
   font-size: 10px;
   color: #444;
+}
+
+// ─── Clickable card ───────────────────────────────────────────────────────────
+.cardClickable {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:active {
+    background: #222;
+  }
+}
+
+// ─── Clickable row ─────────────────────────────────────────────────────────────
+.rowClickable {
+  cursor: pointer;
+  border-radius: 8px;
+  margin: 0 -4px;
+  padding: 0 4px;
+  transition: background 0.15s;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+}
+
+.rowChevron {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+  opacity: 0.4;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    stroke: white;
+  }
+}
+
+// ─── Clickable status row ─────────────────────────────────────────────────────
+.statusRowClickable {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+
+.statusChevron {
+  display: flex;
+  align-items: center;
+  opacity: 0.35;
+
+  svg {
+    width: 13px;
+    height: 13px;
+    stroke: white;
+  }
+}
+
+// ─── Back button ──────────────────────────────────────────────────────────────
+.backBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #60a5fa;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:active {
+    opacity: 0.7;
+  }
+}
+
+// ─── Employee list panel ──────────────────────────────────────────────────────
+.panelOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 300;
+  display: flex;
+  align-items: flex-end;
+}
+
+.panel {
+  width: 100%;
+  min-height: 50dvh;
+  max-height: 75dvh;
+  background: #1c1c1c;
+  border-radius: 20px 20px 0 0;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-bottom: calc(
+    env(safe-area-inset-bottom, 0px) + var(--tg-safe-area-inset-bottom, 0px)
+  );
+}
+
+.panelHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 10px auto 6px;
+  flex-shrink: 0;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 16px 10px;
+  border-bottom: 0.5px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+
+.panelTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f0f0;
+}
+
+.panelCloseBtn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: #888;
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.13);
+  }
+}
+
+.panelList {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.panelEmpRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 8px 16px;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.panelAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+.panelAvatarImg {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.panelEmpInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.panelEmpName {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8e8e8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panelEmpSub {
+  font-size: 11px;
+  color: #555;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panelEmpty {
+  text-align: center;
+  font-size: 13px;
+  color: #444;
+  padding: 24px 0;
+}
+
+// ─── Panel search ─────────────────────────────────────────────────────────────
+.panelSearch {
+  padding: 6px 16px 8px;
+  flex-shrink: 0;
+}
+
+.panelSearchInput {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.06);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #e0e0e0;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  &::placeholder {
+    color: #444;
+  }
+
+  &:focus {
+    border-color: rgba(96, 165, 250, 0.4);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
+// ─── Time badges inside panel rows ───────────────────────────────────────────
+.panelTimeBadges {
+  display: flex;
+  gap: 5px;
+  margin-top: 5px;
+  flex-wrap: wrap;
+}
+
+.panelTimeBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 0.5px solid;
+  white-space: nowrap;
+}
+
+.panelPulseDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+  animation: pulse 1.8s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+// ─── All branch chevron ───────────────────────────────────────────────────────
+.allBranchChevron {
+  display: flex;
+  align-items: center;
+  opacity: 0.35;
+  margin-left: 4px;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    stroke: white;
+  }
+}
+
+// ─── Branch selector (branch mode, multiple branches) ─────────────────────────
+.branchSelector {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 2px 0 4px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.branchPill {
+  flex-shrink: 0;
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: #252525;
+  border: 0.5px solid rgba(255, 255, 255, 0.08);
+  color: #777;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+.branchPillActive {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: rgba(37, 99, 235, 0.3);
+  color: #60a5fa;
+}
+
+// ─── Loading text ─────────────────────────────────────────────────────────────
+.loadingText {
+  font-size: 13px;
+  color: #555;
+  text-align: center;
+  padding: 12px 0;
+}
+
+// ─── All Branches (absolute mode) ────────────────────────────────────────────
+.allBranchSummaryRow {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.allBranchSummaryItem {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.allBranchCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.allBranchIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 0.5px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.allBranchNameBlock {
+  flex: 1;
+  min-width: 0;
+}
+
+.allBranchName {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f0f0f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.allBranchAddr {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  color: #555;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  svg {
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+    color: #444;
+  }
+}
+
+.allBranchCountBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.allBranchPresent {
+  color: #4ade80;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.allBranchTotal {
+  font-size: 12px;
+  color: #444;
+}
+
+.allBranchBarBg {
+  height: 5px;
+  background: #252525;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.allBranchBarFill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.allBranchMiniStats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.allBranchMiniStat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.allBranchMiniDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.allBranchMiniLabel {
+  font-size: 11px;
+  color: #555;
 }

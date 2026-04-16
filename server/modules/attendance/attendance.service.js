@@ -1,7 +1,11 @@
 import { DateTime } from "luxon";
 
 import { UserModel } from "../users/users.model.js";
-import { generateAttendanceReport } from "../../utils/attendanceUtils.js";
+import {
+  generateAttendanceReport,
+  countScheduledDays,
+  countScheduledMinutes,
+} from "../../utils/attendanceUtils.js";
 import { EmployeeService } from "../employees/employees.service.js";
 import { splitEmployeesByTodayStatus } from "./attendance.helpers.js";
 import { findLateEmployeesByDay } from "../lateEmployees/lateEmployees.helpers.js";
@@ -150,7 +154,7 @@ export async function getAttendanceServiceByEmployeeId({
   let dayLate = null;
 
   let monthStats = {
-    totalDays: 0,
+    workedDays: 0,
     lateDays: 0,
     lateDetails: [],
     sessions: {},
@@ -160,8 +164,6 @@ export async function getAttendanceServiceByEmployeeId({
   // Если событий нет, не вызываем генерацию отчета и проверку опозданий
   if (dayFaceEvents && dayFaceEvents.length > 0) {
     const dayAttendanceEvents = generateAttendanceReport(dayFaceEvents);
-
-    console.log("dayAttendanceEvents", dayAttendanceEvents);
 
     const dayEvent = dayAttendanceEvents.find(
       (e) => String(e.employeeId) === String(employeeId),
@@ -185,8 +187,6 @@ export async function getAttendanceServiceByEmployeeId({
   if (monthFaceEvents && monthFaceEvents.length > 0) {
     const monthAttendanceEvents = generateAttendanceReport(monthFaceEvents);
 
-    console.log("monthAttendanceEvents", monthAttendanceEvents[0].sessions);
-
     const monthEvent = monthAttendanceEvents.find(
       (e) => String(e.employeeId) === String(employeeId),
     );
@@ -208,13 +208,44 @@ export async function getAttendanceServiceByEmployeeId({
       });
 
       monthStats = {
-        totalDays: monthDays.length,
+        workedDays: monthEvent.totalWorkedDays,
         lateDays: monthLateChecks.filter(Boolean).length,
         lateDetails: monthLateChecks.filter(Boolean),
         sessions: monthEvent.sessions,
       };
     }
   }
+
+  // Плановые рабочие дни и часы за весь месяц по графику
+  const schedMonthStart = dt.startOf("month").toJSDate();
+  const schedMonthEnd = dt.endOf("month").toJSDate();
+  const scheduledDays = employee.employeeScheduleHistory?.length
+    ? countScheduledDays(
+        schedMonthStart,
+        schedMonthEnd,
+        employee.employeeScheduleHistory,
+      )
+    : 0;
+  const scheduledMinutes = employee.employeeScheduleHistory?.length
+    ? countScheduledMinutes(
+        schedMonthStart,
+        schedMonthEnd,
+        employee.employeeScheduleHistory,
+      )
+    : 0;
+
+  // Прошедшие плановые дни (для расчёта пропусков):
+  // - текущий месяц → до сегодня; прошлый месяц → весь месяц
+  const now = DateTime.now().setZone("Asia/Tashkent");
+  const isCurrentMonth = dt.year === now.year && dt.month === now.month;
+  const schedToDate = isCurrentMonth ? now.toJSDate() : schedMonthEnd;
+  const scheduledDaysToDate = employee.employeeScheduleHistory?.length
+    ? countScheduledDays(
+        schedMonthStart,
+        schedToDate,
+        employee.employeeScheduleHistory,
+      )
+    : 0;
 
   // Возвращаем структуру в любом случае
   return {
@@ -225,7 +256,6 @@ export async function getAttendanceServiceByEmployeeId({
         sessions: daySessions,
         isLate: !!dayLate,
         lateInfo: dayLate ?? null,
-        // Доп. поля для фронта, если daySessions пуст
         status:
           dayFaceEvents.length === 0 ? "absent" : dayLate ? "late" : "present",
       },
@@ -233,6 +263,9 @@ export async function getAttendanceServiceByEmployeeId({
         from: dt.startOf("month").toFormat("yyyy-MM-dd"),
         to: dt.endOf("month").toFormat("yyyy-MM-dd"),
         ...monthStats,
+        scheduledDays,
+        scheduledMinutes,
+        scheduledDaysToDate,
       },
     },
   };

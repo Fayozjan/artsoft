@@ -10,8 +10,11 @@ export const FacePassesModel = {
         identifier: data.identifier,
         photo: data.photo,
         direction: data.direction,
+        source: data.source ?? null,
+        latitude: data.latitude ?? null,
+        longitude: data.longitude ?? null,
         employee: { connect: { id: data.employee_id } },
-        door: { connect: { id: data.door_id } },
+        door: data.door_id ? { connect: { id: data.door_id } } : undefined,
         faceDevice: data.face_devices_id
           ? { connect: { id: data.face_devices_id } }
           : undefined,

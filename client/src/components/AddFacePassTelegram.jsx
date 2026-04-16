@@ -1,14 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
+import { useAuthStore } from "../stores/authStore";
 import TelegramPageHeader from "./TelegramPageHeader";
 import { FacePassesService } from "../api";
+import { getAttendanceByEmployeeId } from "../api/attendance";
 
 import styles from "./AddFacePassTelegram.module.scss";
+
+import VConsole from "vconsole";
+
+const vConsole = new VConsole();
 
 const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
   const { t } = useTranslation();
   const { showAlert } = useAlertStore();
+  const { access } = useAuthStore();
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -25,6 +32,26 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [direction, setDirection] = useState("entry");
+  const [shiftLoading, setShiftLoading] = useState(true);
+
+  useEffect(() => {
+    if (!access?.employee_id) {
+      setShiftLoading(false);
+      return;
+    }
+    const todayStr = new Date().toISOString().slice(0, 10);
+    getAttendanceByEmployeeId(access.employee_id, { date: todayStr })
+      .then((res) => {
+        const { today: todayData } = res.data;
+        const todaySession = todayData?.sessions?.[todayData?.date];
+        const events = todaySession?.events || [];
+        const lastEvent = events[events.length - 1];
+        const isCurrentlyInside = lastEvent?.direction === "entry";
+        setDirection(isCurrentlyInside ? "exit" : "entry");
+      })
+      .catch(() => {})
+      .finally(() => setShiftLoading(false));
+  }, [access?.employee_id]);
 
   const setFacing = (mode) => {
     facingModeRef.current = mode;
@@ -40,20 +67,62 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
     }
     setLocationLoading(true);
     setLocationError(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLocation({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-        });
+
+    let watchId = null;
+    let bestPos = null;
+    let gotFirst = false;
+
+    const finish = (pos) => {
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      setLocationLoading(false);
+    };
+
+    // Hard stop after 20s — use best fix collected so far
+    const hardStop = setTimeout(() => {
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      if (bestPos) {
+        setLocation({ latitude: bestPos.coords.latitude, longitude: bestPos.coords.longitude });
         setLocationLoading(false);
-      },
-      (err) => {
+      } else {
         setLocationError(t("locationDenied") || "Доступ к геолокации запрещён");
         setLocationLoading(false);
+      }
+    }, 20000);
+
+    watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        // Keep best (most accurate = lowest accuracy radius)
+        if (!bestPos || pos.coords.accuracy < bestPos.coords.accuracy) {
+          bestPos = pos;
+        }
+
+        if (!gotFirst) {
+          gotFirst = true;
+          // Show first fix immediately so user isn't blocked
+          setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          setLocationLoading(false);
+        }
+
+        // Accuracy good enough — stop watching
+        if (pos.coords.accuracy <= 20) {
+          clearTimeout(hardStop);
+          finish(pos);
+        }
+      },
+      (err) => {
+        clearTimeout(hardStop);
+        if (watchId != null) navigator.geolocation.clearWatch(watchId);
+        if (bestPos) {
+          setLocation({ latitude: bestPos.coords.latitude, longitude: bestPos.coords.longitude });
+          setLocationLoading(false);
+        } else {
+          setLocationError(t("locationDenied") || "Доступ к геолокации запрещён");
+          setLocationLoading(false);
+        }
         console.error("Geolocation error:", err);
       },
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
     );
   };
 
@@ -167,7 +236,8 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
       showAlert(t("success"), "success");
       onSuccess?.();
     } catch (err) {
-      showAlert(err.response?.data?.error || err.message || "Error", "error");
+      console.log("err", err);
+      showAlert(err.response?.data?.message || err.message || "Error", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -178,21 +248,14 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
       <TelegramPageHeader title={t("workRegistration")} onBack={handleClose} />
 
       <div className={styles.scrollContent}>
-        <div className={styles.directionToggle}>
-          <button
-            className={`${styles.toggleBtn} ${direction === "entry" ? styles.active : ""}`}
-            onClick={() => setDirection("entry")}
-            type="button"
+        <div className={styles.directionLabel}>
+          <span
+            className={`${styles.directionBadge} ${direction === "exit" ? styles.directionExit : styles.directionEntry}`}
           >
-            {t("startWork") || "Начать работу"}
-          </button>
-          <button
-            className={`${styles.toggleBtn} ${direction === "exit" ? styles.active : ""}`}
-            onClick={() => setDirection("exit")}
-            type="button"
-          >
-            {t("finishWork") || "Завершить работу"}
-          </button>
+            {direction === "entry"
+              ? t("startWork") || "Начать работу"
+              : t("finishWork") || "Завершить работу"}
+          </span>
         </div>
 
         <div className={styles.cameraSection}>
@@ -250,10 +313,28 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
       </div>
 
       <div className={styles.footer}>
+        {locationLoading && (
+          <div className={styles.locationStatus}>
+            <span className={styles.locationSpinner} />
+            {t("obtainingLocation") || "Получение геолокации..."}
+          </div>
+        )}
+        {locationError && !locationLoading && (
+          <div className={styles.locationError}>
+            <span>{locationError}</span>
+            <button
+              type="button"
+              className={styles.retryBtn}
+              onClick={requestLocation}
+            >
+              {t("retry") || "Повторить"}
+            </button>
+          </div>
+        )}
         <button
           className={`${styles.applyBtn} ${direction === "exit" ? styles.finishBtn : ""}`}
           onClick={handleSubmit}
-          disabled={isSubmitting || !photo || !location}
+          disabled={isSubmitting || !photo || !location || shiftLoading}
           type="button"
         >
           {isSubmitting

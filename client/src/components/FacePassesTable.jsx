@@ -114,6 +114,13 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
                 />
               </span>
             </th>
+            <th onClick={() => handleSort("source")}>
+              <span className={styles.headerContent}>
+                Источник
+                <SortArrow active={sortField === "source"} order={sortOrder} />
+              </span>
+            </th>
+            <th>Локация</th>
             <th onClick={() => handleSort("event_type")}>
               <span className={styles.headerContent}>
                 Направление
@@ -160,7 +167,21 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
                 <td>{event?.employee?.branch?.name}</td>
                 <td>{event?.employee?.department?.name}</td>
                 <td>{event?.employee?.position?.name}</td>
-                <td>{event?.door.name}</td>
+                <td>{event?.door?.name ?? "—"}</td>
+                <td>{t(event?.source)}</td>
+                <td>
+                  {event?.latitude != null && event?.longitude != null ? (
+                    <a
+                      href={`https://www.google.com/maps?q=${event.latitude},${event.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {event.latitude.toFixed(5)}, {event.longitude.toFixed(5)}
+                    </a>
+                  ) : (
+                    "—"
+                  )}
+                </td>
                 <td>
                   <Badge text={event?.direction} />
                 </td>

@@ -25,11 +25,25 @@ const columns = [
   { label: "Филиал", accessor: "branchName" },
   { label: "Отдел", accessor: "departmentName" },
   { label: "Должность", accessor: "positionName" },
-  { label: "Кол-во опозданий за месяц", accessor: "monthlyLateCount" },
   {
-    label: "Суммарное время опоздания",
-    accessor: "monthlyLateMinutes",
-    render: (_, item) => formatLateMinutesToHours(item.monthlyLateMinutes),
+    label: "Опоздание на работу",
+    accessor: "monthlyArrivalLateCount",
+    render: (_, item) => {
+      const count = item.monthlyArrivalLateCount || 0;
+      const mins = item.monthlyLateMinutes || 0;
+      if (!count) return "—";
+      return `${count} раз${mins > 0 ? ` (${formatLateMinutesToHours(mins)})` : ""}`;
+    },
+  },
+  {
+    label: "Опоздание после перерыва",
+    accessor: "monthlyLunchLateCount",
+    render: (_, item) => {
+      const count = item.monthlyLunchLateCount || 0;
+      const mins = item.monthlyBreakReturnLateMinutes || 0;
+      if (!count) return "—";
+      return `${count} раз${mins > 0 ? ` (${formatLateMinutesToHours(mins)})` : ""}`;
+    },
   },
   { label: "Сумма за опоздания", accessor: "monthlyLateMoney" },
   {

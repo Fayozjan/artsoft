@@ -1,6 +1,7 @@
 # Data Models
 
 ## Схемы базы данных
+
 - **public** — общая для всех tenant (tenants, notifications)
 - **{tenant_schema}** — отдельная схема для каждой организации
 
@@ -9,6 +10,7 @@
 ## Public Schema
 
 ### tenants
+
 Регистрация организаций-клиентов.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -18,6 +20,7 @@
 | status | Boolean | |
 
 ### notifications_outbox
+
 Очередь Telegram-уведомлений.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -32,6 +35,7 @@
 ## Client Schema (per tenant)
 
 ### employees
+
 Основная таблица сотрудников.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -52,6 +56,7 @@
 | added_at / updated_at | DateTime | |
 
 ### branches
+
 Филиалы организации.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -64,6 +69,7 @@
 | added_by | FK → users | |
 
 ### departments
+
 Отделы.
 | Поле | Тип | |
 |------|-----|-|
@@ -73,6 +79,7 @@
 | branch_id | FK → branches | |
 
 ### positions
+
 Должности.
 | Поле | Тип | |
 |------|-----|-|
@@ -81,6 +88,7 @@
 | status | Boolean | |
 
 ### employment_orders
+
 Приказы (прием, перевод, увольнение).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -93,19 +101,86 @@
 | note | String | Примечание |
 
 ### work_schedules
+
 Шаблоны рабочих графиков.
-| Поле | Тип | Описание |
-|------|-----|---------|
-| id | Int PK | |
-| name | String | |
-| type | String | `fixed` / `shift` / `flexible` |
-| weekly_days | Int | Кол-во рабочих дней (для fixed) |
-| weekly_hours | Int | Норма часов в неделю |
-| work_days | JSON | Массив рабочих дней с временем (для fixed) |
-| shifts | JSON | Массив смен (для shift) |
-| status | Boolean | |
+
+| Поле         | Тип     | Описание                                   |
+| ------------ | ------- | ------------------------------------------ |
+| id           | Int PK  |                                            |
+| name         | String  |                                            |
+| type         | String  | `fixed` / `shift` / `flexible`             |
+| weekly_days  | Int     | Кол-во рабочих дней (для fixed)            |
+| weekly_hours | Int     | Норма часов в неделю                       |
+| work_days    | JSON    | Массив рабочих дней с временем (для fixed) |
+| shifts       | JSON    | Массив смен (для shift)                    |
+| status       | Boolean |                                            |
+
+### Пример `shifts`
+
+```json
+[
+  {
+    "shift_number": 1,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "shift_number": 2,
+    "start": "18:00",
+    "end": "08:00",
+    "break_minutes": 60
+  }
+]
+```
+
+---
+
+### Пример `work_days`
+
+```json
+[
+  {
+    "day": 1,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "day": 2,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "day": 3,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "day": 4,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "day": 5,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  },
+  {
+    "day": 6,
+    "start": "08:00",
+    "end": "18:00",
+    "break_minutes": 60
+  }
+]
+```
 
 ### employee_schedule_history
+
 История смены рабочих графиков.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -117,6 +192,7 @@
 | added_by | FK → users | |
 
 ### face_passes
+
 События распознавания лица (вход/выход).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -131,6 +207,7 @@
 | Index: (employee_id, date) | | |
 
 ### vehicle_passes
+
 События проезда транспорта (ANPR).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -143,6 +220,7 @@
 | direction | String | `in` / `out` |
 
 ### time_off
+
 Отпуска и отсутствия.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -156,6 +234,7 @@
 | added_by | FK → users | |
 
 ### holidays
+
 Праздничные дни.
 | Поле | Тип | |
 |------|-----|-|
@@ -165,6 +244,7 @@
 | added_by | FK → users | |
 
 ### timesheet
+
 Табель рабочего времени.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -175,6 +255,7 @@
 | user_id | Int | |
 
 ### doors
+
 Точки доступа (двери).
 | Поле | Тип | |
 |------|-----|-|
@@ -183,6 +264,7 @@
 | status | Boolean | |
 
 ### face_devices
+
 Устройства распознавания лиц (Hikvision).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -197,6 +279,7 @@
 | is_local | Boolean | Локальная сеть? |
 
 ### gates
+
 Ворота (для ANPR).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -207,6 +290,7 @@
 | status | Boolean | |
 
 ### anpr_cameras
+
 ANPR-камеры (распознавание номеров).
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -217,6 +301,7 @@ ANPR-камеры (распознавание номеров).
 | status | Boolean | |
 
 ### users
+
 Системные пользователи.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -237,6 +322,7 @@ ANPR-камеры (распознавание номеров).
 | personal_menus | String[] | Кастомные меню |
 
 ### sessions
+
 JWT refresh-сессии.
 | Поле | Тип | |
 |------|-----|-|
@@ -247,6 +333,7 @@ JWT refresh-сессии.
 | expires_at | DateTime? | |
 
 ### menus
+
 Дерево меню системы.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -257,6 +344,7 @@ JWT refresh-сессии.
 | sort_order | Int | |
 
 ### user_menu_access
+
 RBAC — права пользователя на меню.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -269,6 +357,7 @@ RBAC — права пользователя на меню.
 | Unique: (user_id, menu_id) | | |
 
 ### employee_door_tasks
+
 Очередь задач синхронизации доступа на устройства.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -281,6 +370,7 @@ RBAC — права пользователя на меню.
 | error | String? | Сообщение ошибки |
 
 ### telegram_bots
+
 Конфигурация Telegram-ботов.
 | Поле | Тип | Описание |
 |------|-----|---------|
@@ -297,20 +387,25 @@ RBAC — права пользователя на меню.
 
 ## Ключевые связи (ERD кратко)
 
-```
+````
+
 branches ──< departments ──< employees >── positions
-                                │
-                        work_schedules ──< employee_schedule_history
-                                │
-                        face_passes >── doors ──< face_devices
-                                │
-                        time_off, employment_orders
-                                │
-                        user (1:1 optional)
+│
+work_schedules ──< employee_schedule_history
+│
+face_passes >── doors ──< face_devices
+│
+time_off, employment_orders
+│
+user (1:1 optional)
 
 gates ──< anpr_cameras
 gates ──< vehicle_passes
 
 users ──< sessions
 users >─< menus (user_menu_access)
+
 ```
+
+```
+````

@@ -44,6 +44,7 @@ export const BranchService = {
       data: records.map((b) => ({
         id: b.id,
         name: b.name,
+        address: b.address,
         status: b.status,
         departments: b.departments,
         activeEmployeesCount: b._count.employees,

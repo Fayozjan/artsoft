@@ -39,13 +39,13 @@ const CalendarIcon = () => (
   </svg>
 );
 
-const LateMonitoringCard = ({ item, index = 0 }) => {
+const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
   return (
     <div className={styles.card} style={{ animationDelay: `${index * 0.08}s` }}>
       <div
         className={`${styles.badge} ${item.monthlyLateCount >= 10 ? styles.badgeBig : ""}`}
       >
-        {item.monthlyLateCount}
+        {item.monthlyArrivalLateCount + item.monthlyLunchLateCount}
       </div>
 
       {item.date && (
@@ -107,12 +107,36 @@ const LateMonitoringCard = ({ item, index = 0 }) => {
             {item.actualStart}
           </span>
         </div>
+
         <div className={styles.stat}>
           <span className={styles.statLabel}>Опозд</span>
           <span className={`${styles.statValue} ${styles.statLate}`}>
             {formatLateTime(item.lateMinutes)}
           </span>
         </div>
+
+        {includeLunch && item.breakReturnLateMinutes > 0 && (
+          <>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Перерыв по</span>
+              <span className={`${styles.statValue} ${styles.statSched}`}>
+                {item.scheduledBreakEnd?.substring(0, 5) || "—"}
+              </span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Вернулся</span>
+              <span className={`${styles.statValue} ${styles.statEntry}`}>
+                {item.actualBreakReturn || "—"}
+              </span>
+            </div>
+            <div className={styles.stat}>
+              <span className={styles.statLabel}>Опозд перерыв</span>
+              <span className={`${styles.statValue} ${styles.statLate}`}>
+                {formatLateTime(item.breakReturnLateMinutes)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

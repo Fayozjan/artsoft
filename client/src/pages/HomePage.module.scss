@@ -1,0 +1,508 @@
+// ─── Page ─────────────────────────────────────────────────────────────────────
+.page {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  background: var(--bg-color);
+  min-height: 100%;
+}
+
+// ─── Skeleton ─────────────────────────────────────────────────────────────────
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--border-color) 0%,
+    color-mix(in srgb, var(--card-bg) 70%, var(--border-color)) 50%,
+    var(--border-color) 100%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 10px;
+}
+@keyframes shimmer {
+  0%   { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+// ─── Stat grid ────────────────────────────────────────────────────────────────
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(188px, 1fr));
+  gap: 13px;
+}
+
+.statCard {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: default;
+  transition: box-shadow 0.22s ease;
+
+  &:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.09); }
+}
+.statAccent {
+  height: 3px;
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  border-radius: 14px 14px 0 0;
+}
+.statBody {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px;
+  position: relative;
+  z-index: 1;
+}
+.statIconWrap {
+  width: 44px; height: 44px;
+  border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  .statCard:hover & { transform: scale(1.07); }
+}
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.statLabel {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-color);
+  opacity: 0.58;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.statValue {
+  font-size: 27px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.statBg {
+  position: absolute;
+  width: 88px; height: 88px;
+  border-radius: 50%;
+  opacity: 0.055;
+  right: -18px; bottom: -18px;
+  pointer-events: none;
+}
+
+// ─── Layout rows ──────────────────────────────────────────────────────────────
+.row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 860px) { grid-template-columns: 1fr; }
+}
+
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+
+  @media (max-width: 1100px) { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 700px)  { grid-template-columns: 1fr; }
+}
+
+// ─── Card ─────────────────────────────────────────────────────────────────────
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: box-shadow 0.22s ease;
+  &:hover { box-shadow: 0 6px 22px rgba(0,0,0,0.07); }
+}
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+.cardTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.cardIconWrap {
+  width: 28px; height: 28px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.cardTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.cardBody {
+  padding: 14px 18px 16px;
+}
+
+// ─── Custom tooltip ───────────────────────────────────────────────────────────
+.tooltip {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 9px 13px;
+  font-size: 12px;
+  color: var(--text-color);
+  box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+  min-width: 120px;
+}
+.tooltipLabel {
+  font-weight: 600;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.6;
+  margin-bottom: 5px;
+}
+.tooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  &:last-child { margin-bottom: 0; }
+  span:not(.tooltipDot) { opacity: 0.75; }
+  strong { margin-left: auto; font-weight: 700; }
+}
+.tooltipDot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+// ─── Pie chart ────────────────────────────────────────────────────────────────
+.pieWrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.pieLegendWrap {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pieLegend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+  }
+}
+.pieDot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pieName {
+  flex: 1;
+  color: var(--text-color);
+  opacity: 0.82;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pieCount {
+  font-weight: 700;
+  color: var(--text-color);
+}
+.expandBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--third-color);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+  &:hover { opacity: 1; }
+}
+
+// ─── Horizontal bars ──────────────────────────────────────────────────────────
+.hbarList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.hbarRow {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+}
+.hbarLabel {
+  width: 110px;
+  flex-shrink: 0;
+  color: var(--text-color);
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11.5px;
+}
+.hbarTrack {
+  flex: 1;
+  height: 7px;
+  background: var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.hbarFill {
+  height: 100%;
+  border-radius: 8px;
+  min-width: 4px;
+}
+.hbarCount {
+  width: 26px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 11.5px;
+  color: var(--text-color);
+}
+
+// ─── Feed list ────────────────────────────────────────────────────────────────
+.feedList {
+  display: flex;
+  flex-direction: column;
+}
+.feedItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; }
+  &:hover {
+    background: var(--select-hover-color);
+    margin: 0 -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-radius: 8px;
+  }
+}
+.feedAvatar {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg,#6366f1,#8b5cf6);
+
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+.feedAvatarCar {
+  background: linear-gradient(135deg,#3b82f6,#1d4ed8);
+  color: white;
+}
+.feedInitials {
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: -0.02em;
+}
+.feedInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.feedName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feedSub {
+  font-size: 11.5px;
+  color: var(--text-color);
+  opacity: 0.52;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.feedRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.feedDateTime {
+  font-size: 11px;
+  color: var(--text-color);
+  opacity: 0.62;
+  white-space: nowrap;
+}
+
+// ─── Badges ───────────────────────────────────────────────────────────────────
+.badgeEntry {
+  background: rgba(34,197,94,0.1);
+  color: #16a34a;
+  border: 1px solid rgba(34,197,94,0.22);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badgeExit {
+  background: rgba(245,158,11,0.1);
+  color: #d97706;
+  border: 1px solid rgba(245,158,11,0.22);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badgeTimeOff {
+  background: rgba(139,92,246,0.1);
+  color: #7c3aed;
+  border: 1px solid rgba(139,92,246,0.22);
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// ─── Birthday list ────────────────────────────────────────────────────────────
+.bdayList {
+  display: flex;
+  flex-direction: column;
+}
+.bdayItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border-color);
+
+  &:last-child { border-bottom: none; }
+  &:hover {
+    background: var(--select-hover-color);
+    margin: 0 -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    border-radius: 8px;
+  }
+}
+.bdayToday {
+  background: rgba(236,72,153,0.04);
+}
+.bdayAvatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  overflow: visible;
+  flex-shrink: 0;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg,#ec4899,#8b5cf6);
+
+  img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+  span { font-size: 12px; font-weight: 700; color: white; }
+}
+.bdayCrown {
+  position: absolute;
+  top: -10px; left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  line-height: 1;
+}
+.bdayInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bdayName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bdayDept {
+  font-size: 11.5px;
+  color: var(--text-color);
+  opacity: 0.52;
+}
+.bdayRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+  flex-shrink: 0;
+}
+.bdayDate {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+.bdayDays {
+  font-size: 11px;
+  color: var(--text-color);
+  opacity: 0.5;
+}
+.bdayTodayBadge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #ec4899;
+  background: rgba(236,72,153,0.1);
+  border: 1px solid rgba(236,72,153,0.2);
+  padding: 2px 7px;
+  border-radius: 12px;
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 36px 0;
+  color: var(--text-color);
+  opacity: 0.38;
+  font-size: 13px;
+}
+.emptyDot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}

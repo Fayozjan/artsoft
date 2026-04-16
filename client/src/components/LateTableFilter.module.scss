@@ -43,8 +43,8 @@
     background-color: white;
     margin-top: 4px;
     left: 0;
-    min-width: 300px;
-    max-width: 400px;
+    min-width: 360px;
+    max-width: 460px;
     padding: 5px 10px;
     border-radius: 4px;
     border: 1px solid rgba(162, 161, 168, 0.4);
@@ -117,6 +117,47 @@
         padding: 5px;
         font-size: calc(var(--font-small) + 1px);
         font-weight: 600;
+      }
+
+      .checkboxRow {
+        display: flex;
+        align-items: center;
+      }
+
+      .checkboxLabel {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: var(--font-small);
+        font-weight: 500;
+        color: #444;
+        transition: all 0.15s ease;
+        user-select: none;
+
+        input[type="checkbox"] {
+          width: 14px;
+          height: 14px;
+          min-width: 14px;
+          accent-color: var(--third-color);
+          cursor: pointer;
+          border: none;
+          padding: 0;
+        }
+
+        &:hover {
+          border-color: var(--third-color);
+          color: var(--third-color);
+        }
+
+        &:has(input:checked) {
+          border-color: var(--third-color);
+          background-color: rgba(59, 130, 246, 0.08);
+          color: var(--third-color);
+        }
       }
 
       .actions {

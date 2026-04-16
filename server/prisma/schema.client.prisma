@@ -29,6 +29,7 @@ model branches {
   gates   gates[]
   vehiclePasses   vehicle_passes[]
   departments departments[]
+  doors       doors[]
   addedBy    users     @relation(fields: [added_by], references: [id])
 }
 
@@ -110,14 +111,17 @@ model face_passes {
   identifier          String    @unique @db.VarChar(50)
   photo               String?   @db.VarChar(255)
   employee_id         Int
-  door_id             Int
+  door_id             Int?
   face_devices_id     Int?
   direction           String?   @db.VarChar(10)
+  source              String?   @db.VarChar(20)
+  latitude            Float?
+  longitude           Float?
   added_at DateTime @default(now()) @db.Timestamptz(6)
 
   employee     employees     @relation(fields: [employee_id], references: [id])
   faceDevice  face_devices?  @relation(fields: [face_devices_id], references: [id])
-  door         doors         @relation(fields: [door_id], references: [id])
+  door         doors?        @relation(fields: [door_id], references: [id])
 
   @@index([employee_id, date])
 }
@@ -208,6 +212,7 @@ model users {
   view_mode        String   @default("branch")
   personal_menus    String[]  @default([])
   active_branch_id Int?
+  ignore_gps_check Boolean  @default(false)
   added_at   DateTime @default(now()) @db.Timestamptz(6)
 
   employee     employees? @relation(fields: [employee_id], references: [id])
@@ -261,6 +266,11 @@ model work_schedules {
   added_at     DateTime  @default(now()) @db.Timestamptz(6)
   status       Boolean?  @default(true)
 
+  // Допустимые окна опоздания/ухода (минуты)
+  late_tolerance_minutes        Int? @default(0)
+  early_leave_tolerance_minutes Int? @default(0)
+  late_leave_tolerance_minutes  Int? @default(0)
+
   employees          employees[]
   employeeScheduleHistory employee_schedule_history[]
 }
@@ -287,11 +297,15 @@ model doors {
   id           Int            @id @default(autoincrement())
   name         String         @unique @db.VarChar(255)
   status       Boolean        @default(true)
+  branch_id    Int?
+  latitude     Float?
+  longitude    Float?
   added_at DateTime @default(now()) @db.Timestamptz(6)
 
+  branch       branches?      @relation(fields: [branch_id], references: [id], onDelete: SetNull)
   employees    employees[]
   faceDevices face_devices[]
-  facePasses  face_passes[] 
+  facePasses  face_passes[]
   doorTasks    employee_door_tasks[]
 }
 

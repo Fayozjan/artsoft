@@ -16,6 +16,7 @@ export const UserService = {
       personal_menus,
       telegramId,
       view_mode,
+      ignore_gps_check,
     } = data;
 
     if (
@@ -54,6 +55,7 @@ export const UserService = {
       telegram_id: telegramId,
       view_mode: view_mode || "branch",
       status,
+      ignore_gps_check: ignore_gps_check === true || ignore_gps_check === "true",
       menuAccess: {
         create: menuAccess,
       },
@@ -154,6 +156,7 @@ export const UserService = {
       personal_menus,
       telegramId,
       view_mode,
+      ignore_gps_check,
     } = data;
 
     if (
@@ -181,6 +184,7 @@ export const UserService = {
       telegram_id: telegramId,
       view_mode: view_mode || "branch",
       status,
+      ignore_gps_check: ignore_gps_check === true || ignore_gps_check === "true",
     };
 
     if (password) {

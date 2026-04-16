@@ -48,6 +48,7 @@ const LateEmployeesPage = () => {
     department_id: "",
     employee_id: "",
     position_id: "",
+    include_lunch_late: false,
   });
   const [selectedMode, setSelectedMode] = useState("day");
   const { viewMode, activeBranchId } =
@@ -88,13 +89,33 @@ const LateEmployeesPage = () => {
     { label: "Должность", accessor: "positionName" },
 
     {
-      label: "По графику",
-      accessor: "scheduledStart",
-      render: (value) => value?.substring(0, 5),
+      label: "Пришел",
+      render: (_, item) => (
+        <div className={styles.timeWrapper}>
+          <div className={styles.timeRow}>
+            <span className={styles.timeMain}>{item.actualStart || "—"}</span>
+          </div>
+          {item.scheduledStart && (
+            <span className={styles.timeSched}>
+              {item.scheduledStart.substring(0, 5)}
+            </span>
+          )}
+        </div>
+      ),
     },
 
-    ,
-    { label: "Вход", accessor: "actualStart" },
+    {
+      label: "Опоздание",
+      render: (_, item) => (
+        <div className={styles.timeWrapper}>
+          {item.lateMinutes > 0 && (
+            <span className={styles.badgeRed}>
+              +{formatLateMinutesToHours(item.lateMinutes)}
+            </span>
+          )}
+        </div>
+      ),
+    },
 
     ...(hasAnyPermission
       ? [
@@ -110,20 +131,71 @@ const LateEmployeesPage = () => {
           },
         ]
       : []),
-    ,
-    {
-      label: "Опоздание (чч:мм)",
-      accessor: "lateMinutes",
-      render: formatLateMinutesToHours,
-    },
+
+    ...(formData.include_lunch_late
+      ? [
+          {
+            label: "Перерыв",
+            render: (_, item) => {
+              if (!item.scheduledBreakEnd && !item.actualBreakReturn)
+                return <span>—</span>;
+              return (
+                <div className={styles.timeWrapper}>
+                  <div className={styles.timeRow}>
+                    <span className={styles.timeMain}>
+                      {item.actualBreakReturn || "—"}
+                    </span>
+                    {item.breakReturnLateMinutes > 0 && (
+                      <span className={styles.badgeRed}>
+                        +{formatLateMinutesToHours(item.breakReturnLateMinutes)}
+                      </span>
+                    )}
+                  </div>
+                  {item.scheduledBreakEnd && (
+                    <span className={styles.timeSched}>
+                      по граф. {item.scheduledBreakEnd.substring(0, 5)}
+                    </span>
+                  )}
+                </div>
+              );
+            },
+          },
+        ]
+      : []),
+
     {
       label: "Сумма за опоздание",
       accessor: "monthlyLateMoney",
     },
+
     {
-      label: "Кол-во опозданий за месяц",
-      accessor: "monthlyLateCount",
+      label: "Опоздание на работу за месяц",
+      accessor: "monthlyArrivalLateCount",
+      render: (v, item) => {
+        if (!v || v <= 0) return "—";
+        const timeStr =
+          item.monthlyLateMinutes > 0
+            ? ` (${formatLateMinutesToHours(item.monthlyLateMinutes)})`
+            : "";
+        return `${v} раз ${timeStr}`;
+      },
     },
+    ...(formData.include_lunch_late
+      ? [
+          {
+            label: "Опоздание после перерыва за месяц",
+            accessor: "monthlyLunchLateCount",
+            render: (v, item) => {
+              if (!v || v <= 0) return "—";
+              const timeStr =
+                item.monthlyBreakReturnLateMinutes > 0
+                  ? ` (${formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes)})`
+                  : "";
+              return `${v} раз${timeStr}`;
+            },
+          },
+        ]
+      : []),
     {
       label: "Фото",
       accessor: "actualStartPhoto",
@@ -188,6 +260,7 @@ const LateEmployeesPage = () => {
       employee_id: "",
       position_id: "",
       search: "",
+      include_lunch_late: false,
     });
 
     // Сбрасываем viewType в дефолтное значение
@@ -285,8 +358,6 @@ const LateEmployeesPage = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [modalData]);
-
-  console.log("data", data);
 
   return (
     <div className={styles.lateEmployeesPage}>
@@ -458,9 +529,15 @@ const LateEmployeesPage = () => {
               viewType === "row" ? (
                 <Table columns={dayColumns} data={data} />
               ) : viewType === "card" ? (
-                <LateCardList data={Array.isArray(data) ? data : []} />
+                <LateCardList
+                  data={Array.isArray(data) ? data : []}
+                  includeLunch={formData.include_lunch_late}
+                />
               ) : (
-                <LateCardListCarousel data={Array.isArray(data) ? data : []} />
+                <LateCardListCarousel
+                  data={Array.isArray(data) ? data : []}
+                  includeLunch={formData.include_lunch_late}
+                />
               )
             ) : (
               <></>

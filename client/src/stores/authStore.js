@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getUserInfo, getUserAccess, updateProfile } from "../api";
+import { getUserInfo, getUserAccess, updateProfile, getActiveBranches } from "../api";
 import api from "../api/instance";
 
 export const useAuthStore = create((set, get) => ({
@@ -56,6 +56,11 @@ export const useAuthStore = create((set, get) => ({
   loadAccess: async () => {
     try {
       const access = await getUserAccess();
+
+      if (access.access_level === "absolute") {
+        const allBranches = await getActiveBranches();
+        access.branches = allBranches.data ?? [];
+      }
 
       set((state) => ({
         access,

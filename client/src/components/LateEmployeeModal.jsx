@@ -94,22 +94,32 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
           <div className={styles.modalStats}>
             <div className={styles.modalStat}>
               <span className={styles.modalStatValue}>
-                {modalData.details?.length ?? 0}
+                {modalData.monthlyArrivalLateCount || 0}
               </span>
-              <span className={styles.modalStatLabel}>
-                Количество опозданий
-              </span>
+              <span className={styles.modalStatLabel}>Опозд. утром</span>
+              {(modalData.monthlyLateMinutes || 0) > 0 && (
+                <span className={styles.modalStatSub}>
+                  {formatLateMinutesToHours(modalData.monthlyLateMinutes)}
+                </span>
+              )}
             </div>
 
             <div className={styles.modalStatDivider} />
 
             <div className={styles.modalStat}>
               <span className={styles.modalStatValue}>
-                {formatLateMinutesToHours(modalData.monthlyLateMinutes)}
+                {modalData.monthlyLunchLateCount || 0}
               </span>
               <span className={styles.modalStatLabel}>
-                Суммарное время опоздания
+                Опоздание после перерыва
               </span>
+              {(modalData.monthlyBreakReturnLateMinutes || 0) > 0 && (
+                <span className={styles.modalStatSub}>
+                  {formatLateMinutesToHours(
+                    modalData.monthlyBreakReturnLateMinutes,
+                  )}
+                </span>
+              )}
             </div>
 
             <div className={styles.modalStatDivider} />
@@ -131,7 +141,10 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
                 <th>Дата</th>
                 <th>По графику</th>
                 <th>Фактический вход</th>
-                <th>Опоздание (чч:мм)</th>
+                <th>Опоздание на работу</th>
+                <th>Перерыв до</th>
+                <th>Вернулся</th>
+                <th>Опоздание после перерыва</th>
               </tr>
             </thead>
             <tbody>
@@ -142,9 +155,28 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
                   <td className={styles.lateRowSched}>{item.scheduledStart}</td>
                   <td className={styles.lateRowActual}>{item.actualStart}</td>
                   <td className={styles.lateRowLate}>
-                    <span className={styles.latePill}>
-                      {formatLateMinutesToHours(item.lateMinutes)}
-                    </span>
+                    {item.lateMinutes > 0 ? (
+                      <span className={styles.latePill}>
+                        {formatLateMinutesToHours(item.lateMinutes)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                  <td className={styles.lateRowSched}>
+                    {item.scheduledBreakEnd?.substring(0, 5) || "—"}
+                  </td>
+                  <td className={styles.lateRowActual}>
+                    {item.actualBreakReturn || "—"}
+                  </td>
+                  <td className={styles.lateRowLate}>
+                    {item.breakReturnLateMinutes > 0 ? (
+                      <span className={styles.latePill}>
+                        {formatLateMinutesToHours(item.breakReturnLateMinutes)}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </td>
                 </tr>
               ))}

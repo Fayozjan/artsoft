@@ -79,8 +79,8 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
           <form onSubmit={onSubmit}>
             <div>
               <h2>Статус</h2>
-              <div className={styles.status}>
-                <label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name=""
@@ -93,7 +93,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Все
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="status"
@@ -106,7 +106,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
                   Включен
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="status"

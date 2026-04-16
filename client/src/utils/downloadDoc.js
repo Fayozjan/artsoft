@@ -916,12 +916,20 @@ export const DownloadLate = {
     statsHeaderRow.font = { bold: true, size: 12 };
 
     worksheet.addRow([
-      "Количество опозданий:",
-      modalData.monthlyLateCount || 0,
+      "Опоздание на работу (кол-во):",
+      modalData.monthlyArrivalLateCount || 0,
     ]);
     worksheet.addRow([
-      "Суммарное время опоздания:",
+      "Опоздание на работу (время):",
       formatLateMinutesToHours(modalData.monthlyLateMinutes),
+    ]);
+    worksheet.addRow([
+      "Опоздание после перерыва (кол-во):",
+      modalData.monthlyLunchLateCount || 0,
+    ]);
+    worksheet.addRow([
+      "Опоздание после перерыва (время):",
+      formatLateMinutesToHours(modalData.monthlyBreakReturnLateMinutes),
     ]);
     worksheet.addRow([
       "Сумма за опоздания:",
@@ -929,7 +937,7 @@ export const DownloadLate = {
     ]);
 
     // Стилизация статистики
-    for (let i = statsStartRow + 1; i <= statsStartRow + 3; i++) {
+    for (let i = statsStartRow + 1; i <= statsStartRow + 5; i++) {
       const row = worksheet.getRow(i);
       row.getCell(1).font = { bold: true };
     }
@@ -937,13 +945,16 @@ export const DownloadLate = {
     worksheet.addRow([]);
 
     // ===== Таблица деталей =====
-    const tableHeaderRow = statsStartRow + 5;
+    const tableHeaderRow = statsStartRow + 7;
     const headers = [
       "№",
       "Дата",
       "По графику",
       "Фактический вход",
-      "Опоздание (чч:мм)",
+      "Опоздание на работу (время)",
+      "Перерыв до",
+      "Вернулся",
+      "Опоздание после перерыва (время)",
     ];
 
     worksheet.addRow(headers);
@@ -975,7 +986,12 @@ export const DownloadLate = {
         item.date,
         item.scheduledStart || "",
         item.actualStart || "",
-        formatLateMinutesToHours(item.lateMinutes),
+        item.lateMinutes > 0 ? formatLateMinutesToHours(item.lateMinutes) : "—",
+        item.scheduledBreakEnd?.substring(0, 5) || "—",
+        item.actualBreakReturn || "—",
+        item.breakReturnLateMinutes > 0
+          ? formatLateMinutesToHours(item.breakReturnLateMinutes)
+          : "—",
       ];
 
       const newRow = worksheet.addRow(row);
@@ -1119,9 +1135,11 @@ export const DownloadLate = {
       "Филиал",
       "Отдел",
       "Должность",
-      "Кол-во опозданий за месяц",
-      "Суммарное опоздание (чч:мм)",
-      "Суммарное опоздание в деньгах",
+      "Опоздание на работу (кол-во)",
+      "Опоздание на работу (время)",
+      "Опоздание послес перерыва (кол-во)",
+      "Опоздание после перерыва (время)",
+      "Сумма за опоздания",
     ];
 
     // добавляем заголовок
@@ -1148,9 +1166,11 @@ export const DownloadLate = {
         item.branchName,
         item.departmentName,
         item.positionName,
-        item.monthlyLateCount || "",
+        item.monthlyArrivalLateCount || 0,
         formatLateMinutesToHours(item.monthlyLateMinutes),
-        "",
+        item.monthlyLunchLateCount || 0,
+        formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes),
+        item.monthlyLateMoney || "",
       ];
 
       const newRow = worksheet.addRow(row);

@@ -1,6 +1,7 @@
 import { FaceDeviceModel } from "../faceDevices/faceDevices.model.js";
 import { UserModel } from "../users/users.model.js";
 import { FacePassesModel } from "./facePasses.model.js";
+import { EmployeeModel } from "../employees/employees.model.js";
 import path from "path";
 import sharp from "sharp";
 import fs from "fs";
@@ -176,6 +177,74 @@ export const FacePassesService = {
     const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
 
+    // --- определяем door_id по геолокации сотрудника ---
+    const employee = await EmployeeModel.getById(user.employee_id);
+    if (!employee) throw new Error("Сотрудник не найден");
+
+    // --- пропускаем GPS-проверку для дистанционных / исключений ---
+    const skipGps =
+      user.ignore_gps_check === true ||
+      employee.workSchedule?.type === "remote";
+
+    let doorId = null;
+    let source = null;
+
+    if (skipGps) {
+      source = "mobile";
+    } else {
+      if (!employee.doors?.length)
+        throw new Error("Сотруднику не назначена ни одна дверь");
+      const haversine = (lat1, lon1, lat2, lon2) => {
+        const R = 6371000;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      };
+
+      // Двери сотрудника с координатами (только активные)
+      const doorsWithLocation = employee.doors.filter(
+        (d) => d.status && d.latitude != null && d.longitude != null,
+      );
+
+      if (doorsWithLocation.length > 0) {
+        const MAX_DISTANCE_METERS = 500;
+        let closestDoor = null;
+        let minDist = Infinity;
+
+        for (const door of doorsWithLocation) {
+          const dist = haversine(
+            latitude,
+            longitude,
+            door.latitude,
+            door.longitude,
+          );
+          if (dist < minDist) {
+            minDist = dist;
+            closestDoor = door;
+          }
+        }
+
+        if (!closestDoor || minDist > MAX_DISTANCE_METERS) {
+          throw new Error(
+            `Вы находитесь слишком далеко от офиса (${Math.round(minDist)} м)`,
+          );
+        }
+
+        doorId = closestDoor.id;
+      } else {
+        // Нет дверей с координатами — берём первую активную из назначенных
+        const fallback = employee.doors.find((d) => d.status);
+        if (fallback) doorId = fallback.id;
+      }
+
+      if (!doorId) throw new Error("Не найдена подходящая дверь");
+    }
+
     const date = new Date();
     const timestamp = Date.now();
 
@@ -201,11 +270,16 @@ export const FacePassesService = {
       date: date,
       identifier: `${user.employee_id}-${timestamp}`,
       employee_id: Number(user.employee_id),
-      door_id: 1,
+      door_id: doorId,
       face_devices_id: null,
       direction,
+      source,
+      latitude: latitude != null ? parseFloat(latitude) : null,
+      longitude: longitude != null ? parseFloat(longitude) : null,
       photo: photoPath,
     };
+
+    console.log("data", data);
 
     // --- сохраняем в базу ---
     let newPass;
@@ -213,6 +287,7 @@ export const FacePassesService = {
     try {
       newPass = await FacePassesModel.create(data);
     } catch (err) {
+      console.log("err", err);
       // дубликат записи
       if (err.code === "P2002") {
         console.log(
@@ -242,6 +317,8 @@ export const FacePassesService = {
         console.error("Ошибка при отправке уведомлений:", err);
       }
     }
+
+    console.log("newPass", newPass);
 
     return newPass;
   },
@@ -292,6 +369,11 @@ export const FacePassesService = {
 
     // Остальные фильтры
     if (direction) where.direction = direction;
+    if (filters.source === "MOBILE") {
+      where.source = "MOBILE";
+    } else if (filters.source === "DEVICE") {
+      where.source = null;
+    }
     if (filters.selectedDoorIds && filters.selectedDoorIds.length > 0) {
       where.door_id = { in: filters.selectedDoorIds.map((id) => Number(id)) };
     }

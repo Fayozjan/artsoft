@@ -18,13 +18,13 @@ import FaceDevicesPage from "./pages/FaceDevicesPage";
 import VehiclePassesPageTelegram from "./pages/VehiclePassesPageTelegram";
 import GatesPage from "./pages/GatesPage";
 import VehicleCamerasPage from "./pages/VehicleCamerasPage";
-import NotFoundPage from "./pages/NotFoundPage";
+import NotFoundPageTelegram from "./pages/NotFoundPageTelegram";
 import HomePageTelegram from "./pages/HomePageTelegram";
 import MorePageTelegram from "./pages/MorePageTelegram";
 
 const telegramRoutes = (
   <>
-    <Route path="main" element={<HomePageTelegram />} key="main" />,
+    <Route path="home" element={<HomePageTelegram />} key="home" />,
     <Route path="more" element={<MorePageTelegram />} key="more" />,
     <Route path="branches" element={<BranchesPage />} key="branches" />,
     <Route path="departments" element={<DepartmentsPage />} key="departments" />
@@ -90,7 +90,7 @@ const telegramRoutes = (
       key="vehicle-cameras"
     />
     ,
-    <Route path="*" element={<NotFoundPage />} />,
+    <Route path="*" element={<NotFoundPageTelegram />} />,
   </>
 );
 

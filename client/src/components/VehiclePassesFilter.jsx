@@ -160,8 +160,8 @@ const FacePassesFilter = ({
 
             <div>
               <h2>Направление</h2>
-              <div className={styles.status}>
-                <label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name=""
@@ -174,7 +174,7 @@ const FacePassesFilter = ({
                   Все
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"
@@ -187,7 +187,7 @@ const FacePassesFilter = ({
                   Въезд
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"

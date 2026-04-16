@@ -12,32 +12,28 @@ export const workScheduleService = {
       type: data.type, // fixed | shift | flexible
       weekly_days: Number(data.weekly_days) || null,
       weekly_hours: Number(data.weekly_hours) || null,
+      late_tolerance_minutes: Number(data.late_tolerance_minutes) || 0,
+      early_leave_tolerance_minutes: Number(data.early_leave_tolerance_minutes) || 0,
+      late_leave_tolerance_minutes: Number(data.late_leave_tolerance_minutes) || 0,
     };
 
-    // 🔹 Fixed график
-    if (data.type === "fixed") {
+    // 🔹 Fixed / Remote график (оба используют work_days по дням недели)
+    if (data.type === "fixed" || data.type === "remote") {
       preparedData.work_days = mapWorkDays(data.work_days, data.weekly_days);
       preparedData.shifts = null;
     }
 
     // 🔹 Shift график
     if (data.type === "shift") {
-      preparedData.shifts = (data.shifts || [])
-        .filter((s) => s.start || s.end)
-        .map((s) => ({
-          shift_number: s.shift_number,
-          start: s.start || "",
-          end: s.end || "",
-          break_minutes: Number(s.break_minutes) || 0,
-        }));
+      preparedData.shifts = mapShifts(data.shifts);
       preparedData.work_days = null;
       preparedData.weekly_days = null;
     }
 
     // 🔹 Flexible график
-    if (data.type === "shift") {
-      preparedData.shifts = mapShifts(data.shifts);
+    if (data.type === "flexible") {
       preparedData.work_days = null;
+      preparedData.shifts = null;
       preparedData.weekly_days = null;
     }
 
@@ -116,9 +112,12 @@ export const workScheduleService = {
       type: data.type, // fixed | shift | flexible
       weekly_days: Number(data.weekly_days) || null,
       weekly_hours: Number(data.weekly_hours) || null,
+      late_tolerance_minutes: Number(data.late_tolerance_minutes) || 0,
+      early_leave_tolerance_minutes: Number(data.early_leave_tolerance_minutes) || 0,
+      late_leave_tolerance_minutes: Number(data.late_leave_tolerance_minutes) || 0,
     };
 
-    if (data.type === "fixed") {
+    if (data.type === "fixed" || data.type === "remote") {
       preparedData.work_days = mapWorkDays(data.work_days, data.weekly_days);
       preparedData.shifts = null;
     }
@@ -130,9 +129,9 @@ export const workScheduleService = {
     }
 
     if (data.type === "flexible") {
-      prepared.work_days = null;
-      prepared.shifts = null;
-      prepared.weekly_days = null;
+      preparedData.work_days = null;
+      preparedData.shifts = null;
+      preparedData.weekly_days = null;
     }
 
     return workScheduleModel.updateById(id, preparedData, prisma);

@@ -289,6 +289,8 @@ const DoorsPage = () => {
                       />
                     </span>
                   </th>
+                  <th>Филиал</th>
+                  <th>Координаты</th>
                   <th onClick={() => handleSort("user_count")}>
                     <span className={styles.headerContent}>
                       Сотрудники
@@ -317,6 +319,12 @@ const DoorsPage = () => {
                       <td>{(currentPage - 1) * pageSize + i + 1}</td>
                       <td>{item.name}</td>
                       <td>{item.id}</td>
+                      <td>{item.branch?.name || "—"}</td>
+                      <td>
+                        {item.latitude != null && item.longitude != null
+                          ? `${item.latitude}, ${item.longitude}`
+                          : "—"}
+                      </td>
                       <td>{item.employees_count || 0}</td>
                       <td>
                         <Badge text={item.status} />

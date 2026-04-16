@@ -8,7 +8,10 @@ export const DoorModel = {
       skip,
       take,
       orderBy: { name: "asc" },
-      include: { _count: { select: { employees: true } } },
+      include: {
+        _count: { select: { employees: true } },
+        branch: { select: { id: true, name: true } },
+      },
     });
   },
 
@@ -23,6 +26,7 @@ export const DoorModel = {
       where: { status: true },
       orderBy: { name: "asc" },
       include: {
+        branch: { select: { id: true, name: true } },
         faceDevices: {
           where: { status: true },
           select: {
@@ -41,7 +45,30 @@ export const DoorModel = {
     const prisma = prismaContext.get();
     return prisma.doors.findUnique({
       where: { id: Number(id) },
-      include: { employees: true },
+      include: {
+        employees: true,
+        branch: { select: { id: true, name: true } },
+      },
+    });
+  },
+
+  findByBranchWithLocation: async (branchId) => {
+    const prisma = prismaContext.get();
+    return prisma.doors.findMany({
+      where: {
+        branch_id: branchId,
+        status: true,
+        latitude: { not: null },
+        longitude: { not: null },
+      },
+    });
+  },
+
+  findFirstByBranch: async (branchId) => {
+    const prisma = prismaContext.get();
+    return prisma.doors.findFirst({
+      where: { branch_id: branchId, status: true },
+      orderBy: { id: "asc" },
     });
   },
 

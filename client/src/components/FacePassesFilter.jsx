@@ -171,8 +171,8 @@ const FacePassesFilter = ({
 
             <div>
               <h2>Направление</h2>
-              <div className={styles.status}>
-                <label>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name=""
@@ -185,7 +185,7 @@ const FacePassesFilter = ({
                   Все
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"
@@ -198,7 +198,7 @@ const FacePassesFilter = ({
                   Вход
                 </label>
 
-                <label>
+                <label className={styles.checkboxLabel}>
                   <input
                     type="checkbox"
                     name="direction"
@@ -209,6 +209,42 @@ const FacePassesFilter = ({
                     }
                   />
                   Выход
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <h2>Источник</h2>
+              <div className={styles.checkboxGroup}>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={formData.source === ""}
+                    onChange={() =>
+                      setFormData((prev) => ({ ...prev, source: "" }))
+                    }
+                  />
+                  Все
+                </label>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={formData.source === "mobile"}
+                    onChange={() =>
+                      setFormData((prev) => ({ ...prev, source: "mobile" }))
+                    }
+                  />
+                  {t("mobile")}
+                </label>
+                <label className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={formData.source === "DEVICE"}
+                    onChange={() =>
+                      setFormData((prev) => ({ ...prev, source: "DEVICE" }))
+                    }
+                  />
+                  Устройство
                 </label>
               </div>
             </div>
