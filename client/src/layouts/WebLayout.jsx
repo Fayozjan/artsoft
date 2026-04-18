@@ -18,6 +18,7 @@ import styles from "./WebLayout.module.scss";
 export default function WebLayout() {
   const { getUserSettings } = useAuthStore();
   const location = useLocation();
+  const isHomePage = location.pathname === "/home";
   const outlet = useOutlet();
   const [menuData, setMenuData] = useState([]);
   const { theme: storedTheme } = getUserSettings();
@@ -99,19 +100,23 @@ export default function WebLayout() {
           exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
           className={styles.page}
         >
-          <h2 className={styles.pageTitle}>
-            <span className={!currentMenu.foundSubmenu ? styles.subTitle : ""}>
-              {currentMenu.foundMenu && t(currentMenu.foundMenu.name)}
-            </span>
-            {currentMenu.foundSubmenu && (
-              <>
-                <span className={styles.arrow}>{Icons.arrowRight}</span>
-                <span className={styles.subTitle}>
-                  {t(currentMenu.foundSubmenu.name)}
-                </span>
-              </>
-            )}
-          </h2>
+          {!isHomePage && (
+            <h2 className={styles.pageTitle}>
+              <span
+                className={!currentMenu.foundSubmenu ? styles.subTitle : ""}
+              >
+                {currentMenu.foundMenu && t(currentMenu.foundMenu.name)}
+              </span>
+              {currentMenu.foundSubmenu && (
+                <>
+                  <span className={styles.arrow}>{Icons.arrowRight}</span>
+                  <span className={styles.subTitle}>
+                    {t(currentMenu.foundSubmenu.name)}
+                  </span>
+                </>
+              )}
+            </h2>
+          )}
           {outlet}
         </motion.main>
       </AnimatePresence>

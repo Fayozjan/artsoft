@@ -113,7 +113,7 @@ export const EmploymentOrdersService = {
       where,
       skip,
       take: limit,
-      orderBy: { created_at: "desc" },
+      orderBy: { added_at: "desc" },
     });
 
     const totalItems = await EmploymentOrdersModel.countAll(where);

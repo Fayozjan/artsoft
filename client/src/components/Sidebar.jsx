@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import SidebarItem from "./SidebarItem";
 import Profile from "./Profile";
@@ -100,10 +100,10 @@ const Sidebar = ({ menuData }) => {
       >
         <div className={styles.sidebarTop}>
           {isOpen && (
-            <div className={styles.logoWrapper}>
+            <Link to="/home" className={styles.logoWrapper}>
               <img src="/logo.png" alt="" className={styles.logo} />
               <span>OnBase</span>
-            </div>
+            </Link>
           )}
 
           <span className={styles.toggle} onClick={toggleSidebar}>

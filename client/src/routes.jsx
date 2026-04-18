@@ -16,10 +16,10 @@ import UsersPage from "./pages/UsersPage";
 import TelegramBotsPage from "./pages/TelegramBotsPage";
 import DoorsPage from "./pages/DoorsPage";
 import FaceDevicesPage from "./pages/FaceDevicesPage";
-import ManufacturingOrdersPage from "./pages/ManufacturingOrdersPage";
 import VehiclePassesPage from "./pages/VehiclePassesPage";
 import GatesPage from "./pages/GatesPage";
 import VehicleCamerasPage from "./pages/VehicleCamerasPage";
+import SalarySettingPage from "./pages/SalarySettingPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const Routes = [
@@ -55,10 +55,11 @@ const Routes = [
     element={<FaceDevicesPage />}
     key="face-devices"
   />,
+
   <Route
-    path="manufacturing-orders"
-    element={<ManufacturingOrdersPage />}
-    key="manufacturing-orders"
+    path="salary-settings"
+    element={<SalarySettingPage />}
+    key="salary-settings"
   />,
   <Route
     path="vehicle-passes"

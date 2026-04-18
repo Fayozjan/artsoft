@@ -7,13 +7,6 @@
   position: relative;
   height: 100vh;
   z-index: 101;
-
-  svg {
-    width: 18px;
-    height: 18px;
-    color: #6b7280;
-    flex-shrink: 0;
-  }
 }
 
 .open {
@@ -171,6 +164,7 @@
     color: #2563eb;
     font-weight: 800;
     font-size: 20px;
+    text-decoration: none;
 
     .logo {
       height: 40px;
@@ -258,6 +252,11 @@
           max-width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
           opacity 0.15s ease;
       }
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
     }
 
     &.activeMenu > a {

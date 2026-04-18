@@ -62,7 +62,7 @@ const ManufacturingOrdersPage = () => {
   const handleDeleteOrder = async (orderId) => {
     try {
       const deleteRes = await axios.delete(
-        `/api/manufacturing-orders/${orderId}`
+        `/api/manufacturing-orders/${orderId}`,
       );
       if (deleteRes.data.success) {
         setData((prev) => prev.filter((order) => order.id !== orderId));
@@ -114,7 +114,7 @@ const ManufacturingOrdersPage = () => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setCurrentPage((prevPage) =>
-      Math.min(prevPage, Math.ceil(totalItems / size))
+      Math.min(prevPage, Math.ceil(totalItems / size)),
     );
   };
 

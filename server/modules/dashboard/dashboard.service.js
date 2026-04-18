@@ -55,6 +55,21 @@ function getLast7Days() {
   return days;
 }
 
+function getLast30Days() {
+  const days = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const { start, end } = getDayRange(d);
+    const label = d.toLocaleDateString("ru-RU", {
+      day: "numeric",
+      month: "short",
+    });
+    days.push({ start, end, label });
+  }
+  return days;
+}
+
 function getLast6Months() {
   const months = [];
   for (let i = 5; i >= 0; i--) {
@@ -83,28 +98,38 @@ export const DashboardService = {
       totalBranches,
       totalDepartments,
       totalEmployees,
+      totalPositions,
       checkedInToday,
       checkedOutToday,
       timeOffToday,
       vehiclePassesToday,
+      lateToday,
+      currentlyOnSite,
     ] = await Promise.all([
       DashboardModel.countBranches(branchWhere),
       DashboardModel.countDepartments(deptWhere),
       DashboardModel.countEmployees(employeeWhere),
+      DashboardModel.countPositions(),
       DashboardModel.countCheckedInToday(dayStart, dayEnd, employeeWhere),
       DashboardModel.countCheckedOutToday(dayStart, dayEnd, employeeWhere),
       DashboardModel.countTimeOffToday(dayStart, dayEnd, employeeWhere),
       DashboardModel.countVehiclePassesToday(dayStart, dayEnd),
+      DashboardModel.countLateToday(dayStart, dayEnd, 9, 30, employeeWhere),
+      DashboardModel.countCurrentlyOnSite(dayStart, dayEnd, employeeWhere),
     ]);
 
     return {
       totalBranches,
       totalDepartments,
       totalEmployees,
+      totalPositions,
       checkedInToday,
       checkedOutToday,
       timeOffToday,
       vehiclePassesToday,
+      lateToday,
+      currentlyOnSite,
+      absentToday: Math.max(0, totalEmployees - checkedInToday),
     };
   },
 
@@ -115,31 +140,47 @@ export const DashboardService = {
     const employeeWhere = buildEmployeeAccess(user);
     const { start: dayStart, end: dayEnd } = getDayRange();
     const last7Days = getLast7Days();
+    const last30Days = getLast30Days();
     const last6Months = getLast6Months();
 
     const [
       weeklyAttendance,
+      monthlyAttendance,
       employeesByBranch,
       doorTrafficByHour,
       hiringDynamics,
+      weeklyHiringDynamics,
       topDepartments,
       branchActivity,
+      topLateArrivals,
+      topEarlyDepartures,
+      employeesByPosition,
     ] = await Promise.all([
       DashboardModel.dailyAttendance(last7Days, employeeWhere),
+      DashboardModel.dailyAttendance(last30Days, employeeWhere),
       DashboardModel.employeesByBranch(employeeWhere),
       DashboardModel.doorTrafficByHour(dayStart, dayEnd, employeeWhere),
       DashboardModel.hiringDynamics(last6Months),
+      DashboardModel.hiringDynamicsByDay(last7Days),
       DashboardModel.topDepartmentsByActivity(dayStart, dayEnd, employeeWhere),
       DashboardModel.branchActivity(dayStart, dayEnd, employeeWhere),
+      DashboardModel.topLateArrivals(dayStart, dayEnd, 5, employeeWhere),
+      DashboardModel.topEarlyDepartures(dayStart, dayEnd, 5, employeeWhere),
+      DashboardModel.employeesByPosition(employeeWhere),
     ]);
 
     return {
       weeklyAttendance,
+      monthlyAttendance,
       employeesByBranch,
       doorTrafficByHour,
       hiringDynamics,
+      weeklyHiringDynamics,
       topDepartments,
       branchActivity,
+      topLateArrivals,
+      topEarlyDepartures,
+      employeesByPosition,
     };
   },
 

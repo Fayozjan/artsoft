@@ -64,6 +64,46 @@ export const DashboardModel = {
     });
   },
 
+  countLateToday: async (dayStart, dayEnd, lateHour = 9, lateMinute = 30, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const lateThreshold = new Date(dayStart);
+    lateThreshold.setHours(lateHour, lateMinute, 0, 0);
+    const passes = await prisma.face_passes.findMany({
+      where: {
+        date: { gte: dayStart, lte: dayEnd },
+        direction: "entry",
+        employee: { status: true, ...employeeWhere },
+      },
+      orderBy: { date: "asc" },
+      select: { employee_id: true, date: true },
+    });
+    const firstEntries = {};
+    for (const p of passes) {
+      if (!firstEntries[p.employee_id]) firstEntries[p.employee_id] = p.date;
+    }
+    return Object.values(firstEntries).filter((d) => new Date(d) > lateThreshold).length;
+  },
+
+  countPositions: async () => {
+    const prisma = prismaContext.get();
+    return prisma.positions.count({ where: { status: true } });
+  },
+
+  countCurrentlyOnSite: async (dayStart, dayEnd, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const passes = await prisma.face_passes.findMany({
+      where: {
+        date: { gte: dayStart, lte: dayEnd },
+        employee: { status: true, ...employeeWhere },
+      },
+      orderBy: { date: "asc" },
+      select: { employee_id: true, direction: true },
+    });
+    const lastAction = {};
+    for (const p of passes) lastAction[p.employee_id] = p.direction;
+    return Object.values(lastAction).filter((d) => d === "entry").length;
+  },
+
   // ===== ANALYTICS =====
 
   dailyAttendance: async (days, employeeWhere = {}) => {
@@ -177,15 +217,20 @@ export const DashboardModel = {
     const deptIds = Object.keys(deptCount).map(Number);
     const departments = await prisma.departments.findMany({
       where: { id: { in: deptIds } },
-      select: { id: true, name: true },
+      select: { id: true, name: true, branch_id: true },
     });
 
-    const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
+    const deptMap = Object.fromEntries(
+      departments.map((d) => [d.id, { name: d.name, branchId: d.branch_id }])
+    );
 
     return Object.entries(deptCount)
-      .map(([id, count]) => ({ department: deptMap[Number(id)] || "—", count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 8);
+      .map(([id, count]) => ({
+        department: deptMap[Number(id)]?.name || "—",
+        branchId: deptMap[Number(id)]?.branchId ?? null,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count);
   },
 
   branchActivity: async (dayStart, dayEnd, employeeWhere = {}) => {
@@ -215,7 +260,7 @@ export const DashboardModel = {
     const branchMap = Object.fromEntries(branches.map((b) => [b.id, b.name]));
 
     return Object.entries(branchCount)
-      .map(([id, count]) => ({ branch: branchMap[Number(id)] || "—", count }))
+      .map(([id, count]) => ({ branchId: Number(id), branch: branchMap[Number(id)] || "—", count }))
       .sort((a, b) => b.count - a.count);
   },
 
@@ -293,6 +338,130 @@ export const DashboardModel = {
       })
       .sort((a, b) => a.daysLeft - b.daysLeft)
       .slice(0, limit);
+  },
+
+  topLateArrivals: async (dayStart, dayEnd, limit = 5, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const passes = await prisma.face_passes.findMany({
+      where: {
+        date: { gte: dayStart, lte: dayEnd },
+        direction: "entry",
+        employee: { status: true, ...employeeWhere },
+      },
+      orderBy: { date: "asc" },
+      select: {
+        employee_id: true,
+        date: true,
+        employee: {
+          select: {
+            first_name: true, last_name: true, photo: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const seen = new Set();
+    const firstEntries = [];
+    for (const p of passes) {
+      if (!seen.has(p.employee_id)) {
+        seen.add(p.employee_id);
+        firstEntries.push(p);
+      }
+    }
+
+    return firstEntries
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, limit)
+      .map((p) => ({
+        employee_id: p.employee_id,
+        arrivalTime: p.date,
+        employee: p.employee,
+      }));
+  },
+
+  topEarlyDepartures: async (dayStart, dayEnd, limit = 5, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const passes = await prisma.face_passes.findMany({
+      where: {
+        date: { gte: dayStart, lte: dayEnd },
+        direction: "exit",
+        employee: { status: true, ...employeeWhere },
+      },
+      orderBy: { date: "desc" },
+      select: {
+        employee_id: true,
+        date: true,
+        employee: {
+          select: {
+            first_name: true, last_name: true, photo: true,
+            department: { select: { name: true } },
+          },
+        },
+      },
+    });
+
+    const seen = new Set();
+    const lastExits = [];
+    for (const p of passes) {
+      if (!seen.has(p.employee_id)) {
+        seen.add(p.employee_id);
+        lastExits.push(p);
+      }
+    }
+
+    return lastExits
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .slice(0, limit)
+      .map((p) => ({
+        employee_id: p.employee_id,
+        departureTime: p.date,
+        employee: p.employee,
+      }));
+  },
+
+  employeesByPosition: async (employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const groups = await prisma.employees.groupBy({
+      by: ["position_id"],
+      where: { status: true, ...employeeWhere },
+      _count: { id: true },
+    });
+
+    if (!groups.length) return [];
+
+    const posIds = groups.map((g) => g.position_id).filter(Boolean);
+    const positions = await prisma.positions.findMany({
+      where: { id: { in: posIds } },
+      select: { id: true, name: true },
+    });
+
+    const posMap = Object.fromEntries(positions.map((p) => [p.id, p.name]));
+
+    return groups
+      .map((g) => ({
+        position: posMap[g.position_id] || "—",
+        count: g._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  hiringDynamicsByDay: async (days) => {
+    const prisma = prismaContext.get();
+    const results = await Promise.all(
+      days.map(async ({ start, end, label }) => {
+        const [hired, terminated] = await Promise.all([
+          prisma.employment_orders.count({
+            where: { date: { gte: start, lte: end }, type: "hire" },
+          }),
+          prisma.employment_orders.count({
+            where: { date: { gte: start, lte: end }, type: "terminate" },
+          }),
+        ]);
+        return { date: label, hired, terminated };
+      })
+    );
+    return results;
   },
 
   recentTimeOffs: async (limit = 10, employeeWhere = {}) => {

@@ -35,20 +35,20 @@ export default async function seed() {
       create: { name: "hr", path: "/hr", sort_order: 2 },
     });
 
+    const finance = await prisma.menus.upsert({
+      where: { name: "finance" },
+      update: {},
+      create: { name: "finance", path: "/finance", sort_order: 3 },
+    });
+
     const vehiclePasses = await prisma.menus.upsert({
       where: { name: "vehicle-passes" },
       update: {},
       create: {
         name: "vehicle-passes",
         path: "/vehicle-passes",
-        sort_order: 3,
+        sort_order: 4,
       },
-    });
-
-    const manufacturing = await prisma.menus.upsert({
-      where: { name: "manufacturing" },
-      update: {},
-      create: { name: "manufacturing", path: "/manufacturing", sort_order: 4 },
     });
 
     const settings = await prisma.menus.upsert({
@@ -74,6 +74,18 @@ export default async function seed() {
         where: { name: item.name },
         update: {},
         create: { ...item, parent_id: hr.id, sort_order: i + 1 },
+      });
+    }
+
+    const financeChildren = [
+      { name: "salary-settings", path: "/salary-settings" },
+    ];
+
+    for (const [i, item] of financeChildren.entries()) {
+      await prisma.menus.upsert({
+        where: { name: item.name },
+        update: {},
+        create: { ...item, parent_id: finance.id, sort_order: i + 1 },
       });
     }
 

@@ -247,11 +247,47 @@ export const Icons = {
   finance: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      height="24px"
-      viewBox="0 -960 960 960"
-      width="24px"
+      fill="none"
+      viewBox="0 0 14 14"
+      id="Bag-Dollar--Streamline-Core"
+      height="14"
+      width="14"
     >
-      <path d="M441-120v-86q-53-12-91.5-46T293-348l74-30q15 48 44.5 73t77.5 25q41 0 69.5-18.5T587-356q0-35-22-55.5T463-458q-86-27-118-64.5T313-614q0-65 42-101t86-41v-84h80v84q50 8 82.5 36.5T651-650l-74 32q-12-32-34-48t-60-16q-44 0-67 19.5T393-614q0 33 30 52t104 40q69 20 104.5 63.5T667-358q0 71-42 108t-104 46v84h-80Z" />
+      <desc>Bag Dollar Streamline Icon: https://streamlinehq.com</desc>
+      <g id="bag-dollar--bag-payment-cash-money-finance">
+        <path
+          id="Vector"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 13.5c3.5 0 6 -1.2381 6 -3.99386 0 -2.99539 -1.5 -4.99232 -4.5 -6.49001l1.18 -1.51767c0.05995 -0.09957 0.09246 -0.2132 0.09425 -0.32937S9.74704 0.938348 9.69018 0.836979C9.63333 0.73561 9.55065 0.651051 9.45051 0.591872 9.35038 0.532693 9.23636 0.500998 9.12 0.5H4.88c-0.11636 0.000998 -0.23038 0.032693 -0.33051 0.091872 -0.10014 0.059179 -0.18282 0.143738 -0.23967 0.245107 -0.05686 0.101369 -0.08586 0.215941 -0.08407 0.332111s0.0343 0.2298 0.09425 0.32937L5.5 3.02611c-3 1.50768 -4.5 3.50461 -4.5 6.5C1 12.2619 3.5 13.5 7 13.5Z"
+          stroke-width="1"
+        ></path>
+        <path
+          id="Vector 3"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M8.3828 6.80572c-0.04756 -0.13456 -0.12095 -0.25691 -0.21421 -0.36111 -0.19836 -0.22163 -0.48663 -0.36111 -0.80748 -0.36111h-0.83854c-0.53408 0 -0.96703 0.43295 -0.96703 0.96702 0 0.45444 0.31643 0.84757 0.76038 0.94469l1.27669 0.27927c0.49735 0.1088 0.85184 0.54953 0.85184 1.05864 0 0.59831 -0.48503 1.08378 -1.08334 1.08378h-0.72223c-0.47169 0 -0.87297 -0.3015 -1.02169 -0.72227"
+          stroke-width="1"
+        ></path>
+        <path
+          id="Vector 2489"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 6.08334V5"
+          stroke-width="1"
+        ></path>
+        <path
+          id="Vector 2490"
+          stroke="currentColor"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M7 11.5001v-1.0834"
+          stroke-width="1"
+        ></path>
+      </g>
     </svg>
   ),
   tasks: (

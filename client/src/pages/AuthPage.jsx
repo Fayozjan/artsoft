@@ -36,7 +36,7 @@ const AuthPage = () => {
     const result = await loginUser({ ...form, language: lang });
 
     if (result.success) {
-      navigate("/dashboard");
+      navigate("/home");
     } else {
       showAlert(t("loginError"), "error");
     }
