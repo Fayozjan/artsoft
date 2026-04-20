@@ -471,6 +471,17 @@ const EditEmployee = ({
         </div>
       )}
 
+      <div className={styles.orderBtnWrapper}>
+        <button
+          type="button"
+          className={`${styles.showAllEmploymentBtn} ${styles.btn}`}
+          onClick={() => handleLeftPanel("list", "salaryHistoryList")}
+        >
+          {Icons.finance}
+          {t("salaryHistory")}
+        </button>
+      </div>
+
       {!!formData?.employmentOrders?.length && (
         <div className={styles.orderSectionWrapper}>
           <h4>Редактирование текущего приказа</h4>

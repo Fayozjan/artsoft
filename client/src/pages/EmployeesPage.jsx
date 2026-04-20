@@ -20,6 +20,7 @@ import EmployeeFilter from "../components/EmployeeFilter";
 import DownloadButton from "../components/DownloadButton";
 import AddEmploymentOrder from "../components/AddEmploymentOrder";
 import EmployeeWorkSchedulesHistory from "../components/EmployeeWorkSchedulesHistory";
+import EmployeeSalaryHistory from "../components/EmployeeSalaryHistory";
 
 import styles from "./EmployeesPage.module.scss";
 import { Icons } from "../icons/icons";
@@ -321,6 +322,11 @@ const EmployeesPage = () => {
                   employeeId={selectedItem}
                   handleClose={closeLeftPanel}
                   updateEmployeeDataFunction={updateEmployeeDataRef.current}
+                />
+              ) : leftPanelType === "salaryHistoryList" ? (
+                <EmployeeSalaryHistory
+                  employeeId={selectedItem}
+                  handleClose={closeLeftPanel}
                 />
               ) : null,
           }}

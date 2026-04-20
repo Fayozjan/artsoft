@@ -20,6 +20,7 @@ import VehiclePassesPage from "./pages/VehiclePassesPage";
 import GatesPage from "./pages/GatesPage";
 import VehicleCamerasPage from "./pages/VehicleCamerasPage";
 import SalarySettingPage from "./pages/SalarySettingPage";
+import PayrollPage from "./pages/PayrollPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 const Routes = [
@@ -61,6 +62,7 @@ const Routes = [
     element={<SalarySettingPage />}
     key="salary-settings"
   />,
+  <Route path="payroll" element={<PayrollPage />} key="payroll" />,
   <Route
     path="vehicle-passes"
     element={<VehiclePassesPage />}

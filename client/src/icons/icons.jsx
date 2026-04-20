@@ -253,7 +253,6 @@ export const Icons = {
       height="14"
       width="14"
     >
-      <desc>Bag Dollar Streamline Icon: https://streamlinehq.com</desc>
       <g id="bag-dollar--bag-payment-cash-money-finance">
         <path
           id="Vector"

@@ -81,6 +81,19 @@ export const EmployeeModel = {
           },
         },
         workSchedule: true,
+        employeeSalaryHistory: {
+          orderBy: { date_from: "desc" },
+          include: {
+            addedBy: {
+              select: {
+                id: true,
+                employee: {
+                  select: { first_name: true, last_name: true, middle_name: true },
+                },
+              },
+            },
+          },
+        },
         doors: {
           include: { faceDevices: true },
         },

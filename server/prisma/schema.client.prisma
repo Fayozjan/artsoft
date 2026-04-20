@@ -93,6 +93,7 @@ model employees {
   position       positions?      @relation(fields: [position_id], references: [id])
   workSchedule  work_schedules? @relation(fields: [work_schedule_id], references: [id])
   employeeScheduleHistory employee_schedule_history[]
+  employeeSalaryHistory   employee_salary_history[]
   employmentOrders   employment_orders[]
   employeeTimeOffs   time_off[]  @relation("employeeTimeOffs")
   facePasses        face_passes[]
@@ -222,6 +223,7 @@ model users {
   branches     branches[]
   timeOff     time_off[]
   employeeScheduleHistory employee_schedule_history[]
+  employeeSalaryHistory   employee_salary_history[]
 
   @@index([employee_id])
   @@index([telegram_id])
@@ -291,6 +293,23 @@ model employee_schedule_history {
 
   @@index([employee_id, date_from])
   @@index([employee_id, date_to])
+}
+
+model employee_salary_history {
+  id           Int       @id @default(autoincrement())
+  employee_id  Int
+  salary_type  String    @db.VarChar(20)   // monthly | hourly | piecework
+  amount       Decimal   @db.Decimal(15, 2)
+  date_from    DateTime  @db.Date
+  date_to      DateTime? @db.Date
+  note         String?
+  added_at     DateTime  @default(now()) @db.Timestamptz(6)
+  added_by     Int
+
+  employee     employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  addedBy      users     @relation(fields: [added_by], references: [id])
+
+  @@index([employee_id, date_from])
 }
 
 model doors {

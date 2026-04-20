@@ -79,6 +79,7 @@ export default async function seed() {
 
     const financeChildren = [
       { name: "salary-settings", path: "/salary-settings" },
+      { name: "payroll", path: "/payroll" },
     ];
 
     for (const [i, item] of financeChildren.entries()) {
