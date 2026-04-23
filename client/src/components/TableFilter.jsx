@@ -10,7 +10,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
   };
 
   const activeCount = Object.entries(formData).filter(
-    ([key, value]) => key !== "search" && value !== ""
+    ([key, value]) => key !== "search" && value !== "",
   ).length;
 
   const wrapperRef = useRef(null);

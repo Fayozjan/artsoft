@@ -13,7 +13,6 @@ export const getVisibleCardIds = (showAll) => {
     "present",
     "absent",
     "late",
-    "latePercent",
   ];
 
   const todayOnly = [
@@ -23,7 +22,6 @@ export const getVisibleCardIds = (showAll) => {
     "present",
     "absent",
     "late",
-    "latePercent",
     "inside",
     "left",
   ];
@@ -32,7 +30,7 @@ export const getVisibleCardIds = (showAll) => {
 };
 
 const icons = {
-  groups: (
+  branches: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="200"
@@ -46,7 +44,7 @@ const icons = {
       />
     </svg>
   ),
-  students: (
+  employees: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="200"
@@ -155,34 +153,46 @@ export const AttendanceDashboard = ({
   const [modalData, setModalData] = useState(null);
   const visibleCardIds = getVisibleCardIds(showAllCards);
 
+  const total = data?.employees?.length || 0;
+  const presentCount = data?.present?.length || 0;
+
+  const pct = (num, base) =>
+    base > 0 ? `${((num / base) * 100).toFixed(1)}%` : null;
+
   const attendanceCards = [
     viewMode !== "branch" && {
       id: "branches",
       title: "Филиалы",
       value: data?.branches?.length || 0,
       data: data?.branches,
-      icon: icons.groups,
+      icon: icons.branches,
+      color: "#44444e",
     },
     {
       id: "departments",
       title: "Отделы",
       value: data?.departments?.length || 0,
       data: data?.departments,
-      icon: icons.groups,
+      icon: icons.branches,
+      color: "#44444e",
     },
     {
       id: "employees",
       title: "Сотрудники",
-      value: data?.employees?.length || 0,
+      value: total,
       data: data?.employees,
-      icon: icons.students,
+      icon: icons.employees,
+      color: "#0046ff",
     },
     {
       id: "present",
       title: "Пришли",
-      value: data?.present?.length || 0,
+      value: presentCount,
       data: data?.present,
       icon: icons.came,
+      color: "#16a34a",
+      sub: pct(presentCount, total),
+      progress: total > 0 ? (presentCount / total) * 100 : 0,
     },
     {
       id: "absent",
@@ -190,6 +200,9 @@ export const AttendanceDashboard = ({
       value: data?.absent?.length || 0,
       data: data?.absent,
       icon: icons.notCame,
+      color: "#ef4444",
+      sub: pct(data?.absent?.length || 0, total),
+      progress: total > 0 ? ((data?.absent?.length || 0) / total) * 100 : 0,
     },
     {
       id: "late",
@@ -197,15 +210,10 @@ export const AttendanceDashboard = ({
       value: data?.late?.length || 0,
       data: data?.late,
       icon: icons.late,
-    },
-    {
-      id: "latePercent",
-      title: "Опоздания",
-      value: data?.present?.length
-        ? ((data.late.length / data.present.length) * 100).toFixed(1)
-        : 0,
-      icon: icons.percent,
-      isPercent: true,
+      color: "#f59e0b",
+      sub: pct(data?.late?.length || 0, presentCount),
+      progress:
+        presentCount > 0 ? ((data?.late?.length || 0) / presentCount) * 100 : 0,
     },
     {
       id: "inside",
@@ -213,6 +221,12 @@ export const AttendanceDashboard = ({
       value: data?.inside?.length || 0,
       data: data?.inside,
       icon: icons.inside,
+      color: "#2563eb",
+      sub: pct(data?.inside?.length || 0, presentCount),
+      progress:
+        presentCount > 0
+          ? ((data?.inside?.length || 0) / presentCount) * 100
+          : 0,
     },
     {
       id: "left",
@@ -220,6 +234,10 @@ export const AttendanceDashboard = ({
       value: data?.left?.length || 0,
       data: data?.left,
       icon: icons.left,
+      color: "#7c3aed",
+      sub: pct(data?.left?.length || 0, presentCount),
+      progress:
+        presentCount > 0 ? ((data?.left?.length || 0) / presentCount) * 100 : 0,
     },
   ];
 
@@ -229,11 +247,14 @@ export const AttendanceDashboard = ({
 
   return (
     <div className={styles.cardWrapper}>
-      {cardsToDisplay.map(({ id, title, ...props }) => (
+      {cardsToDisplay.map(({ id, title, color, progress, sub, ...props }) => (
         <AttendanceCard
           key={id}
           id={id}
           title={title}
+          color={color}
+          progress={progress}
+          sub={sub}
           {...props}
           onClick={() => {
             if (id !== "latePercent") {

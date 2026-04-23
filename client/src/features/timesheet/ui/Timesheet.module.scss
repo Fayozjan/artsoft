@@ -44,12 +44,31 @@
       z-index: 4;
     }
 
+    tbody {
+      tr {
+        cursor: pointer;
+
+        &:hover {
+          background: #f8fafc;
+
+          td.sticky,
+          td.stickyName {
+            background: #f8fafc;
+          }
+        }
+      }
+    }
+
     th {
       font-weight: 600;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 5px;
+      color: #475569;
+      font-size: calc(var(--font-small) - 2px);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
     td {
@@ -76,25 +95,53 @@
 
     th:nth-child(2),
     td:nth-child(2) {
-      width: 180px;
+      width: 320px;
     }
 
     th:nth-child(3),
     td:nth-child(3),
     th:nth-child(4),
-    td:nth-child(4) {
-      width: 150px;
-    }
-
+    td:nth-child(4),
     th:nth-child(5),
     td:nth-child(5),
     th:nth-child(6),
     td:nth-child(6),
     th:nth-child(7),
-    td:nth-child(7),
-    th:nth-child(8),
-    td:nth-child(8) {
+    td:nth-child(7) {
       width: 100px;
+    }
+
+    .empCell {
+      padding-left: 6px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+
+    .empPhoto {
+      flex-shrink: 0;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .empInfo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .empName {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .empSub {
+      font-size: 11px;
+      color: #94a3b8;
     }
 
     .sunday {
@@ -102,12 +149,63 @@
     }
 
     .cell {
+      font-size: calc(var(--font-small) - 1px);
       cursor: pointer;
       white-space: pre-line;
 
       &:hover {
         outline: 1px solid var(--third-color);
         outline-offset: -1px;
+      }
+    }
+
+    .workDurationText {
+      display: block;
+      color: #1e40af;
+      border-top: 0.5px dashed #e2e8f0;
+      white-space: normal;
+      font-weight: 600;
+    }
+
+    .cellExpanded {
+      height: auto !important;
+      width: 37px;
+      padding: 0;
+      margin: 0;
+      text-align: center;
+      vertical-align: top;
+
+      .eventRow {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-bottom: 1px dashed #e2e8f0;
+
+        &:last-of-type {
+          border-bottom: none;
+        }
+      }
+
+      .eventEntry {
+        color: #036c2a;
+      }
+
+      .eventExit {
+        color: #dc2626;
+      }
+
+      .doorName {
+        font-size: 10px;
+        color: #64748b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 82px;
+      }
+
+      .workDurationRow {
+        font-weight: 600;
+        color: #1e40af;
       }
     }
   }

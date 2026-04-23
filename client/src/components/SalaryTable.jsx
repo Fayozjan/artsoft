@@ -58,17 +58,41 @@ const SalaryTable = ({
       <table className={styles.table}>
         <thead>
           <tr>
-            <th><span className={styles.headerContent}>№</span></th>
-            <th><span className={styles.headerContent}>{t("employee")}</span></th>
-            <th><span className={styles.headerContent}>{t("employeeNumber")}</span></th>
-            <th><span className={styles.headerContent}>{t("branch")}</span></th>
-            <th><span className={styles.headerContent}>{t("department")}</span></th>
-            <th><span className={styles.headerContent}>{t("position")}</span></th>
-            <th><span className={styles.headerContent}>{t("salaryType")}</span></th>
-            <th><span className={styles.headerContent}>{t("amount")}</span></th>
-            <th><span className={styles.headerContent}>{t("salaryPeriod")}</span></th>
-            <th><span className={styles.headerContent}>{t("status")}</span></th>
-            <th><span className={styles.headerContent}>{t("action")}</span></th>
+            <th>
+              <span className={styles.headerContent}>№</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("employee")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>
+                {t("employeeNumber")}
+              </span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("branch")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("department")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("position")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("salaryType")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("amount")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("salaryPeriod")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("status")}</span>
+            </th>
+            <th>
+              <span className={styles.headerContent}>{t("action")}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -88,7 +112,9 @@ const SalaryTable = ({
                         <img
                           src={`/api/employees/image/${item.photo}`}
                           alt=""
-                          className={item.status ? styles.active : styles.terminated}
+                          className={
+                            item.status ? styles.active : styles.terminated
+                          }
                         />
                       )}
                       <span>
@@ -143,7 +169,12 @@ const SalaryTable = ({
                           onClick={() => onOpenHistory(item.id)}
                           title={t("salaryHistory")}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
                             <path
                               d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
                               fill="currentColor"
@@ -157,7 +188,12 @@ const SalaryTable = ({
                           onClick={() => onOpenAdd(item.id)}
                           title={t("addSalaryRecord")}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                          >
                             <path
                               d="M12 5v14M5 12h14"
                               stroke="currentColor"

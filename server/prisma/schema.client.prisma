@@ -101,6 +101,8 @@ model employees {
   doorTasks    employee_door_tasks[]
   user users?
   directedBranches   branches[] @relation("BranchDirector")
+  payrollSheetItems  payroll_sheet_items[]
+  salaryAdvances     salary_advances[]
 
   @@index([branch_id])
   @@index([department_id])
@@ -224,6 +226,9 @@ model users {
   timeOff     time_off[]
   employeeScheduleHistory employee_schedule_history[]
   employeeSalaryHistory   employee_salary_history[]
+  payrollSheetsAdded      payroll_sheets[] @relation("PayrollAddedBy")
+  payrollSheetsApproved   payroll_sheets[] @relation("PayrollApprovedBy")
+  salaryAdvancesGiven     salary_advances[] @relation("AdvancesGivenBy")
 
   @@index([employee_id])
   @@index([telegram_id])
@@ -414,4 +419,87 @@ model vehicle_passes {
   branch   branches? @relation (fields: [branch_id], references: [id])
   gate   gates @relation(fields: [gate_id], references: [id])
   camera anpr_cameras? @relation(fields: [camera_id], references: [id])
+}
+
+model payroll_sheets {
+  id          Int       @id @default(autoincrement())
+  month       Int
+  year        Int
+  status      String    @db.VarChar(20) @default("draft")
+  added_by    Int
+  added_at    DateTime  @default(now()) @db.Timestamptz(6)
+  approved_by Int?
+  approved_at DateTime? @db.Timestamptz(6)
+
+  items      payroll_sheet_items[]
+  addedBy    users  @relation("PayrollAddedBy",    fields: [added_by],    references: [id])
+  approvedBy users? @relation("PayrollApprovedBy", fields: [approved_by], references: [id])
+
+  @@unique([month, year])
+}
+
+model payroll_sheet_items {
+  id                 Int     @id @default(autoincrement())
+  sheet_id           Int
+  employee_id        Int
+  base_salary        Decimal @db.Decimal(15, 2)
+  salary_type        String  @db.VarChar(20)
+  worked_days        Int     @default(0)
+  total_work_days    Int     @default(0)
+  worked_hours       String? @db.VarChar(10)
+  total_work_hours   String? @db.VarChar(10)
+  accrued            Decimal @db.Decimal(15, 2)
+  debt_balance       Decimal @db.Decimal(15, 2) @default(0)
+  debt_deduction     Decimal @db.Decimal(15, 2) @default(0)
+  debt_mode          String  @db.VarChar(20)    @default("skip")
+  debt_comment       String?
+  manual_adjustment  Decimal @db.Decimal(15, 2) @default(0)
+  adjustment_comment String?
+  late_minutes       Int     @default(0)
+  overtime_minutes   Int     @default(0)
+  apply_late         Boolean @default(false)
+  apply_overtime     Boolean @default(false)
+  late_amount        Decimal @db.Decimal(15, 2) @default(0)
+  overtime_amount    Decimal @db.Decimal(15, 2) @default(0)
+  advance_total      Decimal @db.Decimal(15, 2) @default(0)
+  net                Decimal @db.Decimal(15, 2)
+  salary_balance     Decimal @db.Decimal(15, 2) @default(0)
+  paid_amount        Decimal @db.Decimal(15, 2) @default(0)
+  status             String  @db.VarChar(20)    @default("draft")
+
+  sheet       payroll_sheets        @relation(fields: [sheet_id],    references: [id], onDelete: Cascade)
+  employee    employees             @relation(fields: [employee_id], references: [id])
+  paymentLogs payroll_payment_logs[]
+
+  @@unique([sheet_id, employee_id])
+  @@index([sheet_id])
+}
+
+model payroll_payment_logs {
+  id           Int      @id @default(autoincrement())
+  item_id      Int
+  amount       Decimal  @db.Decimal(15, 2)
+  payment_date DateTime @db.Date
+  note         String?
+  added_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  item payroll_sheet_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
+
+  @@index([item_id])
+}
+
+model salary_advances {
+  id           Int      @id @default(autoincrement())
+  employee_id  Int
+  amount       Decimal  @db.Decimal(15, 2)
+  advance_date DateTime @db.Date
+  note         String?
+  given_by     Int
+  added_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  employee employees @relation(fields: [employee_id], references: [id])
+  givenBy  users     @relation("AdvancesGivenBy", fields: [given_by], references: [id])
+
+  @@index([employee_id])
+  @@index([advance_date])
 }

@@ -1,3 +1,11 @@
+.label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
 .filterToggle {
   font-size: var(--font-small);
   position: relative;
@@ -7,7 +15,7 @@
     justify-content: center;
     align-items: center;
     gap: 10px;
-    min-width: 120px;
+    min-width: 50px;
     max-width: 140px;
     height: 32px;
     padding: 0 10px;
@@ -55,14 +63,6 @@
       flex-direction: column;
       gap: 10px;
       flex-wrap: wrap;
-
-      .label {
-        font-size: 10px;
-        font-weight: 600;
-        color: #84878d;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-      }
 
       .segmentedGroup {
         display: flex;

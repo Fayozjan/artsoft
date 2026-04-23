@@ -30,15 +30,27 @@ export const EmployeeModel = {
     });
   },
 
-  getAll: async (where = {}, skip = 0, take = 50) => {
+  getAll: async (where = {}, skip = 0, take = 50, sort_by = "last_name", sort_order = "asc") => {
     const prisma = prismaContext.get();
+
+    const order = sort_order === "desc" ? "desc" : "asc";
+    const SORT_MAP = {
+      last_name:       { last_name: order },
+      employee_number: { employee_number: order },
+      status:          { status: order },
+      date_of_birth:   { date_of_birth: order },
+      branch:          { branch: { name: order } },
+      department:      { department: { name: order } },
+      position:        { position: { name: order } },
+    };
+    const orderBy = SORT_MAP[sort_by] ?? { last_name: order };
 
     const [data, total] = await Promise.all([
       prisma.employees.findMany({
         where,
         skip,
         take,
-        orderBy: { last_name: "asc" },
+        orderBy,
         include: {
           branch: true,
           department: true,

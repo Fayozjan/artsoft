@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./AttendanceCard.module.scss";
 
-const AttendanceCard = ({ title, value, icon, isPercent = false, onClick }) => {
+const AttendanceCard = ({
+  title,
+  value,
+  icon,
+  isPercent = false,
+  onClick,
+  color = "#6366f1",
+  progress,
+  sub,
+}) => {
   const [count, setCount] = useState(0);
   const prevValueRef = useRef(0);
   const rafRef = useRef(null);
@@ -40,16 +49,30 @@ const AttendanceCard = ({ title, value, icon, isPercent = false, onClick }) => {
 
   return (
     <div className={styles.card} onClick={onClick}>
-      <div className={styles.icon}>
-        {icon}
-        <span className={styles.title}>{title}</span>
-      </div>
-      <div className={styles.numberWrapper}>
-        <div className={styles.number}>
-          {isNumber ? count : value || "—"}
-          {isPercent && <span className={styles.percent}>%</span>}
+      <div className={styles.inner}>
+        <div className={styles.iconBox} style={{ background: color + "18" }}>
+          {icon}
+        </div>
+        <div className={styles.content}>
+          <span className={styles.label}>{title}</span>
+          <span className={styles.value} style={{ color }}>
+            {isNumber ? count : value || "—"}
+            {isPercent && <span className={styles.sub}>%</span>}
+            {sub && <span className={styles.sub}>{sub}</span>}
+          </span>
         </div>
       </div>
+      {progress != null && (
+        <div className={styles.progressTrack}>
+          <div
+            className={styles.progressFill}
+            style={{
+              width: `${Math.min(100, Math.max(0, progress))}%`,
+              background: color,
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

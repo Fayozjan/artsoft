@@ -10,6 +10,32 @@ import FacePassesFilter from "../components/FacePassesFilter";
 import DownloadButton from "../components/DownloadButton";
 
 import styles from "./FacePassesPageWeb.module.scss";
+import { ScanFace, LogIn, LogOut } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 
 const FacePassesPageWeb = () => {
   const [data, setData] = useState([]);
@@ -107,6 +133,28 @@ const FacePassesPageWeb = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
+          {data.length > 0 && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={ScanFace}
+                color="#6366f1"
+                label="Всего проходов"
+                value={totalItems}
+              />
+              <StatWidget
+                icon={LogIn}
+                color="#10b981"
+                label="Вход"
+                value={data.filter((x) => x.direction === "entry").length}
+              />
+              <StatWidget
+                icon={LogOut}
+                color="#ef4444"
+                label="Выход"
+                value={data.filter((x) => x.direction === "exit").length}
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>

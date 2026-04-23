@@ -1,6 +1,17 @@
 import axios from "axios";
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Users,
+  UserCheck,
+  UserX,
+  UserPlus,
+  UserMinus,
+  Cake,
+  Venus,
+  Mars,
+  CircleHelp,
+} from "lucide-react";
 
 import { useAlertStore } from "../stores/alertStore";
 import { useFilterDataStore } from "../stores/filterDataStore";
@@ -17,6 +28,7 @@ import OverlaySidebar from "../components/OverlaySidebar";
 import CenterModal from "../components/CenterModal";
 import Pagination from "../components/Pagination";
 import EmployeeFilter from "../components/EmployeeFilter";
+import SalarySort from "../components/SalarySort";
 import DownloadButton from "../components/DownloadButton";
 import AddEmploymentOrder from "../components/AddEmploymentOrder";
 import EmployeeWorkSchedulesHistory from "../components/EmployeeWorkSchedulesHistory";
@@ -26,11 +38,219 @@ import styles from "./EmployeesPage.module.scss";
 import { Icons } from "../icons/icons";
 import { useAuthStore } from "../stores/authStore";
 
+const StatWidget = ({
+  icon: Icon,
+  color,
+  label,
+  value,
+  sub,
+  progress,
+  action,
+}) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
+        />
+      </div>
+    )}
+    {action && (
+      <button
+        className={styles.statWidgetAction}
+        onClick={action.onClick}
+        style={{ borderColor: color + "40", color, background: color + "10" }}
+      >
+        <svg
+          width="11"
+          height="11"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="8" y1="6" x2="21" y2="6" />
+          <line x1="8" y1="12" x2="21" y2="12" />
+          <line x1="8" y1="18" x2="21" y2="18" />
+          <line x1="3" y1="6" x2="3.01" y2="6" />
+          <line x1="3" y1="12" x2="3.01" y2="12" />
+          <line x1="3" y1="18" x2="3.01" y2="18" />
+        </svg>
+        {action.label}
+      </button>
+    )}
+  </div>
+);
+
+const GenderWidget = ({ gender, total, t }) => {
+  const rows = [
+    { key: "male", color: "#3b82f6", label: t("male"), count: gender.male },
+    {
+      key: "female",
+      color: "#ec4899",
+      label: t("female"),
+      count: gender.female,
+    },
+    {
+      key: "unspecified",
+      color: "#94a3b8",
+      label: t("notSpecified"),
+      count: gender.unspecified,
+    },
+  ].filter((r) => r.count > 0);
+
+  if (!rows.length) return null;
+
+  return (
+    <div className={styles.statWidget}>
+      <span className={styles.statWidgetLabel}>{t("statsGender")}</span>
+      <div className={styles.typeBar}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            className={styles.typeBarSegment}
+            style={{
+              width: `${(r.count / total) * 100}%`,
+              background: r.color,
+            }}
+          />
+        ))}
+      </div>
+      <div className={styles.typeSegmentLabels}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            className={styles.typeSegmentLabel}
+            style={{ width: `${(r.count / total) * 100}%`, color: r.color }}
+          >
+            <span className={styles.typeSegmentName}>{r.label}</span>
+            <span className={styles.typeSegmentCount}>{r.count}</span>
+            <span className={styles.typeSegmentPct}>
+              {Math.round((r.count / total) * 100)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const BirthdayModal = ({ list, onClose, t }) => {
+  const today = new Date();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const sortedList = [...list].sort((a, b) => {
+    const dobA = new Date(a.date_of_birth);
+    const dobB = new Date(b.date_of_birth);
+    const aVal = dobA.getUTCMonth() * 100 + dobA.getUTCDate();
+    const bVal = dobB.getUTCMonth() * 100 + dobB.getUTCDate();
+    return aVal - bVal;
+  });
+
+  return (
+    <div className={styles.bdModalOverlay} onClick={onClose}>
+      <div className={styles.bdModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.bdModalHeader}>
+          <div className={styles.bdModalHeaderLeft}>
+            <div>
+              <div className={styles.bdModalHeaderTitle}>
+                {t("statsBirthdaysWeek")}
+              </div>
+            </div>
+          </div>
+          <button className={styles.bdModalClose} onClick={onClose}>
+            {Icons.clear}
+          </button>
+        </div>
+
+        <div className={styles.bdTableWrapper}>
+          <table className={styles.bdTable}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>{t("fullName")}</th>
+                <th>{t("position")}</th>
+                <th>{t("dateOfBirth")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedList.map((emp, idx) => {
+                const dob = new Date(emp.date_of_birth);
+                const m = dob.getUTCMonth() + 1;
+                const d = dob.getUTCDate();
+                const isToday = m === todayMonth && d === todayDay;
+                const dobStr = `${String(d).padStart(2, "0")}.${String(m).padStart(2, "0")}`;
+
+                return (
+                  <tr key={emp.id} className={isToday ? styles.bdRowToday : ""}>
+                    <td className={styles.bdColNum}>{idx + 1}</td>
+                    <td className={styles.bdColName}>
+                      <div className={styles.empCell}>
+                        {emp.photo && (
+                          <img
+                            src={`/api/employees/image/${emp.photo}`}
+                            alt="employee"
+                            className={
+                              emp.status ? styles.active : styles.terminated
+                            }
+                          />
+                        )}
+                        <div className={styles.empInfo}>
+                          <span className={styles.empName}>
+                            {emp.full_name} ({emp.id})
+                          </span>
+                          <span className={styles.empSub}>
+                            {[emp.branch, emp.department]
+                              .filter(Boolean)
+                              .join(" / ")}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.bdColPos}>{emp.position || "—"}</td>
+                    <td className={styles.bdColDate}>
+                      <span className={styles.bdDateChip}>{dobStr}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const EmployeesPage = () => {
   const { deleteUser } = useFilterDataStore();
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [showBdModal, setShowBdModal] = useState(false);
   const [data, setData] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,8 +300,18 @@ const EmployeesPage = () => {
     }
   };
 
+  const fetchStats = async () => {
+    try {
+      const res = await EmployeeService.getStats();
+      if (res.success) setStats(res.stats);
+    } catch (err) {
+      console.error("Ошибка загрузки статистики:", err.message);
+    }
+  };
+
   useEffect(() => {
     fetchEmployees(1, formData, pageSize);
+    fetchStats();
   }, []);
 
   useEffect(() => {
@@ -96,6 +326,12 @@ const EmployeesPage = () => {
 
   const handleSearch = () => {
     fetchEmployees(1, { ...formData }, pageSize);
+  };
+
+  const handleSortApply = (sort_by, sort_order) => {
+    const updated = { ...formData, sort_by, sort_order };
+    setFormData(updated);
+    fetchEmployees(1, updated, pageSize);
   };
 
   const handleEditClick = (id) => {
@@ -162,6 +398,74 @@ const EmployeesPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
+          {stats && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={Users}
+                color="#6366f1"
+                label={t("statsTotal")}
+                value={stats.total}
+              />
+              <StatWidget
+                icon={UserCheck}
+                color="#16a34a"
+                label={t("statsActive")}
+                value={stats.active}
+                sub={
+                  stats.total > 0
+                    ? `${Math.round((stats.active / stats.total) * 100)}%`
+                    : "0%"
+                }
+                progress={
+                  stats.total > 0 ? (stats.active / stats.total) * 100 : 0
+                }
+              />
+              <StatWidget
+                icon={UserX}
+                color="#ef4444"
+                label={t("statsFired")}
+                value={stats.fired}
+                sub={
+                  stats.total > 0
+                    ? `${Math.round((stats.fired / stats.total) * 100)}%`
+                    : "0%"
+                }
+                progress={
+                  stats.total > 0 ? (stats.fired / stats.total) * 100 : 0
+                }
+              />
+              <StatWidget
+                icon={UserPlus}
+                color="#3b82f6"
+                label={t("statsNewWeek")}
+                value={stats.new_this_week}
+              />
+              <StatWidget
+                icon={UserMinus}
+                color="#f59e0b"
+                label={t("statsFiredWeek")}
+                value={stats.fired_this_week}
+              />
+              <StatWidget
+                icon={Cake}
+                color="#a855f7"
+                label={t("statsBirthdaysWeek")}
+                value={stats.birthdays_this_week}
+                action={
+                  stats.birthdays_this_week > 0
+                    ? {
+                        label: t("showList"),
+                        onClick: () => setShowBdModal(true),
+                      }
+                    : null
+                }
+              />
+              {stats.total > 0 && (
+                <GenderWidget gender={stats.gender} total={stats.total} t={t} />
+              )}
+            </div>
+          )}
+
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>
@@ -204,6 +508,12 @@ const EmployeesPage = () => {
                 onSubmit={handleFormSubmit}
                 t={t}
               />
+
+              <SalarySort
+                sort_by={formData.sort_by}
+                sort_order={formData.sort_order}
+                onApply={handleSortApply}
+              />
             </div>
 
             <Pagination
@@ -225,7 +535,6 @@ const EmployeesPage = () => {
                 onClick={() => fetchEmployees(currentPage, formData, pageSize)}
               >
                 {Icons.refresh}
-                <span>Обновить данные</span>
               </div>
 
               {data.length > 0 && (
@@ -274,6 +583,14 @@ const EmployeesPage = () => {
               }}
             />
           }
+        />
+      )}
+
+      {showBdModal && stats?.birthday_list?.length > 0 && (
+        <BirthdayModal
+          list={stats.birthday_list}
+          onClose={() => setShowBdModal(false)}
+          t={t}
         />
       )}
 

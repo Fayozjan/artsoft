@@ -54,7 +54,14 @@ export const EmployeeService = {
   update: async (id, data) => {
     const formData = new FormData();
 
+    console.log("data", data);
+
     Object.entries(data).forEach(([key, value]) => {
+      if (key === "work_schedule_id") {
+        formData.append(key, value ?? "");
+        return;
+      }
+
       if (key === "photo") {
         if (value instanceof File) formData.append(key, value);
         else formData.append(key, "");
@@ -82,6 +89,11 @@ export const EmployeeService = {
 
   delete: async (id) => {
     const res = await api.delete(`/employees/${id}`);
+    return res.data;
+  },
+
+  getStats: async () => {
+    const res = await api.get("/employees/stats");
     return res.data;
   },
 };

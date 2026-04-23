@@ -19,6 +19,32 @@ import DownloadButton from "../components/DownloadButton";
 
 import styles from "./UsersPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
+import { Users, UserCheck, UserX } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 
 const accessLevelMap = {
   absolute: "access_absolute",
@@ -163,6 +189,37 @@ const UsersPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
+          {data.length > 0 && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={Users}
+                color="#6366f1"
+                label="Всего пользователей"
+                value={totalItems}
+              />
+              <StatWidget
+                icon={UserCheck}
+                color="#10b981"
+                label="Активных"
+                value={data.filter((x) => x.status === "active").length}
+                sub={`/ ${data.length}`}
+                progress={
+                  data.length > 0
+                    ? (data.filter((x) => x.status === "active").length /
+                        data.length) *
+                      100
+                    : 0
+                }
+              />
+              <StatWidget
+                icon={UserX}
+                color="#ef4444"
+                label="Неактивных"
+                value={data.filter((x) => x.status !== "active").length}
+                sub={`/ ${data.length}`}
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>

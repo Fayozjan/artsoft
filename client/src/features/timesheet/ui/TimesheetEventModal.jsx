@@ -67,8 +67,9 @@ const TimesheetEventModal = ({ visible, onClose, events, timeOffs }) => {
                       {formatIsoToLocalDateTime(event.date)}
                     </p>
                   </div>
-
-                  {event.photo && <img src={event.photo} alt="event_photo" />}
+                  {event.photo && (
+                    <img src={`/api/face-passes/image/${event.photo}`} />
+                  )}
                 </li>
               );
             })}

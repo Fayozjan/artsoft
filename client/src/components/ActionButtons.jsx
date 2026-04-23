@@ -125,6 +125,8 @@ const ActionButton = ({ onClick, icon: Icon, label, variant }) => {
   );
 };
 
+export { ActionButton };
+
 // ─── ActionCell ─────────────────────────────────────────────────────────
 export const ActionCell = ({
   item,

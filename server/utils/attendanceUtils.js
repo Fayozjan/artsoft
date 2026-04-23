@@ -125,7 +125,12 @@ function resolveBreakMinutes(shift) {
  * @param {number} breakEndMins   - Конец перерыва, минуты от полуночи
  * @returns {number} Продолжительность пересечения в минутах
  */
-export function calcBreakOverlap(workStartMins, workEndMins, breakStartMins, breakEndMins) {
+export function calcBreakOverlap(
+  workStartMins,
+  workEndMins,
+  breakStartMins,
+  breakEndMins,
+) {
   const overlapStart = Math.max(workStartMins, breakStartMins);
   const overlapEnd = Math.min(workEndMins, breakEndMins);
   return Math.max(0, overlapEnd - overlapStart);
@@ -146,8 +151,7 @@ export function calcBreakOverlap(workStartMins, workEndMins, breakStartMins, bre
  * Пример B (не обед): выход 14:00, возврат 15:00 → 0 мин (exit ≥ breakEnd).
  */
 function detectBreakReturnLate(events, breakStart, breakEnd) {
-  if (!breakStart || !breakEnd)
-    return { lateMinutes: 0, actualReturn: null };
+  if (!breakStart || !breakEnd) return { lateMinutes: 0, actualReturn: null };
 
   const breakStartMins = timeToMinutes(breakStart);
   const breakEndMins = timeToMinutes(breakEnd);
@@ -362,11 +366,14 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         branchName: data.branchName,
         departmentName: data.departmentName,
         positionName: data.positionName,
+        pinfl: data.pinfl,
         workScheduleName: undefined,
         totalWorkedDays: 0,
         totalWorkedHours: "00:00",
         totalLateCount: 0,
         totalLateTime: "00:00",
+        totalOvertimeMinutes: 0,
+        totalScheduledMinutes: 0,
         sessions: {},
       };
     }
@@ -503,8 +510,10 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
         // Допустимые окна из графика (минуты)
         const lateTolerance = scheduleForDay?.late_tolerance_minutes || 0;
-        const earlyLeaveTolerance = scheduleForDay?.early_leave_tolerance_minutes || 0;
-        const lateLeaveTolerance = scheduleForDay?.late_leave_tolerance_minutes || 0;
+        const earlyLeaveTolerance =
+          scheduleForDay?.early_leave_tolerance_minutes || 0;
+        const lateLeaveTolerance =
+          scheduleForDay?.late_leave_tolerance_minutes || 0;
 
         if (scheduleType === "fixed" || scheduleType === "remote") {
           const jsDay = date.getDay() === 0 ? 7 : date.getDay();
@@ -573,7 +582,10 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             timeToMinutes(breakEnd),
           );
         }
-        let netSeconds = Math.max(0, result.totalSeconds - effectiveBreakMins * 60);
+        let netSeconds = Math.max(
+          0,
+          result.totalSeconds - effectiveBreakMins * 60,
+        );
         netSeconds += companyPaidHourSeconds;
 
         // Опоздание
@@ -603,12 +615,20 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           if (endMins < scheduleStartMins) endMins += 24 * 60;
           if (exitMins < scheduleStartMins) exitMins += 24 * 60;
 
-          earlyLeave = minutesToLateString(Math.max(0, endMins - exitMins - earlyLeaveTolerance));
-          lateLeave = minutesToLateString(Math.max(0, exitMins - endMins - lateLeaveTolerance));
+          earlyLeave = minutesToLateString(
+            Math.max(0, endMins - exitMins - earlyLeaveTolerance),
+          );
+          lateLeave = minutesToLateString(
+            Math.max(0, exitMins - endMins - lateLeaveTolerance),
+          );
         }
 
         // Опоздание после перерыва
-        const breakResult = detectBreakReturnLate(dailyEvents, breakStart, breakEnd);
+        const breakResult = detectBreakReturnLate(
+          dailyEvents,
+          breakStart,
+          breakEnd,
+        );
         const breakReturnLate = minutesToLateString(breakResult.lateMinutes);
         const actualBreakReturn = breakResult.actualReturn;
 
@@ -629,7 +649,8 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           breakReturnLate,
           actualBreakReturn,
           events: dailyEvents,
-          hadAttendance: netSeconds > 0 || firstEntryTime !== null || lastExitTime !== null,
+          hadAttendance:
+            netSeconds > 0 || firstEntryTime !== null || lastExitTime !== null,
           timeOff: dayOffRecord
             ? {
                 id: dayOffRecord.id,
@@ -730,6 +751,7 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
     let totalLateCount = 0;
     let totalLateSeconds = 0;
     let totalWorkedSeconds = 0;
+    let totalOvertimeSeconds = 0;
 
     Object.values(finalSessions).forEach((s) => {
       const [h, m] = s.workDuration.split(":").map(Number);
@@ -740,11 +762,27 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         totalLateCount++;
         totalLateSeconds += lateMinutes * 60;
       }
+
+      const overtimeMinutes = lateStringToMinutes(s.lateLeave || "00:00");
+      totalOvertimeSeconds += overtimeMinutes * 60;
     });
 
     const totalWorkedDays = Object.values(finalSessions).filter(
       (s) => s.hadAttendance || s.workDuration !== "00:00",
     ).length;
+
+    // Плановые минуты за месяц по графику
+    let totalScheduledMinutes = 0;
+    if (yearMonth && hasWorkSchedule) {
+      const [yr, mo] = yearMonth.split("-").map(Number);
+      const fromDate = new Date(Date.UTC(yr, mo - 1, 1));
+      const toDate = new Date(Date.UTC(yr, mo, 0));
+      totalScheduledMinutes = countScheduledMinutes(
+        fromDate,
+        toDate,
+        data.workSchedule,
+      );
+    }
 
     return {
       employeeId: data.employeeId.toString(),
@@ -754,11 +792,14 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
       branchName: data.branchName,
       departmentName: data.departmentName,
       positionName: data.positionName,
+      pinfl: data.pinfl,
       workScheduleName: data.workScheduleName,
       totalWorkedDays,
       totalWorkedHours: formatDurationFromSeconds(totalWorkedSeconds),
       totalLateCount,
       totalLateTime: formatDurationFromSeconds(totalLateSeconds),
+      totalOvertimeMinutes: Math.round(totalOvertimeSeconds / 60),
+      totalScheduledMinutes,
       sessions: finalSessions,
     };
   });

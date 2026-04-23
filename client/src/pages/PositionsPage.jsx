@@ -20,6 +20,32 @@ import DownloadButton from "../components/DownloadButton";
 
 import styles from "./PositionsPage.module.scss";
 import Search from "../components/Search";
+import { Briefcase, Users, CheckCircle } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 import { ActionCell } from "../components/ActionButtons";
 
 const PositionsPage = () => {
@@ -165,6 +191,29 @@ const PositionsPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
+          {data.length > 0 && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={Briefcase}
+                color="#6366f1"
+                label="Всего должностей"
+                value={totalItems}
+              />
+              <StatWidget
+                icon={Users}
+                color="#10b981"
+                label="Сотрудников"
+                value={data.reduce((a, b) => a + (b.user_count || 0), 0)}
+              />
+              <StatWidget
+                icon={CheckCircle}
+                color="#3b82f6"
+                label="Активных"
+                value={data.filter((x) => x.status === "active").length}
+                sub={`/ ${data.length}`}
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <Search

@@ -154,19 +154,22 @@ export const Icons = {
   ),
   refresh: (
     <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="200"
-      height="200"
       viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      id="Autorenew--Streamline-Outlined-Material"
+      height="24"
+      width="24"
     >
-      <path
-        fill="none"
-        stroke="#000000"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-      />
+      <desc>Autorenew Streamline Icon: https://streamlinehq.com</desc>
+      <g id="autorenew">
+        <path
+          id="Vector"
+          d="M4.9 15.7252c-0.333335 -0.6 -0.566665 -1.20415 -0.7 -1.8125 -0.133335 -0.60835 -0.2 -1.22915 -0.2 -1.8625 0 -2.18335 0.7875 -4.0625 2.3625 -5.6375C7.9375 4.837695 9.81665 4.050195 12 4.050195h1.075l-2 -2 0.975 -0.975 3.725 3.725 -3.725 3.725005 -1 -1 1.975 -1.975H12c-1.78335 0 -3.3125 0.6375 -4.5875 1.9125 -1.275 1.275 -1.9125 2.80415 -1.9125 4.5875 0 0.48335 0.04585 0.94165 0.1375 1.375 0.09165 0.43335 0.20415 0.84165 0.3375 1.225l-1.075 1.075Zm7 7.275 -3.725 -3.725 3.725 -3.725 0.975 0.975 -2 2H12c1.78335 0 3.3125 -0.6375 4.5875 -1.9125 1.275 -1.275 1.9125 -2.80415 1.9125 -4.5875 0 -0.48335 -0.04165 -0.94165 -0.125 -1.375 -0.08335 -0.43335 -0.20835 -0.84165 -0.375 -1.225l1.075 -1.075c0.33335 0.6 0.57085 1.20415 0.7125 1.8125 0.14165 0.60835 0.2125 1.22915 0.2125 1.8625 0 2.18335 -0.7875 4.0625 -2.3625 5.6375 -1.575 1.575 -3.45415 2.3625 -5.6375 2.3625h-1.125l2 2 -0.975 0.975Z"
+          fill="#000000"
+          stroke-width="0.5"
+        ></path>
+      </g>
     </svg>
   ),
   excel: (
@@ -247,7 +250,7 @@ export const Icons = {
   finance: (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      fill="none"
+      fill="none" // Важно: убираем общую заливку
       viewBox="0 0 14 14"
       id="Bag-Dollar--Streamline-Core"
       height="14"
@@ -257,34 +260,36 @@ export const Icons = {
         <path
           id="Vector"
           stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round" // В React используйте camelCase: strokeLinecap
+          strokeLinejoin="round"
           d="M7 13.5c3.5 0 6 -1.2381 6 -3.99386 0 -2.99539 -1.5 -4.99232 -4.5 -6.49001l1.18 -1.51767c0.05995 -0.09957 0.09246 -0.2132 0.09425 -0.32937S9.74704 0.938348 9.69018 0.836979C9.63333 0.73561 9.55065 0.651051 9.45051 0.591872 9.35038 0.532693 9.23636 0.500998 9.12 0.5H4.88c-0.11636 0.000998 -0.23038 0.032693 -0.33051 0.091872 -0.10014 0.059179 -0.18282 0.143738 -0.23967 0.245107 -0.05686 0.101369 -0.08586 0.215941 -0.08407 0.332111s0.0343 0.2298 0.09425 0.32937L5.5 3.02611c-3 1.50768 -4.5 3.50461 -4.5 6.5C1 12.2619 3.5 13.5 7 13.5Z"
-          stroke-width="1"
+          strokeWidth="1"
+          fill="none" // Явно отключаем заливку для этого пути
         ></path>
         <path
           id="Vector 3"
           stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           d="M8.3828 6.80572c-0.04756 -0.13456 -0.12095 -0.25691 -0.21421 -0.36111 -0.19836 -0.22163 -0.48663 -0.36111 -0.80748 -0.36111h-0.83854c-0.53408 0 -0.96703 0.43295 -0.96703 0.96702 0 0.45444 0.31643 0.84757 0.76038 0.94469l1.27669 0.27927c0.49735 0.1088 0.85184 0.54953 0.85184 1.05864 0 0.59831 -0.48503 1.08378 -1.08334 1.08378h-0.72223c-0.47169 0 -0.87297 -0.3015 -1.02169 -0.72227"
-          stroke-width="1"
+          strokeWidth="1"
+          fill="none" // Явно отключаем заливку
         ></path>
         <path
           id="Vector 2489"
           stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           d="M7 6.08334V5"
-          stroke-width="1"
+          strokeWidth="1"
         ></path>
         <path
           id="Vector 2490"
           stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           d="M7 11.5001v-1.0834"
-          stroke-width="1"
+          strokeWidth="1"
         ></path>
       </g>
     </svg>
@@ -450,6 +455,26 @@ export const Icons = {
       viewBox="0 0 18 18"
     >
       <path d="M1 1v5h5V1zm5 8a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zm9 0a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1zm-9 1H1v5h5zm9 0h-5v5h5zM6 0a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V1a1 1 0 0 1 1-1zm9 0a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1h-5a1 1 0 0 1-1-1V1a1 1 0 0 1 1-1zm0 1h-5v5h5z" />
+    </svg>
+  ),
+  download: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      id="Download--Streamline-Outlined-Material"
+      height="24"
+      width="24"
+    >
+      <desc>Download Streamline Icon: https://streamlinehq.com</desc>
+      <g id="download">
+        <path
+          id="Vector"
+          d="m12 16.175 -4.825 -4.825 1.075 -1.075 3 3V4h1.5v9.275l3 -3 1.075 1.075L12 16.175ZM5.5 20c-0.4 0 -0.75 -0.15 -1.05 -0.45 -0.3 -0.3 -0.45 -0.65 -0.45 -1.05v-3.575h1.5V18.5h13v-3.575h1.5V18.5c0 0.4 -0.15 0.75 -0.45 1.05 -0.3 0.3 -0.65 0.45 -1.05 0.45H5.5Z"
+          fill="currentColor"
+          stroke-width="0.5"
+        ></path>
+      </g>
     </svg>
   ),
 };

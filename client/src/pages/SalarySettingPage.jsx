@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { Users, UserCheck, UserX, Wallet, TrendingUp } from "lucide-react";
 
 import { useAlertStore } from "../stores/alertStore";
 import { usePermissions } from "../hooks/usePermissions";
@@ -15,6 +16,95 @@ import EmployeeSalaryHistory from "../components/EmployeeSalaryHistory";
 
 import styles from "./SalarySettingPage.module.scss";
 import { Icons } from "../icons/icons";
+
+const fmt = (n) =>
+  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value} {sub && <span className={styles.statWidgetSub}>{sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
+        />
+      </div>
+    )}
+  </div>
+);
+
+const TYPE_COLORS = {
+  monthly: "#3b82f6",
+  hourly: "#16a34a",
+  piecework: "#f59e0b",
+};
+const TYPE_KEYS = ["monthly", "hourly", "piecework"];
+
+const TypeBreakdownWidget = ({ breakdown, total, t }) => {
+  const rows = TYPE_KEYS.map((k) => ({
+    key: k,
+    count: breakdown[k] || 0,
+    color: TYPE_COLORS[k],
+  })).filter((r) => r.count > 0);
+
+  if (!rows.length) return null;
+
+  return (
+    <div className={styles.statWidget}>
+      <span className={styles.statWidgetLabel}>{t("salaryType")}</span>
+
+      {/* Bar */}
+      <div className={styles.typeBar}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            className={styles.typeBarSegment}
+            style={{
+              width: `${(r.count / total) * 100}%`,
+              background: r.color,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Labels under each segment */}
+      <div className={styles.typeSegmentLabels}>
+        {rows.map((r) => (
+          <div
+            key={r.key}
+            className={styles.typeSegmentLabel}
+            style={{ width: `${(r.count / total) * 100}%`, color: r.color }}
+          >
+            <span className={styles.typeSegmentName}>
+              {t("salaryType" + r.key.charAt(0).toUpperCase() + r.key.slice(1))}
+            </span>
+            <span className={styles.typeSegmentCount}>{r.count}</span>
+            <span className={styles.typeSegmentPct}>
+              {Math.round((r.count / total) * 100)}%
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const initialFilters = {
   search: "",
@@ -37,6 +127,7 @@ const SalarySettingPage = () => {
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
   const [data, setData] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -67,6 +158,7 @@ const SalarySettingPage = () => {
 
       if (res.success) {
         setData(res.data || []);
+        setStats(res.stats || null);
         setTotalPages(res.pagination?.totalPages || 1);
         setTotalItems(res.pagination?.total || 0);
         setCurrentPage(page);
@@ -133,6 +225,65 @@ const SalarySettingPage = () => {
       {loading && <Loading />}
 
       <div className={styles.main}>
+        {/* ── Stats ── */}
+        {stats && (
+          <div className={styles.statsGrid}>
+            <StatWidget
+              icon={Users}
+              color="#6366f1"
+              label={t("statsTotal")}
+              value={stats.total}
+            />
+            <StatWidget
+              icon={UserCheck}
+              color="#16a34a"
+              label={t("statsWithSalary")}
+              value={stats.with_salary}
+              sub={
+                stats.total > 0
+                  ? `${Math.round((stats.with_salary / stats.total) * 100)}%`
+                  : "0%"
+              }
+              progress={
+                stats.total > 0 ? (stats.with_salary / stats.total) * 100 : 0
+              }
+            />
+            <StatWidget
+              icon={UserX}
+              color="#ef4444"
+              label={t("statsWithoutSalary")}
+              value={stats.without_salary}
+              sub={
+                stats.total > 0
+                  ? `${Math.round((stats.without_salary / stats.total) * 100)}%`
+                  : "0%"
+              }
+              progress={
+                stats.total > 0 ? (stats.without_salary / stats.total) * 100 : 0
+              }
+            />
+            <StatWidget
+              icon={Wallet}
+              color="#3b82f6"
+              label={t("statsTotalSalarySum")}
+              value={fmt(stats.total_sum)}
+            />
+            <StatWidget
+              icon={TrendingUp}
+              color="#f59e0b"
+              label={t("statsAvgSalary")}
+              value={fmt(stats.avg)}
+            />
+            {stats.type_breakdown && (
+              <TypeBreakdownWidget
+                breakdown={stats.type_breakdown}
+                total={stats.with_salary}
+                t={t}
+              />
+            )}
+          </div>
+        )}
+
         {/* ── Header ── */}
         <div className={styles.mainHeader}>
           <div className={styles.filterWrapper}>

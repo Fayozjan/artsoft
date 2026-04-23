@@ -12,7 +12,7 @@
     height: 30px;
     background-color: white;
     border: 1px solid rgba(162, 161, 168, 0.4);
-    border-radius: 10px;
+    border-radius: 4px;
     padding: 0 8px;
     font-weight: 500;
     box-sizing: border-box;
@@ -46,7 +46,7 @@
     .currentPage {
       background: #fff;
       border: 1px solid rgba(162, 161, 168, 0.35);
-      border-radius: 10px;
+      border-radius: 4px;
       font-size: var(--font-small);
       font-weight: 600;
       display: flex;
@@ -79,7 +79,7 @@
         padding: 0 8px;
         background-color: white;
         border: 1px solid rgba(162, 161, 168, 0.4);
-        border-radius: 10px;
+        border-radius: 4px;
         box-sizing: border-box;
         cursor: pointer;
 

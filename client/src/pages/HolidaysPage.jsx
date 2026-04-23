@@ -15,6 +15,32 @@ import DownloadButton from "../components/DownloadButton";
 
 import styles from "./HolidaysPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
+import { PartyPopper, CalendarDays, CalendarCheck } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 
 const HolidaysPage = () => {
   const { showAlert } = useAlertStore();
@@ -123,12 +149,41 @@ const HolidaysPage = () => {
     }
   };
 
+  const totalHolidayDays = data.reduce((sum, h) => {
+    if (!h.date_from || !h.date_to) return sum + 1;
+    const from = new Date(h.date_from);
+    const to = new Date(h.date_to);
+    return sum + Math.max(1, Math.round((to - from) / 86400000) + 1);
+  }, 0);
+
   return (
     <div className={styles.holidaysPage}>
       {loading ? (
         <Loading />
       ) : (
         <div className={styles.main}>
+          {data.length > 0 && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={PartyPopper}
+                color="#6366f1"
+                label="Праздников в году"
+                value={data.length}
+              />
+              <StatWidget
+                icon={CalendarDays}
+                color="#10b981"
+                label="Выходных дней"
+                value={totalHolidayDays}
+              />
+              <StatWidget
+                icon={CalendarCheck}
+                color="#f59e0b"
+                label="Год"
+                value={formData.year}
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>

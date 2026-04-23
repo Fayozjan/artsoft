@@ -29,7 +29,7 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
       key !== "search" &&
       value != null &&
       value !== "" &&
-      (!Array.isArray(value) || value.length > 0)
+      (!Array.isArray(value) || value.length > 0),
   ).length;
 
   const wrapperRef = useRef(null);
@@ -94,7 +94,6 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 

@@ -1,0 +1,106 @@
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+
+  th,
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 600;
+    color: #475569;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  tbody tr:hover td {
+    background: #f8fafc;
+  }
+}
+
+.numCol {
+  width: 40px;
+  text-align: center !important;
+}
+
+.numColTd {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.empCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+
+.empName {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.empSub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.dateCell {
+  color: #475569;
+}
+
+.amountCol {
+  width: 130px;
+}
+
+.amountCell {
+  font-weight: 700;
+  color: #7c3aed;
+  font-variant-numeric: tabular-nums;
+}
+
+.noteCell {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #64748b;
+  font-style: italic;
+}
+
+.givenByCell {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.actCol {
+  width: 48px;
+}
+
+.noData {
+  padding: 32px !important;
+  color: #94a3b8;
+  font-style: italic;
+  text-align: center !important;
+}

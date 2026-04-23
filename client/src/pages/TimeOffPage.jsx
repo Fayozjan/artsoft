@@ -20,6 +20,32 @@ import EditTimeOff from "../components/EditTimeOff";
 
 import styles from "./TimeOffPage.module.scss";
 import { formatIsoToLocalDateTime } from "../utils/date";
+import { CalendarOff, Building2, Clock } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 import { ActionCell } from "../components/ActionButtons";
 
 const TimeOffPage = () => {
@@ -185,6 +211,28 @@ const TimeOffPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
+          {data.length > 0 && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={CalendarOff}
+                color="#6366f1"
+                label="Всего записей"
+                value={totalItems}
+              />
+              <StatWidget
+                icon={Building2}
+                color="#10b981"
+                label="За счёт компании"
+                value={data.filter((x) => x.is_company_paid).length}
+              />
+              <StatWidget
+                icon={Clock}
+                color="#f59e0b"
+                label="Почасовые"
+                value={data.filter((x) => x.type === "hour").length}
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>

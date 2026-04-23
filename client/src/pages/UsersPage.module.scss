@@ -16,6 +16,89 @@
     height: 100%;
     min-height: 0;
 
+    .statsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 7px;
+      padding: 6px 5px 3px;
+      flex-shrink: 0;
+    }
+
+    .statWidget {
+      position: relative;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      transition: box-shadow 0.18s, transform 0.18s;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+    }
+
+    .statWidgetInner {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .statWidgetIcon {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .statWidgetContent {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .statWidgetLabel {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .statWidgetValue {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .statWidgetSub {
+      font-size: 12px;
+      font-weight: 500;
+      color: #94a3b8;
+    }
+
+    .statWidgetProgressTrack {
+      height: 3px;
+      background: #f1f5f9;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .statWidgetProgressFill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
     .mainHeader {
       padding: 5px;
       display: flex;
@@ -151,6 +234,10 @@
 
         th {
           font-weight: 600;
+          color: #475569;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
         }
 
         th,

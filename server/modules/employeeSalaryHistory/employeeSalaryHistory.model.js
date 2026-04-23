@@ -81,6 +81,49 @@ export const EmployeeSalaryHistoryModel = {
     });
   },
 
+  getSalaryStats: async ({ where }) => {
+    const prisma = prismaContext.get();
+    const withSalaryWhere = { ...where, employeeSalaryHistory: { some: {} } };
+
+    const [total, withSalaryCount, salaryRows] = await Promise.all([
+      prisma.employees.count({ where }),
+      prisma.employees.count({ where: withSalaryWhere }),
+      prisma.employees.findMany({
+        where: withSalaryWhere,
+        select: {
+          employeeSalaryHistory: {
+            orderBy: { date_from: "desc" },
+            take: 1,
+            select: { amount: true, salary_type: true },
+          },
+        },
+      }),
+    ]);
+
+    const amounts = [];
+    const type_breakdown = {};
+    for (const e of salaryRows) {
+      const rec = e.employeeSalaryHistory[0];
+      if (!rec) continue;
+      if (rec.amount != null) amounts.push(Number(rec.amount));
+      if (rec.salary_type) {
+        type_breakdown[rec.salary_type] = (type_breakdown[rec.salary_type] || 0) + 1;
+      }
+    }
+
+    const total_sum = amounts.reduce((s, a) => s + a, 0);
+    const avg = amounts.length ? Math.round(total_sum / amounts.length) : 0;
+
+    return {
+      total,
+      with_salary: withSalaryCount,
+      without_salary: total - withSalaryCount,
+      total_sum,
+      avg,
+      type_breakdown,
+    };
+  },
+
   // Employees with their latest salary record
   getEmployeesWithCurrentSalary: async ({
     skip = 0,

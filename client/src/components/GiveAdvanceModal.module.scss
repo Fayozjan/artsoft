@@ -1,0 +1,297 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  width: min(920px, 96vw);
+  height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    border-color: #94a3b8;
+    color: #1e293b;
+  }
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  // allow absolute dropdowns to overflow
+  isolation: isolate;
+}
+
+.loadingMsg {
+  color: #94a3b8;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px 0;
+}
+
+.colHeaders {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+}
+
+.input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: inherit;
+  background: white;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: #7c3aed;
+  }
+
+  &[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+}
+
+.removeRow {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #fca5a5;
+  border-radius: 5px;
+  background: #fff5f5;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) { background: #fee2e2; }
+  &:disabled { opacity: 0.3; cursor: not-allowed; }
+}
+
+.addRowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px dashed #7c3aed;
+  border-radius: 6px;
+  background: #faf5ff;
+  color: #7c3aed;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+
+  &:hover { background: #f3e8ff; }
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 18px;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.cancelBtn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: white;
+  color: #64748b;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { border-color: #94a3b8; color: #1e293b; }
+}
+
+.saveBtn {
+  height: 34px;
+  padding: 0 18px;
+  border: 1px solid #7c3aed;
+  border-radius: 5px;
+  background: #7c3aed;
+  color: white;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) { background: #6d28d9; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+// ── EmployeeSelect ─────────────────────────────────────────────────────────────
+
+.empSelect {
+  position: relative;
+  width: 100%;
+}
+
+.empSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s;
+  gap: 6px;
+
+  &:hover,
+  &.empSelectOpen {
+    border-color: #7c3aed;
+  }
+
+  svg { flex-shrink: 0; color: #94a3b8; }
+}
+
+.empSelectValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.empSelectPlaceholder {
+  color: #94a3b8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empSelectDropdown {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  // position/top/left/width/z-index set inline (fixed positioning)
+}
+
+.empSelectSearch {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.empSelectList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.empSelectItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: #f8fafc; }
+
+  &.empSelectItemActive { background: #faf5ff; }
+}
+
+.empSelectItemName {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.empSelectItemSub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.empSelectEmpty {
+  padding: 14px 10px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 13px;
+  font-style: italic;
+}

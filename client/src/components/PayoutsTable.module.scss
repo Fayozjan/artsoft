@@ -1,0 +1,485 @@
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  min-width: 1250px;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+  }
+
+  th,
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 600;
+    color: #475569;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  tbody tr:hover td {
+    background: #f8fafc;
+  }
+}
+
+.checkCol {
+  width: 36px;
+  text-align: center !important;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: #3b82f6;
+  }
+}
+
+.rowSelected td {
+  background: #eff6ff !important;
+}
+.rowPaid td {
+  background: #f0fdf4;
+}
+
+.numCol {
+  width: 36px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+.numColTd {
+  color: #94a3b8;
+  font-size: 11px;
+  text-align: center;
+}
+
+.empCell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+  min-width: 190px;
+}
+.empName {
+  font-weight: 600;
+  color: #1e293b;
+}
+.empSub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.numCell {
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+}
+
+.salaryBalVal {
+  color: #f59e0b;
+  font-weight: 600;
+}
+.paidAmtVal {
+  color: #16a34a;
+  font-weight: 600;
+}
+.advanceVal {
+  color: #7c3aed;
+  font-weight: 600;
+}
+
+.netCol {
+  font-weight: 700;
+}
+.netCell {
+  font-weight: 700;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+// ── Debt cell ─────────────────────────────────────────────────────────────────
+
+.debtCell {
+  text-align: center;
+  user-select: none;
+
+  &.hasDebt {
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.12s;
+    &:hover {
+      background: #fef9ec;
+    }
+  }
+
+  &.cellActive {
+    background: #fef3c7 !important;
+    outline: 2px solid #f59e0b;
+    outline-offset: -2px;
+    border-radius: 4px;
+  }
+}
+
+.debtCellInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.debtBal {
+  font-weight: 600;
+  color: #f59e0b;
+  font-variant-numeric: tabular-nums;
+}
+.debtDed {
+  font-size: 11px;
+  font-weight: 600;
+  color: #dc2626;
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Actions cell ──────────────────────────────────────────────────────────────
+
+.actionsCell {
+  vertical-align: middle;
+}
+.actionsCellInner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.paidBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.payItemBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid #3b82f6;
+  border-radius: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
+
+  &:hover,
+  &.payItemBtnActive {
+    background: #dbeafe;
+  }
+}
+
+.revertBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: white;
+  color: #94a3b8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+
+  &:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+}
+
+.noData {
+  text-align: center;
+  color: #94a3b8;
+  padding: 60px;
+  font-style: italic;
+}
+
+// ── Popover ───────────────────────────────────────────────────────────────────
+
+.popover {
+  position: absolute;
+  z-index: 1000;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 14px;
+  width: 290px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.popoverTitle {
+  font-weight: 700;
+  font-size: 13px;
+  color: #1e293b;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.popoverRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 12px;
+}
+
+.popoverRowLabel {
+  color: #64748b;
+}
+.popoverRowValue {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #1e293b;
+}
+
+// ── Quick % buttons ───────────────────────────────────────────────────────────
+
+.quickBtns {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0 8px;
+}
+
+.quickBtn {
+  flex: 1;
+  padding: 4px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 5px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+
+  &:hover {
+    border-color: var(--accent, #3b82f6);
+    color: var(--accent, #3b82f6);
+  }
+
+  &.quickBtnActive {
+    background: var(--accent, #3b82f6);
+    border-color: var(--accent, #3b82f6);
+    color: white;
+  }
+}
+
+// ── Amount + % inputs ─────────────────────────────────────────────────────────
+
+.inputRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.inputSep {
+  font-size: 13px;
+  color: #94a3b8;
+  padding-bottom: 6px;
+  flex-shrink: 0;
+}
+
+.inputLabel {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.popoverInput {
+  width: 100%;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: var(--font-small);
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent, #3b82f6);
+  }
+}
+
+.pctInput {
+  width: 64px;
+  flex: none;
+}
+
+.popoverField {
+  margin-bottom: 8px;
+}
+
+.popoverSectionLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 10px 0 6px;
+}
+
+// ── Payment history ───────────────────────────────────────────────────────────
+
+.paymentHistory {
+  margin: 10px 0 0;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 8px;
+}
+
+.paymentHistoryTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.paymentHistoryLoading {
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.paymentLogItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px dashed #f1f5f9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.paymentLogDate {
+  color: #64748b;
+  min-width: 72px;
+}
+.paymentLogAmount {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #16a34a;
+  flex: 1;
+  text-align: right;
+}
+.paymentLogNote {
+  font-size: 11px;
+  color: #94a3b8;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.paymentLogDelete {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 5px;
+  margin-left: auto;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.12s;
+
+  &:hover:not(:disabled) {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: #fef2f2;
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.popoverActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.cancelBtn {
+  padding: 5px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: white;
+  color: #64748b;
+  font-size: var(--font-small);
+  font-family: inherit;
+  cursor: pointer;
+  &:hover {
+    background: #f1f5f9;
+  }
+}
+
+.saveBtn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: 1px solid;
+  color: white;
+  font-size: var(--font-small);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.9);
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

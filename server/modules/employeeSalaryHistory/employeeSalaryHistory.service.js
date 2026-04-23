@@ -93,21 +93,22 @@ export const EmployeeSalaryHistoryService = {
       const skip = (Number(page) - 1) * Number(pageSize);
       const take = Number(pageSize);
 
-      const where = { AND: [] };
+      // baseWhere = branch/dept/position/status/search — no salary filters
+      // used for stats so totals always reflect the filtered group
+      const baseWhere = { AND: [] };
 
-      if (branch_id) where.branch_id = Number(branch_id);
-      if (department_id) where.department_id = Number(department_id);
-      if (position_id) where.position_id = Number(position_id);
+      if (branch_id) baseWhere.branch_id = Number(branch_id);
+      if (department_id) baseWhere.department_id = Number(department_id);
+      if (position_id) baseWhere.position_id = Number(position_id);
 
       if (status !== undefined && status !== "") {
-        where.status = status === "true";
+        baseWhere.status = status === "true";
       }
 
       if (search && search.trim()) {
         const words = search.trim().split(/\s+/).filter(Boolean);
         if (words.length > 1) {
-          // Each word must appear in at least one name field
-          where.AND.push({
+          baseWhere.AND.push({
             AND: words.map((w) => ({
               OR: [
                 { last_name: { contains: w, mode: "insensitive" } },
@@ -128,9 +129,14 @@ export const EmployeeSalaryHistoryService = {
             conds.push({ employee_number: numVal });
             conds.push({ id: numVal });
           }
-          where.AND.push({ OR: conds });
+          baseWhere.AND.push({ OR: conds });
         }
       }
+
+      if (baseWhere.AND.length === 0) delete baseWhere.AND;
+
+      // where = baseWhere + salary-specific filters (for paginated list)
+      const where = { ...baseWhere };
 
       if (no_salary === "true") {
         where.employeeSalaryHistory = { none: {} };
@@ -149,8 +155,6 @@ export const EmployeeSalaryHistoryService = {
         }
       }
 
-      if (where.AND.length === 0) delete where.AND;
-
       // Build orderBy
       const SORTABLE = {
         last_name: { last_name: sort_order },
@@ -167,21 +171,24 @@ export const EmployeeSalaryHistoryService = {
         ? [SORTABLE[sort_by]]
         : [{ last_name: "asc" }];
 
-      const { data, total } =
-        await EmployeeSalaryHistoryModel.getEmployeesWithCurrentSalary({
+      const [{ data, total }, stats] = await Promise.all([
+        EmployeeSalaryHistoryModel.getEmployeesWithCurrentSalary({
           skip,
           take,
           where,
           orderBy,
           sortByAmount,
           sortOrder: sort_order,
-        });
+        }),
+        EmployeeSalaryHistoryModel.getSalaryStats({ where: baseWhere }),
+      ]);
 
       const totalPages = Math.ceil(total / take);
 
       return {
         success: true,
         data,
+        stats,
         pagination: { total, totalPages, page: Number(page), pageSize: take },
       };
     } catch (error) {

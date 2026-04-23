@@ -74,9 +74,11 @@ export async function getTimesheet(req, res) {
           employeeFullName: `${[emp.last_name, emp.first_name, emp.middle_name]
             .filter(Boolean)
             .join(" ")} (${key})`,
+          employeePhoto: emp.photo || null,
           branchName: emp?.branch?.name,
           departmentName: emp?.department?.name,
           positionName: emp?.position?.name,
+          pinfl: emp?.pinfl,
           workScheduleName: emp.work_schedule?.name,
           sessions: {},
         });

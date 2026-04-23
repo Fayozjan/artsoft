@@ -48,6 +48,8 @@ export const EmployeeController = {
         search,
         gender,
         status,
+        sort_by,
+        sort_order,
       } = req.query;
 
       const result = await EmployeeService.getAll({
@@ -62,6 +64,8 @@ export const EmployeeController = {
           search,
           gender,
           status,
+          sort_by,
+          sort_order,
         },
       });
 
@@ -72,6 +76,19 @@ export const EmployeeController = {
         error: "Ошибка при получении сотрудников",
         details: err.message,
       });
+    }
+  },
+
+  getStats: async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+      const stats = await EmployeeService.getStats({ userId });
+      return res.json({ success: true, stats });
+    } catch (err) {
+      console.error("Ошибка при получении статистики сотрудников:", err);
+      return res.status(500).json({ error: err.message });
     }
   },
 

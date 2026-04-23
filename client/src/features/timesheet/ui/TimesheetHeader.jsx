@@ -26,20 +26,13 @@ const TimesheetHeader = React.memo(
             order={sortOrder}
           />
         </th>
-        <th onClick={() => handleSort("branchName")}>
-          Филиал{" "}
-          <SortArrow active={sortField === "branchName"} order={sortOrder} />
-        </th>
-        <th onClick={() => handleSort("departmentName")}>
-          Отдел{" "}
-          <SortArrow
-            active={sortField === "departmentName"}
-            order={sortOrder}
-          />
-        </th>
         <th onClick={() => handleSort("positionName")}>
           Должность{" "}
           <SortArrow active={sortField === "positionName"} order={sortOrder} />
+        </th>
+        <th onClick={() => handleSort("workScheduleName")}>
+          ПИНФЛ
+          <SortArrow active={sortField === "pinfl"} order={sortOrder} />
         </th>
         <th onClick={() => handleSort("workScheduleName")}>
           Рабочий график{" "}
@@ -66,8 +59,8 @@ const TimesheetHeader = React.memo(
           const dateObj = dayjs(
             `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(
               2,
-              "0"
-            )}`
+              "0",
+            )}`,
           );
           const isSunday = dateObj.day() === 0;
           return (
@@ -86,7 +79,7 @@ const TimesheetHeader = React.memo(
         })}
       </tr>
     </thead>
-  )
+  ),
 );
 
 export default TimesheetHeader;

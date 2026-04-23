@@ -26,6 +26,7 @@ import employeeDoorTasks from "../modules/employeeDoorTasks/employeeDoorTasks.ro
 import menusRoutes from "../modules/menus/menus.routes.js";
 import authRoutes from "../modules/auth/auth.routes.js";
 import dashboardRoutes from "../modules/dashboard/dashboard.routes.js";
+import payrollRoutes from "../modules/payroll/payroll.routes.js";
 
 const router = Router();
 
@@ -57,5 +58,6 @@ router.use("/anpr-cameras", anprCamerasRoutes);
 router.use("/employee-door-tasks", employeeDoorTasks);
 router.use("/menus", menusRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/payroll", payrollRoutes);
 
 export default router;

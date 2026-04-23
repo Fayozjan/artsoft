@@ -18,6 +18,6 @@ process.on("unhandledRejection", (reason) => {
 app.listen(config.port, "0.0.0.0", () => {
   console.log(`Server running on port ${config.port}`);
   // scheduleEventsChecker();
-  // events_checker(-2);
+  // events_checker(-20);
   // startNotificationsWorker();
 });

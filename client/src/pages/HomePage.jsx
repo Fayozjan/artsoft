@@ -588,7 +588,6 @@ const BirthdayItem = ({ item, t }) => {
         ) : (
           <span>{initials(item)}</span>
         )}
-        {isToday && <span className={styles.bdayCrown}>🎂</span>}
       </div>
       <div className={styles.bdayInfo}>
         <span className={styles.bdayName}>{fullName(item)}</span>

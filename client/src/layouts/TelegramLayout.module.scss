@@ -13,24 +13,6 @@ body {
     color 0.3s;
 }
 
-input,
-select,
-button {
-  font-family: "Nunito", sans-serif;
-  background: var(--card-bg);
-  color: var(--text-color);
-  border: none;
-}
-
-select {
-  cursor: pointer;
-}
-
-input:focus {
-  outline: none;
-  border: none;
-}
-
 * {
   scrollbar-width: thin;
   scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
@@ -52,11 +34,4 @@ input:focus {
 
 *::-webkit-scrollbar-track {
   background: transparent;
-}
-
-.page {
-  min-width: 0;
-  height: 100vh;
-  box-sizing: border-box;
-  color: var(--text-color);
 }

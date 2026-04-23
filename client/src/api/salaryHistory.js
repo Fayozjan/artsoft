@@ -6,6 +6,7 @@ export const salaryHistoryApi = {
     return {
       success: res.data.success,
       data: res.data.data,
+      stats: res.data.stats,
       pagination: res.data.pagination,
     };
   },

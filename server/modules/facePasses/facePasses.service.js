@@ -440,21 +440,25 @@ export const FacePassesService = {
 
     // --- Поиск search ---
     if (search) {
-      const searchNumber = Number(search);
+      const s = search.trim();
+      const numericValue = Number(s);
+      const isValidInt4 =
+        !isNaN(numericValue) &&
+        Number.isInteger(numericValue) &&
+        numericValue >= -2147483648 &&
+        numericValue <= 2147483647;
+
       const orConditions = [];
 
-      // если search – число → ищем по employee_id
-      if (!isNaN(searchNumber)) {
-        orConditions.push({ employee_id: searchNumber });
+      if (isValidInt4) {
+        orConditions.push({ employee_id: numericValue });
       }
 
-      // поиск по ФИО
       orConditions.push(
-        { employee: { first_name: { contains: search, mode: "insensitive" } } },
-        { employee: { last_name: { contains: search, mode: "insensitive" } } },
-        {
-          employee: { middle_name: { contains: search, mode: "insensitive" } },
-        },
+        { employee: { first_name: { contains: s, mode: "insensitive" } } },
+        { employee: { last_name: { contains: s, mode: "insensitive" } } },
+        { employee: { middle_name: { contains: s, mode: "insensitive" } } },
+        { employee: { pinfl: { contains: s, mode: "insensitive" } } },
       );
 
       where.OR = orConditions;
@@ -498,6 +502,7 @@ export const FacePassesService = {
             branchName: emp.branch?.name || null,
             departmentName: emp.department?.name || null,
             positionName: emp.position?.name || null,
+            pinfl: emp?.pinfl || null,
             workScheduleName: emp.workSchedule?.name || null,
             workSchedule: emp.employeeScheduleHistory || null,
 

@@ -17,6 +17,32 @@ import MonthlyLateReport from "../components/MonthlyLateReport";
 
 import styles from "./LateEmployeesPage.module.scss";
 import { DownloadLate } from "../utils/downloadDoc";
+import { Clock, AlarmClock, Users } from "lucide-react";
+
+const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
+  <div className={styles.statWidget}>
+    <div className={styles.statWidgetInner}>
+      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+        <Icon size={15} color={color} strokeWidth={2} />
+      </div>
+      <div className={styles.statWidgetContent}>
+        <span className={styles.statWidgetLabel}>{label}</span>
+        <span className={styles.statWidgetValue} style={{ color }}>
+          {value}
+          {sub && <span className={styles.statWidgetSub}> {sub}</span>}
+        </span>
+      </div>
+    </div>
+    {progress != null && (
+      <div className={styles.statWidgetProgressTrack}>
+        <div
+          className={styles.statWidgetProgressFill}
+          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+        />
+      </div>
+    )}
+  </div>
+);
 import LateEmployeeModal from "../components/LateEmployeeModal";
 import { useAuthStore } from "../stores/authStore";
 
@@ -110,7 +136,7 @@ const LateEmployeesPage = () => {
         <div className={styles.timeWrapper}>
           {item.lateMinutes > 0 && (
             <span className={styles.badgeRed}>
-              +{formatLateMinutesToHours(item.lateMinutes)}
+              {formatLateMinutesToHours(item.lateMinutes)}
             </span>
           )}
         </div>
@@ -359,12 +385,46 @@ const LateEmployeesPage = () => {
     };
   }, [modalData]);
 
+  const lateItems = Array.isArray(data)
+    ? data
+    : data?.lateEmployeesByMonth || [];
+  const totalLateMinutes = lateItems.reduce(
+    (a, b) => a + (b.lateMinutes || b.monthlyLateMinutes || 0),
+    0,
+  );
+
   return (
     <div className={styles.lateEmployeesPage}>
       {loading ? (
         <Loading />
       ) : (
         <div className={styles.main}>
+          {(totalItems > 0 || lateItems.length > 0) && (
+            <div className={styles.statsGrid}>
+              <StatWidget
+                icon={Users}
+                color="#ef4444"
+                label="Опоздавших"
+                value={totalItems || lateItems.length}
+              />
+              <StatWidget
+                icon={Clock}
+                color="#f59e0b"
+                label="Минут опоздания"
+                value={totalLateMinutes}
+              />
+              <StatWidget
+                icon={AlarmClock}
+                color="#6366f1"
+                label="Среднее (мин)"
+                value={
+                  lateItems.length > 0
+                    ? Math.round(totalLateMinutes / lateItems.length)
+                    : 0
+                }
+              />
+            </div>
+          )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
               <div className={styles.searchInput}>

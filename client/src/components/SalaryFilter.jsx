@@ -128,7 +128,6 @@ const SalaryFilter = ({ formData, setFormData, onSubmit }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>{t("filters")}</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -145,6 +144,7 @@ const SalaryFilter = ({ formData, setFormData, onSubmit }) => {
               filters={["branch", "department", "position"]}
               formData={formData}
               setFormData={setFormData}
+              labelClassName={styles.label}
             />
 
             <SegmentedGroup

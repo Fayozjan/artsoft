@@ -75,7 +75,9 @@
           font-size: var(--font-small);
           color: #4a4a4a;
           z-index: 2;
-          transition: color 0.3s, font-weight 0.3s;
+          transition:
+            color 0.3s,
+            font-weight 0.3s;
 
           &:hover {
             font-weight: 600;
@@ -113,10 +115,11 @@
       }
 
       h2 {
-        margin: 0;
-        padding: 5px;
-        font-size: calc(var(--font-small) + 1px);
+        font-size: 10px;
         font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
       }
 
       .actions {

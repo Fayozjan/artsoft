@@ -149,6 +149,8 @@ export const EmployeeService = {
       search,
       gender,
       status,
+      sort_by,
+      sort_order,
     } = filters;
 
     const user = await UserModel.getById(Number(userId));
@@ -174,31 +176,34 @@ export const EmployeeService = {
     if (search && search?.trim() !== "") {
       const s = search.trim();
 
-      let exactNumericFilters = [];
-
-      // --- безопасный разбор числа ---
+      // 1. Пытаемся преобразовать строку в число
       const numericValue = Number(s);
-      const isSafeInteger =
+
+      // 2. Проверяем, является ли число допустимым для INT4 (32-bit signed)
+      // Это критически важно, чтобы не было ошибки ConversionError
+      const isValidInt4 =
+        !isNaN(numericValue) &&
         Number.isInteger(numericValue) &&
         numericValue >= -2147483648 &&
         numericValue <= 2147483647;
 
-      if (isSafeInteger) {
+      let exactNumericFilters = [];
+      if (isValidInt4) {
+        // Поиск по числовым полям только если число "влезает" в INT4
         exactNumericFilters = [
           { id: numericValue },
           { employee_number: numericValue },
         ];
       }
 
-      // --- точный поиск по паспортам и ПИНФЛ ---
-      const exactStringFilters = [{ passport: s }, { pinfl: s }];
+      // 3. Строковые фильтры (ПИНФЛ и Паспорт — всегда строки)
+      const stringFilters = [
+        { pinfl: { contains: s } },
+        { passport: { contains: s, mode: "insensitive" } },
+      ];
 
-      // --- разбор ФИО по словам ---
-      const parts = s
-        .split(" ")
-        .map((p) => p.trim())
-        .filter(Boolean);
-
+      // 4. Разбор ФИО
+      const parts = s.split(/\s+/).filter(Boolean);
       const fioSearch = {
         AND: parts.map((part) => ({
           OR: [
@@ -209,10 +214,10 @@ export const EmployeeService = {
         })),
       };
 
-      // Добавляем в WHERE
+      // 5. Итоговое объединение через OR
       where.AND = [
         {
-          OR: [...exactNumericFilters, ...exactStringFilters, fioSearch],
+          OR: [...exactNumericFilters, ...stringFilters, fioSearch],
         },
       ];
     }
@@ -225,7 +230,13 @@ export const EmployeeService = {
     const size = Math.max(parseInt(pageSize) || 50, 1);
     const skip = (currentPage - 1) * size;
 
-    const { data, total } = await EmployeeModel.getAll(where, skip, size);
+    const { data, total } = await EmployeeModel.getAll(
+      where,
+      skip,
+      size,
+      sort_by,
+      sort_order,
+    );
 
     return {
       data,
@@ -276,6 +287,127 @@ export const EmployeeService = {
 
     return {
       data: formatted,
+    };
+  },
+
+  getStats: async ({ userId }) => {
+    const user = await UserModel.getById(Number(userId));
+    if (!user) throw new Error("Пользователь не найден");
+
+    const accessFilter = buildEmployeeAccess(user);
+    const prisma = prismaContext.get();
+
+    // Current week: Monday 00:00 → Sunday 23:59
+    const now = new Date();
+    const dow = now.getDay(); // 0=Sun
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+
+    const orderAccessFilter = Object.keys(accessFilter).length
+      ? { employee: accessFilter }
+      : {};
+
+    const [
+      total,
+      active,
+      fired,
+      genderGroups,
+      newThisWeek,
+      firedThisWeek,
+      birthdayCandidates,
+    ] = await Promise.all([
+      prisma.employees.count({ where: accessFilter }),
+      prisma.employees.count({ where: { ...accessFilter, status: true } }),
+      prisma.employees.count({ where: { ...accessFilter, status: false } }),
+      prisma.employees.groupBy({
+        by: ["gender"],
+        where: accessFilter,
+        _count: { id: true },
+      }),
+      prisma.employment_orders.count({
+        where: {
+          type: "hire",
+          date: { gte: monday, lte: sunday },
+          ...orderAccessFilter,
+        },
+      }),
+      prisma.employment_orders.count({
+        where: {
+          type: "terminate",
+          date: { gte: monday, lte: sunday },
+          ...orderAccessFilter,
+        },
+      }),
+      prisma.employees.findMany({
+        where: { ...accessFilter, status: true, date_of_birth: { not: null } },
+        select: {
+          id: true,
+          first_name: true,
+          last_name: true,
+          middle_name: true,
+          date_of_birth: true,
+          photo: true,
+          branch: { select: { name: true } },
+          department: { select: { name: true } },
+          position: { select: { name: true } },
+        },
+      }),
+    ]);
+
+    // Week month/day pairs
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return { month: d.getMonth() + 1, day: d.getDate() };
+    });
+
+    const birthdayList = birthdayCandidates
+      .filter((emp) => {
+        const dob = new Date(emp.date_of_birth);
+        return weekDays.some(
+          (wd) =>
+            wd.month === dob.getUTCMonth() + 1 && wd.day === dob.getUTCDate(),
+        );
+      })
+      .map((emp) => ({
+        id: emp.id,
+        full_name: [emp.last_name, emp.first_name, emp.middle_name]
+          .filter(Boolean)
+          .join(" "),
+        date_of_birth: emp.date_of_birth,
+        photo: emp.photo,
+        branch: emp.branch?.name || null,
+        department: emp.department?.name || null,
+        position: emp.position?.name || null,
+      }))
+      .sort((a, b) => {
+        const da = new Date(a.date_of_birth);
+        const db = new Date(b.date_of_birth);
+        const ma = da.getUTCMonth() * 100 + da.getUTCDate();
+        const mb = db.getUTCMonth() * 100 + db.getUTCDate();
+        return ma - mb;
+      });
+
+    const gender = { male: 0, female: 0, unspecified: 0 };
+    for (const g of genderGroups) {
+      if (g.gender === "male") gender.male = g._count.id;
+      else if (g.gender === "female") gender.female = g._count.id;
+      else gender.unspecified += g._count.id;
+    }
+
+    return {
+      total,
+      active,
+      fired,
+      gender,
+      new_this_week: newThisWeek,
+      fired_this_week: firedThisWeek,
+      birthdays_this_week: birthdayList.length,
+      birthday_list: birthdayList,
     };
   },
 
@@ -338,6 +470,10 @@ export const EmployeeService = {
     const raw = { ...rawData };
     delete raw.id;
 
+    // Сохраняем намерение очистить график ДО удаления пустых строк
+    const wantsClearSchedule =
+      raw.work_schedule_id !== undefined && raw.work_schedule_id === "";
+
     // -------------------------------------------------
     // 1️⃣ НОРМАЛИЗАЦИЯ
     // -------------------------------------------------
@@ -398,6 +534,7 @@ export const EmployeeService = {
       "middle_name",
       "gender",
       "passport",
+      "passport_expiry_date",
       "pinfl",
       "education",
       "phone",
@@ -419,8 +556,8 @@ export const EmployeeService = {
       data.date_of_birth = new Date(raw.date_of_birth);
     }
 
-    if (raw.document_validity_period) {
-      data.document_validity_period = new Date(raw.document_validity_period);
+    if (raw.passport_expiry_date) {
+      data.passport_expiry_date = new Date(raw.passport_expiry_date);
     }
 
     if (raw.status !== undefined) {
@@ -464,6 +601,11 @@ export const EmployeeService = {
       data.workSchedule = {
         connect: { id: newScheduleId },
       };
+    }
+
+    // Явный сброс графика
+    if (wantsClearSchedule && oldScheduleId !== null) {
+      data.workSchedule = { disconnect: true };
     }
 
     // -------------------------------------------------

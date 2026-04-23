@@ -21,6 +21,7 @@ router.use(authMiddleware);
 
 router.get("/", tenantMiddleware, authMiddleware, EmployeeController.getAll);
 router.get("/active", EmployeeController.getActive);
+router.get("/stats", EmployeeController.getStats);
 router.get("/:id", EmployeeController.getById);
 router.post("/", upload, convertToJpg, EmployeeController.create);
 router.put("/:id", upload, convertToJpg, EmployeeController.update);

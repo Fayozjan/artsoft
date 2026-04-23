@@ -86,7 +86,6 @@ const SalarySort = ({ sort_by = "last_name", sort_order = "asc", onApply }) => {
         >
           <path d="M3 6h18M7 12h10M11 18h2" />
         </svg>
-        <span>Сортировка</span>
         {isActive && <span className={styles.badge}>•</span>}
       </div>
 

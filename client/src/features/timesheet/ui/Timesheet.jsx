@@ -13,6 +13,8 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
     return [y, m];
   }, [date]);
 
+  console.log("data", data);
+
   const [sortField, setSortField] = useState("employeeFullName");
   const [sortOrder, setSortOrder] = useState("asc");
 
@@ -39,6 +41,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [eventsForDay, setEventsForDay] = useState([]);
   const [timeOffForDay, setTimeOffForDay] = useState([]);
+  const [expandedEmployeeId, setExpandedEmployeeId] = useState(null);
 
   const sessionsMap = useMemo(() => {
     const map = new Map();
@@ -89,18 +92,28 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
     });
   }, [data, sortField, sortOrder]);
 
-  const handleCellClick = useCallback(
+  const handleTableClick = useCallback(
     (e) => {
       const cell = e.target.closest("td");
       if (!cell) return;
-      const { employeeId, day } = cell.dataset;
-      if (!employeeId || !day) return;
-      const item = sessionsMap.get(`${employeeId}-${day}`);
-      if (!item) return;
-      setEventsForDay(item.events);
-      setTimeOffForDay(item.timeOff);
-      setSelectedDate(item.date);
-      setModalVisible(true);
+
+      const { day, employeeId } = cell.dataset;
+
+      if (day) {
+        if (!employeeId) return;
+        const item = sessionsMap.get(`${employeeId}-${day}`);
+        if (!item) return;
+        setEventsForDay(item.events);
+        setTimeOffForDay(item.timeOff);
+        setSelectedDate(item.date);
+        setModalVisible(true);
+      } else {
+        const row = cell.closest("tr[data-employee-id]");
+        if (!row) return;
+        const empId = row.dataset.employeeId;
+        if (!empId) return;
+        setExpandedEmployeeId((prev) => (prev === empId ? null : empId));
+      }
     },
     [sessionsMap],
   );
@@ -122,12 +135,13 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
     count: sortedEmployees.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 52,
+    measureElement: (el) => el?.getBoundingClientRect().height ?? 52,
     overscan: 5,
   });
 
   return (
     <div ref={parentRef} className={styles.tableContainer}>
-      <table className={styles.table} onClick={handleCellClick}>
+      <table className={styles.table} onClick={handleTableClick}>
         <TimesheetHeader
           daysArray={daysArray}
           holidayDays={holidayDays}
@@ -138,7 +152,12 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
           month={month}
         />
 
-        <tbody style={{ position: "relative" }}>
+        <tbody
+          style={{
+            position: "relative",
+            height: `${rowVirtualizer.getTotalSize()}px`,
+          }}
+        >
           {sortedEmployees.length === 0 ? (
             <tr>
               <td
@@ -153,6 +172,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
           ) : (
             rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const employee = sortedEmployees[virtualRow.index];
+              const empId = String(employee.employeeId);
               return (
                 <TimesheetRow
                   key={employee.employeeId}
@@ -164,6 +184,8 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
                   pageSize={pageSize}
                   virtualRow={virtualRow}
                   date={date}
+                  isExpanded={expandedEmployeeId === empId}
+                  measureRef={rowVirtualizer.measureElement}
                 />
               );
             })

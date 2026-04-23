@@ -211,29 +211,41 @@ export const TimeOffService = {
 
       // --- универсальный поиск ---
       if (search) {
-        const searchStr = search.toString().trim();
+        const s = search.toString().trim();
 
-        if (/^\d+$/.test(searchStr)) {
-          const num = Number(searchStr);
+        const numericValue = Number(s);
+        const isValidInt4 =
+          /^\d+$/.test(s) &&
+          Number.isInteger(numericValue) &&
+          numericValue >= -2147483648 &&
+          numericValue <= 2147483647;
 
-          where.OR = [
-            { id: num }, // поиск по ID записи
-            {
-              employee: {
-                OR: [
-                  { id: num },
-                  { pinfl: searchStr },
-                  { employee_number: num }, // Int поле
-                ],
-              },
+        if (/^\d+$/.test(s)) {
+          const orConditions = [];
+
+          // ID записи и employee.id — только если влезает в INT4
+          if (isValidInt4) {
+            orConditions.push({ id: numericValue });
+          }
+
+          orConditions.push({
+            employee: {
+              OR: [
+                ...(isValidInt4
+                  ? [{ id: numericValue }, { employee_number: numericValue }]
+                  : []),
+                { pinfl: s }, // pinfl — всегда строка
+              ],
             },
-          ];
+          });
+
+          where.OR = orConditions;
         } else {
           where.employee = {
             OR: [
-              { first_name: { contains: searchStr, mode: "insensitive" } },
-              { last_name: { contains: searchStr, mode: "insensitive" } },
-              { middle_name: { contains: searchStr, mode: "insensitive" } },
+              { first_name: { contains: s, mode: "insensitive" } },
+              { last_name: { contains: s, mode: "insensitive" } },
+              { middle_name: { contains: s, mode: "insensitive" } },
             ],
           };
         }

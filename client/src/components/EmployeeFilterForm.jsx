@@ -6,7 +6,7 @@ import { useAuthStore } from "../stores/authStore";
 
 import SelectWithSearch from "../components/SelectWithSearch";
 
-import styles from "./EmployeeFilter.module.scss";
+import styles from "./EmployeeFilterForm.module.scss";
 
 const EmployeeFilterForm = ({
   filters = ["branch", "department", "position"],
