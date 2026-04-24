@@ -21,10 +21,6 @@ import styles from "./EmployeesPageTelegram.module.scss";
 
 const PAGE_SIZE = 50;
 
-import VConsole from "vconsole";
-
-const vConsole = new VConsole();
-
 const EmployeePageTelegram = ({ routePath }) => {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);

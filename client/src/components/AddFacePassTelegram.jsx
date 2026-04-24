@@ -8,10 +8,6 @@ import { getAttendanceByEmployeeId } from "../api/attendance";
 
 import styles from "./AddFacePassTelegram.module.scss";
 
-import VConsole from "vconsole";
-
-const vConsole = new VConsole();
-
 const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
   const { t } = useTranslation();
   const { showAlert } = useAlertStore();
@@ -74,7 +70,10 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
 
     const finish = (pos) => {
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
-      setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      setLocation({
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
+      });
       setLocationLoading(false);
     };
 
@@ -82,7 +81,10 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
     const hardStop = setTimeout(() => {
       if (watchId != null) navigator.geolocation.clearWatch(watchId);
       if (bestPos) {
-        setLocation({ latitude: bestPos.coords.latitude, longitude: bestPos.coords.longitude });
+        setLocation({
+          latitude: bestPos.coords.latitude,
+          longitude: bestPos.coords.longitude,
+        });
         setLocationLoading(false);
       } else {
         setLocationError(t("locationDenied") || "Доступ к геолокации запрещён");
@@ -100,7 +102,10 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
         if (!gotFirst) {
           gotFirst = true;
           // Show first fix immediately so user isn't blocked
-          setLocation({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+          setLocation({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude,
+          });
           setLocationLoading(false);
         }
 
@@ -114,10 +119,15 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
         clearTimeout(hardStop);
         if (watchId != null) navigator.geolocation.clearWatch(watchId);
         if (bestPos) {
-          setLocation({ latitude: bestPos.coords.latitude, longitude: bestPos.coords.longitude });
+          setLocation({
+            latitude: bestPos.coords.latitude,
+            longitude: bestPos.coords.longitude,
+          });
           setLocationLoading(false);
         } else {
-          setLocationError(t("locationDenied") || "Доступ к геолокации запрещён");
+          setLocationError(
+            t("locationDenied") || "Доступ к геолокации запрещён",
+          );
           setLocationLoading(false);
         }
         console.error("Geolocation error:", err);

@@ -2,6 +2,7 @@ export function buildPayload(source_type, eventData) {
   switch (source_type) {
     case "face_pass":
       return {
+        employee_id: eventData.employee.id,
         direction: eventData.direction,
         date: eventData.date,
         door_name: eventData.door?.name,

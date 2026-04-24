@@ -98,7 +98,7 @@ function buildFacePassMessage(payload) {
     `${payload.direction === "exit" ? "🔴 Выход" : "🟢 Вход"} ${formattedDate}`,
     `🚪 <b>Дверь:</b> ${payload.door_name || "—"}`,
     "",
-    `👤 <b>ФИО:</b> ${payload.full_name || "—"}`,
+    `👤 <b>ФИО:</b> ${payload.full_name || "—"} (${payload.employee_id})`,
     `🏢 <b>Филиал:</b> ${payload.branch || "неизвестно"}`,
     `🏛️ <b>Отдел:</b> ${payload.department || "неизвестно"}`,
     `💼 <b>Должность:</b> ${payload.position || "неизвестно"}`,

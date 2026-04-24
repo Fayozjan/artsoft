@@ -9,7 +9,6 @@ import {
   EmployeeService,
 } from "../api";
 
-import VConsole from "vconsole";
 import { Icons } from "../icons/icons";
 
 import styles from "./AddEmployeeTelegram.module.scss";
@@ -145,8 +144,6 @@ const AddEmployeeTelegram = ({ handleClose, onSuccess, isEdit = false }) => {
       showAlert(message, "error");
     }
   };
-
-  const vConsole = new VConsole();
 
   return (
     <div className={styles.screenWrapper}>

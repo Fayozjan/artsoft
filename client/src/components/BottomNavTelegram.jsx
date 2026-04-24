@@ -76,10 +76,6 @@ function getCanAddFromMenu(menuData, menuName) {
   return !!item?.permissions?.add;
 }
 
-import VConsole from "vconsole";
-
-const vConsole = new VConsole();
-
 export default function BottomNavTelegram({ menuData }) {
   const navigate = useNavigate();
   const location = useLocation();

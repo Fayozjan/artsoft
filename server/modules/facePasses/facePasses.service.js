@@ -106,9 +106,9 @@ export const FacePassesService = {
 
       photoPath = await saveUploadedPhoto(
         imageBuffer,
-        payload.dateTime,
-        payload.employeeNoString,
-        payload.serialNo,
+        event.dateTime,
+        event.employeeNoString,
+        event.serialNo,
         tenant,
       );
 
