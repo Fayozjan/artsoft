@@ -83,7 +83,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
       const res = await axios.patch(`/api/users/update/work/${id}`, formData);
 
       if (res.data.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setTimeout(() => {
           onClickClose();
           setHistory([]);
@@ -91,7 +91,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
       }
       setLoading(false);
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
       setLoading(false);
     }
   };
@@ -140,30 +140,24 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
             <div className={styles.input_fields}>
               <div className={styles.row}>
                 <div className={styles.input_col}>
-                  <label>Тип события</label>
+                  <label>{t("eventType")}</label>
                   <select
                     name="event_type"
                     value={formData?.event_type}
                     onChange={handleChange}
                   >
-                    <option value="">Выберите...</option>
-                    <option value="hired">Найм сотрудника</option>
-                    <option value="promotion">Изменение должности</option>
-                    <option value="transfer">
-                      Перевод в другой отдел или филиал
-                    </option>
-                    <option value="leave">Уход в отпуск</option>
+                    <option value="">{t("selectOption")}</option>
+                    <option value="hired">{t("hiredEvent")}</option>
+                    <option value="promotion">{t("promotionEvent")}</option>
+                    <option value="transfer">{t("transferEvent")}</option>
+                    <option value="leave">{t("leaveEvent")}</option>
 
-                    <option value="termination">
-                      Увольнение (по собственному желанию или по статье)
-                    </option>
-                    <option value="reinstated">
-                      Повторный прием на работу
-                    </option>
+                    <option value="termination">{t("terminationEvent")}</option>
+                    <option value="reinstated">{t("reinstatedEvent")}</option>
                   </select>
                 </div>
                 <div className={styles.input_col}>
-                  <label>Дата события</label>
+                  <label>{t("eventDate")}</label>
                   <input
                     type="date"
                     name="event_date"
@@ -177,7 +171,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
                   />
                 </div>
                 <div className={styles.input_col}>
-                  <label>Приказ №</label>
+                  <label>{t("orderNumber")}</label>
                   <input
                     type="text"
                     name="order_number"
@@ -191,14 +185,14 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
               ) && (
                 <div className={styles.row}>
                   <div className={styles.input_col}>
-                    <label>Филиал</label>
+                    <label>{t("branch")}</label>
                     <select
                       name="branch_id"
                       value={formData?.branch_id}
                       onChange={handleBranchChange}
                       required
                     >
-                      <option value="">Выберите филиал</option>
+                      <option value="">{t("selectBranch")}</option>
                       {branches.map((branch) => (
                         <option key={branch.id} value={branch.id}>
                           {branch.name}
@@ -207,14 +201,14 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
                     </select>
                   </div>
                   <div className={styles.input_col}>
-                    <label>Отдел</label>
+                    <label>{t("department")}</label>
                     <select
                       name="department_id"
                       value={formData?.department_id}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Выберите отдел</option>
+                      <option value="">{t("selectDepartment")}</option>
                       {filteredDepartments.map((dep) => (
                         <option key={dep.id} value={dep.id}>
                           {dep.name}
@@ -223,14 +217,14 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
                     </select>
                   </div>
                   <div className={styles.input_col}>
-                    <label>Должность</label>
+                    <label>{t("position")}</label>
                     <select
                       name="position_id"
                       value={formData?.position_id}
                       onChange={handleChange}
                       required
                     >
-                      <option value="">Выберите должность</option>
+                      <option value="">{t("selectPosition")}</option>
                       {positions.map((dep) => (
                         <option key={dep.id} value={dep.id}>
                           {dep.name}
@@ -243,7 +237,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
 
               <div className={styles.row}>
                 <div className={styles.input_col}>
-                  <label>Описание</label>
+                  <label>{t("note")}</label>
                   <input
                     type="text"
                     name="description"
@@ -256,7 +250,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
           </div>
           <div className={styles.buttons}>
             <button type="submit" className={`${styles.btn} ${styles.save}`}>
-              Сохранить
+              {t("save")}
             </button>
           </div>
         </form>

@@ -445,6 +445,8 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         if (!isOpen) return;
 
         const shiftEndMins = timeToMinutes(shift.end);
+        // Allow up to 2 h of overtime past scheduled end before assuming a new shift
+        const shiftEndCutoff = shiftEndMins + 120;
         const toMove = [];
         const toKeep = [];
         let sessionClosed = false;
@@ -452,7 +454,7 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         eventsByDay[nextDayKey].forEach((e) => {
           const mins =
             e.parsedDate.getUTCHours() * 60 + e.parsedDate.getUTCMinutes();
-          if (!sessionClosed && mins <= shiftEndMins) {
+          if (!sessionClosed && mins <= shiftEndCutoff) {
             toMove.push(e);
             if (e.direction === "exit") sessionClosed = true;
           } else {
@@ -483,23 +485,69 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
         const dayTimeOffs = getTimeOffsForDate(date);
 
-        // hour-тип: разрешённое опоздание
+        // hour-тип: только часы в пределах рабочего окна по графику
         let permittedLateMinutes = 0;
         let companyPaidHourSeconds = 0;
         dayTimeOffs
           .filter((to) => to.type === "hour")
           .forEach((to) => {
-            const durationMinutes = Math.round(
-              (toUTCPlus5(to.date_to) - toUTCPlus5(to.date_from)) / 60000,
-            );
-            permittedLateMinutes += durationMinutes;
-            if (to.is_company_paid)
-              companyPaidHourSeconds += durationMinutes * 60;
+            const fromTime = toUTCPlus5(to.date_from);
+            const toTime = toUTCPlus5(to.date_to);
+
+            let schedWinStart = null;
+            let schedWinEnd = null;
+            let hasScheduleType = false;
+
+            if (scheduleType === "fixed" || scheduleType === "remote") {
+              hasScheduleType = true;
+              const jsDay = date.getDay() === 0 ? 7 : date.getDay();
+              const workDay = scheduleForDay?.work_days?.find(
+                (d) => d.day === jsDay,
+              );
+              if (workDay?.start && workDay?.end) {
+                schedWinStart = timeToMinutes(workDay.start);
+                schedWinEnd = timeToMinutes(workDay.end);
+              }
+            } else if (scheduleType === "shift") {
+              hasScheduleType = true;
+              const shift = determineShiftForEvent(
+                fromTime,
+                scheduleForDay?.shifts || [],
+              );
+              if (shift?.start && shift?.end) {
+                schedWinStart = timeToMinutes(shift.start);
+                schedWinEnd = timeToMinutes(shift.end);
+              }
+            }
+
+            let effectiveMinutes;
+            if (!hasScheduleType) {
+              // Нет графика — используем сырую длительность
+              effectiveMinutes = Math.round((toTime - fromTime) / 60000);
+            } else if (schedWinStart !== null && schedWinEnd !== null) {
+              // Пересечение [timeOff.from, timeOff.to] ∩ [schedStart, schedEnd]
+              const fromMins =
+                fromTime.getUTCHours() * 60 + fromTime.getUTCMinutes();
+              const toMins =
+                toTime.getUTCHours() * 60 + toTime.getUTCMinutes();
+              effectiveMinutes = Math.max(
+                0,
+                Math.min(toMins, schedWinEnd) -
+                  Math.max(fromMins, schedWinStart),
+              );
+            } else {
+              // График есть, но нет рабочего окна (нерабочий день) → 0
+              effectiveMinutes = 0;
+            }
+
+            permittedLateMinutes += effectiveMinutes;
           });
 
         const dayOffRecord = dayTimeOffs.find(
           (to) => to.type === "day_off" || to.type === "vacation",
         );
+        const hourTimeOffRecord = dayTimeOffs.find((to) => to.type === "hour");
+        const activeTimeOff = dayOffRecord || hourTimeOffRecord;
 
         let scheduleStart = null;
         let scheduleEnd = null;
@@ -560,6 +608,42 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             ? dailyEvents[0].parsedDate
             : null;
 
+        // Credit company-paid hour timeOffs using actual absence duration
+        dayTimeOffs
+          .filter((to) => to.type === "hour" && to.is_company_paid)
+          .forEach((to) => {
+            const fromTime = toUTCPlus5(to.date_from);
+            const toTime = toUTCPlus5(to.date_to);
+
+            if (!scheduleType) {
+              companyPaidHourSeconds += Math.round((toTime - fromTime) / 1000);
+              return;
+            }
+            if (!scheduleStart) return; // non-working day → 0
+
+            const toFromMins =
+              fromTime.getUTCHours() * 60 + fromTime.getUTCMinutes();
+            const toToMins =
+              toTime.getUTCHours() * 60 + toTime.getUTCMinutes();
+            const swStart = timeToMinutes(scheduleStart);
+            const absenceStart = Math.max(swStart, toFromMins);
+
+            let absenceEnd;
+            if (firstEntryTime) {
+              const entryMins =
+                firstEntryTime.getUTCHours() * 60 +
+                firstEntryTime.getUTCMinutes();
+              absenceEnd = Math.min(entryMins, toToMins);
+            } else {
+              const swEnd = scheduleEnd
+                ? timeToMinutes(scheduleEnd)
+                : toToMins;
+              absenceEnd = Math.min(swEnd, toToMins);
+            }
+
+            companyPaidHourSeconds += Math.max(0, absenceEnd - absenceStart) * 60;
+          });
+
         const lastExitTime = hasPair
           ? result.lastExitEvent?.parsedDate
           : dailyEvents.at(-1)?.direction === "exit"
@@ -573,19 +657,39 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         if (breakStart && breakEnd && firstEntryTime && lastExitTime) {
           const workStartMins =
             firstEntryTime.getUTCHours() * 60 + firstEntryTime.getUTCMinutes();
-          const workEndMins =
+          let workEndMins =
             lastExitTime.getUTCHours() * 60 + lastExitTime.getUTCMinutes();
+          // Night shift: exit is next calendar day, adjust timeline past midnight
+          if (workEndMins < workStartMins) workEndMins += 24 * 60;
+          let bStartMins = timeToMinutes(breakStart);
+          let bEndMins = timeToMinutes(breakEnd);
+          // Normalize break into same midnight-crossing timeline
+          if (bStartMins < workStartMins) {
+            bStartMins += 24 * 60;
+            bEndMins += 24 * 60;
+          }
           effectiveBreakMins = calcBreakOverlap(
             workStartMins,
             workEndMins,
-            timeToMinutes(breakStart),
-            timeToMinutes(breakEnd),
+            bStartMins,
+            bEndMins,
           );
         }
-        let netSeconds = Math.max(
-          0,
-          result.totalSeconds - effectiveBreakMins * 60,
-        );
+        const useFirstLast =
+          (scheduleType === "fixed" || scheduleType === "remote") &&
+          scheduleForDay?.time_calc_method === "first_last" &&
+          firstEntryTime &&
+          result.lastExitEvent;
+
+        let rawWorkSeconds;
+        if (useFirstLast) {
+          const lastExitMs = result.lastExitEvent.parsedDate;
+          rawWorkSeconds = Math.max(0, (lastExitMs - firstEntryTime) / 1000);
+        } else {
+          rawWorkSeconds = result.totalSeconds;
+        }
+
+        let netSeconds = Math.max(0, rawWorkSeconds - effectiveBreakMins * 60);
         netSeconds += companyPaidHourSeconds;
 
         // Опоздание
@@ -651,20 +755,23 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           events: dailyEvents,
           hadAttendance:
             netSeconds > 0 || firstEntryTime !== null || lastExitTime !== null,
-          timeOff: dayOffRecord
+          timeOff: activeTimeOff
             ? {
-                id: dayOffRecord.id,
-                type: dayOffRecord.type,
-                reason: dayOffRecord.reason,
-                isCompanyPaid: dayOffRecord.is_company_paid,
+                id: activeTimeOff.id,
+                type: activeTimeOff.type,
+                reason: activeTimeOff.reason,
+                isCompanyPaid: activeTimeOff.is_company_paid,
+                date_from: activeTimeOff.date_from,
+                date_to: activeTimeOff.date_to,
               }
             : null,
+          paidHourMinutes: Math.round(companyPaidHourSeconds / 60),
         };
       });
 
     // ── Шаг 4: плановые часы за оплачиваемые vacation/day_off ─────────────────
     employeeTimeOffs
-      .filter((to) => to.is_company_paid)
+      .filter((to) => to.is_company_paid && to.type !== "hour")
       .forEach((to) => {
         const fromDate = toUTCPlus5(to.date_from);
         const toDate = toUTCPlus5(to.date_to);
@@ -771,8 +878,9 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
       (s) => s.hadAttendance || s.workDuration !== "00:00",
     ).length;
 
-    // Плановые минуты за месяц по графику
+    // Плановые минуты и дни за месяц по графику
     let totalScheduledMinutes = 0;
+    let totalScheduledDays = 0;
     if (yearMonth && hasWorkSchedule) {
       const [yr, mo] = yearMonth.split("-").map(Number);
       const fromDate = new Date(Date.UTC(yr, mo - 1, 1));
@@ -782,7 +890,26 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         toDate,
         data.workSchedule,
       );
+      totalScheduledDays = countScheduledDays(
+        fromDate,
+        toDate,
+        data.workSchedule,
+      );
     }
+
+    // Оплачиваемые отгулы
+    let totalPaidTimeOffDays = 0;
+    let totalPaidTimeOffMinutes = 0;
+    Object.values(finalSessions).forEach((s) => {
+      if (!s.timeOff?.isCompanyPaid) return;
+      totalPaidTimeOffDays++;
+      if (s.timeOff.type === "hour") {
+        totalPaidTimeOffMinutes += s.paidHourMinutes || 0;
+      } else {
+        const [h, m] = s.workDuration.split(":").map(Number);
+        totalPaidTimeOffMinutes += h * 60 + m;
+      }
+    });
 
     return {
       employeeId: data.employeeId.toString(),
@@ -800,6 +927,9 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
       totalLateTime: formatDurationFromSeconds(totalLateSeconds),
       totalOvertimeMinutes: Math.round(totalOvertimeSeconds / 60),
       totalScheduledMinutes,
+      totalScheduledDays,
+      totalPaidTimeOffDays,
+      totalPaidTimeOffMinutes,
       sessions: finalSessions,
     };
   });

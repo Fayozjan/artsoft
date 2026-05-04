@@ -1,15 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useTelegram } from "../hooks/useTelegram";
 import { useAuthStore } from "../stores/authStore";
 import styles from "./AuthPageTelegram.module.scss";
 
 const AuthPageTelegram = () => {
+  const { t } = useTranslation();
   const { user } = useTelegram();
   const navigate = useNavigate();
   const { loginTelegram } = useAuthStore();
 
-  // "loading" | "not_found" | "disabled" | "error"
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
 
@@ -35,7 +36,7 @@ const AuthPageTelegram = () => {
           ? "disabled"
           : "error",
     );
-    setError(result.message || "Произошла ошибка при входе");
+    setError(result.message || t("loginErrorTelegram"));
     authStarted.current = false;
   };
 
@@ -46,9 +47,7 @@ const AuthPageTelegram = () => {
     } else if (!user) {
       const timeout = setTimeout(() => {
         setStatus("error");
-        setError(
-          "Данные Telegram не получены. Откройте приложение внутри Telegram.",
-        );
+        setError(t("telegramDataMissing"));
       }, 3000);
       return () => clearTimeout(timeout);
     }
@@ -65,7 +64,7 @@ const AuthPageTelegram = () => {
         <div className={styles.spinnerWrap}>
           <div className={styles.spinner} />
         </div>
-        <p className={styles.hint}>Вход в систему...</p>
+        <p className={styles.hint}>{t("loggingIn")}</p>
       </div>
     );
   }
@@ -85,11 +84,9 @@ const AuthPageTelegram = () => {
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
         </div>
-        <h2 className={styles.title}>Нет доступа</h2>
-        <p className={styles.text}>Вы не зарегистрированы в системе.</p>
-        <p className={styles.subtext}>
-          Обратитесь к администратору для получения доступа.
-        </p>
+        <h2 className={styles.title}>{t("noAccessTitle")}</h2>
+        <p className={styles.text}>{t("notRegistered")}</p>
+        <p className={styles.subtext}>{t("contactAdmin")}</p>
       </div>
     );
   }
@@ -108,8 +105,8 @@ const AuthPageTelegram = () => {
             <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
           </svg>
         </div>
-        <h2 className={styles.title}>Аккаунт деактивирован</h2>
-        <p className={styles.text}>Обратитесь к администратору.</p>
+        <h2 className={styles.title}>{t("accountDeactivated")}</h2>
+        <p className={styles.text}>{t("contactAdminShort")}</p>
       </div>
     );
   }
@@ -129,7 +126,7 @@ const AuthPageTelegram = () => {
             <line x1="9" y1="9" x2="15" y2="15" />
           </svg>
         </div>
-        <h2 className={styles.title}>Ошибка входа</h2>
+        <h2 className={styles.title}>{t("loginErrorTitle")}</h2>
         <p className={styles.text}>{error}</p>
         <button
           className={styles.retryButton}
@@ -138,7 +135,7 @@ const AuthPageTelegram = () => {
             authenticate();
           }}
         >
-          Повторить попытку
+          {t("retry")}
         </button>
       </div>
     );

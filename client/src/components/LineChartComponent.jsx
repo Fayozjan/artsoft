@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Line } from "react-chartjs-2";
 import { Card } from "react-bootstrap";
 import styles from "./LineChartComponent.module.scss";
@@ -25,6 +26,7 @@ ChartJS.register(
 );
 
 const Dash = () => {
+  const { t } = useTranslation();
   const [totalEmployees, setTotalEmployees] = useState(0);
   const [presentToday, setPresentToday] = useState(0);
   const [lateToday, setLateToday] = useState(0);
@@ -55,7 +57,7 @@ const Dash = () => {
     labels: attendanceData.map((item) => item.day),
     datasets: [
       {
-        label: "Посещаемость за неделю",
+        label: t("weeklyAttendanceLabel"),
         data: attendanceData.map((item) => item.count),
         borderColor: "rgba(75, 192, 192, 1)",
         tension: 0.4,
@@ -69,28 +71,28 @@ const Dash = () => {
       <div className={styles.cards}>
         <Card>
           <Card.Body>
-            <Card.Title>Всего сотрудников</Card.Title>
+            <Card.Title>{t("totalEmployeesCount")}</Card.Title>
             <Card.Text>{totalEmployees}</Card.Text>
           </Card.Body>
         </Card>
 
         <Card>
           <Card.Body>
-            <Card.Title>Присутствуют сегодня</Card.Title>
+            <Card.Title>{t("presentToday")}</Card.Title>
             <Card.Text>{presentToday}</Card.Text>
           </Card.Body>
         </Card>
 
         <Card>
           <Card.Body>
-            <Card.Title>Опоздали сегодня</Card.Title>
+            <Card.Title>{t("lateTodayLabel")}</Card.Title>
             <Card.Text>{lateToday}</Card.Text>
           </Card.Body>
         </Card>
 
         <Card>
           <Card.Body>
-            <Card.Title>Отсутствуют сегодня</Card.Title>
+            <Card.Title>{t("absentTodayLabel")}</Card.Title>
             <Card.Text>{absentToday}</Card.Text>
           </Card.Body>
         </Card>

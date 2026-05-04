@@ -49,7 +49,7 @@ const AddHoliday = ({ handleClose, onSuccess }) => {
         showAlert(t("error"), "error");
       }
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     } finally {
       setLoading(false);
     }
@@ -64,7 +64,7 @@ const AddHoliday = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -77,7 +77,7 @@ const AddHoliday = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Дата от</label>
+          <label>{t("dateFrom")}</label>
           <input
             type="date"
             name="date_from"
@@ -89,7 +89,7 @@ const AddHoliday = ({ handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Дата до</label>
+          <label>{t("dateTo")}</label>
           <input
             type="date"
             name="date_to"

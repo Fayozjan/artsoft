@@ -1,9 +1,11 @@
+import { randomUUID } from "crypto";
+
 const tokens = new Map(); // token → { filePath, expiresAt }
 
 const TTL_MS = 5 * 60 * 1000; // 5 минут
 
 export const createTempToken = (filePath) => {
-  const token = crypto.randomUUID();
+  const token = randomUUID();
   tokens.set(token, {
     filePath,
     expiresAt: Date.now() + TTL_MS,

@@ -20,7 +20,7 @@ const TimeOffFilter = ({ formData, setFormData, onSubmit, t }) => {
       key !== "search" &&
       value != null &&
       value !== "" &&
-      (!Array.isArray(value) || value.length > 0)
+      (!Array.isArray(value) || value.length > 0),
   ).length;
 
   const wrapperRef = useRef(null);
@@ -85,7 +85,6 @@ const TimeOffFilter = ({ formData, setFormData, onSubmit, t }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -94,7 +93,7 @@ const TimeOffFilter = ({ formData, setFormData, onSubmit, t }) => {
           <form onSubmit={onSubmit}>
             <div className={styles.row}>
               <div>
-                <h2>Дата от</h2>
+                <h2>{t("filterFrom")}</h2>
                 <input
                   className={styles.date}
                   id="date_from"
@@ -106,7 +105,7 @@ const TimeOffFilter = ({ formData, setFormData, onSubmit, t }) => {
                 />
               </div>
               <div>
-                <h2>Дата до</h2>
+                <h2>{t("filterTo")}</h2>
                 <input
                   className={styles.date}
                   id="date_to"

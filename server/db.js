@@ -11,6 +11,8 @@ const pool = new Pool({
   database: process.env.DB_NAME,
   password: process.env.DB_PASSWORD,
   port: 5432,
+  max: 5,
+  idleTimeoutMillis: 30000,
 });
 
 export default pool;

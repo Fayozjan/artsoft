@@ -1,7 +1,9 @@
 import React, { useRef, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import styles from '../styles/Select.module.scss';
 
 const Select = ({ options, setFormData }) => {
+  const { t } = useTranslation();
   const [selectedItems, setSelectedItems] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -43,7 +45,7 @@ const Select = ({ options, setFormData }) => {
   return (
     <div ref={containerRef} className={styles.multiSelectContainer}>
       <div onClick={toggleSelect} className={styles.selectBox}>
-        {selectedItems.length > 0 ? selectedItems.join(', ') : 'Выберите ...'}
+        {selectedItems.length > 0 ? selectedItems.join(', ') : t('select')}
       </div>
       {isOpen && (
         <div className={styles.dropdown}>

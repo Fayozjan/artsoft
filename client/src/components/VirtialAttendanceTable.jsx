@@ -1,9 +1,11 @@
 import { FixedSizeList as List } from "react-window";
+import { useTranslation } from "react-i18next";
 import styles from "./VirtualAttendanceTable.module.scss";
 
 const ROW_HEIGHT = 40; // пиксели
 
 const VirtualAttendanceTable = ({ data, date, holidays }) => {
+  const { t } = useTranslation();
   const [year, month] = date.split("-").map(Number);
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -52,7 +54,7 @@ const VirtualAttendanceTable = ({ data, date, holidays }) => {
         <div className={styles.cell}>{department_name}</div>
         <div className={styles.cell}>{position_name}</div>
         <div className={styles.cell}>
-          <div>{totalDays} д</div>
+          <div>{totalDays} {t("daysShort")}</div>
           <div>{monthlyTotal}</div>
         </div>
         {daysArray.map((day) => {
@@ -73,10 +75,10 @@ const VirtualAttendanceTable = ({ data, date, holidays }) => {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div className={styles.cell}>№</div>
-        <div className={styles.cell}>ФИО</div>
-        <div className={styles.cell}>Отдел</div>
-        <div className={styles.cell}>Должность</div>
-        <div className={styles.cell}>Итог</div>
+        <div className={styles.cell}>{t("fullName")}</div>
+        <div className={styles.cell}>{t("department")}</div>
+        <div className={styles.cell}>{t("position")}</div>
+        <div className={styles.cell}>{t("total")}</div>
         {daysArray.map((day) => {
           const isHoliday = holidays.some((holiday) => {
             const fromDate = new Date(holiday.date_from).getUTCDate();

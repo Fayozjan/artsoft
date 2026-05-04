@@ -11,7 +11,7 @@ function formatEventTime(dateStr) {
 }
 
 const TimesheetCell = ({ day, dayData, employeeId, isExpanded }) => {
-  const baseClass = dayData?.hasPermission
+  const baseClass = dayData?.timeOff
     ? `${styles.cell} ${styles.cellGreen}`
     : styles.cell;
 

@@ -37,7 +37,7 @@ const EditBranch = ({ id, onSuccess }) => {
       if (employeesRes.success) setEmployees(employeesRes.data);
     } catch (error) {
       console.error("Ошибка при загрузке данных:", error.message);
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     } finally {
       setLoading(false);
     }
@@ -177,7 +177,7 @@ const EditBranch = ({ id, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Статус</label>
+          <label>{t("status")}</label>
           <select
             name="status"
             value={formData.status}

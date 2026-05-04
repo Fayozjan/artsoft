@@ -41,7 +41,7 @@ const AddDepartment = ({ handleClose, onSuccess }) => {
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error.message);
-        showAlert("Ошибка", "error");
+        showAlert(t("error"), "error");
         setTimeout(() => cancelButton(), 1500);
       } finally {
         setLoading(false);

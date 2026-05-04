@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { t as i18t } from "i18next";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -46,11 +47,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import {
-  getDashboardSummary,
-  getDashboardAnalytics,
-  getDashboardFeeds,
-} from "../api/dashboard";
+import { getDashboardAll } from "../api/dashboard";
 import { getAttendance } from "../api/attendance";
 import { getEmploymentOrders } from "../api/employmentOrders";
 import { EmployeeService } from "../api";
@@ -467,6 +464,7 @@ const fmtTime = (d) =>
         hour: "2-digit",
         minute: "2-digit",
       });
+
 const fmtDateTime = (d) =>
   !d
     ? "—"
@@ -477,6 +475,7 @@ const fmtDateTime = (d) =>
         hour: "2-digit",
         minute: "2-digit",
       });
+
 const fmtDateShort = (d) =>
   !d
     ? "—"
@@ -485,8 +484,10 @@ const fmtDateShort = (d) =>
         month: "2-digit",
         year: "numeric",
       });
+
 const initials = (e) =>
   ((e?.first_name?.[0] || "") + (e?.last_name?.[0] || "")).toUpperCase() || "?";
+
 const attInitials = (fullName) => {
   const parts = (fullName || "").trim().split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] || "") + (parts[1]?.[0] || "")).toUpperCase() || "?";
@@ -501,7 +502,17 @@ const DIRECTION_STYLE = {
     badge: "badgeEntry",
     key: "entry",
   },
+  forward: {
+    bg: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+    badge: "badgeEntry",
+    key: "entry",
+  },
   exit: {
+    bg: "linear-gradient(135deg,#f59e0b,#d97706)",
+    badge: "badgeExit",
+    key: "exit",
+  },
+  reverse: {
     bg: "linear-gradient(135deg,#f59e0b,#d97706)",
     badge: "badgeExit",
     key: "exit",
@@ -541,10 +552,18 @@ const PassItem = ({ item, t, isVehicle }) => {
       </div>
       <div className={styles.feedInfo}>
         <span className={styles.feedName}>
-          {isVehicle ? item.plate_number || "—" : fullName(item.employee)}
+          {isVehicle
+            ? item.plate_number || "—"
+            : `${fullName(item.employee)} (${item.employee?.id || item.employee_id})`}
         </span>
         <span className={styles.feedSub}>
-          {isVehicle ? item.gate?.name || "—" : item.door?.name || "—"}
+          {isVehicle
+            ? item.gate?.name || "—"
+            : [item.employee?.branch?.name, item.employee?.department?.name]
+                .filter(Boolean)
+                .join(" / ") ||
+              item.door?.name ||
+              "—"}
         </span>
       </div>
       <div className={styles.feedRight}>
@@ -565,7 +584,14 @@ const TimeOffItem = ({ item, t }) => (
       <span className={styles.feedInitials}>{initials(item.employee)}</span>
     </div>
     <div className={styles.feedInfo}>
-      <span className={styles.feedName}>{fullName(item.employee)}</span>
+      <span
+        className={styles.feedName}
+      >{`${fullName(item.employee)} (${item.employee.id})`}</span>
+      <span className={styles.feedSub}>
+        {[item.employee?.branch?.name, item.employee?.department?.name]
+          .filter(Boolean)
+          .join(" / ") || "—"}
+      </span>
       <span className={styles.feedSub}>{item.reason || "—"}</span>
     </div>
     <div className={styles.feedRight}>
@@ -590,8 +616,14 @@ const BirthdayItem = ({ item, t }) => {
         )}
       </div>
       <div className={styles.bdayInfo}>
-        <span className={styles.bdayName}>{fullName(item)}</span>
-        <span className={styles.bdayDept}>{item.department?.name}</span>
+        <span
+          className={styles.bdayName}
+        >{`${fullName(item)} (${item.id})`}</span>
+        <span className={styles.bdayDept}>
+          {[item.branch?.name, item.department?.name]
+            .filter(Boolean)
+            .join(" / ") || "—"}
+        </span>
       </div>
       <div className={styles.bdayRight}>
         <span className={styles.bdayDate}>
@@ -608,6 +640,98 @@ const BirthdayItem = ({ item, t }) => {
           </span>
         )}
       </div>
+    </div>
+  );
+};
+
+// ─── Payment item ────────────────────────────────────────────────────────────────
+const PaymentItem = ({ item }) => {
+  const emp = item.item?.employee;
+  return (
+    <div className={styles.feedItem}>
+      <div
+        className={styles.feedAvatar}
+        style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}
+      >
+        <span className={styles.feedInitials}>{initials(emp)}</span>
+      </div>
+      <div className={styles.feedInfo}>
+        <span className={styles.feedName}>
+          {fullName(emp)}
+          {emp?.id ? ` (${emp.id})` : ""}
+        </span>
+        <span className={styles.feedSub}>
+          {[emp?.branch?.name, emp?.department?.name]
+            .filter(Boolean)
+            .join(" / ") || "—"}
+        </span>
+        {item.note && <span className={styles.feedSub}>{item.note}</span>}
+      </div>
+      <div className={styles.feedRight}>
+        <span className={styles.feedDateTime}>
+          {fmtDateShort(item.payment_date)}
+        </span>
+        <span style={{ color: "#10b981", fontWeight: 600, fontSize: 13 }}>
+          {Number(item.amount).toLocaleString("ru-RU")}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Advance item ────────────────────────────────────────────────────────────────
+const AdvanceItem = ({ item }) => {
+  const emp = item.employee;
+  return (
+    <div className={styles.feedItem}>
+      <div
+        className={styles.feedAvatar}
+        style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
+      >
+        <span className={styles.feedInitials}>{initials(emp)}</span>
+      </div>
+      <div className={styles.feedInfo}>
+        <span className={styles.feedName}>
+          {fullName(emp)}
+          {emp?.id ? ` (${emp.id})` : ""}
+        </span>
+        <span className={styles.feedSub}>
+          {[emp?.branch?.name, emp?.department?.name]
+            .filter(Boolean)
+            .join(" / ") || "—"}
+        </span>
+        {item.note && <span className={styles.feedSub}>{item.note}</span>}
+      </div>
+      <div className={styles.feedRight}>
+        <span className={styles.feedDateTime}>
+          {fmtDateShort(item.advance_date)}
+        </span>
+        <span style={{ color: "#f59e0b", fontWeight: 600, fontSize: 13 }}>
+          {Number(item.amount).toLocaleString("ru-RU")}
+        </span>
+      </div>
+    </div>
+  );
+};
+
+// ─── Salary bar ───────────────────────────────────────────────────────────────────
+const SalaryBar = ({ label, total, max, delay = 0 }) => {
+  const pct = max > 0 ? (total / max) * 100 : 0;
+  return (
+    <div className={styles.hbarRow}>
+      <span className={styles.hbarLabel}>{label}</span>
+      <div className={styles.hbarTrack}>
+        <motion.div
+          className={styles.hbarFill}
+          style={{ background: "linear-gradient(90deg,#f59e0b,#d97706)" }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.7, ease: "easeOut", delay }}
+        />
+      </div>
+      <span className={styles.hbarCount}>
+        {Number(total).toLocaleString("ru-RU")}
+      </span>
     </div>
   );
 };
@@ -646,9 +770,14 @@ const ArrivalItem = ({ item, timeKey, label }) => (
       )}
     </div>
     <div className={styles.arrInfo}>
-      <span className={styles.arrName}>{fullName(item.employee)}</span>
+      <span className={styles.arrName}>
+        {fullName(item.employee)}
+        {item.employee?.id ? ` (${item.employee.id})` : ""}
+      </span>
       <span className={styles.arrDept}>
-        {item.employee?.department?.name || "—"}
+        {[item.employee?.branch?.name, item.employee?.department?.name]
+          .filter(Boolean)
+          .join(" / ") || "—"}
       </span>
     </div>
     <div className={styles.arrTime}>
@@ -671,7 +800,9 @@ const fmtLateMin = (mins) => {
   if (!mins || mins <= 0) return null;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return h > 0 ? `+${h}ч ${m}м` : `+${m} мин`;
+  return h > 0
+    ? `${h}${i18t("hoursShort")} ${m}${i18t("minuteLetter")}`
+    : `${m} ${i18t("minutesShort")}`;
 };
 
 // ─── Late item (schedule / actual / late minutes) ─────────────────────────────────
@@ -686,17 +817,19 @@ const LateItem = ({ emp }) => (
     </div>
     <div className={styles.lateInfo}>
       <span className={styles.arrName}>{emp.employeeFullName || "—"}</span>
-      <span className={styles.arrDept}>{emp.departmentName || "—"}</span>
+      <span className={styles.arrDept}>
+        {[emp.branchName, emp.departmentName].filter(Boolean).join(" / ") ||
+          "—"}
+      </span>
     </div>
 
     <div className={styles.lateTimes}>
       <span className={styles.lateTimeChip}>
-        <span className={styles.lateTimeLbl}>График</span>
+        <span className={styles.lateTimeLbl}>{i18t("scheduleLabel")}</span>
         {emp.scheduledStart?.slice(0, 5) || "—"}
       </span>
-      <span className={styles.lateTimeDot} />
       <span className={styles.lateTimeChip}>
-        <span className={styles.lateTimeLbl}>Факт</span>
+        <span className={styles.lateTimeLbl}>{i18t("actualLabel")}</span>
         {fmtTimeOrStr(emp.actualStart)}
       </span>
       {fmtLateMin(emp.lateMinutes) && (
@@ -718,11 +851,14 @@ const AttItem = ({ emp, timeVal, timeLabel }) => (
     </div>
     <div className={styles.arrInfo}>
       <span className={styles.arrName}>{emp.employeeFullName || "—"}</span>
-      <span className={styles.arrDept}>{emp.departmentName || "—"}</span>
+      <span className={styles.arrDept}>
+        {[emp.branchName, emp.departmentName].filter(Boolean).join(" / ") ||
+          "—"}
+      </span>
     </div>
     {timeVal && (
       <div className={styles.arrTime}>
-        <span className={styles.arrTimeVal}>{fmtTime(timeVal)}</span>
+        <span className={styles.arrTimeVal}>{timeVal}</span>
         <span className={styles.arrTimeLabel}>{timeLabel}</span>
       </div>
     )}
@@ -946,10 +1082,12 @@ const HomePage = () => {
   const [summary, setSummary] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [feeds, setFeeds] = useState(null);
+  const [finance, setFinance] = useState(null);
   const [attendanceData, setAttendanceData] = useState(null);
   const [sumLoading, setSumLoading] = useState(true);
   const [anaLoading, setAnaLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
+  const [finLoading, setFinLoading] = useState(true);
   const [attLoading, setAttLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
@@ -978,23 +1116,23 @@ const HomePage = () => {
   // ── data loading ──────────────────────────────────────────────────────────────
   useEffect(() => {
     setSumLoading(true);
-    getDashboardSummary()
-      .then(setSummary)
-      .catch(console.error)
-      .finally(() => setSumLoading(false));
-  }, [refreshKey]);
-
-  useEffect(() => {
     setAnaLoading(true);
     setFeedLoading(true);
-    getDashboardAnalytics()
-      .then(setAnalytics)
+    setFinLoading(true);
+    getDashboardAll()
+      .then(({ summary, analytics, feeds, finance }) => {
+        setSummary(summary);
+        setAnalytics(analytics);
+        setFeeds(feeds);
+        setFinance(finance ?? null);
+      })
       .catch(console.error)
-      .finally(() => setAnaLoading(false));
-    getDashboardFeeds()
-      .then(setFeeds)
-      .catch(console.error)
-      .finally(() => setFeedLoading(false));
+      .finally(() => {
+        setSumLoading(false);
+        setAnaLoading(false);
+        setFeedLoading(false);
+        setFinLoading(false);
+      });
   }, [refreshKey]);
 
   useEffect(() => {
@@ -1117,42 +1255,61 @@ const HomePage = () => {
     absent: Math.max(0, totalEmp - d.count),
   }));
 
-  // ── Finance placeholder mock stats ────────────────────────────────────────────
-  const FINANCE_MOCK = [
+  // ── Finance stat cards (real data) ───────────────────────────────────────────
+  const fmtAmt = (n) =>
+    n != null && n > 0 ? Number(n).toLocaleString("ru-RU") : "—";
+
+  const finStats = finance?.stats;
+  const paidPct =
+    finStats?.payrollFund > 0
+      ? Math.min(
+          100,
+          Math.round((finStats.payrollPaid / finStats.payrollFund) * 100),
+        )
+      : null;
+  const sheetSub = finStats?.latestSheetYear
+    ? `${finStats.latestSheetMonth}/${finStats.latestSheetYear}`
+    : null;
+
+  const FINANCE_CARDS = [
     {
       icon: Wallet,
       color: "#f59e0b",
       labelKey: "payrollFund",
-      value: "—",
-      sub: t("dashboard.comingSoon"),
+      value: finLoading ? "..." : fmtAmt(finStats?.payrollFund),
+      sub: sheetSub,
+      progress: paidPct,
     },
     {
       icon: CreditCard,
       color: "#10b981",
       labelKey: "payrollPaid",
-      value: "—",
+      value: finLoading ? "..." : fmtAmt(finStats?.payrollPaid),
       sub: null,
     },
     {
       icon: AlertCircle,
       color: "#ef4444",
       labelKey: "payrollRemaining",
-      value: "—",
+      value: finLoading ? "..." : fmtAmt(finStats?.payrollRemaining),
       sub: null,
     },
     {
       icon: TrendingUp,
       color: "#3b82f6",
       labelKey: "averageSalary",
-      value: "—",
+      value: finLoading ? "..." : fmtAmt(finStats?.averageSalary),
       sub: null,
     },
     {
       icon: DollarSign,
       color: "#8b5cf6",
       labelKey: "maxSalary",
-      value: "—",
-      sub: null,
+      value: finLoading ? "..." : fmtAmt(finStats?.maxSalary),
+      sub:
+        !finLoading && finStats?.minSalary > 0
+          ? `${t("minAbbr")} ${fmtAmt(finStats.minSalary)}`
+          : null,
     },
   ];
 
@@ -1524,7 +1681,7 @@ const HomePage = () => {
               const list = (attendanceData?.left ?? [])
                 .filter((e) => e.lastExit)
                 .slice()
-                .sort((a, b) => new Date(a.lastExit) - new Date(b.lastExit))
+                .sort((a, b) => a.lastExit.localeCompare(b.lastExit))
                 .slice(0, 5);
               return list.length ? (
                 <div className={styles.arrList}>
@@ -1815,12 +1972,22 @@ const HomePage = () => {
                           o.employee?.last_name,
                           o.employee?.first_name,
                           o.employee?.middle_name,
-                          o.employee?.id,
                         ]
                           .filter(Boolean)
                           .join(" ") || "—"}
+                        {o.employee?.id ? ` (${o.employee.id})` : ""}
                       </span>
                       <span className={styles.orderDate}>
+                        {[
+                          o.employee?.branch?.name,
+                          o.employee?.department?.name,
+                        ]
+                          .filter(Boolean)
+                          .join(" / ") || "—"}
+                      </span>
+                    </div>
+                    <div className={styles.feedRight}>
+                      <span className={styles.feedDateTime}>
                         {fmtDateShort(o.date)}
                       </span>
                     </div>
@@ -1870,12 +2037,22 @@ const HomePage = () => {
                           o.employee?.last_name,
                           o.employee?.first_name,
                           o.employee?.middle_name,
-                          o.employee?.id,
                         ]
                           .filter(Boolean)
                           .join(" ") || "—"}
+                        {o.employee?.id ? ` (${o.employee.id})` : ""}
                       </span>
                       <span className={styles.orderDate}>
+                        {[
+                          o.employee?.branch?.name,
+                          o.employee?.department?.name,
+                        ]
+                          .filter(Boolean)
+                          .join(" / ") || "—"}
+                      </span>
+                    </div>
+                    <div className={styles.feedRight}>
+                      <span className={styles.feedDateTime}>
                         {fmtDateShort(o.date)}
                       </span>
                     </div>
@@ -2011,30 +2188,109 @@ const HomePage = () => {
           </motion.div>
         )}
 
-        {/* Employees by position — single branch users */}
-        {!showBranchWidgets && analytics?.employeesByPosition?.length > 0 && (
+        {/* Department pie + Employees by position — single branch users */}
+        {!showBranchWidgets && (
           <motion.div
+            className={styles.row2Eq}
             variants={stagger}
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.05 }}
           >
             <Card
+              title={t("dashboard.employeesByDepartment")}
+              icon={LayoutGrid}
+              iconColor="#06b6d4"
+              loading={anaLoading}
+              skH={220}
+              className={styles.cardEq}
+            >
+              {analytics?.employeesByDepartment?.length ? (
+                <div className={styles.pieWrap}>
+                  <ResponsiveContainer width={180} height={180}>
+                    <PieChart>
+                      <Pie
+                        data={analytics.employeesByDepartment}
+                        dataKey="count"
+                        nameKey="department"
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={72}
+                        paddingAngle={3}
+                        strokeWidth={0}
+                      >
+                        {analytics.employeesByDepartment.map((_, i) => (
+                          <Cell
+                            key={i}
+                            fill={PIE_COLORS[i % PIE_COLORS.length]}
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: 8,
+                          border: "1px solid var(--border-color)",
+                          background: "var(--card-bg)",
+                          fontSize: 12,
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <PieLegend
+                    data={analytics.employeesByDepartment}
+                    nameKey="department"
+                  />
+                </div>
+              ) : (
+                <Empty text={t("noData")} />
+              )}
+            </Card>
+
+            <Card
               title={t("dashboard.employeesByPosition")}
               icon={Briefcase}
               iconColor="#a855f7"
               loading={anaLoading}
-              skH={180}
+              skH={220}
+              className={styles.cardEq}
             >
-              {(() => {
-                const positions = analytics.employeesByPosition.slice(0, 20);
-                const use2Col = positions.length > 10;
-                const col1 = positions.slice(0, 10);
-                const col2 = positions.slice(10);
-                return use2Col ? (
-                  <div className={styles.hbarList2Col}>
+              {analytics?.employeesByPosition?.length ? (
+                (() => {
+                  const positions = analytics.employeesByPosition.slice(0, 20);
+                  const use2Col = positions.length > 10;
+                  const col1 = positions.slice(0, 10);
+                  const col2 = positions.slice(10);
+                  return use2Col ? (
+                    <div className={styles.hbarList2Col}>
+                      <div className={styles.hbarList}>
+                        {col1.map((item, i) => (
+                          <HBar
+                            key={i}
+                            label={item.position}
+                            count={item.count}
+                            max={positionMax}
+                            color="linear-gradient(90deg,#a855f7,#8b5cf6)"
+                            delay={i * 0.06}
+                          />
+                        ))}
+                      </div>
+                      <div className={styles.hbarList}>
+                        {col2.map((item, i) => (
+                          <HBar
+                            key={i + 10}
+                            label={item.position}
+                            count={item.count}
+                            max={positionMax}
+                            color="linear-gradient(90deg,#a855f7,#8b5cf6)"
+                            delay={(i + 10) * 0.06}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
                     <div className={styles.hbarList}>
-                      {col1.map((item, i) => (
+                      {positions.map((item, i) => (
                         <HBar
                           key={i}
                           label={item.position}
@@ -2045,34 +2301,11 @@ const HomePage = () => {
                         />
                       ))}
                     </div>
-                    <div className={styles.hbarList}>
-                      {col2.map((item, i) => (
-                        <HBar
-                          key={i + 10}
-                          label={item.position}
-                          count={item.count}
-                          max={positionMax}
-                          color="linear-gradient(90deg,#a855f7,#8b5cf6)"
-                          delay={(i + 10) * 0.06}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className={styles.hbarList}>
-                    {positions.map((item, i) => (
-                      <HBar
-                        key={i}
-                        label={item.position}
-                        count={item.count}
-                        max={positionMax}
-                        color="linear-gradient(90deg,#a855f7,#8b5cf6)"
-                        delay={i * 0.06}
-                      />
-                    ))}
-                  </div>
-                );
-              })()}
+                  );
+                })()
+              ) : (
+                <Empty text={t("noData")} />
+              )}
             </Card>
           </motion.div>
         )}
@@ -2086,7 +2319,7 @@ const HomePage = () => {
         icon={Wallet}
         iconColor="#f59e0b"
       >
-        {/* Finance placeholder widgets — full width */}
+        {/* Finance stat widgets — full width */}
         <motion.div
           className={styles.gridFull}
           variants={stagger}
@@ -2094,7 +2327,7 @@ const HomePage = () => {
           whileInView="show"
           viewport={{ once: true, amount: 0.05 }}
         >
-          {FINANCE_MOCK.map((w, i) => (
+          {FINANCE_CARDS.map((w, i) => (
             <MockCard
               key={i}
               icon={w.icon}
@@ -2102,6 +2335,7 @@ const HomePage = () => {
               label={t(`dashboard.${w.labelKey}`)}
               value={w.value}
               sub={w.sub}
+              progress={w.progress}
             />
           ))}
         </motion.div>
@@ -2114,24 +2348,79 @@ const HomePage = () => {
           whileInView="show"
           viewport={{ once: true, amount: 0.05 }}
         >
-          <PlaceholderCard
+          <Card
             title={t("dashboard.recentPayments")}
             icon={CreditCard}
             iconColor="#10b981"
-            t={t}
-          />
-          <PlaceholderCard
+            loading={finLoading}
+            skH={240}
+            className={styles.cardEq}
+          >
+            {finance?.recentPayments?.length ? (
+              <div className={styles.feedList}>
+                {finance.recentPayments.slice(0, 5).map((item) => (
+                  <PaymentItem key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <Empty text={t("noData")} />
+            )}
+          </Card>
+
+          <Card
             title={t("dashboard.recentAdvances")}
             icon={DollarSign}
             iconColor="#f59e0b"
-            t={t}
-          />
-          <PlaceholderCard
-            title={t("dashboard.salaryByDept")}
+            loading={finLoading}
+            skH={240}
+            className={styles.cardEq}
+          >
+            {finance?.recentAdvances?.length ? (
+              <div className={styles.feedList}>
+                {finance.recentAdvances.slice(0, 5).map((item) => (
+                  <AdvanceItem key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <Empty text={t("noData")} />
+            )}
+          </Card>
+
+          <Card
+            title={
+              showBranchWidgets
+                ? t("dashboard.salaryByBranch")
+                : t("dashboard.salaryByDept")
+            }
             icon={TrendingUp}
             iconColor="#3b82f6"
-            t={t}
-          />
+            loading={finLoading}
+            skH={240}
+            className={styles.cardEq}
+          >
+            {(() => {
+              const data = showBranchWidgets
+                ? (finance?.salaryByBranch ?? [])
+                : (finance?.salaryByDept ?? []);
+              const topData = data.slice(0, 8);
+              const localMax = topData[0]?.total ?? 1;
+              return topData.length ? (
+                <div className={styles.hbarList}>
+                  {topData.map((item, i) => (
+                    <SalaryBar
+                      key={i}
+                      label={showBranchWidgets ? item.branch : item.department}
+                      total={item.total}
+                      max={localMax}
+                      delay={i * 0.06}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Empty text={t("noData")} />
+              );
+            })()}
+          </Card>
         </motion.div>
       </DashboardSection>
 
@@ -2194,14 +2483,14 @@ const HomePage = () => {
 
       {/* ══════════════════════════════════════════════════════════
           SECTION 5: АКТИВНОСТЬ — hidden if no vehicle access
-      ══════════════════════════════════════════════════════════ */}
+      ══════════════════════════════════════════════════════════ 
       {hasVehicleAccess && (
         <DashboardSection
           title={t("dashboard.sectionActivity")}
           icon={Car}
           iconColor="#3b82f6"
         >
-          {/* Door traffic chart + vehicle passes feed — one row */}
+          {/* Door traffic chart + vehicle passes feed — one row
           <motion.div
             className={styles.row2Eq}
             variants={stagger}
@@ -2210,19 +2499,19 @@ const HomePage = () => {
             viewport={{ once: true, amount: 0.05 }}
           >
             <Card
-              title={t("dashboard.doorTraffic")}
+              title={t("dashboard.vehiclePassesToday")}
               icon={Clock}
               iconColor="#f59e0b"
               loading={anaLoading}
               skH={240}
               className={styles.cardEq}
             >
-              {analytics?.doorTrafficByHour?.some(
+              {analytics?.vehicleTrafficByHour?.some(
                 (h) => h.entry > 0 || h.exit > 0,
               ) ? (
                 <ResponsiveContainer width="100%" height={220}>
                   <BarChart
-                    data={analytics.doorTrafficByHour}
+                    data={analytics.vehicleTrafficByHour}
                     margin={{ left: -10, right: 8 }}
                     barGap={1}
                   >
@@ -2260,7 +2549,7 @@ const HomePage = () => {
                     <Bar
                       dataKey="entry"
                       name={t("entry")}
-                      fill="#6366f1"
+                      fill="#3b82f6"
                       radius={[3, 3, 0, 0]}
                       maxBarSize={18}
                     />
@@ -2298,7 +2587,9 @@ const HomePage = () => {
             </Card>
           </motion.div>
         </DashboardSection>
-      )}
+      )} 
+      */}
+
       <div style={{ height: 48, flexShrink: 0 }} />
     </div>
   );

@@ -5,8 +5,8 @@ const Badge = ({ text }) => {
   const { t } = useTranslation();
 
   const map = {
-    forward: { text: "🟢 Въезд", className: styles.active },
-    reverse: { text: "🔴 Выезд", className: styles.inactive },
+    forward: { text: `🟢 ${t("forward")}`, className: styles.active },
+    reverse: { text: `🔴 ${t("reverse")}`, className: styles.inactive },
     active: { text: t("active"), className: styles.active },
     terminated: { text: t("terminated"), className: styles.inactive },
     true: { text: t("true"), className: styles.active },
@@ -19,7 +19,7 @@ const Badge = ({ text }) => {
   const status = map[value];
 
   if (!status) {
-    return <span className={styles.unknown}>❔ Неизвестный</span>;
+    return <span className={styles.unknown}>❔ {t("unknown")}</span>;
   }
 
   return <span className={status.className}>{status.text}</span>;

@@ -6,7 +6,6 @@ import { getLateEmployees } from "../api";
 
 import LateTableFilter from "../components/LateTableFilter";
 import Loading from "../components/Loading";
-import Table from "../components/Table";
 import LateCardList from "../components/LateCardList";
 import LateCardListCarousel from "../components/LateCardListCarousel";
 import Pagination from "../components/Pagination";
@@ -17,12 +16,31 @@ import MonthlyLateReport from "../components/MonthlyLateReport";
 
 import styles from "./LateEmployeesPage.module.scss";
 import { DownloadLate } from "../utils/downloadDoc";
-import { Clock, AlarmClock, Users } from "lucide-react";
+import { Clock, AlarmClock, Users, Coffee, Wallet } from "lucide-react";
+import SalarySort from "../components/SalarySort";
+
+const LATE_SORT_FIELDS = [
+  { value: "last_name", labelKey: "fullName" },
+  { value: "employee_number", labelKey: "employeeNumber" },
+  { value: "late_minutes", labelKey: "lateCol" },
+  { value: "monthly_arrival_late_count", labelKey: "lateCount" },
+  { value: "monthly_late_minutes", labelKey: "lateTime" },
+  { value: "monthly_late_money", labelKey: "lateMoney" },
+  { value: "branch", labelKey: "branch" },
+  { value: "department", labelKey: "department" },
+  { value: "position", labelKey: "position" },
+];
+
+const fmt = (n) =>
+  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -37,7 +55,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -45,6 +66,8 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
 );
 import LateEmployeeModal from "../components/LateEmployeeModal";
 import { useAuthStore } from "../stores/authStore";
+import { Icons } from "../icons/icons";
+import LateEmployeesTable from "../components/LateEmployeesTable";
 
 function formatPermissionEndTime(dateString) {
   if (!dateString) return "";
@@ -75,6 +98,8 @@ const LateEmployeesPage = () => {
     employee_id: "",
     position_id: "",
     include_lunch_late: false,
+    sort_by: "last_name",
+    sort_order: "asc",
   });
   const [selectedMode, setSelectedMode] = useState("day");
   const { viewMode, activeBranchId } =
@@ -87,35 +112,42 @@ const LateEmployeesPage = () => {
   );
 
   const dayColumns = [
-    { label: "№", render: (_, __, i) => i + 1 },
+    { label: "№", group: "day", render: (_, __, i) => i + 1 },
+    // {
+    //   label: "Дата",
+    //   accessor: "date",
+    //   group: "day",
+    //   style: { minWidth: "90px" },
+    // },
     {
-      label: "Дата",
-      accessor: "date",
-      style: { minWidth: "90px" },
-    },
-    {
-      label: "ФИО",
+      label: t("fullName"),
       accessor: "employeeFullName",
+      group: "day",
       render: (_, item) => (
-        <div className={styles.employee}>
-          <span>{item.employeeFullName}</span>
-
+        <div className={styles.empCell}>
           {item.employeePhoto && (
             <img
               src={`/api/employees/image/${item.employeePhoto}`}
               alt="photo"
             />
           )}
+          <div className={styles.empInfo}>
+            <span className={styles.empName}>{item.employeeFullName}</span>
+            <span className={styles.empSub}>
+              {[item.branchName, item.departmentName]
+                .filter(Boolean)
+                .join(" / ")}
+            </span>
+          </div>
         </div>
       ),
     },
-    { label: "Табель №", accessor: "employeeNumber" },
-    { label: "Филиал", accessor: "branchName" },
-    { label: "Отдел", accessor: "departmentName" },
-    { label: "Должность", accessor: "positionName" },
+    { label: t("employeeNumber"), accessor: "employeeNumber", group: "day" },
+    { label: t("position"), accessor: "positionName", group: "day" },
 
     {
-      label: "Пришел",
+      label: t("checkedInSingular"),
+      group: "day",
       render: (_, item) => (
         <div className={styles.timeWrapper}>
           <div className={styles.timeRow}>
@@ -131,7 +163,8 @@ const LateEmployeesPage = () => {
     },
 
     {
-      label: "Опоздание",
+      label: t("lateCol"),
+      group: "day",
       render: (_, item) => (
         <div className={styles.timeWrapper}>
           {item.lateMinutes > 0 && (
@@ -143,16 +176,25 @@ const LateEmployeesPage = () => {
       ),
     },
 
+    {
+      label: t("penaltyAmount"),
+      accessor: "dailyLateMoney",
+      group: "day",
+      render: (v) => (v ? fmt(v) : "—"),
+    },
+
     ...(hasAnyPermission
       ? [
           {
-            label: "Отгул",
+            label: t("dayOff"),
             accessor: "havePermission",
-            render: (value) => (value ? "Да" : "Нет"),
+            group: "day",
+            render: (value) => (value ? t("yes") : t("no")),
           },
           {
-            label: "Конец отгула",
+            label: t("permissionEnd"),
             accessor: "permissionEndTime",
+            group: "day",
             render: formatPermissionEndTime,
           },
         ]
@@ -161,7 +203,8 @@ const LateEmployeesPage = () => {
     ...(formData.include_lunch_late
       ? [
           {
-            label: "Перерыв",
+            label: t("breakLabel"),
+            group: "day",
             render: (_, item) => {
               if (!item.scheduledBreakEnd && !item.actualBreakReturn)
                 return <span>—</span>;
@@ -179,7 +222,7 @@ const LateEmployeesPage = () => {
                   </div>
                   {item.scheduledBreakEnd && (
                     <span className={styles.timeSched}>
-                      по граф. {item.scheduledBreakEnd.substring(0, 5)}
+                      {t("schedLabel")} {item.scheduledBreakEnd.substring(0, 5)}
                     </span>
                   )}
                 </div>
@@ -190,76 +233,79 @@ const LateEmployeesPage = () => {
       : []),
 
     {
-      label: "Сумма за опоздание",
-      accessor: "monthlyLateMoney",
-    },
-
-    {
-      label: "Опоздание на работу за месяц",
+      label: t("lateCol"),
       accessor: "monthlyArrivalLateCount",
+      group: "month",
       render: (v, item) => {
         if (!v || v <= 0) return "—";
         const timeStr =
           item.monthlyLateMinutes > 0
-            ? ` (${formatLateMinutesToHours(item.monthlyLateMinutes)})`
+            ? ` (${formatLateMinutesToHours(item.monthlyLateMinutes)} ${t("hoursShort")})`
             : "";
-        return `${v} раз ${timeStr}`;
+        return `${v} ${timeStr}`;
       },
     },
     ...(formData.include_lunch_late
       ? [
           {
-            label: "Опоздание после перерыва за месяц",
+            label: t("lateAfterBreak"),
             accessor: "monthlyLunchLateCount",
+            group: "month",
             render: (v, item) => {
               if (!v || v <= 0) return "—";
               const timeStr =
                 item.monthlyBreakReturnLateMinutes > 0
-                  ? ` (${formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes)})`
+                  ? ` (${formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes)} ${t("hoursShort")})`
                   : "";
-              return `${v} раз${timeStr}`;
+              return `${v} ${timeStr}`;
             },
           },
         ]
       : []),
     {
-      label: "Фото",
-      accessor: "actualStartPhoto",
-      render: (value) =>
-        value ? (
-          <a
-            href={`/api/face-passes/image/${value}`}
-            target="_blank"
-            rel="noreferrer"
-            className={styles.photoLink}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 6l4-4a3 5 0 0 1 3 0l4 4"
-              />
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="m14 14l1-1a3 5 0 0 1 3 0l3 3"
-              />
-            </svg>
-            Фото
-          </a>
-        ) : null,
+      label: t("penaltyAmount"),
+      accessor: "monthlyLateMoney",
+      group: "month",
+      render: (v) => (v ? fmt(v) : "—"),
     },
+    // {
+    //   label: "Фото",
+    //   accessor: "actualStartPhoto",
+    //   render: (value) =>
+    //     value ? (
+    //       <a
+    //         href={`/api/face-passes/image/${value}`}
+    //         target="_blank"
+    //         rel="noreferrer"
+    //         className={styles.photoLink}
+    //       >
+    //         <svg
+    //           xmlns="http://www.w3.org/2000/svg"
+    //           width="16"
+    //           height="16"
+    //           viewBox="0 0 24 24"
+    //         >
+    //           <path
+    //             fill="none"
+    //             stroke="currentColor"
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 6l4-4a3 5 0 0 1 3 0l4 4"
+    //           />
+    //           <path
+    //             fill="none"
+    //             stroke="currentColor"
+    //             strokeLinecap="round"
+    //             strokeLinejoin="round"
+    //             strokeWidth="2"
+    //             d="m14 14l1-1a3 5 0 0 1 3 0l3 3"
+    //           />
+    //         </svg>
+    //         Фото
+    //       </a>
+    //     ) : null,
+    // },
   ];
 
   useEffect(() => {
@@ -287,6 +333,8 @@ const LateEmployeesPage = () => {
       position_id: "",
       search: "",
       include_lunch_late: false,
+      sort_by: "last_name",
+      sort_order: "asc",
     });
 
     // Сбрасываем viewType в дефолтное значение
@@ -352,6 +400,12 @@ const LateEmployeesPage = () => {
     fetchData(1, formData, pageSize);
   };
 
+  const handleSortApply = (sort_by, sort_order) => {
+    const updated = { ...formData, sort_by, sort_order };
+    setFormData(updated);
+    fetchData(1, updated, pageSize);
+  };
+
   // Логика автообновлении
   useEffect(() => {
     if (!autoRefresh || !formData.date) return;
@@ -392,6 +446,22 @@ const LateEmployeesPage = () => {
     (a, b) => a + (b.lateMinutes || b.monthlyLateMinutes || 0),
     0,
   );
+  const totalArrivalLateCount = lateItems.reduce(
+    (a, b) => a + (b.monthlyArrivalLateCount || 0),
+    0,
+  );
+  const totalBreakReturnCount = lateItems.reduce(
+    (a, b) => a + (b.monthlyLunchLateCount || 0),
+    0,
+  );
+  const totalBreakReturnMinutes = lateItems.reduce(
+    (a, b) => a + (b.monthlyBreakReturnLateMinutes || 0),
+    0,
+  );
+  const totalLateMoney = lateItems.reduce(
+    (a, b) => a + (Number(b.monthlyLateMoney) || 0),
+    0,
+  );
 
   return (
     <div className={styles.lateEmployeesPage}>
@@ -404,25 +474,56 @@ const LateEmployeesPage = () => {
               <StatWidget
                 icon={Users}
                 color="#ef4444"
-                label="Опоздавших"
+                label={t("lateEmployeesLabel")}
                 value={totalItems || lateItems.length}
               />
               <StatWidget
                 icon={Clock}
                 color="#f59e0b"
-                label="Минут опоздания"
-                value={totalLateMinutes}
+                label={t("lateTime")}
+                value={formatLateMinutesToHours(totalLateMinutes)}
+                sub={t("hoursShort")}
               />
               <StatWidget
                 icon={AlarmClock}
                 color="#6366f1"
-                label="Среднее (мин)"
-                value={
+                label={t("average")}
+                value={formatLateMinutesToHours(
                   lateItems.length > 0
                     ? Math.round(totalLateMinutes / lateItems.length)
-                    : 0
-                }
+                    : 0,
+                )}
+                sub={t("hoursShort")}
               />
+              {selectedMode === "month" && totalArrivalLateCount > 0 && (
+                <StatWidget
+                  icon={Clock}
+                  color="#dc2626"
+                  label={t("lateOccurrences")}
+                  value={totalArrivalLateCount}
+                />
+              )}
+              {selectedMode === "month" && totalBreakReturnCount > 0 && (
+                <StatWidget
+                  icon={Coffee}
+                  color="#f97316"
+                  label={t("afterBreak")}
+                  value={totalBreakReturnCount}
+                  sub={
+                    totalBreakReturnMinutes > 0
+                      ? `${formatLateMinutesToHours(totalBreakReturnMinutes)} ${t("hoursShort")}`
+                      : undefined
+                  }
+                />
+              )}
+              {selectedMode === "month" && totalLateMoney > 0 && (
+                <StatWidget
+                  icon={Wallet}
+                  color="#6366f1"
+                  label={t("latePenaltyAmount")}
+                  value={fmt(totalLateMoney)}
+                />
+              )}
             </div>
           )}
           <div className={styles.mainHeader}>
@@ -489,6 +590,13 @@ const LateEmployeesPage = () => {
                 onSubmit={handleFormSubmit}
                 t={t}
               />
+
+              <SalarySort
+                sort_by={formData.sort_by}
+                sort_order={formData.sort_order}
+                onApply={handleSortApply}
+                fields={LATE_SORT_FIELDS}
+              />
             </div>
 
             <Pagination
@@ -510,13 +618,13 @@ const LateEmployeesPage = () => {
                       value={viewType}
                       onChange={(e) => setViewType(e.target.value)}
                     >
-                      <option value="row">Список</option>
-                      <option value="card">Карточки</option>
-                      <option value="carousel">Мониторинг</option>
+                      <option value="row">{t("listView")}</option>
+                      <option value="card">{t("cardView")}</option>
+                      <option value="carousel">{t("monitoring")}</option>
                     </select>
 
                     <label className={styles.autoRefresh}>
-                      <span className={styles.label}>Автообновление</span>
+                      <span className={styles.label}>{t("autoUpdate")}</span>
                       <input
                         type="checkbox"
                         checked={autoRefresh}
@@ -533,29 +641,13 @@ const LateEmployeesPage = () => {
                   value={viewType}
                   onChange={(e) => setViewType(e.target.value)}
                 >
-                  <option value="employees">Сотрудники</option>
-                  <option value="branches">Сводка по филиалам</option>
+                  <option value="employees">{t("employees")}</option>
+                  <option value="branches">{t("branchSummary")}</option>
                 </select>
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {formData.mode === "day"
@@ -587,7 +679,11 @@ const LateEmployeesPage = () => {
           {selectedMode === "day" ? (
             formData.date ? (
               viewType === "row" ? (
-                <Table columns={dayColumns} data={data} />
+                <LateEmployeesTable
+                  columns={dayColumns}
+                  data={data}
+                  date={formData.date}
+                />
               ) : viewType === "card" ? (
                 <LateCardList
                   data={Array.isArray(data) ? data : []}

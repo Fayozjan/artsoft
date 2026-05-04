@@ -269,7 +269,9 @@ const VehiclePassesPageTelegram = () => {
               formData.end_date !== initialFormData.end_date) && (
               <span className={styles.activeFilterTag}>
                 {formData.start_date &&
-                  `От: ${new Date(formData.start_date).toLocaleString("ru-RU", {
+                  `${t("filterFrom")}: ${new Date(
+                    formData.start_date,
+                  ).toLocaleString("ru-RU", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -277,7 +279,9 @@ const VehiclePassesPageTelegram = () => {
                     minute: "2-digit",
                   })}`}
                 {formData.end_date &&
-                  ` До: ${new Date(formData.end_date).toLocaleString("ru-RU", {
+                  ` ${t("filterTo")}: ${new Date(
+                    formData.end_date,
+                  ).toLocaleString("ru-RU", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -304,7 +308,7 @@ const VehiclePassesPageTelegram = () => {
 
             {formData.direction && (
               <span className={styles.activeFilterTag}>
-                {formData.direction === "entry" ? "Въезд" : "Выезд"}
+                {formData.direction === "entry" ? t("forward") : t("reverse")}
                 <button
                   onClick={() => {
                     const next = { ...formData, direction: "" };
@@ -326,7 +330,7 @@ const VehiclePassesPageTelegram = () => {
                     formData.selectedGateIds.includes(String(g.id)),
                   )
                   .map((g) => g.name)
-                  .join(", ") || "Ворота"}
+                  .join(", ") || t("gates")}
                 <button
                   onClick={() => {
                     const next = { ...formData, selectedGateIds: [] };
@@ -397,7 +401,7 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
       <div className={styles.filterBody}>
         <div className={styles.filterRow}>
           <div className={styles.filterField}>
-            <label className={styles.fieldLabel}>Дата от</label>
+            <label className={styles.fieldLabel}>{t("filterFrom")}</label>
             <input
               className={styles.dateInput}
               type="datetime-local"
@@ -408,7 +412,7 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
             />
           </div>
           <div className={styles.filterField}>
-            <label className={styles.fieldLabel}>Дата до</label>
+            <label className={styles.fieldLabel}>{t("filterTo")}</label>
             <input
               className={styles.dateInput}
               type="datetime-local"
@@ -421,7 +425,7 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Ворота / шлагбаум</label>
+          <label className={styles.fieldLabel}>{t("gatesBarrier")}</label>
           <select
             className={styles.select}
             multiple
@@ -443,12 +447,12 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Направление</label>
+          <label className={styles.fieldLabel}>{t("direction")}</label>
           <div className={styles.directionGroup}>
             {[
-              { value: "", label: "Все" },
-              { value: "entry", label: "Въезд" },
-              { value: "exit", label: "Выезд" },
+              { value: "", label: t("all") },
+              { value: "entry", label: t("forward") },
+              { value: "exit", label: t("reverse") },
             ].map(({ value, label }) => (
               <label key={value} className={styles.dirLabel}>
                 <input
@@ -485,9 +489,9 @@ const VehicleCard = ({ event, t, innerRef }) => {
   const gateName = event.gate_name || "";
   const formattedTime = event.date;
 
-  let directionText = "Неизвестно";
-  if (event.direction === "entry") directionText = "Въезд";
-  if (event.direction === "exit") directionText = "Выезд";
+  let directionText = t("unknown");
+  if (event.direction === "entry") directionText = t("forward");
+  if (event.direction === "exit") directionText = t("reverse");
 
   return (
     <div className={styles.card} ref={innerRef}>

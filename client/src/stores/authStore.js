@@ -1,5 +1,10 @@
 import { create } from "zustand";
-import { getUserInfo, getUserAccess, updateProfile, getActiveBranches } from "../api";
+import {
+  getUserInfo,
+  getUserAccess,
+  updateProfile,
+  getActiveBranches,
+} from "../api";
 import api from "../api/instance";
 
 export const useAuthStore = create((set, get) => ({
@@ -12,6 +17,7 @@ export const useAuthStore = create((set, get) => ({
     sidebar: localStorage.getItem("sidebar") === "false" ? false : true,
     viewMode: "branch",
     activeBranchId: null,
+    settings: {},
   },
   access: null,
   user: null,
@@ -34,6 +40,15 @@ export const useAuthStore = create((set, get) => ({
     }));
 
     updateProfile({ active_branch_id: branchId });
+  },
+
+  updateSettings: (key, value) => {
+    const current = get().userSettings.settings || {};
+    const updated = { ...current, [key]: value };
+    set((state) => ({
+      userSettings: { ...state.userSettings, settings: updated },
+    }));
+    updateProfile({ settings: updated });
   },
 
   setSidebarState: (isOpen) => {
@@ -68,6 +83,7 @@ export const useAuthStore = create((set, get) => ({
           ...state.userSettings,
           viewMode: access.view_mode,
           activeBranchId: access.active_branch_id || null,
+          settings: access.settings || {},
         },
       }));
     } catch (err) {
@@ -104,6 +120,7 @@ export const useAuthStore = create((set, get) => ({
           sidebar: data.sidebar,
           viewMode: "",
           activeBranchId: null,
+          settings: {},
         },
         user:
           {
@@ -131,7 +148,11 @@ export const useAuthStore = create((set, get) => ({
         user: null,
         error: error.response?.data || "Ошибка",
       });
-      return { success: false };
+      return {
+        success: false,
+        status: error.response?.status,
+        code: error.response?.data?.code || error.code,
+      };
     }
   },
 
@@ -159,6 +180,7 @@ export const useAuthStore = create((set, get) => ({
           sidebar: data?.sidebar ?? true,
           viewMode: "",
           activeBranchId: null,
+          settings: {},
         },
         error: null,
       });
@@ -178,7 +200,11 @@ export const useAuthStore = create((set, get) => ({
         user: null,
         error: error.response?.data || "Ошибка",
       });
-      return { success: false };
+      return {
+        success: false,
+        errorCode: error.response?.data?.code,
+        message: error.response?.data?.message,
+      };
     }
   },
 
@@ -198,6 +224,7 @@ export const useAuthStore = create((set, get) => ({
       userSettings: {
         language: "ru",
         theme: "light",
+        settings: {},
         sidebar: true,
         viewMode: "branch",
         activeBranchId: null,

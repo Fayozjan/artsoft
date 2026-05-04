@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { t } from "i18next";
+import { useTranslation } from "react-i18next";
 
 import { EmployeeService, getTimeOffById, updateTimeOff } from "../api";
 import { formatIsoToDateTimeLocal } from "../utils/date";
@@ -12,6 +12,7 @@ import SelectEmployee from "./SelectEmployee";
 import styles from "./AddTimeOff.module.scss";
 
 const EditTimeOff = ({ id, handleClose, onSuccess }) => {
+  const { t } = useTranslation();
   const [employees, setEmployees] = useState([]);
   const { showAlert } = useAlertStore();
   const [loading, setLoading] = useState(false);
@@ -20,12 +21,13 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
 
   const fetchData = async () => {
     try {
-      const data = await getTimeOffById(id);
-      const perm = data.data;
-      console.log("perm", perm);
-      if (perm.type === "day") {
+      const response = await getTimeOffById(id);
+      const perm = response.data;
+      if (["day_off", "vacation"].includes(perm.type)) {
         setFormData({
           ...perm,
+          date_from: perm.date_from.split("T")[0],
+          date_to: perm.date_to.split("T")[0],
         });
       } else {
         setFormData({
@@ -73,24 +75,26 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
     e.preventDefault();
 
     if (!formData.date_from || !formData.date_to) {
-      showAlert("Выберите дату", "error");
+      showAlert(t("selectDate"), "error");
       return;
     }
 
-    const payload = {
-      ...formData,
-    };
+    const payload = { ...formData };
+    if (!["day_off", "vacation"].includes(payload.type)) {
+      if (payload.date_from) payload.date_from = new Date(payload.date_from + ":00+05:00").toISOString();
+      if (payload.date_to) payload.date_to = new Date(payload.date_to + ":00+05:00").toISOString();
+    }
 
     try {
-      const res = await updateTimeOff(id, payload);
+      await updateTimeOff(id, payload);
 
-      showAlert("Успешно", "success");
+      showAlert(t("success"), "success");
       onSuccess();
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -103,26 +107,35 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Тип</label>
-          <select name="type" onChange={handleChange}>
-            <option value="hour_off">Отгул (почасовой)</option>
-            <option value="day_off">Отгул (день)</option>
-            <option value="vacation">Отпуск</option>
+          <label htmlFor="absence-type">{t("type")}</label>
+          <select
+            id="absence-type"
+            name="type"
+            value={formData?.type || ""}
+            onChange={handleChange}
+          >
+            <option value="hour_off">{t("hour")}</option>
+            <option value="day_off">{t("day_off")}</option>
+            <option value="vacation">{t("vacation")}</option>
           </select>
         </div>
 
         <div>
-          <label>За счет компании</label>
-          <select name="is_company_paid" onChange={handleChange}>
-            <option value="false">Нет</option>
-            <option value="true">Да</option>
+          <label>{t("companyPaid")}</label>
+          <select
+            name="is_company_paid"
+            onChange={handleChange}
+            value={String(formData?.is_company_paid ?? "false")}
+          >
+            <option value="false">{t("no")}</option>
+            <option value="true">{t("yes")}</option>
           </select>
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label> Дата от</label>
+          <label>{t("filterFrom")}</label>
           <input
             type={
               ["day_off", "vacation"].includes(formData.type)
@@ -137,7 +150,7 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label> Дата до</label>
+          <label>{t("filterTo")}</label>
           <input
             type={
               ["day_off", "vacation"].includes(formData.type)
@@ -153,7 +166,7 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
         </div>
         {formData?.type === "day" && (
           <div className={styles.row_item}>
-            <label>Часы в учёт (в день)</label>
+            <label>{t("creditedHoursPerDay")}</label>
             <input
               type="number"
               name="credited_hours"
@@ -170,7 +183,7 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div className={styles.row_item_user}>
-          <label className={styles.label}>Сотрудник</label>
+          <label className={styles.label}>{t("employee")}</label>
           <SelectEmployee
             data="employee"
             options={employees}
@@ -182,13 +195,12 @@ const EditTimeOff = ({ id, handleClose, onSuccess }) => {
       </div>
       <div className={styles.row}>
         <div className={styles.row_item}>
-          <label>Причина</label>
+          <label>{t("reason")}</label>
           <input
             type="text"
             name="reason"
             value={formData.reason}
             onChange={handleChange}
-            required
           />
         </div>
       </div>

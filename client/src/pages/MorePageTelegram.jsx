@@ -179,7 +179,7 @@ function MorePageTelegram() {
 
       <div className={styles.main}>
         {visibleItems.length === 0 ? (
-          <p className={styles.empty}>No accessible sections</p>
+          <p className={styles.empty}>{t("noAccessibleSections")}</p>
         ) : (
           <div className={styles.cardList}>
             <div className={styles.list}>

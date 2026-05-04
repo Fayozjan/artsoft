@@ -16,7 +16,10 @@ import { Car, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -31,7 +34,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -48,8 +54,6 @@ const VehiclePassesPage = () => {
   const [viewType, setViewType] = useState("card");
   const { t } = useTranslation();
   const [isDropdownOpen, setDropdownOpen] = useState(false);
-
-  console.log("data", data);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -141,19 +145,19 @@ const VehiclePassesPage = () => {
               <StatWidget
                 icon={Car}
                 color="#6366f1"
-                label="Всего проездов"
+                label={t("totalPassesLabel")}
                 value={totalItems}
               />
               <StatWidget
                 icon={ArrowDownToLine}
                 color="#10b981"
-                label="Въезд"
+                label={t("forward")}
                 value={data.filter((x) => x.direction === "forward").length}
               />
               <StatWidget
                 icon={ArrowUpFromLine}
                 color="#f59e0b"
-                label="Выезд"
+                label={t("reverse")}
                 value={data.filter((x) => x.direction === "reverse").length}
               />
             </div>
@@ -237,38 +241,22 @@ const VehiclePassesPage = () => {
               <div className={styles.customDropdown}>
                 <button onClick={() => setDropdownOpen((prev) => !prev)}>
                   {viewType === "row" ? Icons.list : Icons.card}
-                  {viewType === "row" ? "Список" : "Карточки"}
+                  {viewType === "row" ? t("listView") : t("cardView")}
                 </button>
                 {isDropdownOpen && (
                   <ul>
                     <li onClick={() => handleViewChange("row")}>
-                      {Icons.list} Список
+                      {Icons.list} {t("listView")}
                     </li>
                     <li onClick={() => handleViewChange("card")}>
-                      {Icons.card} Карточки
+                      {Icons.card} {t("cardView")}
                     </li>
                   </ul>
                 )}
               </div>
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (

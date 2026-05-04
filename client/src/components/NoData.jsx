@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import styles from "./NoData.module.scss";
 
-const NoData = ({ title = "По выбранным фильтрам ничего не найдено" }) => {
-  return <div className={styles.noData}>{title}</div>;
+const NoData = ({ title }) => {
+  const { t } = useTranslation();
+  return <div className={styles.noData}>{title ?? t("noDataFiltered")}</div>;
 };
 
 export default NoData;

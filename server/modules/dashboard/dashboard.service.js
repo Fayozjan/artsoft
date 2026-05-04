@@ -147,7 +147,9 @@ export const DashboardService = {
       weeklyAttendance,
       monthlyAttendance,
       employeesByBranch,
+      employeesByDepartment,
       doorTrafficByHour,
+      vehicleTrafficByHour,
       hiringDynamics,
       weeklyHiringDynamics,
       topDepartments,
@@ -159,7 +161,9 @@ export const DashboardService = {
       DashboardModel.dailyAttendance(last7Days, employeeWhere),
       DashboardModel.dailyAttendance(last30Days, employeeWhere),
       DashboardModel.employeesByBranch(employeeWhere),
+      DashboardModel.employeesByDepartment(employeeWhere),
       DashboardModel.doorTrafficByHour(dayStart, dayEnd, employeeWhere),
+      DashboardModel.vehicleTrafficByHour(dayStart, dayEnd),
       DashboardModel.hiringDynamics(last6Months),
       DashboardModel.hiringDynamicsByDay(last7Days),
       DashboardModel.topDepartmentsByActivity(dayStart, dayEnd, employeeWhere),
@@ -173,7 +177,9 @@ export const DashboardService = {
       weeklyAttendance,
       monthlyAttendance,
       employeesByBranch,
+      employeesByDepartment,
       doorTrafficByHour,
+      vehicleTrafficByHour,
       hiringDynamics,
       weeklyHiringDynamics,
       topDepartments,
@@ -189,11 +195,13 @@ export const DashboardService = {
     if (!user) throw new Error("Пользователь не найден");
 
     const employeeWhere = buildEmployeeAccess(user);
+    const { start: dayStart, end: dayEnd } = getDayRange();
 
-    const [recentFacePasses, recentVehiclePasses, upcomingBirthdays, recentTimeOffs] =
+    const [recentFacePasses, recentVehiclePasses, vehiclePassesToday, upcomingBirthdays, recentTimeOffs] =
       await Promise.all([
         DashboardModel.recentFacePasses(10, employeeWhere),
         DashboardModel.recentVehiclePasses(10),
+        DashboardModel.vehiclePassesToday(dayStart, dayEnd, 20),
         DashboardModel.upcomingBirthdays(7, employeeWhere),
         DashboardModel.recentTimeOffs(10, employeeWhere),
       ]);
@@ -201,8 +209,26 @@ export const DashboardService = {
     return {
       recentFacePasses,
       recentVehiclePasses,
+      vehiclePassesToday,
       upcomingBirthdays,
       recentTimeOffs,
     };
+  },
+
+  getFinance: async (userId) => {
+    const user = await UserModel.getById(Number(userId));
+    if (!user) throw new Error("Пользователь не найден");
+
+    const employeeWhere = buildEmployeeAccess(user);
+
+    const [stats, recentPayments, recentAdvances, salaryByBranch, salaryByDept] = await Promise.all([
+      DashboardModel.financeStats(employeeWhere),
+      DashboardModel.recentPayments(10, employeeWhere),
+      DashboardModel.recentAdvances(10, employeeWhere),
+      DashboardModel.salaryByBranch(employeeWhere),
+      DashboardModel.salaryByDept(employeeWhere),
+    ]);
+
+    return { stats, recentPayments, recentAdvances, salaryByBranch, salaryByDept };
   },
 };

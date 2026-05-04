@@ -125,7 +125,7 @@ export const PayrollModel = {
         const n = Number(s);
         employeeWhere.OR = [
           { id: n },
-          { employee_number: n },
+          { employee_number: s },
         ];
       } else {
         employeeWhere.OR = [
@@ -210,18 +210,69 @@ export const PayrollModel = {
 
   updateAllItemsStatus: async (sheetId, status) => {
     const prisma = prismaContext.get();
-    return prisma.payroll_sheet_items.updateMany({
-      where: { sheet_id: Number(sheetId) },
-      data: { status },
-    });
+    const where = status === "draft"
+      ? { sheet_id: Number(sheetId), status: "approved" }
+      : { sheet_id: Number(sheetId), status: "draft" };
+    return prisma.payroll_sheet_items.updateMany({ where, data: { status } });
   },
 
   bulkUpdateStatus: async (itemIds, status) => {
     const prisma = prismaContext.get();
-    return prisma.payroll_sheet_items.updateMany({
-      where: { id: { in: itemIds.map(Number) } },
-      data: { status },
+    const where = status === "draft"
+      ? { id: { in: itemIds.map(Number) }, status: "approved" }
+      : { id: { in: itemIds.map(Number) }, status: "draft" };
+    return prisma.payroll_sheet_items.updateMany({ where, data: { status } });
+  },
+
+  unapproveSheet: async (id) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheets.update({
+      where: { id: Number(id) },
+      data: { status: "draft", approved_by: null, approved_at: null },
     });
+  },
+
+  hasPaidItems: async (sheetId) => {
+    const prisma = prismaContext.get();
+    const count = await prisma.payroll_sheet_items.count({
+      where: { sheet_id: Number(sheetId), payout_status: { in: ["paid", "partially_paid"] } },
+    });
+    return count > 0;
+  },
+
+  isSheetApprovedForMonth: async (month, year) => {
+    const prisma = prismaContext.get();
+    const sheet = await prisma.payroll_sheets.findFirst({
+      where: { month: Number(month), year: Number(year), status: "approved" },
+      select: { id: true },
+    });
+    return !!sheet;
+  },
+
+  hasApprovedOrPaidItemForEmployee: async (employeeId, month, year) => {
+    const prisma = prismaContext.get();
+    const sheet = await prisma.payroll_sheets.findFirst({
+      where: { month: Number(month), year: Number(year) },
+      select: { id: true },
+    });
+    if (!sheet) return false;
+    const item = await prisma.payroll_sheet_items.findFirst({
+      where: {
+        sheet_id: sheet.id,
+        employee_id: Number(employeeId),
+        status: "approved",
+      },
+      select: { id: true },
+    });
+    return !!item;
+  },
+
+  hasPaidItemsInIds: async (itemIds) => {
+    const prisma = prismaContext.get();
+    const count = await prisma.payroll_sheet_items.count({
+      where: { id: { in: itemIds.map(Number) }, payout_status: { in: ["paid", "partially_paid"] } },
+    });
+    return count > 0;
   },
 
   createSheet: async (data) => {
@@ -298,7 +349,7 @@ export const PayrollModel = {
       const isNum = /^\d+$/.test(s);
       if (isNum) {
         const n = Number(s);
-        employeeWhere.OR = [{ id: n }, { employee_number: n }];
+        employeeWhere.OR = [{ id: n }, { employee_number: s }];
       } else {
         employeeWhere.OR = [
           { last_name:   { contains: s, mode: "insensitive" } },
@@ -311,11 +362,25 @@ export const PayrollModel = {
     if (department_id) employeeWhere.department_id = Number(department_id);
     if (position_id)   employeeWhere.position_id   = Number(position_id);
 
-    const statusFilter = payout_status === "approved" || payout_status === "paid"
-      ? payout_status
-      : { in: ["approved", "paid"] };
-
-    const where = { sheet_id: Number(sheetId), status: statusFilter };
+    // Base: approved items OR items with payment history
+    let where;
+    if (payout_status === "unpaid") {
+      // Items that still need payment: approved+unpaid/partial
+      where = { sheet_id: Number(sheetId), status: "approved", payout_status: { in: ["unpaid", "partially_paid"] } };
+    } else if (payout_status === "paid" || payout_status === "partially_paid") {
+      // Exact payout_status match, regardless of approval
+      where = { sheet_id: Number(sheetId), payout_status };
+    } else {
+      // All — approved + anything that has actual payment (paid_amount > 0) or payout status set
+      where = {
+        sheet_id: Number(sheetId),
+        OR: [
+          { status: "approved" },
+          { paid_amount: { gt: 0 } },
+          { payout_status: { in: ["paid", "partially_paid"] } },
+        ],
+      };
+    }
     if (Object.keys(employeeWhere).length) where.employee = employeeWhere;
     if (salary_type) where.salary_type = salary_type;
 
@@ -348,27 +413,38 @@ export const PayrollModel = {
     const prisma = prismaContext.get();
     const id = Number(sheetId);
 
-    const [pendingAgg, paidAgg, debtAgg, balAgg, advAgg] = await Promise.all([
+    const approvedWhere = { sheet_id: id, status: "approved" };
+    const [pendingAgg, paidAgg, totalPaidAgg, debtAgg, balAgg, advAgg] = await Promise.all([
+      // pending = approved + not yet fully paid
       prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, status: "approved" },
+        where: { sheet_id: id, status: "approved", payout_status: { in: ["unpaid", "partially_paid"] } },
         _count: { id: true },
-        _sum:   { net: true, paid_amount: true },
+        _sum:   { net: true },
+      }),
+      // paid = payout_status=paid OR has actual payment, regardless of approval status
+      prisma.payroll_sheet_items.aggregate({
+        where: {
+          sheet_id: id,
+          OR: [{ payout_status: "paid" }, { paid_amount: { gt: 0 } }],
+        },
+        _count: { id: true },
+        _sum:   { net: true },
+      }),
+      // total money actually paid out (single aggregate to avoid double-count)
+      prisma.payroll_sheet_items.aggregate({
+        where: { sheet_id: id, paid_amount: { gt: 0 } },
+        _sum:  { paid_amount: true },
       }),
       prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, status: "paid" },
-        _count: { id: true },
-        _sum:   { net: true, paid_amount: true },
-      }),
-      prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, status: { in: ["approved", "paid"] } },
+        where: approvedWhere,
         _sum:  { debt_deduction: true },
       }),
       prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, status: { in: ["approved", "paid"] }, salary_balance: { gt: 0 } },
+        where: { ...approvedWhere, salary_balance: { gt: 0 } },
         _sum:  { salary_balance: true },
       }),
       prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, status: { in: ["approved", "paid"] } },
+        where: approvedWhere,
         _sum:  { advance_total: true },
       }),
     ]);
@@ -378,26 +454,26 @@ export const PayrollModel = {
       paid_count:            paidAgg._count.id,
       pending_sum:           Number(pendingAgg._sum.net         || 0),
       paid_sum:              Number(paidAgg._sum.net            || 0),
-      total_paid_amount:     Number(pendingAgg._sum.paid_amount || 0) + Number(paidAgg._sum.paid_amount || 0),
-      total_debt_deduction:  Number(debtAgg._sum.debt_deduction || 0),
-      total_salary_balance:  Number(balAgg._sum.salary_balance  || 0),
-      total_advance:         Number(advAgg._sum.advance_total   || 0),
+      total_paid_amount:     Number(totalPaidAgg._sum.paid_amount || 0),
+      total_debt_deduction:  Number(debtAgg._sum.debt_deduction  || 0),
+      total_salary_balance:  Number(balAgg._sum.salary_balance   || 0),
+      total_advance:         Number(advAgg._sum.advance_total    || 0),
     };
   },
 
-  bulkMarkPaid: async (itemIds, status) => {
+  bulkMarkPaid: async (itemIds, payoutStatus) => {
     const prisma = prismaContext.get();
     return prisma.payroll_sheet_items.updateMany({
-      where: { id: { in: itemIds.map(Number) } },
-      data:  { status },
+      where: { id: { in: itemIds.map(Number) }, status: "approved" },
+      data:  { payout_status: payoutStatus },
     });
   },
 
-  markAllPayoutsStatus: async (sheetId, status) => {
+  markAllPayoutsStatus: async (sheetId, payoutStatus) => {
     const prisma = prismaContext.get();
     return prisma.payroll_sheet_items.updateMany({
-      where: { sheet_id: Number(sheetId), status: { in: ["approved", "paid"] } },
-      data:  { status },
+      where: { sheet_id: Number(sheetId), status: "approved" },
+      data:  { payout_status: payoutStatus },
     });
   },
 
@@ -426,7 +502,7 @@ export const PayrollModel = {
       const isNum = /^\d+$/.test(s);
       if (isNum) {
         const n = Number(s);
-        employeeWhere.OR = [{ id: n }, { employee_number: n }];
+        employeeWhere.OR = [{ id: n }, { employee_number: s }];
       } else {
         employeeWhere.OR = [
           { last_name:   { contains: s, mode: "insensitive" } },
@@ -504,6 +580,34 @@ export const PayrollModel = {
     return prisma.salary_advances.findUnique({
       where: { id: Number(id) },
       select: { id: true, employee_id: true, advance_date: true, amount: true },
+    });
+  },
+
+  getDraftItemForEmployee: async (sheetId, employeeId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.findFirst({
+      where: { sheet_id: Number(sheetId), employee_id: Number(employeeId), status: "draft" },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employeeSalaryHistory: {
+              orderBy: { date_from: "desc" },
+              take: 1,
+              select: { amount: true, salary_type: true },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  getAllDraftItemsForEmployee: async (employeeId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.findMany({
+      where: { employee_id: Number(employeeId), status: "draft" },
+      include: { sheet: { select: { id: true, year: true, month: true } } },
+      orderBy: [{ sheet: { year: "asc" } }, { sheet: { month: "asc" } }],
     });
   },
 
@@ -597,5 +701,47 @@ export const PayrollModel = {
         WHERE sheet_id = ${id}
       `;
     }
+  },
+
+  getDraftItems: async (sheetId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.findMany({
+      where: { sheet_id: Number(sheetId), status: "draft" },
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employeeSalaryHistory: {
+              orderBy: { date_from: "desc" },
+              take: 1,
+              select: { amount: true, salary_type: true },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  batchUpdateDraftItems: async (_sheetId, updates) => {
+    const prisma = prismaContext.get();
+    await prisma.$transaction(
+      updates.map((u) =>
+        prisma.payroll_sheet_items.update({
+          where: { id: u.id },
+          data: {
+            base_salary:      u.base_salary,
+            salary_type:      u.salary_type,
+            accrued:          u.accrued,
+            late_minutes:     u.late_minutes,
+            late_amount:      u.late_amount,
+            overtime_minutes: u.overtime_minutes,
+            overtime_amount:  u.overtime_amount,
+            worked_days:      u.worked_days,
+            worked_hours:     u.worked_hours,
+            net:              u.net,
+          },
+        }),
+      ),
+    );
   },
 };

@@ -120,7 +120,6 @@ const FacePassesFilter = ({
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -129,7 +128,7 @@ const FacePassesFilter = ({
           <form onSubmit={onSubmit}>
             <div className={styles.row}>
               <div>
-                <h2>Дата от</h2>
+                <h2>{t("filterFrom")}</h2>
                 <input
                   className={styles.date}
                   id="date_from"
@@ -141,7 +140,7 @@ const FacePassesFilter = ({
                 />
               </div>
               <div>
-                <h2>Дата до</h2>
+                <h2>{t("filterTo")}</h2>
                 <input
                   className={styles.date}
                   id="date_to"
@@ -161,7 +160,7 @@ const FacePassesFilter = ({
             />
 
             <div>
-              <h2>Дверь</h2>
+              <h2>{t("door")}</h2>
               <MultiSelectDoors
                 options={doors}
                 selected={formData.selectedDoorIds}
@@ -170,7 +169,7 @@ const FacePassesFilter = ({
             </div>
 
             <div>
-              <h2>Направление</h2>
+              <h2>{t("direction")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -182,7 +181,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -195,7 +194,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "entry" }))
                     }
                   />
-                  Вход
+                  {t("entry")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -208,13 +207,13 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "exit" }))
                     }
                   />
-                  Выход
+                  {t("exit")}
                 </label>
               </div>
             </div>
 
             <div>
-              <h2>Источник</h2>
+              <h2>{t("source")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -224,7 +223,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, source: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -244,7 +243,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, source: "DEVICE" }))
                     }
                   />
-                  Устройство
+                  {t("device")}
                 </label>
               </div>
             </div>

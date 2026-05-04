@@ -1,12 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./MultiSelectDoors.module.scss";
 
 const MultiSelectDoors = ({
   options,
   selected,
   onChange,
-  placeholder = "Выберите дверь",
+  placeholder,
 }) => {
+  const { t } = useTranslation();
+  const resolvedPlaceholder = placeholder ?? t("selectDoor");
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [openDirection, setOpenDirection] = useState("down");
@@ -61,7 +64,7 @@ const MultiSelectDoors = ({
 
   // Формируем список: "Выбрать всех" + отфильтрованные двери
   const sortedFilteredOptions = [
-    { id: "select_all", name: "Выбрать всех" },
+    { id: "select_all", name: t("selectAll") },
     ...filteredOptions.sort((a, b) => {
       const isASelected = selected.includes(a.id);
       const isBSelected = selected.includes(b.id);
@@ -90,7 +93,7 @@ const MultiSelectDoors = ({
       <span className={styles.sticker}>{selected?.length || 0}</span>
       <input
         type="text"
-        placeholder={placeholder}
+        placeholder={resolvedPlaceholder}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onClick={toggleOpen}

@@ -54,8 +54,6 @@ export const EmployeeService = {
   update: async (id, data) => {
     const formData = new FormData();
 
-    console.log("data", data);
-
     Object.entries(data).forEach(([key, value]) => {
       if (key === "work_schedule_id") {
         formData.append(key, value ?? "");

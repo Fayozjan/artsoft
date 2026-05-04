@@ -24,7 +24,9 @@ router.put("/:id/all-status", PayrollController.updateAllItemsStatus);
 router.put("/:id/bulk-apply", PayrollController.bulkApplyFlags);
 router.put("/:id/payouts-all-status", PayrollController.markAllPayoutsStatus);
 router.put("/:id/recalculate-balances", PayrollController.recalculateSalaryBalances);
+router.put("/:id/recalculate-draft", PayrollController.recalculateDraftItems);
 router.post("/:id/approve", PayrollController.approveSheet);
+router.delete("/:id/approve", PayrollController.unapproveSheet);
 router.delete("/:id", PayrollController.deleteSheet);
 
 export default router;

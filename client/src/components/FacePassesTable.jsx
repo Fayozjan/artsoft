@@ -61,8 +61,6 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
     }
   };
 
-  console.log("data", data);
-
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
@@ -74,13 +72,13 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
               onClick={() => handleSort("name")}
             >
               <span className={styles.headerContent}>
-                ФИО
+                {t("fullName")}
                 <SortArrow active={sortField === "name"} order={sortOrder} />
               </span>
             </th>
             <th onClick={() => handleSort("branch_name")}>
               <span className={styles.headerContent}>
-                Филиал
+                {t("branch")}
                 <SortArrow
                   active={sortField === "branch_name"}
                   order={sortOrder}
@@ -89,7 +87,7 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             </th>
             <th onClick={() => handleSort("department_name")}>
               <span className={styles.headerContent}>
-                Отдел
+                {t("department")}
                 <SortArrow
                   active={sortField === "department_name"}
                   order={sortOrder}
@@ -98,7 +96,7 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             </th>
             <th onClick={() => handleSort("position_name")}>
               <span className={styles.headerContent}>
-                Должность
+                {t("position")}
                 <SortArrow
                   active={sortField === "position_name"}
                   order={sortOrder}
@@ -107,7 +105,7 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             </th>
             <th onClick={() => handleSort("door_name")}>
               <span className={styles.headerContent}>
-                Дверь
+                {t("door")}
                 <SortArrow
                   active={sortField === "door_name"}
                   order={sortOrder}
@@ -116,14 +114,14 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             </th>
             <th onClick={() => handleSort("source")}>
               <span className={styles.headerContent}>
-                Источник
+                {t("source")}
                 <SortArrow active={sortField === "source"} order={sortOrder} />
               </span>
             </th>
-            <th>Локация</th>
+            <th>{t("location")}</th>
             <th onClick={() => handleSort("event_type")}>
               <span className={styles.headerContent}>
-                Направление
+                {t("direction")}
                 <SortArrow
                   active={sortField === "event_type"}
                   order={sortOrder}
@@ -132,11 +130,11 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             </th>
             <th onClick={() => handleSort("date")}>
               <span className={styles.headerContent}>
-                Время
+                {t("time")}
                 <SortArrow active={sortField === "date"} order={sortOrder} />
               </span>
             </th>
-            <th>Изображение</th>
+            <th>{t("image")}</th>
           </tr>
         </thead>
         <tbody>
@@ -195,7 +193,7 @@ const TableHrEvents = ({ data, currentPage, pageSize }) => {
             ))
           ) : (
             <tr>
-              <td colSpan="11">Нет данных</td>
+              <td colSpan="11">{t("noData")}</td>
             </tr>
           )}
         </tbody>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 import { useAuthStore } from "../stores/authStore";
@@ -7,6 +8,7 @@ import { updateProfile } from "../api/users";
 import styles from "./ProfileSettings.module.scss";
 
 const ProfileSettings = ({ onClose }) => {
+  const { t } = useTranslation();
   const { getUserSettings, setUserSettings } = useAuthStore();
   const { showAlert } = useAlertStore();
 
@@ -38,7 +40,7 @@ const ProfileSettings = ({ onClose }) => {
     e.preventDefault();
 
     if (newPassword && newPassword !== confirmPassword) {
-      showAlert("Новый пароль и подтверждение не совпадают.", "error");
+      showAlert(t("passwordMismatch"), "error");
       return;
     }
 
@@ -52,7 +54,7 @@ const ProfileSettings = ({ onClose }) => {
 
       if (response.success) {
         setUserSettings({ theme, language, sidebar });
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setTimeout(() => onClose(), 1000);
       }
     } catch (error) {
@@ -65,78 +67,77 @@ const ProfileSettings = ({ onClose }) => {
     <div className={styles.profileSettings}>
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.inputGroup}>
-          <label>Текущий пароль</label>
+          <label>{t("currentPassword")}</label>
           <input
             type={showPassword.current ? "text" : "password"}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.target.value)}
-            placeholder="Введите текущий пароль"
+            placeholder={t("enterCurrentPassword")}
           />
           <span
             className={styles.togglePassword}
             onClick={() => togglePassword("current")}
           >
-            {showPassword.current ? "Скрыть" : "Показать"}
+            {showPassword.current ? t("hide") : t("show")}
           </span>
         </div>
 
         <div className={styles.inputGroup}>
-          <label>Новый пароль</label>
+          <label>{t("newPassword")}</label>
           <input
             type={showPassword.new ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Введите новый пароль"
+            placeholder={t("enterNewPassword")}
           />
           <span
             className={styles.togglePassword}
             onClick={() => togglePassword("new")}
           >
-            {showPassword.new ? "Скрыть" : "Показать"}
+            {showPassword.new ? t("hide") : t("show")}
           </span>
         </div>
 
         <div className={styles.inputGroup}>
-          <label>Подтверждение пароля</label>
+          <label>{t("confirmPassword")}</label>
           <input
             type={showPassword.confirm ? "text" : "password"}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            placeholder="Подтвердите новый пароль"
+            placeholder={t("confirmNewPassword")}
           />
           <span
             className={styles.togglePassword}
             onClick={() => togglePassword("confirm")}
           >
-            {showPassword.confirm ? "Скрыть" : "Показать"}
+            {showPassword.confirm ? t("hide") : t("show")}
           </span>
         </div>
 
         <div className={styles.flex}>
           <div className={styles.inputGroup}>
-            <label>Тема</label>
+            <label>{t("theme")}</label>
             <select value={theme} onChange={(e) => setTheme(e.target.value)}>
-              <option value="light">Светлая</option>
-              {/* <option value="dark">Тёмная</option> */}
+              <option value="light">{t("themeLight")}</option>
             </select>
           </div>
 
           <div className={styles.inputGroup}>
-            <label>Язык</label>
+            <label>{t("language")}</label>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value)}
             >
-              <option value="ru">Русский</option>
-              <option value="uzCyrl">Узбекский (кириллица)</option>
-              <option value="uzLatn">Узбекский (латиница)</option>
-              <option value="en">English</option>
+              <option value="ru">{t("languageRussian")}</option>
+              <option value="uzCyrl">{t("languageUzbekCyrl")}</option>
+              <option value="uzLatn">{t("languageUzbekLatn")}</option>
+              <option value="en">{t("languageEnglish")}</option>
             </select>
           </div>
         </div>
 
         <button type="submit" className={styles.saveButton}>
-          Сохранить
+          {t("save")}
         </button>
       </form>
     </div>

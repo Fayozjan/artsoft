@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import styles from "./AttendanceCalendar.module.scss";
 
 const AttendanceCalendar = ({ data }) => {
-  if (!data.length) return <p>Нет данных</p>;
+  const { t } = useTranslation();
+  if (!data.length) return <p>{t("noData")}</p>;
 
   // Получаем данные сотрудника
   const employee = data[0];
@@ -54,20 +56,19 @@ const AttendanceCalendar = ({ data }) => {
   return (
     <div className={styles.calendar_container}>
       <div className={styles.summary}>
-        <h3>Посещаемость за месяц</h3>
+        <h3>{t("attendanceForMonth")}</h3>
         <p>
-          <strong>Отдел:</strong> {department_name}
+          <strong>{t("department")}:</strong> {department_name}
         </p>
         <p>
-          <strong>Сотрудник:</strong> {fullName} ({user_id})
+          <strong>{t("employee")}:</strong> {fullName} ({user_id})
         </p>
         <p>
-          <strong>Должность:</strong> {position_name}
+          <strong>{t("position")}:</strong> {position_name}
         </p>
         <p>
-          <strong>Итог за месяц:</strong>
-          {` ${workedDays} дней или
-          ${totalHours} часов`}
+          <strong>{t("monthTotal")}</strong>
+          {` ${workedDays} ${t("daysWord")} ${totalHours} ${t("hoursWord")}`}
         </p>
       </div>
 

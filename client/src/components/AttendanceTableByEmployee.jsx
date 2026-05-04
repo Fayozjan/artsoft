@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { t as i18t } from "i18next";
 
 import SortArrow from "./SortArrow";
 import DownloadButton from "./DownloadButton";
@@ -10,12 +11,12 @@ import { formatLateMinutesToHours } from "../helpers/time";
 export const columns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "employeeFullName",
-    title: "Сотрудник",
+    titleKey: "employee",
     sortable: true,
     render: (row) => (
       <div className={styles.employee}>
@@ -31,39 +32,39 @@ export const columns = [
   },
   {
     key: "employeeNumber",
-    title: "Таб. №",
+    titleKey: "tabNumber",
     sortable: true,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "departmentName",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
     render: (row) => row.departmentName || "-",
   },
   {
     key: "positionName",
-    title: "Должность",
+    titleKey: "position",
     sortable: true,
     render: (row) => row.positionName || "-",
   },
   {
     key: "status",
-    title: "Статус",
+    titleKey: "status",
     sortable: true,
     render: (row) => getStatus(row),
   },
   {
     key: "firstEntry",
-    title: "Вход",
+    titleKey: "entryTime",
     sortable: true,
     render: (row) => {
       if (!row.firstEntry && row.lastExit) {
-        return "Зафиксирован только выход";
+        return i18t("onlyExitRecorded");
       }
 
       return row.firstEntry || "-";
@@ -71,30 +72,30 @@ export const columns = [
   },
   {
     key: "lastExit",
-    title: "Выход",
+    titleKey: "exit",
     sortable: true,
     render: (row) => row.lastExit || "-",
   },
   {
     key: "late",
-    title: "Опоздал",
+    titleKey: "lateCol",
     sortable: true,
-    render: (row) => (row.late ? "Да" : "Нет"),
+    render: (row) => (row.late ? i18t("yes") : i18t("no")),
   },
   {
     key: "lateMinutes",
-    title: "Опоздание (чч:мм)",
+    titleKey: "lateTimeHhMm",
     sortable: true,
     render: (row) => formatLateMinutesToHours(row?.lateMinutes) || "",
   },
 ];
 
 const getStatus = (row) => {
-  if (row.left) return "Ушел";
-  if (row.inside) return "На месте";
-  if (row.late) return "Опоздал";
-  if (row.present) return "Пришел";
-  if (row.absent) return "Отсутствует";
+  if (row.left) return i18t("checkedOut");
+  if (row.inside) return i18t("onSite");
+  if (row.late) return i18t("lateGroup");
+  if (row.present) return i18t("arrived");
+  if (row.absent) return i18t("notCheckedIn");
   return "-";
 };
 
@@ -109,11 +110,9 @@ const AttendanceTableByEmployee = ({ data = [] }) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
 
-      // Пустые значения идут в конец
       if (aVal === null || aVal === undefined) return 1;
       if (bVal === null || bVal === undefined) return -1;
 
-      // Преобразование к числу, если возможно
       const aNum = parseFloat(aVal);
       const bNum = parseFloat(bVal);
 
@@ -124,7 +123,6 @@ const AttendanceTableByEmployee = ({ data = [] }) => {
         return sortOrder === "asc" ? aNum - bNum : bNum - aNum;
       }
 
-      // Сравнение как строки
       return sortOrder === "asc"
         ? String(aVal).localeCompare(String(bVal))
         : String(bVal).localeCompare(String(aVal));
@@ -196,7 +194,7 @@ const AttendanceTableByEmployee = ({ data = [] }) => {
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 >
                   <span className={styles.headerCell}>
-                    {col.title}
+                    {col.titleKey === "№" ? "№" : t(col.titleKey)}
                     {col.sortable && (
                       <SortArrow
                         active={sortField === col.key}
@@ -221,7 +219,7 @@ const AttendanceTableByEmployee = ({ data = [] }) => {
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length}>{emptyText}</td>
+                <td colSpan={columns.length}>{t("noData")}</td>
               </tr>
             )}
           </tbody>

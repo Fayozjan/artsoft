@@ -1,21 +1,33 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { Users, PartyPopper, UserCheck, UserX } from "lucide-react";
 
+import { useAuthStore } from "../stores/authStore";
+import { getTimesheet } from "../api";
 import {
   downloadAttendanceToExcel,
   downloadFullAttendanceToExcel,
 } from "../utils/DownloadAttendanceToExcel";
-import { getTimesheet } from "../api";
 
 import Loading from "../components/Loading";
 import { Timesheet } from "../features/timesheet";
-
 import Pagination from "../components/Pagination";
 import TimesheetFilter from "../components/TimesheetFilter";
+import TimesheetSort, { DEFAULT_SORT_BY } from "../components/TimesheetSort";
+import TimesheetColumnToggle from "../components/TimesheetColumnToggle";
 import DownloadButton from "../components/DownloadButton";
 
 import styles from "./TimesheetPage.module.scss";
-import { Users, CalendarDays, PartyPopper } from "lucide-react";
+import { Icons } from "../icons/icons";
+
+const DEFAULT_COLUMNS = {
+  position: true,
+  pinfl: true,
+  workSchedule: true,
+  lateHours: true,
+  overtimeHours: true,
+  paidTimeOff: true,
+};
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
@@ -75,7 +87,24 @@ const TimesheetPage = () => {
     branch_id: null,
     department_id: null,
     position_id: null,
+    status: "",
+    hasEvents: "",
   });
+
+  const [sortField, setSortField] = useState(DEFAULT_SORT_BY);
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  const settings = useAuthStore((s) => s.userSettings.settings);
+  const updateSettings = useAuthStore((s) => s.updateSettings);
+  const visibleColumns = useMemo(
+    () => ({ ...DEFAULT_COLUMNS, ...settings?.timesheet?.columns }),
+    [settings],
+  );
+
+  const handleSort = (field, order) => {
+    setSortField(field);
+    setSortOrder(order);
+  };
 
   const fetchData = async (
     page = currentPage,
@@ -144,17 +173,31 @@ const TimesheetPage = () => {
     fetchData(1, formData, pageSize);
   };
 
-  const workingDays = (() => {
-    if (!formData.month) return 0;
-    const [y, m] = formData.month.split("-").map(Number);
-    const daysInMonth = new Date(y, m, 0).getDate();
-    let count = 0;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dow = new Date(y, m - 1, d).getDay();
-      if (dow !== 0 && dow !== 6) count++;
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async (type) => {
+    setDownloading(true);
+    setShowDownloadMenu(false);
+    try {
+      const { data: allData } = await getTimesheet({
+        page: 1,
+        pageSize: 99999,
+        filters: formData,
+      });
+      if (type === "summary")
+        downloadAttendanceToExcel(allData, formData.month);
+      else downloadFullAttendanceToExcel(allData, formData.month);
+    } catch (err) {
+      console.error("Ошибка при скачивании:", err.message);
+    } finally {
+      setDownloading(false);
     }
-    return count;
-  })();
+  };
+
+  const withEventsCount = data.filter((emp) =>
+    Object.values(emp.sessions || {}).some((s) => s.events?.length > 0),
+  ).length;
+  const withoutEventsCount = data.length - withEventsCount;
 
   return (
     <div className={styles.timesheetPage}>
@@ -167,20 +210,26 @@ const TimesheetPage = () => {
               <StatWidget
                 icon={Users}
                 color="#6366f1"
-                label="Сотрудников"
+                label={t("employees")}
                 value={totalItems}
-              />
-              <StatWidget
-                icon={CalendarDays}
-                color="#10b981"
-                label="Раб. дней"
-                value={workingDays}
               />
               <StatWidget
                 icon={PartyPopper}
                 color="#f59e0b"
-                label="Праздников"
+                label={t("holidaysLabel")}
                 value={holidays.length}
+              />
+              <StatWidget
+                icon={UserCheck}
+                color="#22c55e"
+                label={t("withAttendance")}
+                value={withEventsCount}
+              />
+              <StatWidget
+                icon={UserX}
+                color="#ef4444"
+                label={t("withoutAttendance")}
+                value={withoutEventsCount}
               />
             </div>
           )}
@@ -247,6 +296,15 @@ const TimesheetPage = () => {
                 onSubmit={handleFormSubmit}
                 t={t}
               />
+              <TimesheetSort
+                sortField={sortField}
+                sortOrder={sortOrder}
+                onApply={handleSort}
+              />
+              <TimesheetColumnToggle
+                visibleColumns={visibleColumns}
+                onChange={(cols) => updateSettings("timesheet", { columns: cols })}
+              />
             </div>
 
             <Pagination
@@ -260,40 +318,22 @@ const TimesheetPage = () => {
 
             <div className={styles.buttonsWrapper}>
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               <div className={styles.downloadBtn}>
                 {data.length > 0 && (
                   <div className={styles.downloadWrapper} ref={downloadMenuRef}>
                     <DownloadButton
-                      text={t("save")}
+                      text={downloading ? "..." : t("save")}
                       onClick={() => setShowDownloadMenu((prev) => !prev)}
                     />
                     {showDownloadMenu && (
                       <div className={styles.downloadMenu}>
                         <button
                           className={styles.downloadMenuItem}
-                          onClick={() => {
-                            downloadAttendanceToExcel(data, formData.month);
-                            setShowDownloadMenu(false);
-                          }}
+                          onClick={() => handleDownload("summary")}
+                          disabled={downloading}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -320,19 +360,17 @@ const TimesheetPage = () => {
                           </svg>
                           <div className={styles.downloadMenuItemText}>
                             <span className={styles.downloadMenuItemTitle}>
-                              Сводный табель
+                              {t("summaryTimesheet")}
                             </span>
                             <span className={styles.downloadMenuItemSub}>
-                              Итоговые данные
+                              {t("summaryData")}
                             </span>
                           </div>
                         </button>
                         <button
                           className={styles.downloadMenuItem}
-                          onClick={() => {
-                            downloadFullAttendanceToExcel(data, formData.month);
-                            setShowDownloadMenu(false);
-                          }}
+                          onClick={() => handleDownload("full")}
+                          disabled={downloading}
                         >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -353,10 +391,10 @@ const TimesheetPage = () => {
                           </svg>
                           <div className={styles.downloadMenuItemText}>
                             <span className={styles.downloadMenuItemTitle}>
-                              Детальный табель
+                              {t("detailedTimesheet")}
                             </span>
                             <span className={styles.downloadMenuItemSub}>
-                              Подробные данные
+                              {t("detailedData")}
                             </span>
                           </div>
                         </button>
@@ -374,6 +412,10 @@ const TimesheetPage = () => {
             holidays={holidays}
             currentPage={currentPage}
             pageSize={pageSize}
+            sortField={sortField}
+            sortOrder={sortOrder}
+            onSort={handleSort}
+            visibleColumns={visibleColumns}
           />
         </div>
       )}

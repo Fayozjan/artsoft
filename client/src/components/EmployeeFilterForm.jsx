@@ -55,7 +55,7 @@ const EmployeeFilterForm = ({
         accessLevel !== "department" &&
         viewMode !== "branch" && (
           <div>
-            <span className={styles.label}>Филиал</span>
+            <span className={styles.label}>{t("branch")}</span>
             <SelectWithSearch
               value={formData.branch_id}
               options={branches}
@@ -71,7 +71,7 @@ const EmployeeFilterForm = ({
 
       {filters.includes("department") && (
         <div>
-          <span className={styles.label}>Отдел</span>
+          <span className={styles.label}>{t("department")}</span>
           <SelectWithSearch
             value={formData.department_id}
             options={filteredDepartments}
@@ -86,7 +86,7 @@ const EmployeeFilterForm = ({
 
       {filters.includes("position") && accessLevel !== "department" && (
         <div>
-          <span className={styles.label}>Должность</span>
+          <span className={styles.label}>{t("position")}</span>
           <SelectWithSearch
             value={formData.position_id}
             options={positions}

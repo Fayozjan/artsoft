@@ -20,16 +20,16 @@ export const salaryHistoryApi = {
 
   create: async (payload) => {
     const res = await api.post("/employee-salary-history", payload);
-    return { success: res.data.success, data: res.data.data };
+    return { success: res.data.success, data: res.data.data, message: res.data.message };
   },
 
   update: async (id, payload) => {
     const res = await api.put(`/employee-salary-history/${id}`, payload);
-    return { success: res.data.success, data: res.data.data };
+    return { success: res.data.success, data: res.data.data, message: res.data.message };
   },
 
   deleteById: async (id) => {
     const res = await api.delete(`/employee-salary-history/${id}`);
-    return { success: res.data.success };
+    return { success: res.data.success, message: res.data.message };
   },
 };

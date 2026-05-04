@@ -112,7 +112,7 @@ const EmployeeSelect = ({ value, onChange, employees, placeholder }) => {
                 )}
               </div>
             )) : (
-              <div className={styles.empSelectEmpty}>Нет результатов</div>
+              <div className={styles.empSelectEmpty}>{t("noResultsSearch")}</div>
             )}
           </div>
         </div>
@@ -161,7 +161,7 @@ const GiveAdvanceModal = ({ onClose, onSaved, editAdvance }) => {
   const handleSave = async () => {
     const valid = rows.every((r) => r.employee_id && r.amount && Number(r.amount) > 0 && r.advance_date);
     if (!valid) {
-      showAlert("Заполните все обязательные поля (сотрудник, сумма, дата)", "error");
+      showAlert(t("error"), "error");
       return;
     }
 
@@ -215,7 +215,7 @@ const GiveAdvanceModal = ({ onClose, onSaved, editAdvance }) => {
 
         <div className={styles.body}>
           {empLoading ? (
-            <div className={styles.loadingMsg}>Загрузка сотрудников…</div>
+            <div className={styles.loadingMsg}>{t("loadingEmployees")}</div>
           ) : (
             <>
               <div className={styles.colHeaders}>

@@ -7,21 +7,28 @@ import styles from "./EmployeeWorkSchedulesHistory.module.scss";
 import { EmployeeService, workScheduleHistoryApi } from "../api";
 import { t } from "i18next";
 
-const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const getDayNames = () => [
+  t("dayMon"),
+  t("dayTue"),
+  t("dayWed"),
+  t("dayThu"),
+  t("dayFri"),
+  t("daySat"),
+  t("daySun"),
+];
 
 const formatWorkScheduleTime = (schedule) => {
   if (!schedule) return "—";
+  const dayNames = getDayNames();
 
   switch (schedule.type) {
     case "fixed": {
       if (!schedule.work_days?.length) return "—";
 
-      // Берём только заполненные дни
       const activeDays = schedule.work_days.filter((d) => d.start && d.end);
 
       if (!activeDays.length) return "—";
 
-      // Группируем дни по времени
       const groups = {};
 
       activeDays.forEach((day) => {
@@ -35,7 +42,6 @@ const formatWorkScheduleTime = (schedule) => {
 
         const sortedDays = days.sort((a, b) => a - b);
 
-        // если дни идут подряд — показываем диапазоном
         const isSequential =
           sortedDays[sortedDays.length - 1] - sortedDays[0] + 1 ===
           sortedDays.length;
@@ -61,7 +67,7 @@ const formatWorkScheduleTime = (schedule) => {
         ?.filter((s) => s.start && s.end)
         .map((s) => (
           <div key={s.shift_number}>
-            {s.shift_number} смена: {s.start} – {s.end}
+            {s.shift_number} {t("shift2Label")}: {s.start} – {s.end}
           </div>
         ));
 
@@ -69,7 +75,7 @@ const formatWorkScheduleTime = (schedule) => {
     }
 
     case "flexible":
-      return "Гибкий график";
+      return t("flexibleSchedule");
 
     default:
       return "—";
@@ -119,8 +125,6 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
     }
   };
 
-  console.log("history", history);
-
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -140,7 +144,7 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
 
       <div className={styles.timelineWrapper}>
         {!loading && history.length === 0 && (
-          <div className={styles.empty}>История графиков пуста</div>
+          <div className={styles.empty}>{t("historyEmpty")}</div>
         )}
 
         {history.map((item, index) => (
@@ -158,7 +162,7 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
                   ? format(new Date(item.date_to), "dd MMM yyyy", {
                       locale: ru,
                     })
-                  : "по настоящее время"}
+                  : t("presentToDate")}
               </div>
             </div>
 
@@ -175,30 +179,30 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
               >
                 {deletingId === item.id ? (
                   <div className={styles.deleteConfirmOverlay}>
-                    <p>Удалить запись?</p>
+                    <p>{t("deleteRecord")}</p>
                     <div className={styles.deleteActions}>
                       <button
                         className={styles.confirmBtn}
                         onClick={() => confirmDelete(item.id)}
                       >
-                        Да
+                        {t("yes")}
                       </button>
                       <button
                         className={styles.cancelBtn}
                         onClick={() => setDeletingId(null)}
                       >
-                        Нет
+                        {t("no")}
                       </button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className={styles.card_header}>
-                      <h4 className={styles.title}>Рабочий график</h4>
+                      <h4 className={styles.title}>{t("workScheduleTitle")}</h4>
                       <button
                         className={styles.deleteIconBtn}
                         onClick={() => setDeletingId(item.id)}
-                        title="Удалить"
+                        title={t("deleteBtn")}
                       >
                         <svg width="14" height="16" viewBox="0 0 14 18">
                           <path
@@ -210,23 +214,24 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
                     </div>
                     <div className={styles.card_body}>
                       <p>
-                        <span>Название:</span> {item?.workSchedule?.name}
+                        <span>{t("scheduleName")}:</span>{" "}
+                        {item?.workSchedule?.name}
                       </p>
                       <p>
-                        <span>Тип:</span>
+                        <span>{t("type")}:</span>
                         {t(`scheduleType.${item?.workSchedule?.type}`)}
                       </p>
                       <p>
-                        <span>Режим работы:</span>{" "}
+                        <span>{t("workMode")}:</span>{" "}
                         {formatWorkScheduleTime(item?.workSchedule)}
                       </p>
                       <p>
-                        <span>Назначен:</span>{" "}
+                        <span>{t("assigned")}:</span>{" "}
                         {format(new Date(item.added_at), "dd.MM.yyyy HH:mm")}
                       </p>
 
                       <p className={styles.note}>
-                        <span>Добавил:</span> {item.addedBy}
+                        <span>{t("addedBy")}:</span> {item.addedBy}
                       </p>
                     </div>
                   </>

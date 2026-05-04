@@ -6,17 +6,23 @@ import TimesheetHeader from "./TimesheetHeader";
 import TimesheetRow from "./TimesheetRow";
 
 import styles from "./Timesheet.module.scss";
+import { useTranslation } from "react-i18next";
 
-const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
+const Timesheet = ({
+  data,
+  date,
+  holidays,
+  currentPage,
+  pageSize,
+  sortField,
+  sortOrder,
+  visibleColumns,
+}) => {
+  const { t } = useTranslation();
   const [year, month] = useMemo(() => {
     const [y, m] = date.split("-").map(Number);
     return [y, m];
   }, [date]);
-
-  console.log("data", data);
-
-  const [sortField, setSortField] = useState("employeeFullName");
-  const [sortOrder, setSortOrder] = useState("asc");
 
   const daysArray = useMemo(
     () =>
@@ -120,15 +126,6 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
 
   const closeModal = useCallback(() => setModalVisible(false), []);
 
-  const handleSort = (field) => {
-    if (sortField === field)
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
-  };
-
   const parentRef = useRef();
 
   const rowVirtualizer = useVirtualizer({
@@ -145,11 +142,9 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
         <TimesheetHeader
           daysArray={daysArray}
           holidayDays={holidayDays}
-          handleSort={handleSort}
-          sortField={sortField}
-          sortOrder={sortOrder}
           year={year}
           month={month}
+          visibleColumns={visibleColumns}
         />
 
         <tbody
@@ -166,7 +161,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
                   textAlign: "center",
                 }}
               >
-                Нет данных
+                {t("noData")}
               </td>
             </tr>
           ) : (
@@ -186,6 +181,7 @@ const Timesheet = ({ data, date, holidays, currentPage, pageSize }) => {
                   date={date}
                   isExpanded={expandedEmployeeId === empId}
                   measureRef={rowVirtualizer.measureElement}
+                  visibleColumns={visibleColumns}
                 />
               );
             })

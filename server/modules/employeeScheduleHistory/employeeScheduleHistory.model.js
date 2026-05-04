@@ -24,6 +24,16 @@ export const EmployeeWorkScheduleHistoryModel = {
     });
   },
 
+  // Получить истории по списку сотрудников
+  findByEmployeeIds: async (employeeIds) => {
+    const prisma = prismaContext.get();
+    return prisma.employee_schedule_history.findMany({
+      where: { employee_id: { in: employeeIds.map(Number) } },
+      include: { workSchedule: true },
+      orderBy: { date_from: "asc" },
+    });
+  },
+
   // Удалить запись по ID
   deleteById: async (id, tx = null) => {
     const prisma = tx || prismaContext.get();

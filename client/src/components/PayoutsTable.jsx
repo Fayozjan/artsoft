@@ -630,7 +630,7 @@ const PayoutsTable = ({
           ) : (
             items.map((item, idx) => {
               const emp = item.employee;
-              const isPaid = item.status === "paid";
+              const isPaid = item.payout_status === "paid";
               const isSelected = selectedIds.includes(item.id);
 
               const salaryBal = Number(item.salary_balance || 0);

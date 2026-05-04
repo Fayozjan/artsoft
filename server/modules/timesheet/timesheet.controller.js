@@ -27,15 +27,17 @@ export async function getTimesheet(req, res) {
     filters.start_date = start_date;
     filters.end_date = end_date;
 
+    const filterHasEvents = filters.hasEvents === "yes" || filters.hasEvents === "no";
+
     // --- праздники ---
     const holidays = await getHolidays(filters.month);
 
-    // Получаем список сотрудников по размеру страницы
+    // Если фильтр по событиям — берём всех без пагинации, потом пагинируем вручную
     const employees = await EmployeeService.getAll({
       userId,
       filters,
-      page,
-      pageSize,
+      page: filterHasEvents ? 1 : page,
+      pageSize: filterHasEvents ? 999999 : pageSize,
     });
 
     // --- события ---
@@ -80,9 +82,40 @@ export async function getTimesheet(req, res) {
           positionName: emp?.position?.name,
           pinfl: emp?.pinfl,
           workScheduleName: emp.work_schedule?.name,
+          status: emp.status,
           sessions: {},
         });
+      } else {
+        processedMap.get(key).status = emp.status;
       }
+    }
+
+    // Фильтр по событиям — после агрегации смен
+    if (filters.hasEvents === "yes") {
+      processedEvents = processedEvents.filter((emp) =>
+        Object.values(emp.sessions || {}).some((s) => s.events?.length > 0),
+      );
+    } else if (filters.hasEvents === "no") {
+      processedEvents = processedEvents.filter(
+        (emp) => !Object.values(emp.sessions || {}).some((s) => s.events?.length > 0),
+      );
+    }
+
+    // Ручная пагинация при фильтре по событиям
+    let pagination;
+    if (filterHasEvents) {
+      const currentPage = Math.max(parseInt(page) || 1, 1);
+      const size = Math.max(parseInt(pageSize) || 50, 1);
+      const totalItems = processedEvents.length;
+      pagination = {
+        totalItems,
+        currentPage,
+        pageSize: size,
+        totalPages: Math.ceil(totalItems / size),
+      };
+      processedEvents = processedEvents.slice((currentPage - 1) * size, currentPage * size);
+    } else {
+      pagination = { ...employees.pagination };
     }
 
     const sessionsIndex = buildSessionsIndex(processedEvents);
@@ -92,7 +125,7 @@ export async function getTimesheet(req, res) {
       data: processedEvents,
       sessionsIndex,
       holidays,
-      pagination: { ...employees?.pagination },
+      pagination,
     });
   } catch (err) {
     console.error("Ошибка в getTimesheet:", err.message);

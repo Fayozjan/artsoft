@@ -345,7 +345,6 @@ const SalarySettingPage = () => {
               onClick={() => fetchData(currentPage, formData, pageSize)}
             >
               {Icons.refresh}
-              <span>{t("refreshData")}</span>
             </div>
           </div>
         </div>

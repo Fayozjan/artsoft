@@ -18,7 +18,10 @@ import { Bot, CheckCircle, XCircle } from "lucide-react";
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -33,7 +36,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -44,6 +50,7 @@ import { useTranslation } from "react-i18next";
 import TableFilter from "../components/TableFilter";
 import DownloadButton from "../components/DownloadButton";
 import { ActionCell } from "../components/ActionButtons";
+import { Icons } from "../icons/icons";
 
 const TelegramBotsPage = () => {
   const [data, setData] = useState([]);
@@ -188,20 +195,20 @@ const TelegramBotsPage = () => {
               <StatWidget
                 icon={Bot}
                 color="#6366f1"
-                label="Всего ботов"
+                label={t("totalBotsLabel")}
                 value={totalItems}
               />
               <StatWidget
                 icon={CheckCircle}
                 color="#10b981"
-                label="Активных"
+                label={t("activeCount")}
                 value={data.filter((x) => x.status === "active").length}
                 sub={`/ ${data.length}`}
               />
               <StatWidget
                 icon={XCircle}
                 color="#ef4444"
-                label="Неактивных"
+                label={t("inactiveCount")}
                 value={data.filter((x) => x.status !== "active").length}
               />
             </div>
@@ -286,23 +293,7 @@ const TelegramBotsPage = () => {
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (
@@ -323,7 +314,7 @@ const TelegramBotsPage = () => {
                     onClick={() => handleSort("name")}
                   >
                     <span className={styles.headerContent}>
-                      Имя
+                      {t("name")}
                       <SortArrow
                         active={sortField === "name"}
                         order={sortOrder}
@@ -341,7 +332,7 @@ const TelegramBotsPage = () => {
                   </th>
                   <th onClick={() => handleSort("chat_id")}>
                     <span className={styles.headerContent}>
-                      Телеграм ID
+                      {t("telegramId")}
                       <SortArrow
                         active={sortField === "chat_id"}
                         order={sortOrder}
@@ -350,7 +341,7 @@ const TelegramBotsPage = () => {
                   </th>
                   <th onClick={() => handleSort("users")}>
                     <span className={styles.headerContent}>
-                      Сотрудники
+                      {t("employees")}
                       <SortArrow
                         active={sortField === "users"}
                         order={sortOrder}
@@ -359,14 +350,14 @@ const TelegramBotsPage = () => {
                   </th>
                   <th onClick={() => handleSort("status")}>
                     <span className={styles.headerContent}>
-                      Статус
+                      {t("status")}
                       <SortArrow
                         active={sortField === "status"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
-                  {(canEdit || canDelete) && <th>Действие</th>}
+                  {(canEdit || canDelete) && <th>{t("action")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -394,7 +385,7 @@ const TelegramBotsPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">Нет данных</td>
+                    <td colSpan="11">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -407,7 +398,7 @@ const TelegramBotsPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        title={t("areYouSureDelete")}
       />
       <OverlaySidebar
         isOpen={modalType !== null}

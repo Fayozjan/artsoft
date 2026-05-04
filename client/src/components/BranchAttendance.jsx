@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from "react";
 import AttendanceTable from "./AttendanceTable";
 import styles from "./AttendanceTable.module.scss";
+import { useTranslation } from "react-i18next";
 
 export const attendanceStatsColumns = [
-  { key: "name", title: "Название", sortable: true },
-  { key: "total", title: "Всего", sortable: true },
-  { key: "present", title: "Пришли", sortable: true },
-  { key: "absent", title: "Не пришли", sortable: true },
-  { key: "late", title: "Опоздали", sortable: true },
-  { key: "latePercent", title: "Опоздали %", sortable: true },
-  { key: "onPlace", title: "На месте", sortable: true },
-  { key: "left", title: "Ушли", sortable: true },
+  { key: "name", titleKey: "name", sortable: true },
+  { key: "total", titleKey: "totalLabel", sortable: true },
+  { key: "present", titleKey: "checkedIn", sortable: true },
+  { key: "absent", titleKey: "notCheckedIn", sortable: true },
+  { key: "late", titleKey: "lateGroup", sortable: true },
+  { key: "latePercent", titleKey: "lateGroup", sortable: true },
+  { key: "onPlace", titleKey: "onSite", sortable: true },
+  { key: "left", titleKey: "checkedOut", sortable: true },
 ];
 
 const calculateStats = (employees) => {
@@ -39,8 +40,8 @@ const groupDataWithStats = (employees) => {
   const branches = {};
 
   employees.forEach((emp) => {
-    const bName = emp.branchName || "Неизвестно";
-    const dName = emp.departmentName || "Без отдела";
+    const bName = emp.branchName || {t("unknown")};
+    const dName = emp.departmentName || {t("noDepartment")};
 
     if (!branches[bName]) {
       branches[bName] = { name: bName, rawEmployees: [], departments: {} };
@@ -71,6 +72,7 @@ const groupDataWithStats = (employees) => {
 };
 
 const BranchAttendance = ({ data = [] }) => {
+  const { t } = useTranslation();
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [modal, setModal] = useState({ isOpen: false, data: [], title: "" });
 
@@ -90,14 +92,14 @@ const BranchAttendance = ({ data = [] }) => {
     <div className={styles.wrapper}>
       {/* ТАБЛИЦА ФИЛИАЛОВ */}
       <section className={styles.tableSection}>
-        <h3>Посещаемость по филиалам</h3>
+        <h3>{t("totalBranchesLabel")}</h3>
         <table className={styles.table}>
           <thead>
             <tr>
               {attendanceStatsColumns.map((col) => (
-                <th key={col.key}>{col.title}</th>
+                <th key={col.key}>{t(col.titleKey)}</th>
               ))}
-              <th>Список</th>
+              <th>{t("listView")}</th>
             </tr>
           </thead>
           <tbody>
@@ -118,7 +120,7 @@ const BranchAttendance = ({ data = [] }) => {
                       openEmployeeModal(
                         e,
                         branch.employees,
-                        `Филиал: ${branch.name}`
+                        `${t("branch")}: ${branch.name}`
                       )
                     }
                   >
@@ -135,14 +137,14 @@ const BranchAttendance = ({ data = [] }) => {
       {selectedBranch && (
         <section className={styles.tableSection}>
           <hr />
-          <h3>Отделы филиала: {selectedBranch.name}</h3>
+          <h3>{t("departments")}: {selectedBranch.name}</h3>
           <table className={styles.table}>
             <thead>
               <tr>
                 {attendanceStatsColumns.map((col) => (
-                  <th key={col.key}>{col.title}</th>
+                  <th key={col.key}>{t(col.titleKey)}</th>
                 ))}
-                <th>Список</th>
+                <th>{t("listView")}</th>
               </tr>
             </thead>
             <tbody>
@@ -157,7 +159,7 @@ const BranchAttendance = ({ data = [] }) => {
                         openEmployeeModal(
                           e,
                           dept.employees,
-                          `Отдел: ${dept.name}`
+                          `${t("department")}: ${dept.name}`
                         )
                       }
                     >

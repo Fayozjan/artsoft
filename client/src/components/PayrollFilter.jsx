@@ -5,7 +5,7 @@ import EmployeeFilterForm from "./EmployeeFilterForm";
 import styles from "./PayrollFilter.module.scss";
 
 const SALARY_TYPES = [
-  { value: "", label: "Все" },
+  { value: "", labelKey: "all" },
   { value: "monthly", labelKey: "salaryTypeMonthly" },
   { value: "hourly", labelKey: "salaryTypeHourly" },
   { value: "piecework", labelKey: "salaryTypePiecework" },

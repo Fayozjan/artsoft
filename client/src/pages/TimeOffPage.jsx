@@ -10,8 +10,8 @@ import { useAlertStore } from "../stores/alertStore";
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
 import Button from "../components/Button";
-import SortArrow from "../components/SortArrow";
 import TimeOffFilter from "../components/TimeOffFilter";
+import TimeOffSort from "../components/TimeOffSort";
 import DownloadButton from "../components/DownloadButton";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
@@ -19,13 +19,16 @@ import AddTimeOff from "../components/AddTimeOff";
 import EditTimeOff from "../components/EditTimeOff";
 
 import styles from "./TimeOffPage.module.scss";
-import { formatIsoToLocalDateTime } from "../utils/date";
+import { formatIsoToLocalDate, formatIsoToLocalDateTime } from "../utils/date";
 import { CalendarOff, Building2, Clock } from "lucide-react";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -40,13 +43,17 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
   </div>
 );
 import { ActionCell } from "../components/ActionButtons";
+import { Icons } from "../icons/icons";
 
 const TimeOffPage = () => {
   const { t } = useTranslation();
@@ -61,7 +68,7 @@ const TimeOffPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [sortField, setSortField] = useState("date_from");
-  const [sortOrder, setSortOrder] = useState("asc");
+  const [sortOrder, setSortOrder] = useState("desc");
 
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
@@ -174,13 +181,9 @@ const TimeOffPage = () => {
     });
   };
 
-  const handleSort = (field) => {
-    if (sortField === field) {
-      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortField(field);
-      setSortOrder("asc");
-    }
+  const handleSortApply = (sort_by, sort_order) => {
+    setSortField(sort_by);
+    setSortOrder(sort_order);
   };
 
   const handleEditClick = (itemId) => {
@@ -216,19 +219,19 @@ const TimeOffPage = () => {
               <StatWidget
                 icon={CalendarOff}
                 color="#6366f1"
-                label="Всего записей"
+                label={t("totalRecordsLabel")}
                 value={totalItems}
               />
               <StatWidget
                 icon={Building2}
                 color="#10b981"
-                label="За счёт компании"
+                label={t("companyPaidLabel")}
                 value={data.filter((x) => x.is_company_paid).length}
               />
               <StatWidget
                 icon={Clock}
                 color="#f59e0b"
-                label="Почасовые"
+                label={t("hourlyLabel")}
                 value={data.filter((x) => x.type === "hour").length}
               />
             </div>
@@ -297,6 +300,12 @@ const TimeOffPage = () => {
                 onSubmit={handleFormSubmit}
                 t={t}
               />
+
+              <TimeOffSort
+                sort_by={sortField}
+                sort_order={sortOrder}
+                onApply={handleSortApply}
+              />
             </div>
 
             <Pagination
@@ -314,23 +323,7 @@ const TimeOffPage = () => {
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (
@@ -346,92 +339,15 @@ const TimeOffPage = () => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th onClick={() => handleSort("id")}>
-                    <span className={styles.headerContent}>
-                      Номер
-                      <SortArrow
-                        active={sortField === "id"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th
-                    className={styles.table_name_header}
-                    onClick={() => handleSort("employeeFullName")}
-                  >
-                    <span className={styles.headerContent}>
-                      ФИО
-                      <SortArrow
-                        active={sortField === "employeeFullName"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("branch_name")}>
-                    <span className={styles.headerContent}>
-                      Филиал
-                      <SortArrow
-                        active={sortField === "branch_name"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("department_name")}>
-                    <span className={styles.headerContent}>
-                      Отдел
-                      <SortArrow
-                        active={sortField === "department_name"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("position_name")}>
-                    <span className={styles.headerContent}>
-                      Должность
-                      <SortArrow
-                        active={sortField === "position_name"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th>Тип</th>
-                  <th>Причина</th>
-                  <th onClick={() => handleSort("date_from")}>
-                    <span className={styles.headerContent}>
-                      Дата от
-                      <SortArrow
-                        active={sortField === "date_from"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("date_to")}>
-                    <span className={styles.headerContent}>
-                      Дата до
-                      <SortArrow
-                        active={sortField === "date_to"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("is_company_paid")}>
-                    <span className={styles.headerContent}>
-                      За счет компании
-                      <SortArrow
-                        active={sortField === "is_company_paid"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
-                  <th onClick={() => handleSort("creatorFullName")}>
-                    <span className={styles.headerContent}>
-                      Добавил
-                      <SortArrow
-                        active={sortField === "creatorFullName"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
+                  <th>{t("number")}</th>
+                  <th className={styles.table_name_header}>{t("employee")}</th>
+                  <th>{t("position")}</th>
+                  <th>{t("type")}</th>
+                  <th>{t("reason")}</th>
+                  <th>{t("dateFrom")}</th>
+                  <th>{t("dateTo")}</th>
+                  <th>{t("companyPaid")}</th>
+                  <th>{t("addedBy")}</th>
                   <th>{(canEdit || canDelete) && t("action")}</th>
                 </tr>
               </thead>
@@ -441,9 +357,29 @@ const TimeOffPage = () => {
                     <tr key={item.id}>
                       <td>{(currentPage - 1) * pageSize + i + 1}</td>
                       <td>{item.id}</td>
-                      <td>{item.employeeFullName}</td>
-                      <td>{item.branch_name}</td>
-                      <td>{item.department_name}</td>
+                      <td>
+                        <div className={styles.empCell}>
+                          {item.employee_photo && (
+                            <img
+                              src={`/api/employees/image/${item.employee_photo}`}
+                              alt="employee"
+                              className={
+                                item.employee_status ? styles.active : styles.terminated
+                              }
+                            />
+                          )}
+                          <div className={styles.empInfo}>
+                            <span className={styles.empName}>
+                              {item.employeeFullName}
+                            </span>
+                            <span className={styles.empSub}>
+                              {[item.branch_name, item.department_name]
+                                .filter(Boolean)
+                                .join(" / ")}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
                       <td>{item.position_name}</td>
                       <td>{t(item.type)}</td>
                       <td>{item.reason}</td>
@@ -457,7 +393,7 @@ const TimeOffPage = () => {
                           ? formatIsoToLocalDateTime(item.date_to)
                           : formatIsoToLocalDate(item.date_to)}
                       </td>
-                      <td>{item.is_company_paid === true ? "Да" : "Нет"}</td>
+                      <td>{item.is_company_paid === true ? t("yes") : t("no")}</td>
                       <td>{item.creatorFullName}</td>
                       {
                         <ActionCell
@@ -473,7 +409,7 @@ const TimeOffPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="12">Нет данных</td>
+                    <td colSpan="11">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -486,7 +422,7 @@ const TimeOffPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        tag="Удаление"
+        tag={t("deletion")}
       />
 
       <OverlaySidebar

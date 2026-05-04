@@ -44,7 +44,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error.message);
-        showAlert("Ошибка", "error");
+        showAlert(t("error"), "error");
         setTimeout(() => navigate("/doors"), 1500);
       }
     };
@@ -68,7 +68,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
       const res = await editFaceDevice(id, formData);
 
       if (res.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setTimeout(() => {
           onSuccess();
           handleClose();
@@ -79,7 +79,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
         "Ошибка при отправке данных:",
         error.response ? error.response.data : error.message,
       );
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -92,7 +92,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label for="name">Название</label>
+          <label htmlFor="name">{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -102,7 +102,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Пароль</label>
+          <label>{t("password")}</label>
           <input
             type="text"
             name="password"
@@ -114,7 +114,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Серийный номер</label>
+          <label>{t("serialNumber")}</label>
           <input
             type="text"
             name="serial_number"
@@ -123,22 +123,22 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label for="name">Направление</label>
+          <label>{t("direction")}</label>
           <select
             name="direction"
             value={formData?.direction}
             onChange={handleChange}
           >
-            <option value="entry">Вход</option>
-            <option value="exit">Выход</option>
-            <option value="universal">Универсальный</option>
+            <option value="entry">{t("entry")}</option>
+            <option value="exit">{t("exit")}</option>
+            <option value="universal">{t("universal")}</option>
           </select>
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label>IP адресс</label>
+          <label>{t("ipAddress")}</label>
           <input
             type="text"
             name="device_ip"
@@ -148,7 +148,7 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Порт</label>
+          <label>{t("port")}</label>
           <input
             type="text"
             name="port"
@@ -160,18 +160,18 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Локальное устройство</label>
+          <label>{t("localDevice")}</label>
           <select
             name="is_local"
             value={formData.is_local}
             onChange={handleChange}
           >
-            <option value={true}>Да</option>
-            <option value={false}>Нет</option>
+            <option value={true}>{t("yes")}</option>
+            <option value={false}>{t("no")}</option>
           </select>
         </div>
         <div>
-          <label for="name">Дверь</label>
+          <label>{t("door")}</label>
           <select
             name="door_id"
             value={formData?.door_id}
@@ -186,14 +186,14 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Статус</label>
+          <label>{t("status")}</label>
           <select
             name="status"
             value={formData?.status}
             onChange={handleChange}
           >
-            <option value="true">Включить</option>
-            <option value="false">Выключить</option>
+            <option value="true">{t("enable")}</option>
+            <option value="false">{t("disable")}</option>
           </select>
         </div>
       </div>

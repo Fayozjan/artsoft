@@ -5,7 +5,7 @@ import { getActiveGates } from "../api";
 import MultiSelectDoors from "./MultiSelectDoors";
 import EmployeeFilterForm from "./EmployeeFilterForm";
 
-import styles from "./FacePassesFilter.module.scss";
+import styles from "./VehiclePassesFilter.module.scss";
 
 const FacePassesFilter = ({
   initialFormData,
@@ -108,7 +108,6 @@ const FacePassesFilter = ({
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -117,7 +116,7 @@ const FacePassesFilter = ({
           <form onSubmit={onSubmit}>
             <div className={styles.row}>
               <div>
-                <h2>Дата от</h2>
+                <h2>{t("filterFrom")}</h2>
                 <input
                   className={styles.date}
                   id="date_from"
@@ -129,7 +128,7 @@ const FacePassesFilter = ({
                 />
               </div>
               <div>
-                <h2>Дата до</h2>
+                <h2>{t("filterTo")}</h2>
                 <input
                   className={styles.date}
                   id="date_to"
@@ -149,17 +148,17 @@ const FacePassesFilter = ({
             />
 
             <div>
-              <h2>Ворота</h2>
+              <h2>{t("gates")}</h2>
               <MultiSelectDoors
                 options={gates}
                 selected={formData.selectedGateIds || []}
-                placeholder="Выберите ворота"
+                placeholder={t("selectGates")}
                 onChange={handleGateChange}
               />
             </div>
 
             <div>
-              <h2>Направление</h2>
+              <h2>{t("direction")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -171,7 +170,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -184,7 +183,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "forward" }))
                     }
                   />
-                  Въезд
+                  {t("forward")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -197,7 +196,7 @@ const FacePassesFilter = ({
                       setFormData((prev) => ({ ...prev, direction: "reverse" }))
                     }
                   />
-                  Выезд
+                  {t("reverse")}
                 </label>
               </div>
             </div>

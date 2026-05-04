@@ -1,0 +1,95 @@
+import { readFileSync, writeFileSync } from "fs";
+
+const files = {
+  ru: "client/src/locales/ru.json",
+  en: "client/src/locales/en.json",
+  uzLatn: "client/src/locales/uzLatn.json",
+  uzCyrl: "client/src/locales/uzCyrl.json",
+};
+
+const keys = {
+  addManufacturingOrder: { ru: "Добавить производственный заказ", en: "Add Manufacturing Order", uzLatn: "Ishlab chiqarish buyurtmasini qo'shish", uzCyrl: "Ишлаб чиқариш буюртмасини қўшиш" },
+  client: { ru: "Клиент", en: "Client", uzLatn: "Mijoz", uzCyrl: "Мижоз" },
+  manager: { ru: "Менеджер", en: "Manager", uzLatn: "Menejer", uzCyrl: "Менежер" },
+  product: { ru: "Продукт", en: "Product", uzLatn: "Mahsulot", uzCyrl: "Маҳсулот" },
+  productName: { ru: "Название продукта", en: "Product Name", uzLatn: "Mahsulot nomi", uzCyrl: "Маҳсулот номи" },
+  fabric: { ru: "Ткань", en: "Fabric", uzLatn: "Mato", uzCyrl: "Мато" },
+  design: { ru: "Дизайн", en: "Design", uzLatn: "Dizayn", uzCyrl: "Дизайн" },
+  designVariant: { ru: "Вариант дизайна", en: "Design Variant", uzLatn: "Dizayn varianti", uzCyrl: "Дизайн варианти" },
+  colorVariant: { ru: "Вариант цвета", en: "Color Variant", uzLatn: "Rang varianti", uzCyrl: "Ранг варианти" },
+  unitOfMeasure: { ru: "Единица измерения", en: "Unit of Measure", uzLatn: "O'lchov birligi", uzCyrl: "Ўлчов бирлиги" },
+  quantity: { ru: "Количество", en: "Quantity", uzLatn: "Miqdor", uzCyrl: "Миқдор" },
+  price: { ru: "Цена", en: "Price", uzLatn: "Narx", uzCyrl: "Нарх" },
+  totalAmount: { ru: "Сумма", en: "Total", uzLatn: "Jami", uzCyrl: "Жами" },
+  grams: { ru: "Грамм", en: "Grams", uzLatn: "Gramm", uzCyrl: "Грамм" },
+  grammage: { ru: "Граммаж", en: "Grammage", uzLatn: "Gramm og'irlik", uzCyrl: "Грамм оғирлик" },
+  color: { ru: "Цвет", en: "Color", uzLatn: "Rang", uzCyrl: "Ранг" },
+  mfgOrderNumber: { ru: "Номер заказа", en: "Order Number", uzLatn: "Buyurtma raqami", uzCyrl: "Буюртма рақами" },
+  mfgOrderId: { ru: "ID заказа", en: "Order ID", uzLatn: "Buyurtma ID", uzCyrl: "Буюртма ID" },
+  completed: { ru: "Выполнен", en: "Completed", uzLatn: "Bajarildi", uzCyrl: "Бажарилди" },
+  cancelled: { ru: "Отменен", en: "Cancelled", uzLatn: "Bekor qilindi", uzCyrl: "Бекор қилинди" },
+  terminationEvent: { ru: "Увольнение (по собственному желанию или по статье)", en: "Termination (voluntary or dismissal)", uzLatn: "Ishdan bo'shatish (o'z xohishi bilan yoki bo'yicha)", uzCyrl: "Ишдан бўшатиш (ўз хоҳиши билан ёки бўйича)" },
+  reinstatedEvent: { ru: "Повторный прием на работу", en: "Reinstated", uzLatn: "Qayta qabul qilish", uzCyrl: "Қайта қабул қилиш" },
+  eventDate: { ru: "Дата события", en: "Event Date", uzLatn: "Voqea sanasi", uzCyrl: "Воқеа санаси" },
+  placeOfBirth: { ru: "Место рождения", en: "Place of Birth", uzLatn: "Tug'ilgan joy", uzCyrl: "Туғилган жой" },
+  passportGivenDate: { ru: "Дата выдачи", en: "Issue Date", uzLatn: "Berilgan sana", uzCyrl: "Берилган сана" },
+  passportValidityPeriod: { ru: "Срок действия", en: "Expiry Date", uzLatn: "Amal qilish muddati", uzCyrl: "Амал қилиш муддати" },
+  nationality: { ru: "Национальность", en: "Nationality", uzLatn: "Millati", uzCyrl: "Миллати" },
+  systemId: { ru: "Системный ID", en: "System ID", uzLatn: "Tizim ID", uzCyrl: "Тизим ID" },
+  higherEdu: { ru: "Высшее", en: "Higher", uzLatn: "Oliy", uzCyrl: "Олий" },
+  secondaryEdu: { ru: "Среднее специальное", en: "Secondary Special", uzLatn: "O'rta maxsus", uzCyrl: "Ўрта махсус" },
+  generalEdu: { ru: "Среднее общее", en: "General Secondary", uzLatn: "Umumiy o'rta", uzCyrl: "Умумий ўрта" },
+  editRecord: { ru: "Редактирование", en: "Edit", uzLatn: "Tahrirlash", uzCyrl: "Таҳрирлаш" },
+  attended: { ru: "Пришли", en: "Arrived", uzLatn: "Keldi", uzCyrl: "Келди" },
+  notAttended: { ru: "Не пришли", en: "Not Arrived", uzLatn: "Kelmadi", uzCyrl: "Келмади" },
+  allEmployees: { ru: "Все сотрудники", en: "All Employees", uzLatn: "Barcha hodimlar", uzCyrl: "Барча ходимлар" },
+  currentShift: { ru: "Текущая смена", en: "Current Shift", uzLatn: "Joriy smena", uzCyrl: "Жорий смена" },
+  workDurationToday: { ru: "Время на работе сегодня", en: "Time at work today", uzLatn: "Bugun ish vaqti", uzCyrl: "Бугун иш вақти" },
+  lateAfterBreak: { ru: "Опоздание после перерыва", en: "Late after break", uzLatn: "Tanaffusdan keyin kechikish", uzCyrl: "Танаффусдан кейин кечикиш" },
+  overtime: { ru: "Переработка", en: "Overtime", uzLatn: "Ortiqcha ish", uzCyrl: "Ортиқча иш" },
+  totalHoursMonth: { ru: "Всего часов", en: "Total Hours", uzLatn: "Jami soatlar", uzCyrl: "Жами соатлар" },
+  absences: { ru: "Пропусков", en: "Absences", uzLatn: "Yo'qlama", uzCyrl: "Йўқлама" },
+  leftEarly: { ru: "Ушёл раньше", en: "Left early", uzLatn: "Erta ketdi", uzCyrl: "Эрта кетди" },
+  leftLate: { ru: "Ушёл поздно", en: "Left late", uzLatn: "Kech ketdi", uzCyrl: "Кеч кетди" },
+  noExit: { ru: "Нет выхода", en: "No exit", uzLatn: "Chiqish yo'q", uzCyrl: "Чиқиш йўқ" },
+  totalEmployeesLabel: { ru: "Всего сотрудников", en: "Total Employees", uzLatn: "Jami hodimlar", uzCyrl: "Жами ходимлар" },
+  departmentsCount: { ru: "Отделов", en: "Departments", uzLatn: "Bo'limlar", uzCyrl: "Бўлимлар" },
+  todayStats: { ru: "Статистика за сегодня", en: "Today's Stats", uzLatn: "Bugungi statistika", uzCyrl: "Бугунги статистика" },
+  deptPresence: { ru: "Присутствие по отделам", en: "Department Presence", uzLatn: "Bo'limlar bo'yicha davomat", uzCyrl: "Бўлимлар бўйича давомат" },
+  allBranches: { ru: "Все филиалы", en: "All Branches", uzLatn: "Barcha filiallar", uzCyrl: "Барча филиаллар" },
+  totalEmpAll: { ru: "сотрудников всего", en: "employees total", uzLatn: "jami hodim", uzCyrl: "жами ходим" },
+  searchByName: { ru: "Поиск по имени…", en: "Search by name…", uzLatn: "Ism bo'yicha qidirish…", uzCyrl: "Исм бўйича қидириш…" },
+  schedPrefix: { ru: "граф.", en: "sched.", uzLatn: "graf.", uzCyrl: "граф." },
+  breakPrefix: { ru: "перерыв", en: "break", uzLatn: "tanaffus", uzCyrl: "танаффус" },
+  planPrefix: { ru: "план", en: "plan", uzLatn: "reja", uzCyrl: "режа" },
+  notArrived: { ru: "Не пришёл", en: "Not arrived", uzLatn: "Kelmadi", uzCyrl: "Келмади" },
+  leftLabel: { ru: "Ушёл", en: "Left", uzLatn: "Ketdi", uzCyrl: "Кетди" },
+  leftEarlyLabel: { ru: "Ушёл рано", en: "Left early", uzLatn: "Erta ketdi", uzCyrl: "Эрта кетди" },
+  lateLabel: { ru: "Опоздал", en: "Late", uzLatn: "Kechikdi", uzCyrl: "Кечикди" },
+  workedDaysMonth: { ru: "Рабочих дней", en: "Working days", uzLatn: "Ish kunlari", uzCyrl: "Иш кунлари" },
+  daysAbbr: { ru: "дн.", en: "d.", uzLatn: "kun", uzCyrl: "кун" },
+  attendedLow: { ru: "пришли", en: "arrived", uzLatn: "keldi", uzCyrl: "келди" },
+  onSiteLow: { ru: "на месте", en: "on site", uzLatn: "joyida", uzCyrl: "жойида" },
+  lateGroupLow: { ru: "опоздали", en: "late", uzLatn: "kechikdi", uzCyrl: "кечикди" },
+  absentLow: { ru: "нет", en: "absent", uzLatn: "yo'q", uzCyrl: "йўқ" },
+  branchSection: { ru: "Филиал", en: "Branch", uzLatn: "Filial", uzCyrl: "Филиал" },
+  checkIn: { ru: "Вход", en: "Check in", uzLatn: "Kirish", uzCyrl: "Кириш" },
+  checkOut: { ru: "Выход", en: "Check out", uzLatn: "Chiqish", uzCyrl: "Чиқиш" },
+  notFound2: { ru: "Не найдено", en: "Not found", uzLatn: "Topilmadi", uzCyrl: "Топилмади" },
+  attendanceForMonth: { ru: "Посещаемость за месяц", en: "Monthly Attendance", uzLatn: "Oylik davomat", uzCyrl: "Ойлик давомат" },
+  monthTotal: { ru: "Итог за месяц:", en: "Month total:", uzLatn: "Oylik jami:", uzCyrl: "Ойлик жами:" },
+  daysWord: { ru: "дней", en: "days", uzLatn: "kun", uzCyrl: "кун" },
+  hoursWord: { ru: "часов", en: "hours", uzLatn: "soat", uzCyrl: "соат" },
+  totalLabel: { ru: "Итог:", en: "Total:", uzLatn: "Jami:", uzCyrl: "Жами:" },
+};
+
+for (const [lang, filePath] of Object.entries(files)) {
+  const data = JSON.parse(readFileSync(filePath, "utf8"));
+  for (const [key, translations] of Object.entries(keys)) {
+    if (!(key in data)) {
+      data[key] = translations[lang] ?? translations.en;
+    }
+  }
+  writeFileSync(filePath, JSON.stringify(data, null, 2), "utf8");
+  console.log(`Updated ${filePath}`);
+}

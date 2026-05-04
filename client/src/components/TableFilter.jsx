@@ -70,7 +70,6 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -78,7 +77,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
             <div>
-              <h2>Статус</h2>
+              <h2>{t("status")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -90,7 +89,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -103,7 +102,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "true" }))
                     }
                   />
-                  Включен
+                  {t("true")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -116,7 +115,7 @@ const TableFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "false" }))
                     }
                   />
-                  Выключен
+                  {t("false")}
                 </label>
               </div>
             </div>

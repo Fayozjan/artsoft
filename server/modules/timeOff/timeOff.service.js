@@ -18,6 +18,9 @@ export const formatRecords = (records) =>
       branch_name: r.employee?.branch?.name ?? null,
       department_name: r.employee?.department?.name ?? null,
       position_name: r.employee?.position?.name ?? null,
+      employee_photo: r.employee?.photo ?? null,
+      employee_number: r.employee?.employee_number ?? null,
+      employee_status: r.employee?.status ?? null,
     };
 
     delete formatted.employee;
@@ -128,7 +131,7 @@ export const TimeOffService = {
                 OR: [
                   { id: num },
                   { pinfl: searchStr },
-                  { employee_number: num },
+                  { employee_number: searchStr },
                 ],
               },
             },
@@ -232,7 +235,7 @@ export const TimeOffService = {
             employee: {
               OR: [
                 ...(isValidInt4
-                  ? [{ id: numericValue }, { employee_number: numericValue }]
+                  ? [{ id: numericValue }, { employee_number: s }]
                   : []),
                 { pinfl: s }, // pinfl — всегда строка
               ],
@@ -291,7 +294,7 @@ export const TimeOffService = {
         date_to: cleanData.date_to ? new Date(cleanData.date_to) : undefined,
       };
 
-      const updated = await TimeOffModel.updateById(Number(id), preparedData);
+      const updated = await TimeOffModel.update(Number(id), preparedData);
 
       if (!updated) {
         throw new Error("Time off не найден для обновления");
@@ -305,7 +308,7 @@ export const TimeOffService = {
 
   deleteById: async (id) => {
     try {
-      const deleted = await TimeOffModel.deleteById(id);
+      const deleted = await TimeOffModel.delete(id);
       return deleted;
     } catch (err) {
       if (err.code === "P2025") {

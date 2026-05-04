@@ -16,11 +16,15 @@ import DownloadButton from "../components/DownloadButton";
 import styles from "./HolidaysPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
 import { PartyPopper, CalendarDays, CalendarCheck } from "lucide-react";
+import { Icons } from "../icons/icons";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -35,7 +39,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -167,19 +174,19 @@ const HolidaysPage = () => {
               <StatWidget
                 icon={PartyPopper}
                 color="#6366f1"
-                label="Праздников в году"
+                label={t("totalHolidaysLabel")}
                 value={data.length}
               />
               <StatWidget
                 icon={CalendarDays}
                 color="#10b981"
-                label="Выходных дней"
+                label={t("totalWeekendDaysLabel")}
                 value={totalHolidayDays}
               />
               <StatWidget
                 icon={CalendarCheck}
                 color="#f59e0b"
-                label="Год"
+                label={t("year")}
                 value={formData.year}
               />
             </div>
@@ -265,23 +272,7 @@ const HolidaysPage = () => {
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (
@@ -301,12 +292,12 @@ const HolidaysPage = () => {
                     className={styles.table_name_header}
                     onClick={() => handleSort("name")}
                   >
-                    Название
+                    {t("name")}
                   </th>
-                  <th onClick={() => handleSort("date_from")}>Дата от</th>
-                  <th onClick={() => handleSort("date_to")}>Дата до</th>
-                  <th onClick={() => handleSort("creator.surname")}>Добавил</th>
-                  {(canEdit || canDelete) && <th>Действие</th>}
+                  <th onClick={() => handleSort("date_from")}>{t("dateFrom")}</th>
+                  <th onClick={() => handleSort("date_to")}>{t("dateTo")}</th>
+                  <th onClick={() => handleSort("creator.surname")}>{t("addedBy")}</th>
+                  {(canEdit || canDelete) && <th>{t("action")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -331,7 +322,7 @@ const HolidaysPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">Нет данных</td>
+                    <td colSpan="11">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -344,7 +335,7 @@ const HolidaysPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        title={t("areYouSureDelete")}
       />
       <OverlaySidebar
         isOpen={modalType !== null}

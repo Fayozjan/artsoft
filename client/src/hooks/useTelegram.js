@@ -18,9 +18,6 @@ export const useTelegram = () => {
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
-    console.log("tg:", tg);
-    console.log("initData:", tg?.initData);
-    console.log("platform:", tg?.platform);
   }, []);
 
   return {

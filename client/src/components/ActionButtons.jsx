@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Icons } from "../icons/icons";
@@ -136,6 +137,7 @@ export const ActionCell = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   if (!canEdit && !canDelete) return null;
 
   return (
@@ -152,7 +154,7 @@ export const ActionCell = ({
           <ActionButton
             onClick={() => onDownload(item)}
             icon={Icons.save}
-            label="Скачать"
+            label={t("downloadLabel")}
             variant="download"
           />
         )}
@@ -161,7 +163,7 @@ export const ActionCell = ({
           <ActionButton
             onClick={() => onEdit(item.id)}
             icon={Icons.edit}
-            label="Редактировать"
+            label={t("editBtn")}
             variant="edit"
           />
         )}
@@ -169,7 +171,7 @@ export const ActionCell = ({
           <ActionButton
             onClick={() => onDelete(item.id)}
             icon={Icons.delete}
-            label="Удалить"
+            label={t("deleteBtn")}
             variant="delete"
           />
         )}

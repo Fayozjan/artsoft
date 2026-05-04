@@ -1,15 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./LateMonthList.module.scss";
 
-function formatLateMinutes(minutes) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours.toString().padStart(2, "0")}:${mins
-    .toString()
-    .padStart(2, "0")}`;
-}
-
 const LateMonthList = ({ data }) => {
+  const { t } = useTranslation();
   const [sortConfig, setSortConfig] = useState({
     key: "fullname",
     direction: "asc",
@@ -20,21 +14,21 @@ const LateMonthList = ({ data }) => {
   const columns = [
     { label: "№", render: (_, __, i) => i + 1 },
     {
-      label: "ФИО",
+      label: t("fullName"),
       accessor: "fullname",
     },
-    { label: "Филиал", accessor: "branch_name" },
-    { label: "Отдел", accessor: "department_name" },
-    { label: "Должность", accessor: "position_name" },
+    { label: t("branch"), accessor: "branch_name" },
+    { label: t("department"), accessor: "department_name" },
+    { label: t("position"), accessor: "position_name" },
     {
-      label: "Опозданий за месяц",
+      label: t("lateForMonth"),
       accessor: "monthly_late_count",
     },
     {
-      label: "Действие",
+      label: t("action"),
       render: (_, item) => (
         <button className={styles.btnMore} onClick={() => setModalData(item)}>
-          Подробно
+          {t("more")}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="200"
@@ -94,7 +88,7 @@ const LateMonthList = ({ data }) => {
             className={styles.modalContent}
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Подробности опозданий сотрудника: {modalData.fullname} </h3>
+            <h3>{t("lateDetailsTitle")}: {modalData.fullname}</h3>
             <ul className={styles.lateList}>
               {modalData.lateDays?.map((entry, i) => {
                 const minutes = entry.minutesLate;
@@ -103,16 +97,14 @@ const LateMonthList = ({ data }) => {
 
                 const formattedLate =
                   minutes >= 60
-                    ? `${hours} ч${
-                        remainingMinutes > 0 ? ` ${remainingMinutes} мин.` : ""
+                    ? `${hours} ${t("hoursShort")}${
+                        remainingMinutes > 0 ? ` ${remainingMinutes} ${t("minutesShort")}` : ""
                       }`
-                    : `${minutes} мин.`;
+                    : `${minutes} ${t("minutesShort")}`;
 
                 return (
                   <li key={i}>
-                    {i + 1}. Дата: {entry.date} — Опоздание: {formattedLate} (По
-                    графику: {entry.scheduled.slice(0, 5)}, Пришел:{" "}
-                    {entry.actual})
+                    {i + 1}. {t("date")}: {entry.date} — {t("lateCol")}: {formattedLate} ({t("scheduledTime")}: {entry.scheduled.slice(0, 5)}, {t("arrived")}: {entry.actual})
                   </li>
                 );
               })}
@@ -184,7 +176,7 @@ const LateMonthList = ({ data }) => {
           {sortedData.length === 0 ? (
             <tr>
               <td colSpan={columns.length} style={{ textAlign: "center" }}>
-                Нет данных
+                {t("noData")}
               </td>
             </tr>
           ) : (

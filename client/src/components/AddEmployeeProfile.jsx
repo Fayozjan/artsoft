@@ -118,12 +118,12 @@ const AddEmployeeProfile = ({ userId, setUserId, setActiveTab }) => {
       });
 
       if (res.data.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setUserId(res.data.result.user_id);
         setTimeout(() => setActiveTab("job"), 1000);
       }
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
       console.log("Error submitting data:", error);
     }
   };
@@ -369,7 +369,7 @@ const AddEmployeeProfile = ({ userId, setUserId, setActiveTab }) => {
                   className={styles.changeImageButton}
                   onClick={handleChangeImage}
                 >
-                  Изменить фото
+                  {t("changePhoto")}
                 </button>
               </div>
             ) : (

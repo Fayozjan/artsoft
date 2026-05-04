@@ -1,5 +1,6 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
@@ -9,6 +10,7 @@ import styles from "./EditEmployeeDoor.module.scss";
 
 const EditEmployeeDoor = ({ id }) => {
   const { showAlert } = useAlertStore();
+  const { t } = useTranslation();
   const [imagePreview, setImagePreview] = useState(null);
   const [file, setFile] = useState(null);
   const [allDoor, setAllDoor] = useState();
@@ -124,11 +126,11 @@ const EditEmployeeDoor = ({ id }) => {
       });
 
       if (res.data.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setTimeout(() => cancelButton(), 1500);
       }
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
       console.log("Error submitting data:", error);
     }
   };
@@ -145,7 +147,7 @@ const EditEmployeeDoor = ({ id }) => {
                 className={styles.previewImage}
               />
               <div className={styles.changeImageButton}>
-                <Button text="Изменить фото" onClick={handleChangeImage} />
+                <Button text="{t("changePhoto")}" onClick={handleChangeImage} />
               </div>
             </div>
           ) : (
@@ -165,7 +167,7 @@ const EditEmployeeDoor = ({ id }) => {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                <span>Загрузите фото</span>
+                <span>{t("uploadPhoto")}</span>
               </label>
               <input
                 id="photo-upload"
@@ -178,7 +180,7 @@ const EditEmployeeDoor = ({ id }) => {
           )}
         </div>
         <div className={styles.input_fields}>
-          <label>Двери</label>
+          <label>{t("doors")}</label>
           <div className={styles.checkbox}>
             {allDoor &&
               allDoor.map((door) => (
@@ -199,7 +201,7 @@ const EditEmployeeDoor = ({ id }) => {
         </div>
       </form>
       <div className={styles.buttons}>
-        <Button text="Сохранить" onClick={handleSubmit} />
+        <Button text={t("save")} onClick={handleSubmit} />
       </div>
     </div>
   );

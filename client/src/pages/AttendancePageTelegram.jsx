@@ -23,8 +23,8 @@ export const isToday = (dateString) => {
 export const STATUS_FILTERS = [
   {
     key: "present",
-    label: "Пришли",
-    labelSingular: "Пришел",
+    labelKey: "checkedIn",
+    labelSingularKey: "checkedInSingular",
     color: "#16a34a",
     bg: "#f0fdf4",
     activeBg: "#16a34a",
@@ -32,8 +32,8 @@ export const STATUS_FILTERS = [
   },
   {
     key: "absent",
-    label: "Не пришли",
-    labelSingular: "Не пришел",
+    labelKey: "notCheckedIn",
+    labelSingularKey: "notCheckedInSingular",
     color: "#dc2626",
     bg: "#fef2f2",
     activeBg: "#dc2626",
@@ -41,8 +41,8 @@ export const STATUS_FILTERS = [
   },
   {
     key: "late",
-    label: "Опоздали",
-    labelSingular: "Опоздал",
+    labelKey: "lateGroup",
+    labelSingularKey: "lateSingular",
     color: "#d97706",
     bg: "#fffbeb",
     activeBg: "#d97706",
@@ -50,8 +50,8 @@ export const STATUS_FILTERS = [
   },
   {
     key: "inside",
-    label: "На месте",
-    labelSingular: "На месте",
+    labelKey: "onSite",
+    labelSingularKey: "onSite",
     color: "#2563eb",
     bg: "#eff6ff",
     activeBg: "#2563eb",
@@ -59,8 +59,8 @@ export const STATUS_FILTERS = [
   },
   {
     key: "left",
-    label: "Ушли",
-    labelSingular: "Ушел",
+    labelKey: "checkedOut",
+    labelSingularKey: "checkedOutSingular",
     color: "#7c3aed",
     bg: "#f5f3ff",
     activeBg: "#7c3aed",
@@ -212,7 +212,7 @@ const AttendancePageTelegram = () => {
                 }}
                 onClick={() => toggleStatusFilter(f.key)}
               >
-                {f.label}
+                {t(f.labelKey)}
                 {count > 0 && <span className={styles.chipCount}>{count}</span>}
               </button>
             );
@@ -243,7 +243,7 @@ const AttendancePageTelegram = () => {
               <span className={styles.activeFilterTag}>
                 {departments.find(
                   (dep) => String(dep.id) === String(formData.department_id),
-                )?.name || "Отдел"}
+                )?.name || t("department")}
                 <button
                   onClick={() => {
                     const next = { ...formData, department_id: "" };
@@ -273,7 +273,7 @@ const AttendancePageTelegram = () => {
                     className={styles.activeFilterDot}
                     style={{ background: f.color }}
                   />
-                  {f.label}
+                  {t(f.labelKey)}
                   <button onClick={() => toggleStatusFilter(key)}>
                     {Icons.clear}
                   </button>
@@ -336,7 +336,7 @@ const FilterScreen = ({
 
         <div className={styles.filterSection}>
           <label className={styles.fieldLabel}>
-            {t("department") || "Отдел"}
+            {t("department") || t("department")}
           </label>
           <select
             className={styles.select}

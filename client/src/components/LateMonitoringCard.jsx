@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { formatIsoToLocalDate, formatIsoToLocalDateTime } from "../utils/date";
 import styles from "./LateMonitoringCard.module.scss";
 
@@ -40,6 +41,8 @@ const CalendarIcon = () => (
 );
 
 const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
+  const { t } = useTranslation();
+
   return (
     <div className={styles.card} style={{ animationDelay: `${index * 0.08}s` }}>
       <div
@@ -65,17 +68,17 @@ const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
           <h4 className={styles.name}>{item.employeeFullName}</h4>
           <div className={styles.meta}>
             <div className={styles.metaLabel}>
-              Филиал:{" "}
+              {t("branch")}:{" "}
               <span className={styles.metaValue}>{item.branchName}</span>
             </div>
 
             <div className={styles.metaLabel}>
-              Отдел:{" "}
+              {t("department")}:{" "}
               <span className={styles.metaValue}>{item.departmentName}</span>
             </div>
 
             <div className={styles.metaLabel}>
-              Должность:{" "}
+              {t("position")}:{" "}
               <span className={styles.metaValue}>{item.positionName}</span>
             </div>
           </div>
@@ -87,29 +90,29 @@ const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
           <div className={styles.permIcon}>
             <ShieldIcon />
           </div>
-          <span className={styles.permText}>Отгул</span>
+          <span className={styles.permText}>{t("dayOff")}</span>
           <span className={styles.permEnd}>
-            до {formatIsoToLocalDateTime(item.permissionEndTime)}
+            {t("untilLabel")} {formatIsoToLocalDateTime(item.permissionEndTime)}
           </span>
         </div>
       )}
 
       <div className={styles.footer}>
         <div className={styles.stat}>
-          <span className={styles.statLabel}>График</span>
+          <span className={styles.statLabel}>{t("scheduleLabel")}</span>
           <span className={`${styles.statValue} ${styles.statSched}`}>
             {item.scheduledStart?.substring(0, 5)}
           </span>
         </div>
         <div className={styles.stat}>
-          <span className={styles.statLabel}>Вход</span>
+          <span className={styles.statLabel}>{t("entryTime")}</span>
           <span className={`${styles.statValue} ${styles.statEntry}`}>
             {item.actualStart}
           </span>
         </div>
 
         <div className={styles.stat}>
-          <span className={styles.statLabel}>Опозд</span>
+          <span className={styles.statLabel}>{t("lateTimeShort")}</span>
           <span className={`${styles.statValue} ${styles.statLate}`}>
             {formatLateTime(item.lateMinutes)}
           </span>
@@ -118,19 +121,19 @@ const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
         {includeLunch && item.breakReturnLateMinutes > 0 && (
           <>
             <div className={styles.stat}>
-              <span className={styles.statLabel}>Перерыв по</span>
+              <span className={styles.statLabel}>{t("schedBreakEnd")}</span>
               <span className={`${styles.statValue} ${styles.statSched}`}>
                 {item.scheduledBreakEnd?.substring(0, 5) || "—"}
               </span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statLabel}>Вернулся</span>
+              <span className={styles.statLabel}>{t("returnedLabel")}</span>
               <span className={`${styles.statValue} ${styles.statEntry}`}>
                 {item.actualBreakReturn || "—"}
               </span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statLabel}>Опозд перерыв</span>
+              <span className={styles.statLabel}>{t("breakLateLabel")}</span>
               <span className={`${styles.statValue} ${styles.statLate}`}>
                 {formatLateTime(item.breakReturnLateMinutes)}
               </span>

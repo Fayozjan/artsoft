@@ -25,8 +25,6 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
     status: null,
   });
 
-  console.log("formData", formData);
-
   useEffect(() => {
     const fetchPosition = async () => {
       try {
@@ -48,7 +46,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
         }
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error.message);
-        showAlert("Ошибка", "error");
+        showAlert(t("error"), "error");
         setTimeout(() => handleClose(), 1500);
       }
     };
@@ -77,7 +75,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
     try {
       const res = await editTelegramBot(id, formData);
       if (res.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         onSuccess();
         const timer = setTimeout(() => {
           handleClose();
@@ -92,7 +90,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
         "Ошибка при обновлении данных:",
         error.response ? error.response.data : error.message,
       );
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -105,7 +103,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -118,7 +116,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Телеграм чат</label>
+          <label>{t("telegramChat")}</label>
           <input
             type="text"
             name="chat_id"
@@ -132,7 +130,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
       <div className={styles.row}>
         <div>
           <label className={styles.label}>
-            Сотрудники
+            {t("employees")}
             <span className={styles.sticker}>
               {formData?.selectedEmployeeIds?.length || 0}
             </span>
@@ -148,7 +146,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Доступ</label>
+          <label>{t("access")}</label>
           <div className={styles.status}>
             <label>
               <input
@@ -161,7 +159,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать события
+              {t("receiveEvents")}
             </label>
 
             <label>
@@ -175,7 +173,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать посещаемость
+              {t("receiveAttendance")}
             </label>
 
             <label>
@@ -189,7 +187,7 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать опоздавших
+              {t("receiveLate")}
             </label>
           </div>
         </div>
@@ -197,14 +195,14 @@ const EditTelegramBot = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="status">Статус</label>
+          <label htmlFor="status">{t("status")}</label>
           <select
             name="status"
             value={formData?.status}
             onChange={handleChange}
           >
-            <option value="true">Включить</option>
-            <option value="false">Выключить</option>
+            <option value="true">{t("enable")}</option>
+            <option value="false">{t("disable")}</option>
           </select>
         </div>
       </div>

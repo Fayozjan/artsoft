@@ -233,7 +233,7 @@ const FacePassesPageTelegram = () => {
               formData.end_date !== initialFormData.end_date) && (
               <span className={styles.activeFilterTag}>
                 {formData.start_date &&
-                  `От: ${new Date(formData.start_date).toLocaleString("ru-RU", {
+                  `${t("fromLabel")} ${new Date(formData.start_date).toLocaleString("ru-RU", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -241,7 +241,7 @@ const FacePassesPageTelegram = () => {
                     minute: "2-digit",
                   })}`}
                 {formData.end_date &&
-                  ` До: ${new Date(formData.end_date).toLocaleString("ru-RU", {
+                  ` ${t("toLabel")} ${new Date(formData.end_date).toLocaleString("ru-RU", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
@@ -270,7 +270,7 @@ const FacePassesPageTelegram = () => {
               <span className={styles.activeFilterTag}>
                 {departments.find(
                   (dep) => String(dep.id) === String(formData.department_id),
-                )?.name || "Отдел"}
+                )?.name || t("department")}
                 <button
                   onClick={() => {
                     const next = { ...formData, department_id: null };
@@ -289,7 +289,7 @@ const FacePassesPageTelegram = () => {
               <span className={styles.activeFilterTag}>
                 {positions.find(
                   (pos) => String(pos.id) === String(formData.position_id),
-                )?.name || "Должность"}
+                )?.name || t("position")}
                 <button
                   onClick={() => {
                     const next = { ...formData, position_id: null };
@@ -330,7 +330,7 @@ const FacePassesPageTelegram = () => {
                     formData.selectedDoorIds.includes(String(dep.id)),
                   )
                   .map((dep) => dep.name)
-                  .join(", ") || "Двери"}
+                  .join(", ") || t("doors")}
                 <button
                   onClick={() => {
                     const next = { ...formData, selectedDoorIds: [] };
@@ -409,7 +409,7 @@ const FilterScreen = ({
       <div className={styles.filterBody}>
         <div className={styles.filterRow}>
           <div className={styles.filterField}>
-            <label className={styles.fieldLabel}>Дата от</label>
+            <label className={styles.fieldLabel}>{t("dateFrom")}</label>
             <input
               className={styles.dateInput}
               type="datetime-local"
@@ -420,7 +420,7 @@ const FilterScreen = ({
             />
           </div>
           <div className={styles.filterField}>
-            <label className={styles.fieldLabel}>Дата до</label>
+            <label className={styles.fieldLabel}>{t("dateTo")}</label>
             <input
               className={styles.dateInput}
               type="datetime-local"
@@ -433,7 +433,7 @@ const FilterScreen = ({
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Отдел</label>
+          <label className={styles.fieldLabel}>{t("department")}</label>
           <select
             className={styles.select}
             name="department_id"
@@ -442,7 +442,7 @@ const FilterScreen = ({
             }
             onChange={handleChange}
           >
-            <option value="">Все</option>
+            <option value="">{t("all")}</option>
             {departments.map((dep) => (
               <option key={dep.id} value={String(dep.id)}>
                 {dep.name}
@@ -452,14 +452,14 @@ const FilterScreen = ({
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Должность</label>
+          <label className={styles.fieldLabel}>{t("position")}</label>
           <select
             className={styles.select}
             name="position_id"
             value={localForm.position_id || ""}
             onChange={handleChange}
           >
-            <option value="">Все</option>
+            <option value="">{t("all")}</option>
             {positions.map((pos) => (
               <option key={pos.id} value={pos.id}>
                 {pos.name}
@@ -469,7 +469,7 @@ const FilterScreen = ({
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Двери</label>
+          <label className={styles.fieldLabel}>{t("doors")}</label>
           <select
             className={styles.select}
             multiple
@@ -491,10 +491,10 @@ const FilterScreen = ({
         </div>
 
         <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>Направление</label>
+          <label className={styles.fieldLabel}>{t("direction")}</label>
           <div className={styles.directionGroup}>
             {[
-              { value: "", label: "Все" },
+              { value: "", label: t("all") },
               { value: "entry", label: t("entry") || "Вход" },
               { value: "exit", label: t("exit") || "Выход" },
             ].map(({ value, label }) => (

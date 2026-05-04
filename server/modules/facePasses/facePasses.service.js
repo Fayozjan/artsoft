@@ -121,7 +121,7 @@ export const FacePassesService = {
 
     // --- формируем данные ---
     const data = {
-      date: new Date(payload.dateTime),
+      date: payload.dateTime,
       identifier: `${event.employeeNoString}-${event.serialNo}`,
       employee_id: Number(event.employeeNoString),
       door_id: doorId,
@@ -136,19 +136,18 @@ export const FacePassesService = {
     try {
       newPass = await FacePassesModel.create(data);
     } catch (err) {
-      // дубликат записи
       if (err.code === "P2002") {
-        console.log(
-          `Duplicate face_pass ignored: ${data.identifier}, Face Device: ${data.face_devices_id}`,
-        );
+        console.log(`Duplicate ignored: ${data.identifier}`);
+
         return { success: true, duplicate: true };
       }
 
-      // сотрудник не найден
       if (err.code === "P2025") {
         console.log("Employee not found. Ignored:", data.employee_id);
-        return { success: true, duplicate: true };
+        return { success: true, notFound: true };
       }
+
+      throw err; //
     }
 
     // --- уведомления в телеграм ---
@@ -278,8 +277,6 @@ export const FacePassesService = {
       longitude: longitude != null ? parseFloat(longitude) : null,
       photo: photoPath,
     };
-
-    console.log("data", data);
 
     // --- сохраняем в базу ---
     let newPass;

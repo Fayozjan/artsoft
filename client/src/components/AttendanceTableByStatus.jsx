@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { t as i18t } from "i18next";
 
 import SortArrow from "./SortArrow";
 import DownloadButton from "./DownloadButton";
@@ -21,17 +22,17 @@ const searchFields = [
 export const branchesColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "name",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "activeEmployeesCount",
-    title: "Количество сотрудников",
+    titleKey: "employeeCount2",
     sortable: true,
   },
 ];
@@ -39,22 +40,22 @@ export const branchesColumns = [
 export const departmentsColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "name",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
   },
   {
     key: "activeEmployeesCount",
-    title: "Количество сотрудников",
+    titleKey: "employeeCount2",
     sortable: true,
   },
 ];
@@ -62,12 +63,12 @@ export const departmentsColumns = [
 export const employeesColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "employeeFullName",
-    title: "Сотрудник",
+    titleKey: "employee",
     sortable: true,
     render: (row) => (
       <div className={styles.employee}>
@@ -83,22 +84,22 @@ export const employeesColumns = [
   },
   {
     key: "employeeNumber",
-    title: "Таб. №",
+    titleKey: "tabNumber",
     sortable: true,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "departmentName",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
   },
   {
     key: "positionName",
-    title: "Должность",
+    titleKey: "position",
     sortable: true,
   },
 ];
@@ -106,12 +107,12 @@ export const employeesColumns = [
 export const presentColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "employeeFullName",
-    title: "Сотрудник",
+    titleKey: "employee",
     sortable: true,
     render: (row) => (
       <div className={styles.employee}>
@@ -127,30 +128,30 @@ export const presentColumns = [
   },
   {
     key: "employeeNumber",
-    title: "Таб. №",
+    titleKey: "tabNumber",
     sortable: true,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "departmentName",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
   },
   {
     key: "positionName",
-    title: "Должность",
+    titleKey: "position",
     sortable: true,
   },
   {
     key: "firstEntry",
-    title: "Вход",
+    titleKey: "entryTime",
     sortable: true,
     render: (row) => {
-      return row.firstEntry || "Зафиксирован только выход";
+      return row.firstEntry || i18t("onlyExitRecorded");
     },
   },
 ];
@@ -158,12 +159,12 @@ export const presentColumns = [
 export const lateColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "employeeFullName",
-    title: "Сотрудник",
+    titleKey: "employee",
     sortable: true,
     render: (row) => (
       <div className={styles.employee}>
@@ -174,37 +175,37 @@ export const lateColumns = [
   },
   {
     key: "employeeNumber",
-    title: "Таб. №",
+    titleKey: "tabNumber",
     sortable: true,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "departmentName",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
   },
   {
     key: "positionName",
-    title: "Должность",
+    titleKey: "position",
     sortable: true,
   },
   {
     key: "scheduledStart",
-    title: "По графику",
+    titleKey: "scheduledTime",
     sortable: true,
   },
   {
     key: "actualStart",
-    title: "Вход",
+    titleKey: "entryTime",
     sortable: true,
   },
   {
     key: "lateMinutes",
-    title: "Опоздание (чч:мм)",
+    titleKey: "lateTimeHhMm",
     sortable: true,
     render: (row) => formatLateMinutesToHours(row.lateMinutes),
   },
@@ -213,12 +214,12 @@ export const lateColumns = [
 export const leftColumns = [
   {
     key: "index",
-    title: "№",
+    titleKey: "№",
     render: (_, i) => i + 1,
   },
   {
     key: "employeeFullName",
-    title: "Сотрудник",
+    titleKey: "employee",
     sortable: true,
     render: (row) => (
       <div className={styles.employee}>
@@ -234,27 +235,27 @@ export const leftColumns = [
   },
   {
     key: "employeeNumber",
-    title: "Таб. №",
+    titleKey: "tabNumber",
     sortable: true,
   },
   {
     key: "branchName",
-    title: "Филиал",
+    titleKey: "branch",
     sortable: true,
   },
   {
     key: "departmentName",
-    title: "Отдел",
+    titleKey: "department",
     sortable: true,
   },
   {
     key: "positionName",
-    title: "Должность",
+    titleKey: "position",
     sortable: true,
   },
   {
     key: "lastExit",
-    title: "Выход",
+    titleKey: "exit",
     sortable: true,
   },
 ];
@@ -285,7 +286,6 @@ const AttendanceTableByStatus = ({
   data = [],
   modalType = "",
   modalTitle = "",
-  emptyText = "Нет данных",
 }) => {
   const [sortField, setSortField] = useState(
     () => defaultSorts[modalType]?.field ?? "employeeFullName",
@@ -319,7 +319,6 @@ const AttendanceTableByStatus = ({
       let aVal = a[sortField];
       let bVal = b[sortField];
 
-      // Сортируем поля времени HH:mm
       const timeFields = [
         "actualStart",
         "actualEnd",
@@ -336,25 +335,20 @@ const AttendanceTableByStatus = ({
         bVal = toMinutes(bVal);
       }
 
-      // Сортируем опоздание (кол-во минут)
       if (sortField === "lateMinutes") {
-        // если у тебя camelCase
         aVal = aVal ?? -1;
         bVal = bVal ?? -1;
       }
 
-      // Для строк
       if (typeof aVal === "string" && typeof bVal === "string") {
         return sortOrder === "asc"
           ? aVal.localeCompare(bVal)
           : bVal.localeCompare(aVal);
       }
 
-      // Для null/undefined
       if (aVal == null) return 1;
       if (bVal == null) return -1;
 
-      // Для чисел
       return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
     });
   }, [filteredData, sortField, sortOrder]);
@@ -446,7 +440,7 @@ const AttendanceTableByStatus = ({
                   onClick={col.sortable ? () => handleSort(col.key) : undefined}
                 >
                   <span className={styles.headerCell}>
-                    {col.title}
+                    {col.titleKey === "№" ? "№" : t(col.titleKey)}
                     {col.sortable && (
                       <SortArrow
                         active={sortField === col.key}
@@ -476,14 +470,14 @@ const AttendanceTableByStatus = ({
                       colSpan={columns[modalType].length}
                       style={{ textAlign: "center", padding: "12px" }}
                     >
-                      Загрузка...
+                      {t("loading")}
                     </td>
                   </tr>
                 )}
               </>
             ) : (
               <tr>
-                <td colSpan={columns[modalType].length}>{emptyText}</td>
+                <td colSpan={columns[modalType].length}>{t("noData")}</td>
               </tr>
             )}
           </tbody>

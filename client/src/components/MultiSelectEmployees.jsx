@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./MultiSelectEmployees.module.scss";
 
 const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [initialSortedOptions, setInitialSortedOptions] = useState([]);
@@ -59,7 +61,7 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
         return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
       });
       setInitialSortedOptions([
-        { id: "select_all", employeeFullName: "Выбрать всех" },
+        { id: "select_all", employeeFullName: t("selectAll") },
         ...sorted,
       ]);
     }
@@ -90,14 +92,14 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
       return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
     });
 
-    return [{ id: "select_all", employeeFullName: "Выбрать всех" }, ...sorted];
+    return [{ id: "select_all", employeeFullName: t("selectAll") }, ...sorted];
   }, [isOpen, filteredOptions, safeSelected]);
 
   return (
     <div ref={containerRef} className={styles.multiSelectEmployees}>
       <input
         type="text"
-        placeholder="Поиск по сотрудникам..."
+        placeholder={t("searchByEmployee")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => setIsOpen(true)}
@@ -107,7 +109,7 @@ const MultiSelectEmployees = ({ options = [], selected = [], onChange }) => {
       {isOpen && (
         <div className={styles.options}>
           {optionsToRender.length === 0 ? (
-            <div className={styles.noData}>Нет данных</div>
+            <div className={styles.noData}>{t("noData")}</div>
           ) : (
             optionsToRender.map((option) => {
               const isSelectAll = option.id === "select_all";

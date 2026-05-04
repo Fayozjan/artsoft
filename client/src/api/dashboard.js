@@ -1,5 +1,10 @@
 import api from "./instance";
 
+export const getDashboardAll = async () => {
+  const res = await api.get("/dashboard/all");
+  return res.data.data;
+};
+
 export const getDashboardSummary = async () => {
   const res = await api.get("/dashboard/summary");
   return res.data.data;

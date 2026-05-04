@@ -98,17 +98,8 @@
       width: 320px;
     }
 
-    th:nth-child(3),
-    td:nth-child(3),
-    th:nth-child(4),
-    td:nth-child(4),
-    th:nth-child(5),
-    td:nth-child(5),
-    th:nth-child(6),
-    td:nth-child(6),
-    th:nth-child(7),
-    td:nth-child(7) {
-      width: 100px;
+    .optionalCol {
+      width: 110px;
     }
 
     .empCell {
@@ -120,12 +111,52 @@
       text-align: left;
     }
 
-    .empPhoto {
+    .empAvatar {
       flex-shrink: 0;
-      width: 30px;
-      height: 30px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      box-sizing: border-box;
+      overflow: hidden;
+      position: relative;
+
+      &.active {
+        border-color: #22c55e;
+      }
+      &.inactive {
+        border-color: #ef4444;
+      }
+    }
+
+    .empPhoto {
+      width: 100%;
+      height: 100%;
       border-radius: 50%;
       object-fit: cover;
+      display: block;
+    }
+
+    .empInitials {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #fff;
+      background: #94a3b8;
+      border-radius: 50%;
+
+      &.active {
+        background: #86efac;
+        color: #14532d;
+      }
+      &.inactive {
+        background: #fca5a5;
+        color: #7f1d1d;
+      }
     }
 
     .empInfo {
@@ -152,6 +183,7 @@
       font-size: calc(var(--font-small) - 1px);
       cursor: pointer;
       white-space: pre-line;
+      min-width: 37px;
 
       &:hover {
         outline: 1px solid var(--third-color);
@@ -165,6 +197,10 @@
       border-top: 0.5px dashed #e2e8f0;
       white-space: normal;
       font-weight: 600;
+    }
+
+    .cellGreen {
+      background: rgba(255, 179, 39, 0.47);
     }
 
     .cellExpanded {

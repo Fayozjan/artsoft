@@ -32,21 +32,24 @@ export function formatIsoToLocalDate(isoString, options = {}) {
   return date.toLocaleString("ru-RU", { ...defaultOptions, ...options });
 }
 
-// 2026-02-16T05:00:00.000Z => 2026-02-16T10:00
+// 2026-02-16T05:00:00.000Z => 2026-02-16T10:00 (Asia/Tashkent)
 export function formatIsoToDateTimeLocal(isoString) {
   if (!isoString) return "";
 
   const date = new Date(isoString);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tashkent",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
 
-  const pad = (n) => String(n).padStart(2, "0");
-
-  const year = date.getFullYear();
-  const month = pad(date.getMonth() + 1);
-  const day = pad(date.getDate());
-  const hours = pad(date.getHours());
-  const minutes = pad(date.getMinutes());
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  const get = (type) => parts.find((p) => p.type === type).value;
+  const hour = get("hour") === "24" ? "00" : get("hour");
+  return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
 }
 
 // Форматируем UTC-строку в Date
@@ -66,3 +69,16 @@ export function formatHoursMinutes(totalMinutes) {
   const minutes = totalMinutes % 60;
   return `${hours}ч ${minutes}м`;
 }
+
+export const formatMinutesToHours = (totalMinutes) => {
+  if (!totalMinutes || totalMinutes < 0) return "00:00";
+
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  // Используем padStart для добавления ведущего нуля
+  const formattedHours = String(hours).padStart(2, "0");
+  const formattedMinutes = String(minutes).padStart(2, "0");
+
+  return `${formattedHours}:${formattedMinutes}`;
+};

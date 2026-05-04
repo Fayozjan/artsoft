@@ -19,11 +19,11 @@ import { DownloadOrder } from "../utils/downloadDoc";
 import styles from "./EmploymentOrdersTimeline.module.scss";
 import { useTranslation } from "react-i18next";
 
-const EVENT_LABELS = {
-  hire: "Найм",
-  transfer: "Перевод",
-  leave: "Отпуск",
-  terminate: "Увольнение",
+const EVENT_LABEL_KEYS = {
+  hire: "hiredEvent",
+  transfer: "transferEvent",
+  leave: "leaveEvent",
+  terminate: "terminateEvent",
 };
 
 const EmploymentOrdersTimeline = ({
@@ -226,19 +226,19 @@ const EmploymentOrdersTimeline = ({
                   >
                     {deletingId === item.id ? (
                       <div className={styles.deleteConfirmOverlay}>
-                        <p>Удалить запись?</p>
+                        <p>{t("deleteRecord")}</p>
                         <div className={styles.deleteActions}>
                           <button
                             onClick={() => confirmDelete(item.id)}
                             className={styles.confirmBtn}
                           >
-                            Да
+                            {t("yes")}
                           </button>
                           <button
                             onClick={cancelDelete}
                             className={styles.cancelBtn}
                           >
-                            Нет
+                            {t("no")}
                           </button>
                         </div>
                       </div>
@@ -248,12 +248,12 @@ const EmploymentOrdersTimeline = ({
                           <h4
                             className={`${styles.title} ${styles[item.type]}`}
                           >
-                            {EVENT_LABELS[item.type] || item.type}
+                            {EVENT_LABEL_KEYS[item.type] ? t(EVENT_LABEL_KEYS[item.type]) : item.type}
                           </h4>
                           <div className={styles.operations}>
                             <button
                               onClick={() => startEditing(item)}
-                              title="Редактировать"
+                              title={t("editBtn")}
                             >
                               <svg width="16" height="16" viewBox="0 0 18 18">
                                 <path
@@ -264,7 +264,7 @@ const EmploymentOrdersTimeline = ({
                             </button>
                             <button
                               onClick={() => handleDownload(item)}
-                              title="Скачать"
+                              title={t("downloadLabel")}
                             >
                               <svg width="18" height="14" viewBox="0 0 24 16">
                                 <path
@@ -276,7 +276,7 @@ const EmploymentOrdersTimeline = ({
                             <button
                               onClick={() => handleDeleteClick(item.id)}
                               className={styles.deleteBtn}
-                              title="Удалить"
+                              title={t("deleteBtn")}
                             >
                               <svg width="14" height="16" viewBox="0 0 14 18">
                                 <path
@@ -291,7 +291,7 @@ const EmploymentOrdersTimeline = ({
                           {editingId === item.id ? (
                             <div className={styles.inlineEditForm}>
                               <p>
-                                <span>Дата:</span>
+                                <span>{t("date")}:</span>
                                 <input
                                   type="date"
                                   name="date"
@@ -304,7 +304,7 @@ const EmploymentOrdersTimeline = ({
                               </p>
 
                               <p>
-                                <span>Приказ:</span>
+                                <span>{t("order")}:</span>
                                 <input
                                   type="text"
                                   name="order_number"
@@ -318,7 +318,7 @@ const EmploymentOrdersTimeline = ({
                               {editFormData.type !== "terminate" && (
                                 <>
                                   <p>
-                                    <span>Филиал:</span>
+                                    <span>{t("branch")}:</span>
                                     <select
                                       name="branch_id"
                                       className={styles.inlineSelect}
@@ -336,7 +336,7 @@ const EmploymentOrdersTimeline = ({
                                   </p>
 
                                   <p>
-                                    <span>Отдел:</span>
+                                    <span>{t("department")}:</span>
                                     <select
                                       name="department_id"
                                       className={styles.inlineSelect}
@@ -362,7 +362,7 @@ const EmploymentOrdersTimeline = ({
                                   </p>
 
                                   <p>
-                                    <span>Должность:</span>
+                                    <span>{t("position")}:</span>
                                     <select
                                       name="position_id"
                                       className={styles.inlineSelect}
@@ -382,7 +382,7 @@ const EmploymentOrdersTimeline = ({
                               )}
 
                               <p className={styles.note}>
-                                <span>Заметка:</span>
+                                <span>{t("note")}:</span>
                                 <input
                                   name="note"
                                   className={styles.inlineInput}
@@ -396,13 +396,13 @@ const EmploymentOrdersTimeline = ({
                                   onClick={() => handleInlineSave(item.id)}
                                   className={styles.saveBtn}
                                 >
-                                  Сохранить
+                                  {t("save")}
                                 </button>
                                 <button
                                   onClick={() => setEditingId(null)}
                                   className={styles.cancelBtn}
                                 >
-                                  Отмена
+                                  {t("cancel")}
                                 </button>
                               </div>
                             </div>
@@ -410,22 +410,22 @@ const EmploymentOrdersTimeline = ({
                             <>
                               {item.order_number && (
                                 <p>
-                                  <span>Приказ:</span> №{item.order_number}
+                                  <span>{t("order")}:</span> №{item.order_number}
                                 </p>
                               )}
                               {item.branch?.name && (
                                 <p>
-                                  <span>Филиал:</span> {item.branch.name}
+                                  <span>{t("branch")}:</span> {item.branch.name}
                                 </p>
                               )}
                               {item.department?.name && (
                                 <p>
-                                  <span>Отдел:</span> {item.department.name}
+                                  <span>{t("department")}:</span> {item.department.name}
                                 </p>
                               )}
                               {item.position?.name && (
                                 <p>
-                                  <span>Должность:</span> {item.position.name}
+                                  <span>{t("position")}:</span> {item.position.name}
                                 </p>
                               )}
                               {item.note && (
@@ -442,7 +442,7 @@ const EmploymentOrdersTimeline = ({
                 </div>
               </div>
             ))
-          : !loading && <div className={styles.empty}>История пуста</div>}
+          : !loading && <div className={styles.empty}>{t("historyEmpty")}</div>}
       </div>
 
       {alert.show && (

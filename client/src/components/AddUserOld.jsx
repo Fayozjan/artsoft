@@ -171,7 +171,7 @@ const AddUserOld = ({ cancelButton }) => {
               <div className={styles.input_fields}>
                 <div className={styles.row}>
                   <div className={styles.input_col}>
-                    <label>Фамилия</label>
+                    <label>{t("lastName")}</label>
                     <input
                       type="text"
                       name="surname"
@@ -181,7 +181,7 @@ const AddUserOld = ({ cancelButton }) => {
                     />
                   </div>
                   <div className={styles.input_col}>
-                    <label>Имя</label>
+                    <label>{t("firstName")}</label>
                     <input
                       type="text"
                       name="name"
@@ -191,7 +191,7 @@ const AddUserOld = ({ cancelButton }) => {
                     />
                   </div>
                   <div className={styles.input_col}>
-                    <label>Отчество</label>
+                    <label>{t("patronymic")}</label>
                     <input
                       type="text"
                       name="patronymic"
@@ -217,7 +217,7 @@ const AddUserOld = ({ cancelButton }) => {
                       value={formData.gender}
                       onChange={handleChange}
                     >
-                      <option value="">Выберите пол</option>
+                      <option value="">{t("selectGender")}</option>
                       <option value="male">Мужской</option>
                       <option value="female">Женский</option>
                     </select>
@@ -344,7 +344,7 @@ const AddUserOld = ({ cancelButton }) => {
                     </select>
                   </div>
                   <div className={styles.input_col}>
-                    <label>Отдел</label>
+                    <label>{t("department")}</label>
                     <select
                       name="department"
                       value={formData.department}
@@ -360,7 +360,7 @@ const AddUserOld = ({ cancelButton }) => {
                     </select>
                   </div>
                   <div className={styles.input_col}>
-                    <label>Должность</label>
+                    <label>{t("position")}</label>
                     <select
                       name="position"
                       value={formData.position}
@@ -377,7 +377,7 @@ const AddUserOld = ({ cancelButton }) => {
                 </div>
                 <div className={styles.row}>
                   <div className={styles.input_col}>
-                    <label>Приказ №</label>
+                    <label>{t("orderNumber")}</label>
                     <input
                       type="text"
                       name="order_number"
@@ -406,7 +406,7 @@ const AddUserOld = ({ cancelButton }) => {
                     </div>
                   )}
                   <div className={styles.input_col}>
-                    <label>Двери</label>
+                    <label>{t("doors")}</label>
                     <div className={styles.checkbox}>
                       {allDoor &&
                         allDoor.map((door) => (
@@ -443,7 +443,7 @@ const AddUserOld = ({ cancelButton }) => {
                     </select>
                   </div>
                   <div className={styles.input_col}>
-                    <label>Статус</label>
+                    <label>{t("status")}</label>
                     <select
                       name="status"
                       value={formData.status}
@@ -468,7 +468,7 @@ const AddUserOld = ({ cancelButton }) => {
                       className={styles.changeImageButton}
                       onClick={() => setImagePreview(null)}
                     >
-                      Изменить фото
+                      {t("changePhoto")}
                     </button>
                   </div>
                 ) : (
@@ -491,7 +491,7 @@ const AddUserOld = ({ cancelButton }) => {
                           d="M12 4v16m8-8H4"
                         />
                       </svg>
-                      <span>Загрузите фото</span>
+                      <span>{t("uploadPhoto")}</span>
                     </label>
                     <input
                       id="photo-upload"

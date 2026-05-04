@@ -178,13 +178,8 @@ const PayrollPage = () => {
     if (!sheet?.id) return;
     setLoading(true);
     try {
-      await payrollApi.deleteSheet(sheet.id);
-      setSheet(null);
-      const reset = initialFilters;
-      setFormData(reset);
-      setCurrentPage(1);
-      setSelectedIds([]);
-      await fetchSheet(month, reset, 1, pageSize);
+      await payrollApi.recalculateDraftItems(sheet.id);
+      await fetchSheet(month, formData, currentPage, pageSize);
     } catch {
       showAlert(t("error"), "error");
       setLoading(false);
@@ -232,13 +227,11 @@ const PayrollPage = () => {
           const affected = prev.items.filter((it) => ids.includes(it.id));
           let stats = prev.stats;
           if (stats) {
-            let approvedDelta = 0,
-              netDelta = 0;
+            let approvedDelta = 0, netDelta = 0;
             affected.forEach((it) => {
               if (it.status !== status) {
                 approvedDelta += status === "approved" ? 1 : -1;
-                netDelta +=
-                  status === "approved" ? Number(it.net) : -Number(it.net);
+                netDelta += status === "approved" ? Number(it.net) : -Number(it.net);
               }
             });
             stats = {
@@ -251,12 +244,12 @@ const PayrollPage = () => {
           return {
             ...prev,
             stats,
-            items: prev.items.map((it) =>
-              ids.includes(it.id) ? { ...it, status } : it,
-            ),
+            items: prev.items.map((it) => ids.includes(it.id) ? { ...it, status } : it),
           };
         });
         showAlert(t("saved"), "success");
+      } else {
+        showAlert(t(res.message) || t("error"), "error");
       }
     } catch {
       showAlert(t("error"), "error");
@@ -285,6 +278,8 @@ const PayrollPage = () => {
           };
         });
         showAlert(t("saved"), "success");
+      } else {
+        showAlert(t(res.message) || t("error"), "error");
       }
     } catch {
       showAlert(t("error"), "error");
@@ -343,7 +338,7 @@ const PayrollPage = () => {
   // ── Derived ───────────────────────────────────────────────────────────────────
 
   const selCount = selectedIds.length;
-  const st = sheet?.stats;
+  const st       = sheet?.stats;
 
   const items = sheet?.items || [];
   const allApplyLate = items.length > 0 && items.every((it) => it.apply_late);

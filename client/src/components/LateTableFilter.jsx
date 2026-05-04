@@ -84,8 +84,6 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
           />
         </svg>
 
-        <span>Фильтры</span>
-
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -93,7 +91,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
             <div>
-              <h2>Период</h2>
+              <h2>{t("period")}</h2>
               <div className={styles.modeSwitcher}>
                 <div
                   className={styles.slider}
@@ -111,7 +109,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
                     setFormData((prev) => ({ ...prev, mode: "day" }))
                   }
                 >
-                  За день
+                  {t("perDay")}
                 </button>
 
                 <button
@@ -121,7 +119,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
                     setFormData((prev) => ({ ...prev, mode: "month" }))
                   }
                 >
-                  За месяц
+                  {t("perMonth")}
                 </button>
               </div>
             </div>
@@ -129,7 +127,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
             <div className={styles.period}>
               {formData.mode === "day" ? (
                 <div className={styles.date}>
-                  <h2>Дата</h2>
+                  <h2>{t("date")}</h2>
                   <input
                     type="date"
                     name="date"
@@ -141,7 +139,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
                 </div>
               ) : (
                 <div className={styles.date}>
-                  <h2>Месяц</h2>
+                  <h2>{t("month")}</h2>
                   <input
                     type="month"
                     name="date"
@@ -172,7 +170,7 @@ const LateTableFilter = ({ formData, setFormData, onSubmit, t }) => {
                     }))
                   }
                 />
-                Учитывать опоздания после обеда
+                {t("includeLunchLate")}
               </label>
             </div>
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import AttendanceCard from "./AttendanceCard";
 import Portal from "./Portal";
 import AttendanceTableByStatus from "./AttendanceTableByStatus";
@@ -150,6 +151,7 @@ export const AttendanceDashboard = ({
   showAllCards = true,
   viewMode,
 }) => {
+  const { t } = useTranslation();
   const [modalData, setModalData] = useState(null);
   const visibleCardIds = getVisibleCardIds(showAllCards);
 
@@ -162,7 +164,7 @@ export const AttendanceDashboard = ({
   const attendanceCards = [
     viewMode !== "branch" && {
       id: "branches",
-      title: "Филиалы",
+      title: t("totalBranchesLabel"),
       value: data?.branches?.length || 0,
       data: data?.branches,
       icon: icons.branches,
@@ -170,7 +172,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "departments",
-      title: "Отделы",
+      title: t("totalDepartmentsLabel"),
       value: data?.departments?.length || 0,
       data: data?.departments,
       icon: icons.branches,
@@ -178,7 +180,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "employees",
-      title: "Сотрудники",
+      title: t("dashboard.totalEmployees"),
       value: total,
       data: data?.employees,
       icon: icons.employees,
@@ -186,7 +188,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "present",
-      title: "Пришли",
+      title: t("checkedIn"),
       value: presentCount,
       data: data?.present,
       icon: icons.came,
@@ -196,7 +198,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "absent",
-      title: "Не пришли",
+      title: t("notCheckedIn"),
       value: data?.absent?.length || 0,
       data: data?.absent,
       icon: icons.notCame,
@@ -206,7 +208,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "late",
-      title: "Опоздали",
+      title: t("lateGroup"),
       value: data?.late?.length || 0,
       data: data?.late,
       icon: icons.late,
@@ -217,7 +219,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "inside",
-      title: "На месте",
+      title: t("onSite"),
       value: data?.inside?.length || 0,
       data: data?.inside,
       icon: icons.inside,
@@ -230,7 +232,7 @@ export const AttendanceDashboard = ({
     },
     {
       id: "left",
-      title: "Ушли",
+      title: t("checkedOut"),
       value: data?.left?.length || 0,
       data: data?.left,
       icon: icons.left,

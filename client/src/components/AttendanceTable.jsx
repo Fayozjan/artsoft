@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import SortArrow from "./SortArrow";
@@ -12,7 +12,7 @@ import styles from "./AttendanceTable.module.scss";
 const STATUS_FILTERS = [
   {
     key: "present",
-    label: "Пришли",
+    labelKey: "checkedIn",
     color: "#16a34a",
     bg: "#f0fdf4",
     activeBg: "#16a34a",
@@ -20,7 +20,7 @@ const STATUS_FILTERS = [
   },
   {
     key: "absent",
-    label: "Не пришли",
+    labelKey: "notCheckedIn",
     color: "#dc2626",
     bg: "#fef2f2",
     activeBg: "#dc2626",
@@ -28,7 +28,7 @@ const STATUS_FILTERS = [
   },
   {
     key: "late",
-    label: "Опоздали",
+    labelKey: "lateGroup",
     color: "#d97706",
     bg: "#fffbeb",
     activeBg: "#d97706",
@@ -36,7 +36,7 @@ const STATUS_FILTERS = [
   },
   {
     key: "inside",
-    label: "На месте",
+    labelKey: "onSite",
     color: "#2563eb",
     bg: "#eff6ff",
     activeBg: "#2563eb",
@@ -44,7 +44,7 @@ const STATUS_FILTERS = [
   },
   {
     key: "left",
-    label: "Ушли",
+    labelKey: "checkedOut",
     color: "#7c3aed",
     bg: "#f5f3ff",
     activeBg: "#7c3aed",
@@ -53,7 +53,7 @@ const STATUS_FILTERS = [
 ];
 
 const AttendanceTable = ({ rowData = [], viewMode }) => {
-  const [sortField, setSortField] = useState("employeeFullName" || "name");
+  const [sortField, setSortField] = useState("employeeFullName");
   const [sortOrder, setSortOrder] = useState("asc");
   const { t } = useTranslation();
   const [search, setSearch] = useState("");
@@ -96,8 +96,8 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     const branchesMap = {};
 
     data.employees.forEach((emp) => {
-      const branchName = emp.branchName || "Без филиала";
-      const departmentName = emp.departmentName || "Без отдела";
+      const branchName = emp.branchName || t("noBranch");
+      const departmentName = emp.departmentName || t("noDepartment");
 
       if (!branchesMap[branchName]) {
         branchesMap[branchName] = {
@@ -239,8 +239,6 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     [filteredEmployees, sortField, sortOrder],
   );
 
-  console.log("sortedEmployees", sortedEmployees);
-
   const sortedDepartments = useMemo(
     () => getSortedData(filteredDepartments),
     [filteredDepartments, sortField, sortOrder],
@@ -294,7 +292,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           <th>№</th>
           <th onClick={() => handleSort("employeeFullName")}>
             <span className={styles.headerContent}>
-              ФИО
+              {t("fullName")}
               <SortArrow
                 active={sortField === "employeeFullName"}
                 order={sortOrder}
@@ -303,7 +301,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           </th>
           <th onClick={() => handleSort("departmentName")}>
             <span className={styles.headerContent}>
-              Отдел
+              {t("department")}
               <SortArrow
                 active={sortField === "departmentName"}
                 order={sortOrder}
@@ -312,20 +310,20 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           </th>
           <th onClick={() => handleSort("positionName")}>
             <span className={styles.headerContent}>
-              Должность
+              {t("position")}
               <SortArrow
                 active={sortField === "positionName"}
                 order={sortOrder}
               />
             </span>
           </th>
-          <th>Пришёл</th>
-          <th>Не пришёл</th>
-          <th>Опоздал</th>
-          <th>На месте</th>
-          <th>Ушёл</th>
-          <th>Первый вход</th>
-          <th>Последний выход</th>
+          <th>{t("checkedInSingular")}</th>
+          <th>{t("notCheckedInSingular")}</th>
+          <th>{t("lateSingular")}</th>
+          <th>{t("onSite")}</th>
+          <th>{t("checkedOutSingular")}</th>
+          <th>{t("firstEntry")}</th>
+          <th>{t("lastExit")}</th>
         </tr>
       );
     }
@@ -336,13 +334,13 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           <th>№</th>
           <th onClick={() => handleSort("name")}>
             <span className={styles.headerContent}>
-              Отдел
+              {t("department")}
               <SortArrow active={sortField === "name"} order={sortOrder} />
             </span>
           </th>
           <th onClick={() => handleSort("totalEmployees")}>
             <span className={styles.headerContent}>
-              Всего сотрудников
+              {t("totalEmployeesHeader")}
               <SortArrow
                 active={sortField === "totalEmployees"}
                 order={sortOrder}
@@ -351,31 +349,31 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           </th>
           <th onClick={() => handleSort("present")}>
             <span className={styles.headerContent}>
-              Пришли
+              {t("checkedIn")}
               <SortArrow active={sortField === "present"} order={sortOrder} />
             </span>
           </th>
           <th onClick={() => handleSort("absent")}>
             <span className={styles.headerContent}>
-              Не пришли
+              {t("notCheckedIn")}
               <SortArrow active={sortField === "absent"} order={sortOrder} />
             </span>
           </th>
           <th onClick={() => handleSort("late")}>
             <span className={styles.headerContent}>
-              Опоздали
+              {t("lateGroup")}
               <SortArrow active={sortField === "late"} order={sortOrder} />
             </span>
           </th>
           <th onClick={() => handleSort("inside")}>
             <span className={styles.headerContent}>
-              На месте
+              {t("onSite")}
               <SortArrow active={sortField === "inside"} order={sortOrder} />
             </span>
           </th>
           <th onClick={() => handleSort("left")}>
             <span className={styles.headerContent}>
-              Ушли
+              {t("checkedOut")}
               <SortArrow active={sortField === "left"} order={sortOrder} />
             </span>
           </th>
@@ -398,7 +396,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
         </th>
         <th onClick={() => handleSort("totalEmployees")}>
           <span className={styles.headerContent}>
-            Всего сотрудников
+            {t("totalEmployeesHeader")}
             <SortArrow
               active={sortField === "totalEmployees"}
               order={sortOrder}
@@ -407,35 +405,35 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
         </th>
         <th onClick={() => handleSort("present")}>
           <span className={styles.headerContent}>
-            Пришли
+            {t("checkedIn")}
             <SortArrow active={sortField === "present"} order={sortOrder} />
           </span>
         </th>
         <th onClick={() => handleSort("absent")}>
           <span className={styles.headerContent}>
-            Не пришли
+            {t("notCheckedIn")}
             <SortArrow active={sortField === "absent"} order={sortOrder} />
           </span>
         </th>
         <th onClick={() => handleSort("late")}>
           <span className={styles.headerContent}>
-            Опоздали
+            {t("lateGroup")}
             <SortArrow active={sortField === "late"} order={sortOrder} />
           </span>
         </th>
         <th onClick={() => handleSort("inside")}>
           <span className={styles.headerContent}>
-            На месте
+            {t("onSite")}
             <SortArrow active={sortField === "inside"} order={sortOrder} />
           </span>
         </th>
         <th onClick={() => handleSort("left")}>
           <span className={styles.headerContent}>
-            Ушли
+            {t("checkedOut")}
             <SortArrow active={sortField === "left"} order={sortOrder} />
           </span>
         </th>
-        <th>Показать по отделу</th>
+        <th>{t("showByDept")}</th>
       </tr>
     );
   };
@@ -445,7 +443,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     if (!data?.length) {
       return (
         <tr>
-          <td colSpan="11">Нет данных</td>
+          <td colSpan="11">{t("noData")}</td>
         </tr>
       );
     }
@@ -454,7 +452,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
       if (!sortedEmployees.length) {
         return (
           <tr>
-            <td colSpan="11">Нет данных</td>
+            <td colSpan="11">{t("noData")}</td>
           </tr>
         );
       }
@@ -489,7 +487,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
       if (!sortedDepartments.length) {
         return (
           <tr>
-            <td colSpan="11">Нет данных</td>
+            <td colSpan="11">{t("noData")}</td>
           </tr>
         );
       }
@@ -512,13 +510,13 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     if (!sorted.length) {
       return (
         <tr>
-          <td colSpan="11">Нет данных</td>
+          <td colSpan="11">{t("noData")}</td>
         </tr>
       );
     }
     return sorted.map((branch, index) => (
-      <>
-        <tr key={branch.name} onClick={() => setModalData(branch.employees)}>
+      <Fragment key={branch.name}>
+        <tr onClick={() => setModalData(branch.employees)}>
           <td>{index + 1}</td>
           <td>{branch.name}</td>
           <td>{branch.totalEmployees}</td>
@@ -537,7 +535,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
             <button
               className={`${styles.toggleBtn} ${openBranches[branch.name] ? styles.toggleBtnOpen : ""}`}
             >
-              <span>{openBranches[branch.name] ? "Скрыть" : "Показать"}</span>
+              <span>{openBranches[branch.name] ? t("hide") : t("show")}</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="14"
@@ -576,7 +574,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
               <td></td>
             </tr>
           ))}
-      </>
+      </Fragment>
     ));
   };
 
@@ -638,9 +636,9 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
                     "--filter-border": f.border,
                   }}
                   onClick={() => toggleFilter(f.key)}
-                  title={`Фильтр: ${f.label}`}
+                  title={t("filterActive") + " " + t(f.labelKey)}
                 >
-                  <span className={styles.filterLabel}>{f.label}</span>
+                  <span className={styles.filterLabel}>{t(f.labelKey)}</span>
                   <span className={styles.filterBadge}>
                     {statusCounts[f.key]}
                   </span>
@@ -652,34 +650,36 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
               <button
                 className={styles.clearFiltersBtn}
                 onClick={() => setActiveFilters(new Set())}
-                title="Сбросить все фильтры"
+                title={t("resetAllFilters")}
               >
-                × Сбросить
+                {t("reset")}
               </button>
             )}
           </div>
         )}
 
-        {viewMode === "branch" && (
-          <Switcher
-            items={viewTypes}
-            activeItem={displayMode}
-            onSelect={(id) => {
-              setDisplayMode(id);
-              setActiveFilters(new Set()); // сбрасываем фильтры при смене режима
-            }}
-          />
-        )}
+        <div style={{ display: "flex", gap: "10px" }}>
+          {viewMode === "branch" && (
+            <Switcher
+              items={viewTypes}
+              activeItem={displayMode}
+              onSelect={(id) => {
+                setDisplayMode(id);
+                setActiveFilters(new Set()); // сбрасываем фильтры при смене режима
+              }}
+            />
+          )}
 
-        {Object.keys(prepareAttendanceData).length > 0 && (
-          <DownloadButton text={t("save")} onClick={() => {}} />
-        )}
+          {data.length > 0 && (
+            <DownloadButton text={t("save")} onClick={() => {}} />
+          )}
+        </div>
       </div>
 
       {/* Активные фильтры — информационная строка */}
       {activeFilters.size > 0 && (
         <div className={styles.activeFiltersBar}>
-          <span className={styles.activeFiltersLabel}>Фильтр активен:</span>
+          <span className={styles.activeFiltersLabel}>{t("filterActive")}</span>
           {[...activeFilters].map((key) => {
             const f = STATUS_FILTERS.find((f) => f.key === key);
             return (
@@ -688,7 +688,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
                 className={styles.activeFilterTag}
                 style={{ "--filter-color": f.color, "--filter-bg": f.bg }}
               >
-                {f.icon} {f.label}
+                {t(f.labelKey)}
                 <button
                   className={styles.removeTagBtn}
                   onClick={() => toggleFilter(key)}
@@ -699,12 +699,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
             );
           })}
           <span className={styles.filteredCount}>
-            Показано: {sortedEmployees.length}{" "}
-            {sortedEmployees.length === 1
-              ? "сотрудник"
-              : sortedEmployees.length < 5
-                ? "сотрудника"
-                : "сотрудников"}
+            {t("shown")} {sortedEmployees.length} {t("employees")}
           </span>
         </div>
       )}

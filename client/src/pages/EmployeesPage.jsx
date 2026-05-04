@@ -369,7 +369,7 @@ const EmployeesPage = () => {
       if (response.data.success) {
         setData((prevData) => prevData.filter((user) => user.user_id !== id));
         deleteUser(id);
-        showAlert("Успешно", "error");
+        showAlert(t("success"), "error");
       }
     } catch (err) {
       showAlert(`${err.response.data.message}`, "error");
@@ -566,7 +566,7 @@ const EmployeesPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        title={t("areYouSureDelete")}
       />
 
       {modalType === "add" && (

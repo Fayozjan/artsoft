@@ -8,7 +8,6 @@
     align-items: center;
     gap: 10px;
     min-width: 50px;
-    max-width: 140px;
     height: 32px;
     padding: 0 10px;
     font-weight: 600;
@@ -43,7 +42,7 @@
     background-color: white;
     margin-top: 4px;
     left: 0;
-    min-width: 300px;
+    min-width: 350px;
     max-width: 400px;
     padding: 5px 10px;
     border-radius: 4px;
@@ -99,17 +98,63 @@
         cursor: pointer;
       }
 
-      .status {
-        width: 100%;
+      .segmentedGroup {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .segmentedLabel {
+        font-size: 10px;
+        font-weight: 600;
+        color: #9ca3af;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+
+      .segmentedTrack {
+        display: flex;
+        background: #f3f4f6;
+        border-radius: 6px;
+        padding: 2px;
+        position: relative;
+      }
+
+      .segmentedSlider {
+        position: absolute;
+        top: 2px;
+        bottom: 2px;
+        border-radius: 4px;
+        background: white;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        transition: left 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .segmentedBtn {
+        flex: 1;
+        height: 26px;
+        border: none;
+        background: transparent;
+        border-radius: 4px;
+        cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: space-evenly;
+        justify-content: center;
+        gap: 4px;
+        font-size: 11px;
+        font-weight: 400;
+        color: #6b7280;
+        z-index: 2;
+        position: relative;
+        transition: color 0.2s;
+        white-space: nowrap;
+        padding: 0 4px;
+        font-family: inherit;
 
-        label {
-          display: flex;
-          align-items: center;
-          gap: 2px;
-          cursor: pointer;
+        &.segmentedBtnActive {
+          font-weight: 600;
         }
       }
 

@@ -1,22 +1,20 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import styles from "./NotFoundPage.module.scss";
 
-function NotFound() {
+function NoAccessPage() {
   const navigate = useNavigate();
-
-  const handleGoBack = () => {
-    navigate(-1); // Навигация на предыдущую страницу
-  };
+  const { t } = useTranslation();
 
   return (
     <div className={styles.container}>
       <div className={styles.main}>
-        <h1>К сожалению, у вас нет доступа.</h1>
-        <button onClick={handleGoBack}>Назад</button>
+        <h1>{t("noAccess")}</h1>
+        <button onClick={() => navigate(-1)}>{t("goBack")}</button>
       </div>
     </div>
   );
 }
 
-export default NotFound;
+export default NoAccessPage;

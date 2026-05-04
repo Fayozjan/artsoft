@@ -1,4 +1,9 @@
 import { AuthService } from "./auth.service.js";
+import {
+  prismaPublic,
+  getPrismaForTenant,
+} from "../../utils/prismaForTenant.js";
+import { prismaContext } from "../../utils/prismaContext.js";
 
 const setTokens = (res, accessToken, refreshToken) => {
   const secure = process.env.NODE_ENV === "production";
@@ -32,7 +37,7 @@ export const AuthController = {
       res.status(200).json(user);
     } catch (err) {
       console.error("Login error:", err);
-      res.status(err.status || 500).json({ message: err.message });
+      res.status(err.status || 401).json({ ...err });
     }
   },
 
@@ -44,14 +49,28 @@ export const AuthController = {
         return res.status(400).json({ message: "id required" });
       }
 
-      const { accessToken, refreshToken, user } =
-        await AuthService.telegramLogin(id);
+      const telegramId = String(id);
 
-      // Токены кладём в куки — как в login
-      setTokens(res, accessToken, refreshToken);
+      const tenantUser = await prismaPublic.tenant_telegram_users.findUnique({
+        where: { telegram_id: telegramId },
+        include: { tenant: true },
+      });
 
-      // Только данные юзера — без токенов в body
-      res.status(200).json(user);
+      if (!tenantUser) {
+        return res.status(403).json({
+          code: "NOT_REGISTERED",
+          message: "Not registered. Contact your administrator.",
+        });
+      }
+
+      const prisma = getPrismaForTenant(tenantUser.tenant.schema);
+
+      await prismaContext.run(prisma, async () => {
+        const { accessToken, refreshToken, user } =
+          await AuthService.telegramLogin(telegramId);
+        setTokens(res, accessToken, refreshToken);
+        res.status(200).json(user);
+      });
     } catch (err) {
       console.error("Telegram login error:", err);
       res.status(err.status || 500).json({

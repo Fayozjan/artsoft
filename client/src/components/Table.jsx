@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./Table.module.scss";
 
 const Table = ({ columns, data = [] }) => {
+  const { t } = useTranslation();
   const [sortConfig, setSortConfig] = useState({
     key: "employeeFullName",
     direction: "asc",
@@ -94,7 +96,7 @@ const Table = ({ columns, data = [] }) => {
           {sortedData.length === 0 ? (
             <tr>
               <td colSpan={columns.length} style={{ textAlign: "center" }}>
-                Нет данных
+                {t("noData")}
               </td>
             </tr>
           ) : (

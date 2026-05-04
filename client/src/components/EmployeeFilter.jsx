@@ -119,17 +119,6 @@ const GenderIcon = ({ value }) => {
   );
 };
 
-const statusOptions = [
-  { value: "", label: "Все", color: "#6b7280" },
-  { value: "true", label: "Работает", color: "#16a34a" },
-  { value: "false", label: "Уволен", color: "#dc2626" },
-];
-
-const genderOptions = [
-  { value: "", label: "Все", color: "#6b7280" },
-  { value: "male", label: "Мужчина", color: "#2563eb" },
-  { value: "female", label: "Женщина", color: "#db2777" },
-];
 
 const SegmentedGroup = ({ label, options, value, onChange, isStatus }) => {
   const activeIdx = options.findIndex((o) => o.value === value);
@@ -176,6 +165,18 @@ const SegmentedGroup = ({ label, options, value, onChange, isStatus }) => {
 
 const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
   const [isOpen, setIsOpen] = useState(false);
+
+  const statusOptions = [
+    { value: "", label: t("all"), color: "#6b7280" },
+    { value: "true", label: t("active"), color: "#16a34a" },
+    { value: "false", label: t("terminated"), color: "#dc2626" },
+  ];
+
+  const genderOptions = [
+    { value: "", label: t("all"), color: "#6b7280" },
+    { value: "male", label: t("male"), color: "#2563eb" },
+    { value: "female", label: t("female"), color: "#db2777" },
+  ];
 
   const initialFormData = {
     branch_id: "",
@@ -260,7 +261,7 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
             />
 
             <SegmentedGroup
-              label="Пол"
+              label={t("gender")}
               options={genderOptions}
               value={formData.gender}
               onChange={(val) =>
@@ -269,7 +270,7 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
             />
 
             <SegmentedGroup
-              label="Статус"
+              label={t("status")}
               options={statusOptions}
               value={formData.status}
               onChange={(val) =>

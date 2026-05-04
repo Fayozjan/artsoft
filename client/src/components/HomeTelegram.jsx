@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { t as i18t } from "i18next";
 import styles from "./HomeTelegram.module.scss";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -139,37 +141,28 @@ const HomeIcons = {
   ),
 };
 
-const MONTHS_SHORT = [
-  "Янв",
-  "Фев",
-  "Мар",
-  "Апр",
-  "Май",
-  "Июн",
-  "Июл",
-  "Авг",
-  "Сен",
-  "Окт",
-  "Ноя",
-  "Дек",
+const getMonthsShort = () => [
+  i18t("monthJan"), i18t("monthFeb"), i18t("monthMar"), i18t("monthApr"),
+  i18t("monthMay"), i18t("monthJun"), i18t("monthJul"), i18t("monthAug"),
+  i18t("monthSep"), i18t("monthOct"), i18t("monthNov"), i18t("monthDec"),
 ];
 
 const STATUSES = [
-  { key: "present", label: "Пришли", color: "#4ade80", dot: "#16a34a" },
-  { key: "absent", label: "Не пришли", color: "#f87171", dot: "#dc2626" },
-  { key: "late", label: "Опоздали", color: "#fbbf24", dot: "#d97706" },
-  { key: "inside", label: "На месте", color: "#60a5fa", dot: "#2563eb" },
-  { key: "left", label: "Ушли", color: "#a78bfa", dot: "#7c3aed" },
+  { key: "present", labelKey: "attended", color: "#4ade80", dot: "#16a34a" },
+  { key: "absent", labelKey: "notAttended", color: "#f87171", dot: "#dc2626" },
+  { key: "late", labelKey: "lateGroup", color: "#fbbf24", dot: "#d97706" },
+  { key: "inside", labelKey: "onSite", color: "#60a5fa", dot: "#2563eb" },
+  { key: "left", labelKey: "checkedOut", color: "#a78bfa", dot: "#7c3aed" },
 ];
 
-const PANEL_LABELS = {
-  all: "Все сотрудники",
-  present: "Пришли",
-  absent: "Не пришли",
-  late: "Опоздали",
-  inside: "На месте",
-  left: "Ушли",
-};
+const getPanelLabels = () => ({
+  all: i18t("allEmployees"),
+  present: i18t("attended"),
+  absent: i18t("notAttended"),
+  late: i18t("lateGroup"),
+  inside: i18t("onSite"),
+  left: i18t("checkedOut"),
+});
 
 const getInitials = (name = "") =>
   name
@@ -184,9 +177,9 @@ const formatDuration = (minutes) => {
   if (!minutes && minutes !== 0) return "—";
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h === 0) return `${m} мин`;
-  if (m === 0) return `${h} ч`;
-  return `${h} ч ${m} мин`;
+  if (h === 0) return `${m} ${i18t("minutesShort")}`;
+  if (m === 0) return `${h} ${i18t("hoursShort")}`;
+  return `${h} ${i18t("hoursShort")} ${m} ${i18t("minutesShort")}`;
 };
 
 // ─── Time badges per panel type ───────────────────────────────────────────────
@@ -216,7 +209,7 @@ const renderTimeBadges = (emp, panelKey) => {
               background: "transparent",
             }}
           >
-            граф. {emp.scheduledStart}
+            {i18t("schedPrefix")} {emp.scheduledStart}
           </span>
         )}
         {emp.lateMinutes > 0 && (
@@ -228,7 +221,7 @@ const renderTimeBadges = (emp, panelKey) => {
               background: "rgba(217,119,6,0.1)",
             }}
           >
-            +{emp.lateMinutes} мин
+            +{emp.lateMinutes} {i18t("minutesShort")}
           </span>
         )}
         {emp.breakReturnLateMinutes > 0 && (
@@ -240,7 +233,7 @@ const renderTimeBadges = (emp, panelKey) => {
               background: "rgba(234,88,12,0.1)",
             }}
           >
-            перерыв +{emp.breakReturnLateMinutes} мин
+            {i18t("breakPrefix")} +{emp.breakReturnLateMinutes} {i18t("minutesShort")}
           </span>
         )}
       </div>
@@ -271,7 +264,7 @@ const renderTimeBadges = (emp, panelKey) => {
               background: "rgba(37,99,235,0.08)",
             }}
           >
-            <span className={styles.panelPulseDot} /> на месте
+            <span className={styles.panelPulseDot} /> {i18t("onSiteLow")}
           </span>
         ) : null}
       </div>
@@ -289,7 +282,7 @@ const renderTimeBadges = (emp, panelKey) => {
             background: "transparent",
           }}
         >
-          план {emp.scheduledStart}
+          {i18t("planPrefix")} {emp.scheduledStart}
         </span>
       </div>
     );
@@ -300,6 +293,7 @@ const renderTimeBadges = (emp, panelKey) => {
 
 // ─── Employee list panel ──────────────────────────────────────────────────────
 const EmployeeListPanel = ({ title, employees, panelKey, onClose }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   if (!employees) return null;
 
@@ -326,7 +320,7 @@ const EmployeeListPanel = ({ title, employees, panelKey, onClose }) => {
         <div className={styles.panelSearch}>
           <input
             className={styles.panelSearchInput}
-            placeholder="Поиск по имени…"
+            placeholder={t("searchByName")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoComplete="off"
@@ -336,7 +330,7 @@ const EmployeeListPanel = ({ title, employees, panelKey, onClose }) => {
         <div className={styles.panelList}>
           {filtered.length === 0 ? (
             <div className={styles.panelEmpty}>
-              {search ? "Не найдено" : "Нет данных"}
+              {search ? t("notFound2") : t("noData")}
             </div>
           ) : (
             filtered.map((emp, i) => {
@@ -386,6 +380,7 @@ export const EmployeeHomePage = ({
   monthStats,
   onMonthChange,
 }) => {
+  const { t } = useTranslation();
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
@@ -418,12 +413,12 @@ export const EmployeeHomePage = ({
     month === today.getMonth() && year === today.getFullYear();
 
   const shiftStatusMap = {
-    present: { label: "Пришёл", cls: styles.badgeGreen },
-    absent: { label: "Не пришёл", cls: styles.badgeRed },
-    late: { label: "Опоздал", cls: styles.badgeAmber },
-    inside: { label: "На месте", cls: styles.badgeBlue },
-    left: { label: "Ушёл", cls: styles.badgePurple },
-    leftEarly: { label: "Ушёл рано", cls: styles.badgePink },
+    present: { label: t("arrived"), cls: styles.badgeGreen },
+    absent: { label: t("notArrived"), cls: styles.badgeRed },
+    late: { label: t("lateLabel"), cls: styles.badgeAmber },
+    inside: { label: t("onSite"), cls: styles.badgeBlue },
+    left: { label: t("leftLabel"), cls: styles.badgePurple },
+    leftEarly: { label: t("leftEarlyLabel"), cls: styles.badgePink },
   };
   const shiftStatus = shiftStatusMap[shift?.status] || {
     label: "—",
@@ -461,15 +456,15 @@ export const EmployeeHomePage = ({
         <div className={styles.divider} />
 
         <div className={styles.row}>
-          <span className={styles.rowLabel}>Отдел</span>
+          <span className={styles.rowLabel}>{t("department")}</span>
           <span className={styles.rowValue}>{employee?.department || "—"}</span>
         </div>
         <div className={styles.row}>
-          <span className={styles.rowLabel}>Филиал</span>
+          <span className={styles.rowLabel}>{t("branch")}</span>
           <span className={styles.rowValue}>{employee?.branch || "—"}</span>
         </div>
         <div className={styles.row}>
-          <span className={styles.rowLabel}>График</span>
+          <span className={styles.rowLabel}>{t("scheduleLabel")}</span>
           <span className={styles.rowValue}>{employee?.schedule || "—"}</span>
         </div>
       </div>
@@ -478,7 +473,7 @@ export const EmployeeHomePage = ({
       <div className={styles.card}>
         <div className={styles.cardHeaderRow}>
           <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.clock} Текущая смена
+            {HomeIcons.clock} {t("currentShift")}
           </div>
           {shift?.status && (
             <span className={`${styles.badge} ${shiftStatus.cls}`}>
@@ -494,19 +489,19 @@ export const EmployeeHomePage = ({
           {shift?.workDuration && (
             <div className={styles.bigTime}>
               {shift.workDuration}
-              <div className={styles.bigTimeSub}>Время на работе сегодня</div>
+              <div className={styles.bigTimeSub}>{t("workDurationToday")}</div>
             </div>
           )}
           <div className={styles.checkInOutRow}>
             <div className={styles.checkCol}>
-              <span className={styles.checkColLabel}>Вход</span>
+              <span className={styles.checkColLabel}>{t("checkIn")}</span>
               <span className={styles.rowValue}>{shift?.checkIn || "—"}</span>
               <span className={styles.checkColSched}>
                 {shift?.scheduledIn || "—"}
               </span>
             </div>
             <div className={styles.checkCol}>
-              <span className={styles.checkColLabel}>Выход</span>
+              <span className={styles.checkColLabel}>{t("checkOut")}</span>
               <span className={styles.rowValue}>{shift?.checkOut || "—"}</span>
               <span className={styles.checkColSched}>
                 {shift?.scheduledOut || "—"}
@@ -519,7 +514,7 @@ export const EmployeeHomePage = ({
 
         {shift?.late && (
           <div className={styles.row}>
-            <span className={styles.rowLabel}>Опоздание</span>
+            <span className={styles.rowLabel}>{t("lateCol")}</span>
             <span className={`${styles.badge} ${styles.badgeRed}`}>
               +{shift.late}
             </span>
@@ -527,7 +522,7 @@ export const EmployeeHomePage = ({
         )}
         {shift?.breakReturnLate && (
           <div className={styles.row}>
-            <span className={styles.rowLabel}>Опоздание после перерыва</span>
+            <span className={styles.rowLabel}>{t("lateAfterBreak")}</span>
             <span className={`${styles.badge} ${styles.badgeAmber}`}>
               +{shift.breakReturnLate}
             </span>
@@ -535,7 +530,7 @@ export const EmployeeHomePage = ({
         )}
         {shift?.lateLeave && (
           <div className={styles.row}>
-            <span className={styles.rowLabel}>Переработка</span>
+            <span className={styles.rowLabel}>{t("overtime")}</span>
             <span className={`${styles.badge} ${styles.badgePurple}`}>
               +{shift.lateLeave}
             </span>
@@ -547,14 +542,14 @@ export const EmployeeHomePage = ({
       <div className={styles.card}>
         <div className={styles.cardHeaderRow}>
           <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.calendar} За месяц
+            {HomeIcons.calendar} {t("forMonth")}
           </div>
           <div className={styles.monthNav}>
             <button className={styles.monthBtn} onClick={prevMonth}>
               {HomeIcons.chevronLeft}
             </button>
             <span className={styles.monthLabel}>
-              {MONTHS_SHORT[month]} {year}
+              {getMonthsShort()[month]} {year}
             </span>
             <button
               className={styles.monthBtn}
@@ -570,16 +565,16 @@ export const EmployeeHomePage = ({
 
         <MonthStatRow
           color="#22c55e"
-          label="Рабочих дней"
+          label={t("workedDaysMonth")}
           value={
             monthStats
-              ? `${monthStats.workedDays} / ${monthStats.totalDays} дн.`
+              ? `${monthStats.workedDays} / ${monthStats.totalDays} ${t("daysAbbr")}`
               : "—"
           }
         />
         <MonthStatRow
           color="#3b82f6"
-          label="Всего часов"
+          label={t("totalHoursMonth")}
           value={
             monthStats
               ? `${formatDuration(monthStats.totalMinutes)} / ${formatDuration(monthStats.scheduledMinutes)}`
@@ -588,10 +583,10 @@ export const EmployeeHomePage = ({
         />
         <MonthStatRow
           color="#ef4444"
-          label="Опоздание на работу"
+          label={t("lateAtWork")}
           value={
             monthStats
-              ? `${monthStats.lateCount} раз${monthStats.lateTotalMinutes > 0 ? ` (${formatDuration(monthStats.lateTotalMinutes)})` : ""}`
+              ? `${monthStats.lateCount} ${t("times")}${monthStats.lateTotalMinutes > 0 ? ` (${formatDuration(monthStats.lateTotalMinutes)})` : ""}`
               : "—"
           }
           valueColor={monthStats?.lateCount > 0 ? "#ef4444" : undefined}
@@ -599,33 +594,33 @@ export const EmployeeHomePage = ({
         {monthStats?.breakReturnLateCount > 0 && (
           <MonthStatRow
             color="#f87171"
-            label="Опоздание после перерыва"
-            value={`${monthStats.breakReturnLateCount} раз${monthStats.breakReturnLateMinutes > 0 ? ` (${formatDuration(monthStats.breakReturnLateMinutes)})` : ""}`}
+            label={t("lateAfterBreak")}
+            value={`${monthStats.breakReturnLateCount} ${t("times")}${monthStats.breakReturnLateMinutes > 0 ? ` (${formatDuration(monthStats.breakReturnLateMinutes)})` : ""}`}
             valueColor="#f87171"
           />
         )}
         <MonthStatRow
           color="#64748b"
-          label="Пропусков"
-          value={monthStats ? `${monthStats.absentDays} дн.` : "—"}
+          label={t("absences")}
+          value={monthStats ? `${monthStats.absentDays} ${t("daysAbbr")}` : "—"}
           valueColor={monthStats?.absentDays > 0 ? "#64748b" : undefined}
         />
         <MonthStatRow
           color="#f59e0b"
-          label="Ушёл раньше"
+          label={t("leftEarly")}
           value={
             monthStats
-              ? `${monthStats.earlyLeave} раз${monthStats.earlyLeaveMinutes > 0 ? ` (${formatDuration(monthStats.earlyLeaveMinutes)})` : ""}`
+              ? `${monthStats.earlyLeave} ${t("times")}${monthStats.earlyLeaveMinutes > 0 ? ` (${formatDuration(monthStats.earlyLeaveMinutes)})` : ""}`
               : "—"
           }
           valueColor={monthStats?.earlyLeave > 0 ? "#f59e0b" : undefined}
         />
         <MonthStatRow
           color="#10b981"
-          label="Ушёл поздно"
+          label={t("leftLate")}
           value={
             monthStats
-              ? `${monthStats.lateLeaveCount} раз${monthStats.lateLeaveMinutes > 0 ? ` (${formatDuration(monthStats.lateLeaveMinutes)})` : ""}`
+              ? `${monthStats.lateLeaveCount} ${t("times")}${monthStats.lateLeaveMinutes > 0 ? ` (${formatDuration(monthStats.lateLeaveMinutes)})` : ""}`
               : "—"
           }
           valueColor={monthStats?.lateLeaveCount > 0 ? "#10b981" : undefined}
@@ -633,8 +628,8 @@ export const EmployeeHomePage = ({
         {monthStats?.pastNoExitCount > 0 && (
           <MonthStatRow
             color="#a855f7"
-            label="Нет выхода"
-            value={`${monthStats.pastNoExitCount} дн.`}
+            label={t("noExit")}
+            value={`${monthStats.pastNoExitCount} ${t("daysAbbr")}`}
             valueColor="#a855f7"
           />
         )}
@@ -689,7 +684,8 @@ export const AdminHomePage = ({
   onBranchChange,
   loading,
 }) => {
-  const [openPanel, setOpenPanel] = useState(null); // key of PANEL_LABELS or null
+  const { t } = useTranslation();
+  const [openPanel, setOpenPanel] = useState(null);
 
   const total = stats?.total || 0;
   const getPercent = (count) =>
@@ -699,7 +695,7 @@ export const AdminHomePage = ({
     : 1;
 
   const panelEmployees = openPanel ? employeeLists?.[openPanel] || [] : null;
-  const panelTitle = openPanel ? PANEL_LABELS[openPanel] : "";
+  const panelTitle = openPanel ? getPanelLabels()[openPanel] : "";
 
   return (
     <div className={styles.page}>
@@ -716,7 +712,7 @@ export const AdminHomePage = ({
 
       {/* ── 1. Branch card ── */}
       <div className={styles.card}>
-        <div className={styles.sectionLabel}>{HomeIcons.building} Филиал</div>
+        <div className={styles.sectionLabel}>{HomeIcons.building} {t("branch")}</div>
         <div className={styles.branchHead}>
           <div className={styles.branchIcon}>{HomeIcons.building}</div>
           <div className={styles.branchInfo}>
@@ -734,7 +730,7 @@ export const AdminHomePage = ({
           className={`${styles.row} ${employeeLists?.all?.length ? styles.rowClickable : ""}`}
           onClick={() => employeeLists?.all?.length && setOpenPanel("all")}
         >
-          <span className={styles.rowLabel}>Всего сотрудников</span>
+          <span className={styles.rowLabel}>{t("totalEmployeesLabel")}</span>
           <span className={styles.rowValue}>
             {branch?.totalEmployees ?? "—"}
             {employeeLists?.all?.length ? (
@@ -745,7 +741,7 @@ export const AdminHomePage = ({
           </span>
         </div>
         <div className={styles.row}>
-          <span className={styles.rowLabel}>Отделов</span>
+          <span className={styles.rowLabel}>{t("departmentsCount")}</span>
           <span className={styles.rowValue}>
             {branch?.departmentCount ?? "—"}
           </span>
@@ -756,7 +752,7 @@ export const AdminHomePage = ({
       <div className={styles.card}>
         <div className={styles.cardHeaderRow}>
           <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.users} Статистика за сегодня
+            {HomeIcons.users} {t("todayStats")}
           </div>
           <span className={styles.dateLabel}>
             {new Date().toLocaleDateString("ru-RU", {
@@ -769,7 +765,7 @@ export const AdminHomePage = ({
         <div className={styles.totalBanner}>
           <div>
             <div className={styles.totalNum}>{loading ? "…" : total}</div>
-            <div className={styles.totalLabel}>сотрудников всего</div>
+            <div className={styles.totalLabel}>{t("totalEmpAll")}</div>
           </div>
           <div className={styles.totalBar}>
             {!loading &&
@@ -782,7 +778,7 @@ export const AdminHomePage = ({
                       key={s.key}
                       className={styles.totalBarSegment}
                       style={{ width: `${pct}%`, background: s.dot }}
-                      title={`${s.label}: ${count}`}
+                      title={`${t(s.labelKey)}: ${count}`}
                     />
                   ) : null;
                 },
@@ -807,7 +803,7 @@ export const AdminHomePage = ({
                       className={styles.statusDot}
                       style={{ background: s.dot }}
                     />
-                    <span className={styles.statusName}>{s.label}</span>
+                    <span className={styles.statusName}>{t(s.labelKey)}</span>
                   </div>
                   <div className={styles.statusRight}>
                     <span className={styles.statusCount}>{count}</span>
@@ -836,7 +832,7 @@ export const AdminHomePage = ({
       {!loading && departments?.length > 0 && (
         <div className={styles.card}>
           <div className={styles.sectionLabel}>
-            {HomeIcons.briefcase} Присутствие по отделам
+            {HomeIcons.briefcase} {t("deptPresence")}
           </div>
           <div className={styles.deptList}>
             {departments.map((dep, i) => {
@@ -893,6 +889,7 @@ export const AdminHomePage = ({
 // ALL BRANCHES PAGE — absolute mode
 // ═══════════════════════════════════════════════════════════════════════════════
 export const AllBranchesPage = ({ allBranchesData, loading }) => {
+  const { t } = useTranslation();
   const [detailIdx, setDetailIdx] = useState(null);
 
   // scroll to top on any navigation
@@ -962,7 +959,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
       <div className={styles.card}>
         <div className={styles.cardHeaderRow}>
           <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.layers} Все филиалы
+            {HomeIcons.layers} {t("allBranches")}
           </div>
           <span className={styles.dateLabel}>
             {new Date().toLocaleDateString("ru-RU", {
@@ -977,7 +974,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
             <div className={styles.totalNum}>
               {loading ? "…" : totalEmployees}
             </div>
-            <div className={styles.totalLabel}>сотрудников всего</div>
+            <div className={styles.totalLabel}>{t("totalEmpAll")}</div>
           </div>
           <div style={{ flex: 1 }}>
             <div className={styles.totalBar}>
@@ -998,14 +995,14 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
                   className={styles.allBranchSummaryItem}
                   style={{ color: "#4ade80" }}
                 >
-                  {totalPresent} пришли
+                  {totalPresent} {t("attendedLow")}
                 </span>
                 {totalInside > 0 && (
                   <span
                     className={styles.allBranchSummaryItem}
                     style={{ color: "#60a5fa" }}
                   >
-                    {totalInside} на месте
+                    {totalInside} {t("onSiteLow")}
                   </span>
                 )}
                 {totalLate > 0 && (
@@ -1013,7 +1010,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
                     className={styles.allBranchSummaryItem}
                     style={{ color: "#fbbf24" }}
                   >
-                    {totalLate} опоздали
+                    {totalLate} {t("lateGroupLow")}
                   </span>
                 )}
               </div>
@@ -1112,7 +1109,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
                     style={{ background: "#2563eb" }}
                   />
                   <span style={{ color: "#60a5fa" }}>{inside}</span>
-                  <span className={styles.allBranchMiniLabel}>на месте</span>
+                  <span className={styles.allBranchMiniLabel}>{t("onSiteLow")}</span>
                 </span>
                 {late > 0 && (
                   <span className={styles.allBranchMiniStat}>
@@ -1121,7 +1118,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
                       style={{ background: "#d97706" }}
                     />
                     <span style={{ color: "#fbbf24" }}>{late}</span>
-                    <span className={styles.allBranchMiniLabel}>опоздали</span>
+                    <span className={styles.allBranchMiniLabel}>{t("lateGroupLow")}</span>
                   </span>
                 )}
                 <span
@@ -1133,7 +1130,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
                     style={{ background: "#dc2626" }}
                   />
                   <span style={{ color: "#f87171" }}>{absent}</span>
-                  <span className={styles.allBranchMiniLabel}>нет</span>
+                  <span className={styles.allBranchMiniLabel}>{t("absentLow")}</span>
                 </span>
               </div>
             </div>
@@ -1142,7 +1139,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
 
       {loading && (
         <div className={styles.card}>
-          <div className={styles.loadingText}>Загрузка данных…</div>
+          <div className={styles.loadingText}>{t("loading")}</div>
         </div>
       )}
     </div>

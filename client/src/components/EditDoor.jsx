@@ -98,7 +98,7 @@ const EditDoors = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="name">Название</label>
+          <label htmlFor="name">{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -111,13 +111,13 @@ const EditDoors = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="branch_id">Филиал</label>
+          <label htmlFor="branch_id">{t("branch")}</label>
           <select
             name="branch_id"
             value={formData?.branch_id}
             onChange={handleChange}
           >
-            <option value="">— не выбран —</option>
+            <option value="">{t("notSelected")}</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -129,7 +129,7 @@ const EditDoors = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="latitude">Широта (latitude)</label>
+          <label htmlFor="latitude">{t("latitude")}</label>
           <input
             type="number"
             name="latitude"
@@ -140,7 +140,7 @@ const EditDoors = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label htmlFor="longitude">Долгота (longitude)</label>
+          <label htmlFor="longitude">{t("longitude")}</label>
           <input
             type="number"
             name="longitude"
@@ -154,14 +154,14 @@ const EditDoors = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Статус</label>
+          <label>{t("status")}</label>
           <select
             name="status"
             value={formData?.status}
             onChange={handleChange}
           >
-            <option value="true">Включить</option>
-            <option value="false">Выключить</option>
+            <option value="true">{t("enable")}</option>
+            <option value="false">{t("disable")}</option>
           </select>
         </div>
       </div>

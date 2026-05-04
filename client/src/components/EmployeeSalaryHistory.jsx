@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import Loading from "./Loading";
 import { salaryHistoryApi } from "../api/salaryHistory";
+import { useAlertStore } from "../stores/alertStore";
 import styles from "./EmployeeSalaryHistory.module.scss";
 
 const SALARY_TYPES = [
@@ -28,6 +29,7 @@ const emptyForm = {
 
 const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false, showClose = true }) => {
   const { t } = useTranslation();
+  const { showAlert } = useAlertStore();
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [deletingId, setDeletingId] = useState(null);
@@ -58,9 +60,14 @@ const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false
     setLoading(true);
     try {
       const res = await salaryHistoryApi.deleteById(id);
-      if (res?.success) setHistory((prev) => prev.filter((i) => i.id !== id));
+      if (res?.success) {
+        setHistory((prev) => prev.filter((i) => i.id !== id));
+      } else {
+        showAlert(t(res?.message) || t("error"), "error");
+      }
     } catch (e) {
       console.error("Ошибка удаления", e);
+      showAlert(t("error"), "error");
     } finally {
       setDeletingId(null);
       setLoading(false);
@@ -87,9 +94,12 @@ const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false
           prev.map((i) => (i.id === id ? { ...i, ...editForm } : i))
         );
         setEditingId(null);
+      } else {
+        showAlert(t(res?.message) || t("error"), "error");
       }
     } catch (e) {
       console.error("Ошибка обновления", e);
+      showAlert(t("error"), "error");
     } finally {
       setSaving(false);
     }
@@ -107,9 +117,12 @@ const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false
         setAddForm(emptyForm);
         setShowAddForm(false);
         await fetchHistory();
+      } else {
+        showAlert(t(res?.message) || t("error"), "error");
       }
     } catch (e) {
       console.error("Ошибка создания", e);
+      showAlert(t("error"), "error");
     } finally {
       setSaving(false);
     }

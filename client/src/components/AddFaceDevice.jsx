@@ -55,7 +55,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
       const res = await addFaceDevice(formData);
 
       if (res.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         onSuccess();
         setTimeout(() => {
           handleClose();
@@ -68,7 +68,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
         "Ошибка при отправке данных:",
         error.response ? error.response.data : error.message,
       );
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -81,7 +81,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label for="name">Название</label>
+          <label htmlFor="name">{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -91,7 +91,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Пароль</label>
+          <label>{t("password")}</label>
           <input
             type="text"
             name="password"
@@ -103,7 +103,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Серийный номер</label>
+          <label>{t("serialNumber")}</label>
           <input
             type="text"
             name="serial_number"
@@ -112,22 +112,22 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label for="name">Направление</label>
+          <label htmlFor="name">{t("direction")}</label>
           <select
             name="direction"
             value={formData.direction}
             onChange={handleChange}
           >
-            <option value="entry">Вход</option>
-            <option value="exit">Выход</option>
-            <option value="universal">Универсальный</option>
+            <option value="entry">{t("entry")}</option>
+            <option value="exit">{t("exit")}</option>
+            <option value="universal">{t("universal")}</option>
           </select>
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label>IP адресс</label>
+          <label>{t("ipAddress")}</label>
           <input
             type="text"
             name="device_ip"
@@ -137,7 +137,7 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Порт</label>
+          <label>{t("port")}</label>
           <input
             type="text"
             name="port"
@@ -149,26 +149,26 @@ const AddFaceDevice = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Локальное устройство</label>
+          <label>{t("localDevice")}</label>
           <select
             name="is_local"
             value={formData.is_local}
             onChange={handleChange}
           >
-            <option value={true}>Да</option>
-            <option value={false}>Нет</option>
+            <option value={true}>{t("yes")}</option>
+            <option value={false}>{t("no")}</option>
           </select>
         </div>
         <div>
           <div className={styles.inputCol}>
-            <label for="name">Дверь</label>
+            <label htmlFor="name">{t("door")}</label>
             <select
               name="door_id"
               value={formData.door_id}
               onChange={handleChange}
               required
             >
-              <option value="">Выберите дверь</option>
+              <option value="">{t("selectDoor")}</option>
               {doors?.map((item) => (
                 <option value={item.id}>{item.name}</option>
               ))}

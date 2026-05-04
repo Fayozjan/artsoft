@@ -21,6 +21,7 @@ export const workScheduleService = {
     if (data.type === "fixed" || data.type === "remote") {
       preparedData.work_days = mapWorkDays(data.work_days, data.weekly_days);
       preparedData.shifts = null;
+      preparedData.time_calc_method = data.time_calc_method || "by_period";
     }
 
     // 🔹 Shift график
@@ -120,6 +121,7 @@ export const workScheduleService = {
     if (data.type === "fixed" || data.type === "remote") {
       preparedData.work_days = mapWorkDays(data.work_days, data.weekly_days);
       preparedData.shifts = null;
+      preparedData.time_calc_method = data.time_calc_method || "by_period";
     }
 
     if (data.type === "shift") {

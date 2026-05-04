@@ -11,7 +11,7 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
   };
 
   const activeCount = Object.entries(formData).filter(
-    ([key, value]) => key !== "search" && value !== ""
+    ([key, value]) => key !== "search" && value !== "",
   ).length;
 
   const wrapperRef = useRef(null);
@@ -71,7 +71,6 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -85,7 +84,7 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
             />
 
             <div>
-              <h2>Статус</h2>
+              <h2>{t("status")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -97,7 +96,7 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -110,7 +109,7 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "true" }))
                     }
                   />
-                  Включен
+                  {t("true")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -123,7 +122,7 @@ const DepartmentFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "false" }))
                     }
                   />
-                  Выключен
+                  {t("false")}
                 </label>
               </div>
             </div>

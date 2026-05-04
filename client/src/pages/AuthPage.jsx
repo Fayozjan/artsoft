@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
@@ -11,6 +11,18 @@ const AuthPage = () => {
   const { loginUser } = useAuthStore();
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
+
+  useEffect(() => {
+    if (window.Telegram?.WebApp?.initData) {
+      navigate("/tg", { replace: true });
+    }
+  }, []);
+
+  const messageMap = {
+    AUTH_INVALID_CREDENTIALS: t("loginError"),
+    NOT_REGISTERED: t("notRegistered"),
+    DISABLED: t("accountDisabled"),
+  };
 
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -38,7 +50,7 @@ const AuthPage = () => {
     if (result.success) {
       navigate("/home");
     } else {
-      showAlert(t("loginError"), "error");
+      showAlert(t(messageMap[result.code]), "error");
     }
   };
 
@@ -55,6 +67,12 @@ const AuthPage = () => {
           className={currentLang === "ru" ? styles.active : ""}
         >
           РУ
+        </button>
+        <button
+          onClick={() => handleLanguageChange("uzLatn")}
+          className={currentLang === "uzLatn" ? styles.active : ""}
+        >
+          UZ
         </button>
         <button
           onClick={() => handleLanguageChange("uzCyrl")}
@@ -103,7 +121,7 @@ const AuthPage = () => {
               className={styles.toggle_password}
               onClick={() => setShowPassword((prev) => !prev)}
             >
-              {showPassword ? "Скрыть" : "Показать"}
+              {showPassword ? t("hide") : t("show")}
             </span>
           </div>
 

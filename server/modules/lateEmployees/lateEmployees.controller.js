@@ -9,9 +9,12 @@ export async function getLateEmployees(req, res) {
       return res.status(400).json({ error: "Date is required" });
     }
 
+    const { page, pageSize } = req.query;
     const data = await lateEmployeesService.getLateEmployeesService({
       userId,
       filters,
+      page,
+      pageSize,
     });
 
     return res.status(200).json(data);

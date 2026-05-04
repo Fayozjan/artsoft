@@ -104,8 +104,14 @@ function AdjustmentPopover({ item, onClose, onSave }) {
           })()}
           placeholder="0"
           onChange={(e) => {
-            let v = e.target.value.replace(/[\u00A0\s]/g, "").replace(/[^\d\-]/g, "");
-            if (v.length > 1) v = v[0] === "-" ? "-" + v.slice(1).replace(/-/g, "") : v.replace(/-/g, "");
+            let v = e.target.value
+              .replace(/[\u00A0\s]/g, "")
+              .replace(/[^\d\-]/g, "");
+            if (v.length > 1)
+              v =
+                v[0] === "-"
+                  ? "-" + v.slice(1).replace(/-/g, "")
+                  : v.replace(/-/g, "");
             setAmount(v);
             setCommentError(false);
           }}
@@ -155,8 +161,6 @@ const PayrollTable = ({
   const { showAlert } = useAlertStore();
   const [activePopover, setActivePopover] = useState(null);
   const headerCheckRef = useRef(null);
-
-  console.log("items", items);
 
   const allSelected =
     items.length > 0 && items.every((it) => selectedIds.includes(it.id));
@@ -258,7 +262,9 @@ const PayrollTable = ({
               const adjustment = Number(item.manual_adjustment);
               const hasAdj = adjustment !== 0;
               const isSelected = selectedIds.includes(item.id);
-              const itemApproved = item.status === "approved";
+              const itemApproved     = item.status === "approved";
+              const itemPaid         = item.payout_status === "paid";
+              const itemPartiallyPaid = item.payout_status === "partially_paid";
 
               const lateMin = item.late_minutes || 0;
               const otMin = item.overtime_minutes || 0;
@@ -266,7 +272,7 @@ const PayrollTable = ({
               const otAmt = Number(item.overtime_amount || 0);
 
               const hoursDisplay = item.total_work_hours
-                ? `${item.worked_hours || "00:00"}/${item.total_work_hours}`
+                ? `${item.worked_hours || "00:00"} / ${item.total_work_hours}`
                 : item.worked_hours || "—";
 
               return (
@@ -311,7 +317,7 @@ const PayrollTable = ({
                     <span
                       className={item.worked_days === 0 ? styles.zeroVal : ""}
                     >
-                      {item.worked_days}/{item.total_work_days}
+                      {item.worked_days} / {item.total_work_days}
                     </span>
                   </td>
 
@@ -408,11 +414,25 @@ const PayrollTable = ({
 
                   {/* Status + per-row actions */}
                   <td className={styles.actionsCell}>
-                    {itemApproved ? (
+                    {!itemApproved ? (
+                      <button
+                        className={styles.approveItemBtn}
+                        onClick={() => onApproveItem(item.id)}
+                        title={t("approveItem")}
+                      >
+                        <IconCheck /> {t("approveItem")}
+                      </button>
+                    ) : (
                       <>
-                        <span className={styles.approvedBadge}>
-                          <IconCheck /> {t("approved")}
-                        </span>
+                        {itemPaid ? (
+                          <span className={styles.paidBadge}>{t("statusPaid")}</span>
+                        ) : itemPartiallyPaid ? (
+                          <span className={styles.partiallyPaidBadge}>{t("statusPartiallyPaid")}</span>
+                        ) : (
+                          <span className={styles.approvedBadge}>
+                            <IconCheck /> {t("approved")}
+                          </span>
+                        )}
                         <button
                           className={styles.revertBtn}
                           onClick={() => onUnapproveItem(item.id)}
@@ -421,14 +441,6 @@ const PayrollTable = ({
                           <IconUndo />
                         </button>
                       </>
-                    ) : (
-                      <button
-                        className={styles.approveItemBtn}
-                        onClick={() => onApproveItem(item.id)}
-                        title={t("approveItem")}
-                      >
-                        <IconCheck /> {t("approveItem")}
-                      </button>
                     )}
                   </td>
                 </tr>

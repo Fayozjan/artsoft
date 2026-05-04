@@ -453,7 +453,7 @@ export function scheduleEventsChecker() {
     {
       label: "live",
       windowMs: 60 * 60 * 1000, // 1 час
-      intervalMs: 15 * 60 * 1000, // каждые 15 минут
+      intervalMs: 30 * 60 * 1000, // каждые 30 минут
     },
     {
       label: "recovery",
@@ -464,6 +464,11 @@ export function scheduleEventsChecker() {
       label: "deep_sync",
       windowMs: 24 * 60 * 60 * 1000, // 24 часа
       intervalMs: 24 * 60 * 60 * 1000, // каждые 24 часа
+    },
+    {
+      label: "weekly_sync",
+      windowMs: 30 * 24 * 60 * 60 * 1000, // 30 дней (месяц)
+      intervalMs: 7 * 24 * 60 * 60 * 1000, // каждые 7 дней (неделя)
     },
   ];
 

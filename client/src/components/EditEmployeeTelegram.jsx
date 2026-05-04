@@ -168,7 +168,7 @@ const EditEmployeeTelegram = ({ id, handleClose, onSuccess }) => {
 
   return (
     <div className={styles.screenWrapper}>
-      <TelegramPageHeader title="Изменение" />
+      <TelegramPageHeader title={t("editRecord")} />
 
       <form id="employeeForm" className={styles.scrollContent}>
         <div className={styles.photoSection}>

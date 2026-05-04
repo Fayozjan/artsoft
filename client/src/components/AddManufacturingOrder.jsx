@@ -39,7 +39,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
   const [isLoading, setIsLoading] = useState(false);
   const { showAlert } = useAlertStore();
   const userSettings = useAuthStore((state) => state.userSettings);
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   useEffect(() => {
     if (userSettings?.language) {
@@ -73,15 +73,15 @@ const AddManufacturingOrder = ({ cancelButton }) => {
         const res = await addManufacturingOrder({ ...formData });
 
         if (res.success) {
-          showAlert("Заказ успешно добавлен", "success");
+          showAlert(t("orderAdded"), "success");
           setTimeout(() => cancelButton(), 1500);
         } else {
           console.error("Ошибка в ответе сервера:", res.data);
-          showAlert("Ошибка при добавлении заказа", "error");
+          showAlert(t("errorAddOrder"), "error");
         }
       } catch (error) {
         console.error("Ошибка при отправке данных:", error);
-        showAlert("Ошибка при добавлении заказа", "error");
+        showAlert(t("errorAddOrder"), "error");
       } finally {
         setIsLoading(false);
       }
@@ -92,7 +92,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
   return (
     <div className={styles.overlay}>
       <div className={styles.add_order}>
-        <h1>Добавить производственный заказ</h1>
+        <h1>{t("addManufacturingOrder")}</h1>
         <svg
           className={styles.cancelBtn}
           onClick={() => cancelButton()}
@@ -110,9 +110,9 @@ const AddManufacturingOrder = ({ cancelButton }) => {
 
         <div className={styles.container}>
           <form className={styles.orderForm} onSubmit={handleSubmit}>
-            <h2>Производственный заказ</h2>
+            <h2>{t("productionOrder")}</h2>
             <div className={styles.formGroup}>
-              <label>Дата получения</label>
+              <label>{t("receivedDate")}</label>
               <input
                 type="date"
                 name="receiveDate"
@@ -121,7 +121,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 required
               />
 
-              <label>Срок</label>
+              <label>{t("deadline")}</label>
               <input
                 type="date"
                 name="deadline"
@@ -130,7 +130,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 required
               />
 
-              <label>Клиент</label>
+              <label>{t("client")}</label>
               <input
                 type="text"
                 name="client"
@@ -139,7 +139,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 required
               />
 
-              <label>Филиал</label>
+              <label>{t("branch")}</label>
               <input
                 type="text"
                 name="branch"
@@ -148,7 +148,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 required
               />
 
-              <label>Номер заказа</label>
+              <label>{t("mfgOrderNumber")}</label>
               <input
                 type="text"
                 name="orderNumber"
@@ -156,7 +156,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>ID заказа</label>
+              <label>{t("mfgOrderId")}</label>
               <input
                 type="text"
                 name="orderId"
@@ -164,14 +164,14 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Описание</label>
+              <label>{t("note")}</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
               ></textarea>
 
-              <label>Менеджер</label>
+              <label>{t("manager")}</label>
               <input
                 type="text"
                 name="manager"
@@ -179,21 +179,21 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Статус</label>
+              <label>{t("status")}</label>
               <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
               >
-                <option value="В обработке">В обработке</option>
-                <option value="Выполнен">Выполнен</option>
-                <option value="Отменен">Отменен</option>
+                <option value="В обработке">{t("inProcess")}</option>
+                <option value="Выполнен">{t("completed")}</option>
+                <option value="Отменен">{t("cancelled")}</option>
               </select>
             </div>
 
-            <h2>Продукт</h2>
+            <h2>{t("product")}</h2>
             <div className={styles.formGroup}>
-              <label>Название продукта</label>
+              <label>{t("productName")}</label>
               <input
                 type="text"
                 name="productName"
@@ -202,7 +202,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 required
               />
 
-              <label>Ткань</label>
+              <label>{t("fabric")}</label>
               <input
                 type="text"
                 name="fabric"
@@ -210,7 +210,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Дизайн</label>
+              <label>{t("design")}</label>
               <input
                 type="text"
                 name="design"
@@ -218,7 +218,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Вариант дизайна</label>
+              <label>{t("designVariant")}</label>
               <input
                 type="text"
                 name="designVariant"
@@ -226,7 +226,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Цвет</label>
+              <label>{t("color")}</label>
               <input
                 type="text"
                 name="color"
@@ -234,7 +234,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Вариант цвета</label>
+              <label>{t("colorVariant")}</label>
               <input
                 type="text"
                 name="colorVariant"
@@ -242,7 +242,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Единица измерения</label>
+              <label>{t("unitOfMeasure")}</label>
               <input
                 type="text"
                 name="unit"
@@ -250,7 +250,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Количество</label>
+              <label>{t("quantity")}</label>
               <input
                 type="number"
                 name="quantity"
@@ -258,7 +258,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Цена</label>
+              <label>{t("price")}</label>
               <input
                 type="number"
                 name="price"
@@ -266,7 +266,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Сумма</label>
+              <label>{t("totalAmount")}</label>
               <input
                 type="number"
                 name="total"
@@ -274,7 +274,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 readOnly
               />
 
-              <label>Грамм</label>
+              <label>{t("grams")}</label>
               <input
                 type="number"
                 name="gram"
@@ -282,7 +282,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
                 onChange={handleChange}
               />
 
-              <label>Граммаж</label>
+              <label>{t("grammage")}</label>
               <input
                 type="text"
                 name="grammage"
@@ -292,7 +292,7 @@ const AddManufacturingOrder = ({ cancelButton }) => {
             </div>
 
             <div className={styles.buttons}>
-              <Button text="Сохранить" type="submit" disabled={isLoading} />
+              <Button text={t("save")} type="submit" disabled={isLoading} />
             </div>
           </form>
         </div>

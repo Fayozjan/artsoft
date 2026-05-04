@@ -448,8 +448,7 @@ const AddEmployee = ({ handleClose, onSuccess }) => {
 
       <CenterModal
         isOpen={showConfirmClose}
-        title=" Вы уверены, что хотите закрыть окно?"
-        text="Несохранённые данные будут потеряны."
+        tag={t("closeConfirmTitle")}
         onClose={() => setShowConfirmClose(false)}
         onAccept={() => {
           setShowConfirmClose(false);

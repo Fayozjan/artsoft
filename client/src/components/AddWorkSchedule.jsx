@@ -38,6 +38,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     late_tolerance_minutes: 0,
     early_leave_tolerance_minutes: 0,
     late_leave_tolerance_minutes: 0,
+    time_calc_method: "by_period",
   });
 
   // Подсчёт минут перерыва из break_start/break_end
@@ -45,7 +46,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     if (!breakStart || !breakEnd) return 0;
     const [bsh, bsm] = breakStart.split(":").map(Number);
     const [beh, bem] = breakEnd.split(":").map(Number);
-    return Math.max(0, (beh * 60 + bem) - (bsh * 60 + bsm));
+    return Math.max(0, beh * 60 + bem - (bsh * 60 + bsm));
   };
 
   // Функция для подсчета рабочих минут (с вычетом перерыва)
@@ -65,13 +66,25 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
         .slice(0, formData.weekly_days)
         .reduce(
           (sum, day) =>
-            sum + getMinutesWorked(day.start, day.end, day.break_start, day.break_end),
+            sum +
+            getMinutesWorked(
+              day.start,
+              day.end,
+              day.break_start,
+              day.break_end,
+            ),
           0,
         );
     } else if (formData.type === "shift") {
       return formData.shifts.reduce(
         (sum, shift) =>
-          sum + getMinutesWorked(shift.start, shift.end, shift.break_start, shift.break_end),
+          sum +
+          getMinutesWorked(
+            shift.start,
+            shift.end,
+            shift.break_start,
+            shift.break_end,
+          ),
         0,
       );
     }
@@ -140,7 +153,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
     e.preventDefault();
 
     if (exceeded) {
-      showAlert("Суммарные часы превышают норму!", "error");
+      showAlert(t("hoursExceedLimit"), "error");
       return;
     }
 
@@ -165,11 +178,19 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
       onSuccess();
       setTimeout(handleClose, 1500);
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
-  const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  const dayNames = [
+    t("dayMon"),
+    t("dayTue"),
+    t("dayWed"),
+    t("dayThu"),
+    t("dayFri"),
+    t("daySat"),
+    t("daySun"),
+  ];
 
   return (
     <form className={styles.addWorkSchedules} onSubmit={handleSubmit}>
@@ -181,7 +202,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
       {/* Название и тип графика */}
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -192,19 +213,19 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Тип</label>
+          <label>{t("type")}</label>
           <select name="type" value={formData.type} onChange={handleChange}>
-            <option value="fixed">Фиксированный</option>
-            <option value="shift">Сменный</option>
-            <option value="flexible">Гибкий</option>
-            <option value="remote">Дистанционный</option>
+            <option value="fixed">{t("schedFixed")}</option>
+            <option value="shift">{t("schedShift")}</option>
+            <option value="flexible">{t("schedFlexible")}</option>
+            <option value="remote">{t("remote")}</option>
           </select>
         </div>
       </div>
 
       <div className={styles.row}>
         <div style={{ flex: "0 0 49%" }}>
-          <label>Норма часов в неделю</label>
+          <label>{t("weeklyHoursNorm")}</label>
           <input
             type="number"
             min={0}
@@ -216,19 +237,35 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
 
         {(formData.type === "fixed" || formData.type === "remote") && (
           <div>
-            <label>Рабочая неделя</label>
+            <label>{t("workWeek")}</label>
             <select
               name="weekly_days"
               value={formData.weekly_days}
               onChange={handleChange}
             >
-              <option value={5}>5 дней</option>
-              <option value={6}>6 дней</option>
-              <option value={7}>7 дней</option>
+              <option value={5}>5 {t("days")}</option>
+              <option value={6}>6 {t("days")}</option>
+              <option value={7}>7 {t("days")}</option>
             </select>
           </div>
         )}
       </div>
+
+      {(formData.type === "fixed" || formData.type === "remote") && (
+        <div className={styles.row}>
+          <div>
+            <label>{t("timeCalcMethod")}</label>
+            <select
+              name="time_calc_method"
+              value={formData.time_calc_method}
+              onChange={handleChange}
+            >
+              <option value="by_period">{t("timeCalcByPeriod")}</option>
+              <option value="first_last">{t("timeCalcFirstLast")}</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Fixed / Remote: график по дням */}
       {(formData.type === "fixed" || formData.type === "remote") && (
@@ -249,7 +286,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
                 </div>
 
                 <div>
-                  <label>Конец</label>
+                  <label>{t("end")}</label>
                   <input
                     type="time"
                     value={day.end}
@@ -260,7 +297,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
                 </div>
 
                 <div>
-                  <label>Перерыв с</label>
+                  <label>{t("breakFrom")}</label>
                   <input
                     type="time"
                     value={day.break_start}
@@ -271,7 +308,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
                 </div>
 
                 <div>
-                  <label>Перерыв по</label>
+                  <label>{t("schedBreakEnd")}</label>
                   <input
                     type="time"
                     value={day.break_end}
@@ -289,7 +326,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
         formData.shifts.map((shift, index) => (
           <div className={styles.row} key={shift.shift_number}>
             <div>
-              <label>{`Начало ${shift.shift_number} смены`}</label>
+              <label>{`${t("shiftStart")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.start}
@@ -302,7 +339,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             </div>
 
             <div>
-              <label>{`Конец ${shift.shift_number} смены`}</label>
+              <label>{`${t("shiftEnd")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.end}
@@ -315,7 +352,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             </div>
 
             <div>
-              <label>{`Перерыв ${shift.shift_number} с`}</label>
+              <label>{`${t("shiftBreakFrom")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.break_start}
@@ -328,7 +365,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             </div>
 
             <div>
-              <label>{`Перерыв ${shift.shift_number} по`}</label>
+              <label>{`${t("shiftBreakTo")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.break_end}
@@ -345,7 +382,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
       {/* Допустимые окна */}
       <div className={styles.row}>
         <div>
-          <label>Допуск опоздания (мин)</label>
+          <label>{t("lateToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -355,7 +392,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Допуск раннего ухода (мин)</label>
+          <label>{t("earlyLeaveToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -365,7 +402,7 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Допуск позднего ухода (мин)</label>
+          <label>{t("lateLeaveToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -384,14 +421,17 @@ const AddWorkSchedule = ({ handleClose, onSuccess }) => {
             backgroundColor: exceeded ? "#ffeaea" : "#f9f9f9",
           }}
         >
-          <span className={styles.label}>Всего часов в неделю:</span>
+          <span className={styles.label}>{t("totalWeeklyHours")}:</span>
           <span className={styles.value}>
             {formatHoursMinutes(totalMinutes)}
           </span>
           <span className={styles.separator}>/</span>
-          <span className={styles.max}>{formData.weekly_hours}ч</span>
+          <span className={styles.max}>
+            {formData.weekly_hours}
+            {t("hoursShort")}
+          </span>
           {exceeded && (
-            <span className={styles.warning}>⚠️ Превышает норму часов!</span>
+            <span className={styles.warning}>⚠️ {t("exceedsHoursLimit")}</span>
           )}
         </div>
       </div>

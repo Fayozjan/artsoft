@@ -23,7 +23,7 @@
 
 .modalContent {
   width: 100%;
-  max-width: 660px;
+  max-width: 900px;
   border-radius: 16px;
   background: #fff;
   box-shadow:
@@ -49,7 +49,6 @@
 .modalHeader {
   background: #fff;
   padding: 16px 16px 0;
-  border-bottom: 1px solid #eef0f6;
   position: relative;
 }
 
@@ -156,45 +155,70 @@
   }
 }
 
-// ─── Stats strip ─────────────────────────────────────────────────────────────
+// ─── Stats widgets ────────────────────────────────────────────────────────────
 
-.modalStats {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
+.modalStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 10px 16px 12px;
   background: #f7f8ff;
-  border: 1px solid #e8eaff;
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  padding: 10px;
+  border-top: 1px solid #e8eaff;
 }
 
-.modalStat {
-  flex: 1;
+.modalStatWidget {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.modalStatWidgetIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.modalStatWidgetContent {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 2px;
+  gap: 1px;
+  min-width: 0;
 }
 
-.modalStatValue {
-  font-size: calc(var(--font-body) + 6px);
-  font-weight: 700;
-  color: #1e2230;
-  line-height: 1;
-}
-
-.modalStatLabel {
-  font-size: var(--font-small);
+.modalStatWidgetLabel {
+  font-size: 14px;
+  color: #64748b;
   font-weight: 500;
-  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.modalStatDivider {
-  width: 1px;
-  height: 26px;
-  background: #dde0f5;
-  flex-shrink: 0;
+.modalStatWidgetValue {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+.modalStatWidgetSub {
+  font-size: 14px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.modalStatWidgetTime {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
 }
 
 // ─── Table body ───────────────────────────────────────────────────────────────

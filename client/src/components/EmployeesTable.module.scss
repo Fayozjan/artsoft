@@ -58,14 +58,30 @@
     text-align: left;
     min-width: 150px;
 
-    img {
+    img,
+    .avatar {
       flex-shrink: 0;
       width: 35px;
       min-width: 30px;
       height: 35px;
       border-radius: 50%;
-      object-fit: cover;
       box-sizing: border-box;
+    }
+
+    img {
+      object-fit: cover;
+    }
+
+    .avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #e2e8f0;
+      color: #475569;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      user-select: none;
     }
   }
 

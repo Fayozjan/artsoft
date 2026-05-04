@@ -71,13 +71,13 @@ const ManufacturingOrdersPage = () => {
         if (currentPage > totalPages) {
           setCurrentPage(totalPages);
         }
-        showAlert("Успешно удалено", "success");
+        showAlert(t("success"), "success");
       } else {
         console.error("Ошибка при удалении заказа:", deleteRes.data.message);
       }
     } catch (error) {
       console.error("Ошибка при удалении заказа:", error.message);
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -232,7 +232,7 @@ const ManufacturingOrdersPage = () => {
                         {hasPermission(currentPath, "edit") && (
                           <svg
                             onClick={() => handleEditButton(order.id)}
-                            title="Редактировать заказ"
+                            title={t("editOrder")}
                             fill="none"
                             height="24"
                             stroke="currentColor"

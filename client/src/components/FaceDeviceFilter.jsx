@@ -17,7 +17,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
   };
 
   const activeCount = Object.entries(formData).filter(
-    ([key, value]) => key !== "search" && value !== ""
+    ([key, value]) => key !== "search" && value !== "",
   ).length;
 
   const wrapperRef = useRef(null);
@@ -89,7 +89,6 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -97,7 +96,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
             <div>
-              <h2>Дверь</h2>
+              <h2>{t("door")}</h2>
               <SelectWithSearch
                 value={formData.door_id}
                 options={doors}
@@ -109,7 +108,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
             </div>
 
             <div>
-              <h2>Направление</h2>
+              <h2>{t("direction")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -121,7 +120,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, direction: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -134,7 +133,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, direction: "entry" }))
                     }
                   />
-                  Вход
+                  {t("entry")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -147,13 +146,13 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, direction: "exit" }))
                     }
                   />
-                  Выход
+                  {t("exit")}
                 </label>
               </div>
             </div>
 
             <div>
-              <h2>Статус</h2>
+              <h2>{t("status")}</h2>
               <div className={styles.checkboxGroup}>
                 <label className={styles.checkboxLabel}>
                   <input
@@ -165,7 +164,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -178,7 +177,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "true" }))
                     }
                   />
-                  Включен
+                  {t("true")}
                 </label>
 
                 <label className={styles.checkboxLabel}>
@@ -191,7 +190,7 @@ const FaceDeviseFilter = ({ formData, setFormData, onSubmit, t }) => {
                       setFormData((prev) => ({ ...prev, status: "false" }))
                     }
                   />
-                  Выключен
+                  {t("false")}
                 </label>
               </div>
             </div>

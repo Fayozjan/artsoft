@@ -147,7 +147,7 @@ const AddEmployeeTelegram = ({ handleClose, onSuccess, isEdit = false }) => {
 
   return (
     <div className={styles.screenWrapper}>
-      <TelegramPageHeader title="Добавление" />
+      <TelegramPageHeader title={t("addRecord")} />
 
       <form id="employeeForm" className={styles.scrollContent}>
         <div className={styles.photoSection}>

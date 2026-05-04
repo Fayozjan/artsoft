@@ -120,7 +120,7 @@ const FacePassesFilterTelegram = ({
             d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
           />
         </svg>
-        <span>Фильтры</span>
+        <span>{t("filters")}</span>
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -129,7 +129,7 @@ const FacePassesFilterTelegram = ({
           <form onSubmit={onSubmit}>
             <div className={styles.row}>
               <div>
-                <h2>Дата от</h2>
+                <h2>{t("dateFrom")}</h2>
                 <input
                   className={styles.date}
                   id="date_from"
@@ -141,7 +141,7 @@ const FacePassesFilterTelegram = ({
                 />
               </div>
               <div>
-                <h2>Дата до</h2>
+                <h2>{t("dateTo")}</h2>
                 <input
                   className={styles.date}
                   id="date_to"
@@ -161,7 +161,7 @@ const FacePassesFilterTelegram = ({
             />
 
             <div>
-              <h2>Дверь</h2>
+              <h2>{t("door")}</h2>
               <MultiSelectDoors
                 options={doors}
                 selected={formData.selectedDoorIds}
@@ -170,7 +170,7 @@ const FacePassesFilterTelegram = ({
             </div>
 
             <div>
-              <h2>Направление</h2>
+              <h2>{t("direction")}</h2>
               <div className={styles.status}>
                 <label>
                   <input
@@ -182,7 +182,7 @@ const FacePassesFilterTelegram = ({
                       setFormData((prev) => ({ ...prev, direction: "" }))
                     }
                   />
-                  Все
+                  {t("all")}
                 </label>
 
                 <label>
@@ -195,7 +195,7 @@ const FacePassesFilterTelegram = ({
                       setFormData((prev) => ({ ...prev, direction: "entry" }))
                     }
                   />
-                  Вход
+                  {t("entry")}
                 </label>
 
                 <label>
@@ -208,7 +208,7 @@ const FacePassesFilterTelegram = ({
                       setFormData((prev) => ({ ...prev, direction: "exit" }))
                     }
                   />
-                  Выход
+                  {t("exit")}
                 </label>
               </div>
             </div>

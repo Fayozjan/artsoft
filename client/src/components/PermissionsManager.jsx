@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./PermissionsManager.module.scss";
 
 const ACTIONS = ["view", "add", "update", "delete"];
-const ACTION_LABELS = ["Просмотр", "Создание", "Изменение", "Удаление"];
 
 const buildTree = (items, parentId = null) =>
   items
@@ -61,8 +61,16 @@ const filterTree = (tree, query) => {
 };
 
 const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
+  const { t } = useTranslation();
   const safeAllMenus = allMenus || [];
   const safeUserMenus = userMenus || [];
+
+  const ACTION_LABELS = [
+    t("permView"),
+    t("permAdd"),
+    t("permUpdate"),
+    t("permDelete"),
+  ];
 
   const parsePermissions = () => {
     const map = {};
@@ -97,13 +105,13 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
   const userMenusHash = JSON.stringify(safeUserMenus);
 
   useEffect(() => {
-    setPermissions(parsePermissions());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const parsed = parsePermissions();
+    setPermissions(parsed);
   }, [menusHash, userMenusHash]);
 
   const tree = useMemo(() => buildTree(safeAllMenus), [safeAllMenus]);
   const filteredTree = useMemo(() => filterTree(tree, search), [tree, search]);
-  const { childrenMap, parentMap } = useMemo(
+  const { childrenMap } = useMemo(
     () => buildRelations(safeAllMenus),
     [safeAllMenus],
   );
@@ -125,16 +133,14 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
     affected.forEach((id) => {
       updated[id] = { ...(updated[id] || {}), [action]: newValue };
     });
-    let pid = parentMap[targetId];
-    while (pid) {
-      const siblings = childrenMap[pid] || [];
-      updated[pid] = {
-        ...(updated[pid] || {}),
-        [action]: siblings.every((s) => updated[s]?.[action]),
-      };
-      pid = parentMap[pid];
-    }
     return updated;
+  };
+
+  const handleToggleAction = (menuId, action) => {
+    const newValue = !getStatus(menuId, action).checked;
+    const updated = updateHierarchy(permissions, menuId, action, newValue);
+    setPermissions(updated);
+    onChange?.(updated);
   };
 
   const handleToggleFull = (menuId) => {
@@ -253,7 +259,7 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
                     indeterminate={indeterminate}
                     onChange={(e) => {
                       e.stopPropagation();
-                      handleToggle(menu.id, action);
+                      handleToggleAction(menu.id, action);
                     }}
                   />
                 </td>
@@ -269,19 +275,27 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
     <div className={styles.container}>
       <div className={styles.toolbar}>
         <div className={styles.toolbarTop}>
-          <span className={styles.toolbarTitle}>Права доступа</span>
+          <span className={styles.toolbarTitle}>{t("permissionsTitle")}</span>
           <div className={styles.stats}>
-            <span className={styles.badge}> Всего: {safeAllMenus.length}</span>
-            <span className={styles.badge}>Разрешено: {stats.allowed}</span>
-            <span className={styles.badge}>Запрещено: {stats.denied}</span>
-            <span className={styles.badge}>Частично: {stats.partial}</span>
+            <span className={styles.badge}>
+              {t("statsTotal")}: {safeAllMenus.length}
+            </span>
+            <span className={styles.badge}>
+              {t("allowed")}: {stats.allowed}
+            </span>
+            <span className={styles.badge}>
+              {t("denied")}: {stats.denied}
+            </span>
+            <span className={styles.badge}>
+              {t("partial")}: {stats.partial}
+            </span>
           </div>
         </div>
         <div className={styles.toolbarBottom}>
           <input
             className={styles.search}
             type="text"
-            placeholder="Поиск меню..."
+            placeholder={t("searchMenu")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -291,21 +305,21 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
             className={styles.ctrlBtn}
             onClick={handleToggleExpandAll}
           >
-            {allExpanded ? "Свернуть все" : "Раскрыть все"}
+            {allExpanded ? t("collapseAll") : t("expandAll")}
           </button>
           <button
             type="button"
             className={styles.ctrlBtn}
             onClick={handleGrantAll}
           >
-            Разрешить всё
+            {t("grantAll")}
           </button>
           <button
             type="button"
             className={styles.ctrlBtn}
             onClick={handleRevokeAll}
           >
-            Запретить всё
+            {t("revokeAll")}
           </button>
         </div>
       </div>
@@ -314,8 +328,8 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
         <table>
           <thead>
             <tr>
-              <th className={styles.colMenu}>Меню</th>
-              <th>Все</th>
+              <th className={styles.colMenu}>{t("menuCol")}</th>
+              <th>{t("all")}</th>
               {ACTION_LABELS.map((l) => (
                 <th key={l}>{l}</th>
               ))}
@@ -325,7 +339,9 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
             {filteredTree.length === 0 ? (
               <tr>
                 <td colSpan={6}>
-                  <div className={styles.empty}>Ничего не найдено</div>
+                  <div className={styles.empty}>
+                    {t("dashboard.noSearchResults")}
+                  </div>
                 </td>
               </tr>
             ) : (

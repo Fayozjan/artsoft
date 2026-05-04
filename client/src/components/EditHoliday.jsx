@@ -78,7 +78,7 @@ const EditHoliday = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -91,7 +91,7 @@ const EditHoliday = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Дата от</label>
+          <label>{t("dateFrom")}</label>
           <input
             type="date"
             name="date_from"
@@ -101,7 +101,7 @@ const EditHoliday = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div className={styles.row_item}>
-          <label>Дата до</label>
+          <label>{t("dateTo")}</label>
           <input
             type="date"
             name="date_to"

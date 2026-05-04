@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 import styles from "./CenterModal.module.scss";
 
@@ -8,10 +9,14 @@ export default function CenterModal({
   isOpen,
   onClose,
   onAccept,
-  tag = "Подтверждение",
-  acceptText = "Да",
-  cancelText = "Отмена",
+  tag,
+  acceptText,
+  cancelText,
 }) {
+  const { t } = useTranslation();
+  const resolvedTag = tag ?? t("confirmAction");
+  const resolvedAccept = acceptText ?? t("yes");
+  const resolvedCancel = cancelText ?? t("cancel");
   const [portalContainer, setPortalContainer] = useState(null);
 
   useEffect(() => {
@@ -50,25 +55,25 @@ export default function CenterModal({
             transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={(e) => e.stopPropagation()}
           >
-            {tag && (
+            {resolvedTag && (
               <div className={styles.tag}>
                 <span className={styles.tagDot} />
-                {tag}
+                {resolvedTag}
               </div>
             )}
 
             {
               <p className={styles.text}>
-                Это действие нельзя будет отменить после подтверждения.
+                {t("confirmText")}
               </p>
             }
 
             <div className={styles.actions}>
               <button className={styles.accept} onClick={onAccept}>
-                {acceptText}
+                {resolvedAccept}
               </button>
               <button className={styles.cancel} onClick={onClose}>
-                {cancelText}
+                {resolvedCancel}
               </button>
             </div>
           </motion.div>

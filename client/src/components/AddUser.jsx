@@ -20,9 +20,9 @@ import MultiSelectBranches from "./MultiSelectBranches";
 import styles from "./AddUser.module.scss";
 
 const STATIC_MENUS = [
-  { key: "home", label: "Главная" },
-  { key: "finance", label: "Финансы" },
-  { key: "tasks", label: "Задачи" },
+  { key: "home", labelKey: "homeNav" },
+  { key: "finance", labelKey: "financeNav" },
+  { key: "tasks", labelKey: "tasksNav" },
 ];
 
 const AddUser = ({ handleClose, onSuccess }) => {
@@ -74,7 +74,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
         });
       } catch (error) {
         console.error(error);
-        showAlert("Ошибка при загрузке данных", "error");
+        showAlert(t("error"), "error");
         setTimeout(() => handleClose(), 1500);
       }
     };
@@ -122,7 +122,11 @@ const AddUser = ({ handleClose, onSuccess }) => {
     e.preventDefault();
 
     try {
-      const res = await addUser(formData);
+      const payload = {
+        ...formData,
+        telegramId: formData.telegramId?.trim() || null,
+      };
+      const res = await addUser(payload);
 
       if (res.success) {
         showAlert(t("success"), "success");
@@ -130,7 +134,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
         onSuccess();
       }
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -143,7 +147,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="username"
@@ -154,7 +158,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Пароль</label>
+          <label>{t("password")}</label>
           <div className={styles.passwordWrapper}>
             <input
               type={state.showPassword ? "text" : "password"}
@@ -168,7 +172,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
               onClick={handleShowPassword}
               className={styles.togglePassword}
             >
-              {state.showPassword ? "Скрыть" : "Показать"}
+              {state.showPassword ? t("hide") : t("show")}
             </button>
           </div>
         </div>
@@ -176,7 +180,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Пользователь</label>
+          <label>{t("employee")}</label>
           <SelectEmployee
             data="employee"
             options={state.employees}
@@ -186,36 +190,35 @@ const AddUser = ({ handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Телеграм ID</label>
+          <label>{t("telegramId")}</label>
           <input
             type="text"
             name="telegramId"
-            value={formData.telegramId}
+            value={formData.telegramId || ""}
             onChange={handleChange}
-            required
           />
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label>Доступ</label>
+          <label>{t("access")}</label>
           <select
             name="access_level"
             value={formData.access_level}
             onChange={handleChange}
           >
-            <option value="absolute">Полный доступ</option>
-            <option value="branch">Филиал</option>
-            <option value="department">Отдел</option>
-            <option value="employee">Сотрудник</option>
+            <option value="absolute">{t("fullAccess")}</option>
+            <option value="branch">{t("branch")}</option>
+            <option value="department">{t("department")}</option>
+            <option value="employee">{t("employee")}</option>
           </select>
         </div>
 
         {formData.access_level === "branch" && (
           <div>
             <label className={styles.label}>
-              Филиалы
+              {t("branches")}
               <span className={styles.sticker}>
                 {formData?.branches?.length || 0}
               </span>
@@ -232,7 +235,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
         {formData.access_level === "department" && (
           <div>
             <label className={styles.label}>
-              Отделы
+              {t("departments")}
               <span className={styles.sticker}>
                 {formData?.departments?.length || 0}
               </span>
@@ -249,14 +252,14 @@ const AddUser = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Режим отображения</label>
+          <label>{t("viewMode")}</label>
           <select
             name="view_mode"
             value={formData.view_mode}
             onChange={handleChange}
           >
-            <option value="absolute">Все филиалы</option>
-            <option value="branch">Отдельно по филиалу</option>
+            <option value="absolute">{t("allBranches")}</option>
+            <option value="branch">{t("byBranch")}</option>
           </select>
         </div>
       </div>
@@ -274,7 +277,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
                 }))
               }
             />
-            Игнорировать GPS-проверку
+            {t("ignoreGpsCheck")}
           </label>
         </div>
       </div>
@@ -289,9 +292,9 @@ const AddUser = ({ handleClose, onSuccess }) => {
 
           <div className={styles.row}>
             <div>
-              <label>Личный режим для меню</label>
+              <label>{t("personalMenuMode")}</label>
               <div className={styles.checkboxGroup}>
-                {STATIC_MENUS.map(({ key, label }) => (
+                {STATIC_MENUS.map(({ key, labelKey }) => (
                   <label key={key} className={styles.checkboxLabel}>
                     <input
                       type="checkbox"
@@ -307,7 +310,7 @@ const AddUser = ({ handleClose, onSuccess }) => {
                         }));
                       }}
                     />
-                    {label}
+                    {t(labelKey)}
                   </label>
                 ))}
               </div>

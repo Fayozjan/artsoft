@@ -70,7 +70,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
         "Ошибка при отправке данных:",
         error.response ? error.response.data : error.message,
       );
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -83,7 +83,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -96,7 +96,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Телеграм чат</label>
+          <label>{t("telegramChat")}</label>
           <input
             type="text"
             name="chat_id"
@@ -110,7 +110,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
       <div className={styles.row}>
         <div>
           <label className={styles.label}>
-            Сотрудники
+            {t("employees")}
             <span className={styles.sticker}>
               {formData?.selectedEmployeeIds?.length || 0}
             </span>
@@ -124,7 +124,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
       </div>
       <div className={styles.row}>
         <div>
-          <label>Доступ</label>
+          <label>{t("access")}</label>
           <div className={styles.status}>
             <label>
               <input
@@ -137,7 +137,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать события
+              {t("receiveEvents")}
             </label>
 
             <label>
@@ -151,7 +151,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать посещаемость
+              {t("receiveAttendance")}
             </label>
 
             <label>
@@ -165,7 +165,7 @@ const AddTelegramBot = ({ handleClose, onSuccess }) => {
                   }))
                 }
               />
-              Получать опоздавших
+              {t("receiveLate")}
             </label>
           </div>
         </div>

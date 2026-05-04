@@ -78,6 +78,17 @@ export const PayrollController = {
     }
   },
 
+  unapproveSheet: async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await PayrollService.unapproveSheet(id);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.unapproveSheet:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   deleteSheet: async (req, res) => {
     const { id } = req.params;
     try {
@@ -187,6 +198,18 @@ export const PayrollController = {
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.recalculateSalaryBalances:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  recalculateDraftItems: async (req, res) => {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    try {
+      const result = await PayrollService.recalculateDraftItems(userId, id);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.recalculateDraftItems:", err.message);
       return res.status(500).json({ success: false, message: err.message });
     }
   },

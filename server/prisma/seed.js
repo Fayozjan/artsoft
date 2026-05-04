@@ -67,6 +67,8 @@ export default async function seed() {
       { name: "face-passes", path: "/face-passes" },
       { name: "holidays", path: "/holidays" },
       { name: "work-schedules", path: "/work-schedules" },
+      { name: "departments", path: "/departments" },
+      { name: "positions", path: "/positions" },
     ];
 
     for (const [i, item] of hrChildren.entries()) {
@@ -96,8 +98,6 @@ export default async function seed() {
     const settingsChildren = [
       { name: "users", path: "/users" },
       { name: "branches", path: "/branches" },
-      { name: "departments", path: "/departments" },
-      { name: "positions", path: "/positions" },
       { name: "doors", path: "/doors" },
       { name: "face-devices", path: "/face-devices" },
       { name: "gates", path: "/gates" },

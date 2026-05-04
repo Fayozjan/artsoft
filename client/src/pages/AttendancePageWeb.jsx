@@ -12,6 +12,7 @@ import AttendanceTable from "../components/AttendanceTable";
 
 import styles from "./AttendancePageWeb.module.scss";
 import { useAuthStore } from "../stores/authStore";
+import { Icons } from "../icons/icons";
 
 export const isToday = (dateString) => {
   if (!dateString) return false;
@@ -67,8 +68,6 @@ const AttendancePageWeb = () => {
 
   const showAllDashboards = isToday(loadedDataDate);
 
-  console.log("data", data);
-
   return (
     <div className={styles.attendancePage}>
       {loading && <Loading />}
@@ -85,23 +84,7 @@ const AttendancePageWeb = () => {
 
           <div className={styles.buttonsWrapper}>
             <div className={styles.refreshBtn} onClick={() => fetchData()}>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="200"
-                height="200"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  fill="none"
-                  stroke="#000000"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                />
-              </svg>
-
-              <span>Обновить данные</span>
+              {Icons.refresh}
             </div>
 
             {Object.keys(data).length > 0 && (

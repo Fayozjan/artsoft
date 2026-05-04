@@ -41,7 +41,7 @@ const initialFilters = {
 
 const PAYOUT_STATUS_OPTIONS = [
   { value: "", labelKey: "filterAll", color: "#6b7280" },
-  { value: "approved", labelKey: "pendingPayout", color: "#3b82f6" },
+  { value: "unpaid", labelKey: "pendingPayout", color: "#3b82f6" },
   { value: "paid", labelKey: "paid", color: "#16a34a" },
 ];
 
@@ -211,7 +211,7 @@ const SalaryPayoutsPage = () => {
               pendingSumDelta = 0,
               paidSumDelta = 0;
             affected.forEach((it) => {
-              if (it.status !== status) {
+              if (it.payout_status !== status) {
                 if (status === "paid") {
                   pendingDelta -= 1;
                   paidDelta += 1;
@@ -237,7 +237,7 @@ const SalaryPayoutsPage = () => {
             ...prev,
             stats: newStats,
             items: prev.items.map((it) =>
-              ids.includes(it.id) ? { ...it, status } : it,
+              ids.includes(it.id) ? { ...it, payout_status: status } : it,
             ),
           };
         });
@@ -270,9 +270,7 @@ const SalaryPayoutsPage = () => {
           return {
             ...prev,
             stats: newStats,
-            items: prev.items.map((it) =>
-              ["approved", "paid"].includes(it.status) ? { ...it, status } : it,
-            ),
+            items: prev.items.map((it) => ({ ...it, payout_status: status })),
           };
         });
         showAlert(t("saved"), "success");
@@ -293,10 +291,10 @@ const SalaryPayoutsPage = () => {
 
   const handleRevertAction = async () => {
     if (selectedIds.length > 0) {
-      await applyBulkPaidStatus(selectedIds, "approved");
+      await applyBulkPaidStatus(selectedIds, "unpaid");
       setSelectedIds([]);
     } else {
-      await applyAllPaidStatus("approved");
+      await applyAllPaidStatus("unpaid");
     }
   };
 
@@ -319,7 +317,7 @@ const SalaryPayoutsPage = () => {
   };
 
   const handlePayItem    = (id) => applyBulkPaidStatus([id], "paid");
-  const handleRevertItem = (id) => applyBulkPaidStatus([id], "approved");
+  const handleRevertItem = (id) => applyBulkPaidStatus([id], "unpaid");
 
   const handleItemUpdate = (updatedItem) => {
     setSheet((prev) => ({

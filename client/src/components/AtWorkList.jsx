@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 
 import styles from "./AtWorkList.module.scss";
+import { useTranslation } from "react-i18next";
 
 const AtWorkTable = ({ data, onClose }) => {
+  const { t } = useTranslation();
   const modalRef = useRef(null);
 
   // Закрытие по нажатию клавиши ESC
@@ -63,18 +65,18 @@ const AtWorkTable = ({ data, onClose }) => {
             y2="56"
           />
         </svg>
-        <h1>Список сотрудников которые ушли с работы</h1>
+        <h1>{t("leftWorkList")}</h1>
         <div className={styles.tableContainer}>
           <table className={styles.employee_table}>
             <thead>
               <tr>
                 <th>№</th>
-                <th className={styles.table_name_header}>ФИО</th>
-                <th>Отдел</th>
-                <th>Должность</th>
-                <th>Фото</th>
-                <th>Вход</th>
-                <th>Выход</th>
+                <th className={styles.table_name_header}>{t("fullName")}</th>
+                <th>{t("department")}</th>
+                <th>{t("position")}</th>
+                <th>{t("photo")}</th>
+                <th>{t("entry")}</th>
+                <th>{t("exit")}</th>
               </tr>
             </thead>
             <tbody>

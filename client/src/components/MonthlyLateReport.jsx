@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./MonthlyLateReport.module.scss";
 
 function formatLateMinutesToHours(minutes) {
@@ -8,96 +9,99 @@ function formatLateMinutesToHours(minutes) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-const columns = [
-  { label: "№", render: (_, __, i) => i + 1 },
-  {
-    label: "ФИО",
-    accessor: "employeeFullName",
-    render: (_, item) => (
-      <div className={styles.employee}>
-        <span>{item.employeeFullName}</span>
-        {item.employeePhoto && (
-          <img src={`/api/employees/image/${item.employeePhoto}`} alt="photo" />
-        )}
-      </div>
-    ),
-  },
-  { label: "Филиал", accessor: "branchName" },
-  { label: "Отдел", accessor: "departmentName" },
-  { label: "Должность", accessor: "positionName" },
-  {
-    label: "Опоздание на работу",
-    accessor: "monthlyArrivalLateCount",
-    render: (_, item) => {
-      const count = item.monthlyArrivalLateCount || 0;
-      const mins = item.monthlyLateMinutes || 0;
-      if (!count) return "—";
-      return `${count} раз${mins > 0 ? ` (${formatLateMinutesToHours(mins)})` : ""}`;
-    },
-  },
-  {
-    label: "Опоздание после перерыва",
-    accessor: "monthlyLunchLateCount",
-    render: (_, item) => {
-      const count = item.monthlyLunchLateCount || 0;
-      const mins = item.monthlyBreakReturnLateMinutes || 0;
-      if (!count) return "—";
-      return `${count} раз${mins > 0 ? ` (${formatLateMinutesToHours(mins)})` : ""}`;
-    },
-  },
-  { label: "Сумма за опоздания", accessor: "monthlyLateMoney" },
-  {
-    label: "Действие",
-    render: (_, item, __, onMore) => (
-      <button className={styles.btnMore} onClick={() => onMore && onMore(item)}>
-        Подробно
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="22"
-          height="22"
-          viewBox="0 0 24 24"
-        >
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m10 17l5-5m0 0l-5-5"
-          />
-        </svg>
-      </button>
-    ),
-  },
-];
-
 const EmployeesTable = ({ data = [], onMore }) => {
-  const [sortConfig, setSortConfig] = useState({
-    key: "employeeFullName",
-    direction: "asc",
-  });
+  const { t } = useTranslation();
 
-  const handleSort = (accessor) => {
-    setSortConfig((prev) => ({
-      key: accessor,
-      direction:
-        prev.key === accessor && prev.direction === "asc" ? "desc" : "asc",
-    }));
-  };
-
-  const sortedData = [...data].sort((a, b) => {
-    const { key, direction } = sortConfig;
-    if (!key) return 0;
-    const aVal = a[key],
-      bVal = b[key];
-    if (aVal == null) return 1;
-    if (bVal == null) return -1;
-    if (typeof aVal === "number" && typeof bVal === "number")
-      return direction === "asc" ? aVal - bVal : bVal - aVal;
-    return direction === "asc"
-      ? String(aVal).localeCompare(String(bVal))
-      : String(bVal).localeCompare(String(aVal));
-  });
+  const columns = [
+    { label: "№", render: (_, __, i) => i + 1 },
+    {
+      label: t("fullName"),
+      accessor: "employeeFullName",
+      render: (_, item) => (
+        <div className={styles.empCell}>
+          {item.employeePhoto && (
+            <img src={`/api/employees/image/${item.employeePhoto}`} alt="photo" />
+          )}
+          <div className={styles.empInfo}>
+            <span className={styles.empName}>{item.employeeFullName}</span>
+            <span className={styles.empSub}>
+              {[item.branchName, item.departmentName].filter(Boolean).join(" / ")}
+            </span>
+          </div>
+        </div>
+      ),
+    },
+    { label: t("position"), accessor: "positionName" },
+    {
+      label: t("lateCount"),
+      accessor: "monthlyArrivalLateCount",
+      render: (_, item) => {
+        const count = item.monthlyArrivalLateCount || 0;
+        if (!count) return "—";
+        return count;
+      },
+    },
+    {
+      label: t("lateTime"),
+      accessor: "monthlyArrivalLateCount",
+      render: (_, item) => {
+        const count = item.monthlyArrivalLateCount || 0;
+        const mins = item.monthlyLateMinutes || 0;
+        if (!count) return "—";
+        return mins > 0 && formatLateMinutesToHours(mins);
+      },
+    },
+    {
+      label: t("lateCountAfterBreak"),
+      accessor: "monthlyLunchLateCount",
+      render: (_, item) => {
+        const count = item.monthlyLunchLateCount || 0;
+        if (!count) return "—";
+        return count;
+      },
+    },
+    {
+      label: t("lateTimeAfterBreak"),
+      accessor: "monthlyLunchLateCount",
+      render: (_, item) => {
+        const count = item.monthlyLunchLateCount || 0;
+        const mins = item.monthlyBreakReturnLateMinutes || 0;
+        if (!count) return "—";
+        return mins > 0 && formatLateMinutesToHours(mins);
+      },
+    },
+    {
+      label: t("totalLateAmount"),
+      accessor: "monthlyLateMoney",
+      render: (v) =>
+        v
+          ? String(Math.round(Number(v))).replace(/\B(?=(\d{3})+(?!\d))/g, " ")
+          : "—",
+    },
+    {
+      label: t("action"),
+      render: (_, item, __, onMore) => (
+        <button className={styles.btnMore} onClick={() => onMore && onMore(item)}>
+          {t("details")}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m10 17l5-5m0 0l-5-5"
+            />
+          </svg>
+        </button>
+      ),
+    },
+  ];
 
   return (
     <div className={styles.tableContainer}>
@@ -105,61 +109,21 @@ const EmployeesTable = ({ data = [], onMore }) => {
         <thead>
           <tr>
             {columns.map((col, i) => (
-              <th
-                key={i}
-                onClick={() => col.accessor && handleSort(col.accessor)}
-                style={{ cursor: col.accessor ? "pointer" : "default" }}
-              >
-                <span className={styles.headerContent}>
-                  {col.label}
-                  {sortConfig.key === col.accessor &&
-                    (sortConfig.direction === "asc" ? (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        width={20}
-                        height={20}
-                      >
-                        <path
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m17 14l-5-5m0 0l-5 5"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        width={20}
-                        height={20}
-                      >
-                        <path
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="m7 10l5 5m0 0l5-5"
-                        />
-                      </svg>
-                    ))}
-                </span>
+              <th key={i}>
+                <span className={styles.headerContent}>{col.label}</span>
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {sortedData.length === 0 ? (
+          {data.length === 0 ? (
             <tr>
               <td colSpan={columns.length} style={{ textAlign: "center" }}>
-                Нет данных
+                {t("noData")}
               </td>
             </tr>
           ) : (
-            sortedData.map((item, i) => (
+            data.map((item, i) => (
               <tr key={item.identifier || i} className="fade-in">
                 {columns.map((col, j) => (
                   <td key={j}>
@@ -177,86 +141,91 @@ const EmployeesTable = ({ data = [], onMore }) => {
   );
 };
 
-const EmployeeCard = ({ emp }) => (
-  <div className={styles.employeeCard}>
-    <div className={styles.empLeft}>
-      {emp.employeePhoto ? (
-        <img
-          src={`/api/employees/image/${emp.employeePhoto}`}
-          alt={emp.employeeFullName}
-          className={styles.empPhoto}
-        />
-      ) : (
-        <div className={styles.empPhotoPlaceholder}>
-          {emp.employeeFullName?.[0] ?? "?"}
+const EmployeeCard = ({ emp }) => {
+  const { t } = useTranslation();
+
+  return (
+    <div className={styles.employeeCard}>
+      <div className={styles.empLeft}>
+        {emp.employeePhoto ? (
+          <img
+            src={`/api/employees/image/${emp.employeePhoto}`}
+            alt={emp.employeeFullName}
+            className={styles.empPhoto}
+          />
+        ) : (
+          <div className={styles.empPhotoPlaceholder}>
+            {emp.employeeFullName?.[0] ?? "?"}
+          </div>
+        )}
+        <div className={styles.empInfo}>
+          <span className={styles.empName}>{emp.employeeFullName}</span>
+          <span className={styles.empMeta}>
+            {emp.departmentName} · {emp.positionName}
+          </span>
         </div>
-      )}
-      <div className={styles.empInfo}>
-        <span className={styles.empName}>{emp.employeeFullName}</span>
-        <span className={styles.empMeta}>
-          {emp.departmentName} · {emp.positionName}
-        </span>
       </div>
-    </div>
 
-    <div className={styles.empTimes}>
-      <div className={styles.timeBlock}>
-        <span className={styles.timeLabel}>По графику</span>
-        <span className={styles.timeValue}>{emp.scheduledStart}</span>
+      <div className={styles.empTimes}>
+        <div className={styles.timeBlock}>
+          <span className={styles.timeLabel}>{t("scheduledStart")}</span>
+          <span className={styles.timeValue}>{emp.scheduledStart}</span>
+        </div>
+        <div className={styles.timeArrow}>→</div>
+        <div className={styles.timeBlock}>
+          <span className={styles.timeLabel}>{t("arrived")}</span>
+          <span className={`${styles.timeValue} ${styles.timeActual}`}>
+            {emp.actualStart}
+          </span>
+        </div>
       </div>
-      <div className={styles.timeArrow}>→</div>
-      <div className={styles.timeBlock}>
-        <span className={styles.timeLabel}>Пришёл</span>
-        <span className={`${styles.timeValue} ${styles.timeActual}`}>
-          {emp.actualStart}
-        </span>
+
+      <div className={styles.lateBadge}>
+        +{formatLateMinutesToHours(emp.lateMinutes)}
+        {emp.havePermission && (
+          <span className={styles.permissionTag}>{t("latePermission")}</span>
+        )}
       </div>
-    </div>
 
-    <div className={styles.lateBadge}>
-      +{formatLateMinutesToHours(emp.lateMinutes)}
-      {emp.havePermission && (
-        <span className={styles.permissionTag}>Разрешение</span>
-      )}
-    </div>
-
-    {emp.actualStartPhoto && (
-      <a
-        href={`/api/face-passes/image/${emp.actualStartPhoto}`}
-        target="_blank"
-        rel="noreferrer"
-        className={styles.photoLink}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
+      {emp.actualStartPhoto && (
+        <a
+          href={`/api/face-passes/image/${emp.actualStartPhoto}`}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.photoLink}
         >
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 6l4-4a3 5 0 0 1 3 0l4 4"
-          />
-          <path
-            fill="none"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="m14 14l1-1a3 5 0 0 1 3 0l3 3"
-          />
-        </svg>
-        Фото
-      </a>
-    )}
-  </div>
-);
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+          >
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M15 8h.01M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 6l4-4a3 5 0 0 1 3 0l4 4"
+            />
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="m14 14l1-1a3 5 0 0 1 3 0l3 3"
+            />
+          </svg>
+          {t("uploadPhoto")}
+        </a>
+      )}
+    </div>
+  );
+};
 
 const BranchesView = ({ data = [] }) => {
+  const { t } = useTranslation();
   const [activeCell, setActiveCell] = useState(null);
 
   const sortedData = [...data].sort((a, b) =>
@@ -293,7 +262,7 @@ const BranchesView = ({ data = [] }) => {
       <table className={styles.gridTable}>
         <thead>
           <tr>
-            <th className={styles.gridBranchTh}>Филиал</th>
+            <th className={styles.gridBranchTh}>{t("branch")}</th>
             {allDates.map((date) => {
               const [y, mo, da] = date.split("-").map(Number);
               const d = new Date(y, mo - 1, da);
@@ -308,7 +277,7 @@ const BranchesView = ({ data = [] }) => {
                 </th>
               );
             })}
-            <th className={styles.gridTotalTh}>Итого</th>
+            <th className={styles.gridTotalTh}>{t("total")}</th>
           </tr>
         </thead>
 
@@ -316,7 +285,6 @@ const BranchesView = ({ data = [] }) => {
           {sortedData.map((branch) => {
             const totalLate = branch.days.reduce((s, d) => s + d.lateCount, 0);
 
-            // Find the active date for this branch (if any)
             const activeDateForBranch = activeCell?.startsWith(
               `${branch.branchName}__`,
             )
@@ -352,7 +320,6 @@ const BranchesView = ({ data = [] }) => {
                         <button
                           className={`${styles.gridCellBtn} ${isActive ? styles.gridCellBtnActive : ""}`}
                           onClick={() => toggleCell(branch.branchName, date)}
-                          title={`${day.lateCount} опоздание(й) — нажмите чтобы раскрыть`}
                         >
                           <span className={styles.gridCount}>
                             {day.lateCount}

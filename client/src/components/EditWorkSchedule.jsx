@@ -41,6 +41,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
     late_tolerance_minutes: 0,
     early_leave_tolerance_minutes: 0,
     late_leave_tolerance_minutes: 0,
+    time_calc_method: "by_period",
   });
 
   // Подсчёт минут перерыва из break_start/break_end
@@ -112,15 +113,16 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
               Number(scheduleRes.data.early_leave_tolerance_minutes) || 0,
             late_leave_tolerance_minutes:
               Number(scheduleRes.data.late_leave_tolerance_minutes) || 0,
+            time_calc_method: scheduleRes.data.time_calc_method || "by_period",
           };
           setFormData(data);
         } else {
-          showAlert("Ошибка при загрузке графика", "error");
+          showAlert(t("error"), "error");
           setTimeout(() => handleClose(), 1500);
         }
       } catch (error) {
         console.error(error);
-        showAlert("Ошибка при загрузке данных", "error");
+        showAlert(t("error"), "error");
         setTimeout(() => handleClose(), 1500);
       }
     };
@@ -213,11 +215,11 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
       setTimeout(handleClose, 1500);
     } catch (error) {
       console.error(error);
-      showAlert("Ошибка при сохранении", "error");
+      showAlert(t("error"), "error");
     }
   };
 
-  const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+  const dayNames = [t("dayMon"), t("dayTue"), t("dayWed"), t("dayThu"), t("dayFri"), t("daySat"), t("daySun")];
 
   return (
     <form className={styles.addWorkSchedules} onSubmit={handleSubmit}>
@@ -229,7 +231,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
       {/* Название и тип */}
       <div className={styles.row}>
         <div>
-          <label>Название</label>
+          <label>{t("name")}</label>
           <input
             type="text"
             name="name"
@@ -240,12 +242,12 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Тип</label>
+          <label>{t("type")}</label>
           <select name="type" value={formData.type} onChange={handleChange}>
-            <option value="fixed">Фиксированный</option>
-            <option value="shift">Сменный</option>
-            <option value="flexible">Гибкий</option>
-            <option value="remote">Дистанционный</option>
+            <option value="fixed">{t("schedFixed")}</option>
+            <option value="shift">{t("schedShift")}</option>
+            <option value="flexible">{t("schedFlexible")}</option>
+            <option value="remote">{t("remote")}</option>
           </select>
         </div>
       </div>
@@ -253,7 +255,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
       {/* Норма часов и рабочая неделя */}
       <div className={styles.row}>
         <div style={{ flex: "0 0 49%" }}>
-          <label>Норма часов в неделю</label>
+          <label>{t("weeklyHoursNorm")}</label>
           <input
             type="number"
             min={0}
@@ -265,19 +267,35 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
 
         {(formData.type === "fixed" || formData.type === "remote") && (
           <div>
-            <label>Рабочая неделя</label>
+            <label>{t("workWeek")}</label>
             <select
               name="weekly_days"
               value={formData.weekly_days}
               onChange={handleChange}
             >
-              <option value={5}>5 дней</option>
-              <option value={6}>6 дней</option>
-              <option value={7}>7 дней</option>
+              <option value={5}>5 {t("days")}</option>
+              <option value={6}>6 {t("days")}</option>
+              <option value={7}>7 {t("days")}</option>
             </select>
           </div>
         )}
       </div>
+
+      {(formData.type === "fixed" || formData.type === "remote") && (
+        <div className={styles.row}>
+          <div>
+            <label>{t("timeCalcMethod")}</label>
+            <select
+              name="time_calc_method"
+              value={formData.time_calc_method}
+              onChange={handleChange}
+            >
+              <option value="by_period">{t("timeCalcByPeriod")}</option>
+              <option value="first_last">{t("timeCalcFirstLast")}</option>
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* Fixed / Remote: дни недели */}
       {(formData.type === "fixed" || formData.type === "remote") && (
@@ -295,7 +313,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
                 />
               </div>
               <div>
-                <label>Конец</label>
+                <label>{t("end")}</label>
                 <input
                   type="time"
                   value={day.end}
@@ -305,7 +323,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
                 />
               </div>
               <div>
-                <label>Перерыв с</label>
+                <label>{t("breakFrom")}</label>
                 <input
                   type="time"
                   value={day.break_start}
@@ -315,7 +333,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
                 />
               </div>
               <div>
-                <label>Перерыв по</label>
+                <label>{t("schedBreakEnd")}</label>
                 <input
                   type="time"
                   value={day.break_end}
@@ -334,7 +352,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
         formData.shifts.map((shift, index) => (
           <div key={shift.shift_number} className={styles.row}>
             <div>
-              <label>{`Начало ${shift.shift_number} смены`}</label>
+              <label>{`${t("shiftStart")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.start}
@@ -344,7 +362,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label>{`Конец ${shift.shift_number} смены`}</label>
+              <label>{`${t("shiftEnd")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.end}
@@ -354,7 +372,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label>{`Перерыв ${shift.shift_number} с`}</label>
+              <label>{`${t("shiftBreakFrom")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.break_start}
@@ -364,7 +382,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
               />
             </div>
             <div>
-              <label>{`Перерыв ${shift.shift_number} по`}</label>
+              <label>{`${t("shiftBreakTo")} ${shift.shift_number}`}</label>
               <input
                 type="time"
                 value={shift.break_end}
@@ -379,7 +397,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
       {/* Допустимые окна */}
       <div className={styles.row}>
         <div>
-          <label>Допуск опоздания (мин)</label>
+          <label>{t("lateToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -389,7 +407,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Допуск раннего ухода (мин)</label>
+          <label>{t("earlyLeaveToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -399,7 +417,7 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label>Допуск позднего ухода (мин)</label>
+          <label>{t("lateLeaveToleranceMin")}</label>
           <input
             type="number"
             min={0}
@@ -418,28 +436,28 @@ const EditWorkSchedule = ({ id, handleClose, onSuccess }) => {
             backgroundColor: exceeded ? "#ffeaea" : "#f9f9f9",
           }}
         >
-          <span className={styles.label}>Всего часов в неделю:</span>
+          <span className={styles.label}>{t("totalWeeklyHours")}:</span>
           <span className={styles.value}>
             {formatHoursMinutes(totalMinutes)}
           </span>
           <span className={styles.separator}>/</span>
-          <span className={styles.max}>{formData.weekly_hours}ч</span>
+          <span className={styles.max}>{formData.weekly_hours}{t("hoursShort")}</span>
           {exceeded && (
-            <span className={styles.warning}>⚠️ Превышает норму часов!</span>
+            <span className={styles.warning}>⚠️ {t("exceedsHoursLimit")}</span>
           )}
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label>Статус</label>
+          <label>{t("status")}</label>
           <select
             name="status"
             value={formData.status.toString()}
             onChange={handleChange}
           >
-            <option value="true">Включить</option>
-            <option value="false">Выключить</option>
+            <option value="true">{t("enable")}</option>
+            <option value="false">{t("disable")}</option>
           </select>
         </div>
       </div>

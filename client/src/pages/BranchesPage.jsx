@@ -21,11 +21,15 @@ import TableFilter from "../components/TableFilter";
 import styles from "./BranchesPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
 import { Building2, LayoutGrid, Users, CheckCircle } from "lucide-react";
+import { Icons } from "../icons/icons";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -40,7 +44,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -78,13 +85,13 @@ const BranchesPage = () => {
   const handleDelete = async (id) => {
     try {
       const { success } = await deleteBranchById(id);
-      if (!success) return showAlert("Ошибка при удалении", "error");
+      if (!success) return showAlert(t("deleteError"), "error");
 
       showAlert(t("success"), "success");
       fetchData();
     } catch (err) {
       console.error("Ошибка:", err.response?.data || err.message);
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
     }
   };
 
@@ -188,25 +195,25 @@ const BranchesPage = () => {
               <StatWidget
                 icon={Building2}
                 color="#6366f1"
-                label="Всего филиалов"
+                label={t("totalBranchesLabel")}
                 value={totalItems}
               />
               <StatWidget
                 icon={LayoutGrid}
                 color="#06b6d4"
-                label="Отделов"
+                label={t("dashboard.totalDepartments")}
                 value={data.reduce((a, b) => a + (b.departmentsCount || 0), 0)}
               />
               <StatWidget
                 icon={Users}
                 color="#10b981"
-                label="Сотрудников"
+                label={t("dashboard.totalEmployees")}
                 value={data.reduce((a, b) => a + (b.employeesCount || 0), 0)}
               />
               <StatWidget
                 icon={CheckCircle}
                 color="#3b82f6"
-                label="Активных"
+                label={t("activeCount")}
                 value={data.filter((x) => x.status === "active").length}
                 sub={`/ ${data.length}`}
               />
@@ -292,23 +299,7 @@ const BranchesPage = () => {
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (
@@ -421,7 +412,7 @@ const BranchesPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">Нет данных</td>
+                    <td colSpan="11">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -434,7 +425,7 @@ const BranchesPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        title={t("areYouSureDelete")}
       />
 
       <OverlaySidebar

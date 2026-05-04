@@ -17,10 +17,26 @@ const signTokens = (userId, username) => {
 export const AuthService = {
   login: async (username, password, language) => {
     const user = await AuthModel.findUserByUsername(username);
-    if (!user) throw { status: 401, message: "Invalid credentials" };
+
+    if (!user) {
+      throw {
+        status: 403,
+        code: "NOT_REGISTERED",
+        message: "Not registered. Contact your administrator.",
+      };
+    }
+
+    if (!user.status) {
+      throw { status: 403, code: "DISABLED", message: "Account is disabled." };
+    }
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) throw { status: 401, message: "Invalid credentials" };
+    if (!valid)
+      throw {
+        status: 401,
+        message: "Invalid credentials",
+        code: "AUTH_INVALID_CREDENTIALS",
+      };
 
     if (language && language !== user.language) {
       user.language = (

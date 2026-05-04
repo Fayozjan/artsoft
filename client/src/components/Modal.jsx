@@ -1,13 +1,15 @@
+import { useTranslation } from "react-i18next";
 import styles from "./Modal.module.scss";
 
 const Modal = ({ onAccept, onClose }) => {
+  const { t } = useTranslation();
   return (
     <div className={styles.modal}>
       <button onClick={onAccept} className={styles.accept}>
-        Да
+        {t("yes")}
       </button>
       <button onClick={onClose} className={styles.reject}>
-        Нет
+        {t("no")}
       </button>
     </div>
   );

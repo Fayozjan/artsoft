@@ -67,7 +67,7 @@ const EmployeesTable = ({
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
                 <td>
                   <div className={styles.empCell}>
-                    {item.photo && (
+                    {item.photo ? (
                       <img
                         src={`/api/employees/image/${item.photo}`}
                         alt="employee"
@@ -75,6 +75,15 @@ const EmployeesTable = ({
                           item.status ? styles.active : styles.terminated
                         }
                       />
+                    ) : (
+                      <div
+                        className={`${styles.avatar} ${item.status ? styles.active : styles.terminated}`}
+                      >
+                        {[item.last_name, item.first_name]
+                          .filter(Boolean)
+                          .map((n) => n[0].toUpperCase())
+                          .join("")}
+                      </div>
                     )}
                     <div className={styles.empInfo}>
                       <span className={styles.empName}>
@@ -97,9 +106,9 @@ const EmployeesTable = ({
                       const info = getBirthdayInfo(item.date_of_birth);
 
                       const labels = {
-                        today: `🎉 сегодня ${info.age} лет`,
-                        soon: `${formatDate(item.date_of_birth)}, ${info.diffDays} дн. осталось`,
-                        normal: `${formatDate(item.date_of_birth)}, ${info.age} лет`,
+                        today: `🎉 ${t("todayBirthdayLabel")} ${info.age} ${t("yearsOld")}`,
+                        soon: `${formatDate(item.date_of_birth)}, ${info.diffDays} ${t("daysRemaining")}`,
+                        normal: `${formatDate(item.date_of_birth)}, ${info.age} ${t("yearsOld")}`,
                       };
 
                       return (
@@ -146,7 +155,7 @@ const EmployeesTable = ({
             ))
           ) : (
             <tr>
-              <td colSpan="11">Нет данных</td>
+              <td colSpan="11">{t("noData")}</td>
             </tr>
           )}
         </tbody>

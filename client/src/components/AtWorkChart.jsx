@@ -1,6 +1,8 @@
 import styles from "./AtWorkChart.module.scss";
+import { useTranslation } from "react-i18next";
 
 const AtWorkChart = ({ data, handleClickDepartment }) => {
+  const { t } = useTranslation();
   const chartData = data.map((dept) => ({
     name: dept.departmentName,
     id: dept.departmentId,
@@ -22,20 +24,20 @@ const AtWorkChart = ({ data, handleClickDepartment }) => {
 
   return (
     <div className={styles.tableWrapper}>
-      <h2 className={styles.tableTitle}>Детальная статистика по отделам</h2>
+      <h2 className={styles.tableTitle}>{t("detailStatsByDept")}</h2>
       <div className={styles.tableContainer}>
         <table className={styles.statsTable}>
           <thead>
             <tr>
               <th>№</th>
-              <th>Отдел</th>
-              <th>Всего</th>
-              <th>Пришли</th>
-              <th>Не пришли</th>
-              <th>Сейчас на работе</th>
-              <th>Ушли с работы</th>
-              <th>Процент</th>
-              <th>Прогресс</th>
+              <th>{t("department")}</th>
+              <th>{t("totalLabel")}</th>
+              <th>{t("checkedIn")}</th>
+              <th>{t("notCheckedIn")}</th>
+              <th>{t("presentNow")}</th>
+              <th>{t("leftWork")}</th>
+              <th>{t("percentLabel")}</th>
+              <th>{t("progressLabel")}</th>
             </tr>
           </thead>
           <tbody>

@@ -1,26 +1,30 @@
+import { useTranslation } from "react-i18next";
+import { Clock, Coffee, Wallet } from "lucide-react";
+
 import { formatLateMinutesToHours } from "../helpers/time";
 import { DownloadLate } from "../utils/downloadDoc";
 
 import styles from "./LateEmployeeModal.module.scss";
 
+const fmt = (n) =>
+  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
 const LateEmployeeModal = ({ modalData, onClose }) => {
+  const { t } = useTranslation();
+
   if (!modalData) return null;
 
-  // Обработчик скачивания
   const handleDownload = async () => {
     try {
-      // Форматируем дату для названия файла
       const today = new Date();
       const monthDate = today.toLocaleDateString("ru-RU", {
         year: "numeric",
         month: "long",
       });
-
-      // Вызываем функцию скачивания
       await DownloadLate.employeeMonth(modalData, monthDate);
     } catch (error) {
-      console.error("Ошибка при скачивании отчёта:", error);
-      alert("Ошибка при скачивании отчёта");
+      console.error("Download error:", error);
+      alert(t("error"));
     }
   };
 
@@ -41,7 +45,7 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
             </div>
 
             <div className={styles.modalMeta}>
-              <span className={styles.modalLabel}>Опоздания за месяц</span>
+              <span className={styles.modalLabel}>{t("lateInMonth")}</span>
               <h3 className={styles.modalName}>{modalData.employeeFullName}</h3>
               <span className={styles.modalSub}>
                 {modalData.departmentName} · {modalData.positionName}
@@ -51,8 +55,8 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
             <button
               className={styles.downloadIconBtn}
               onClick={handleDownload}
-              title="Скачать отчёт"
-              aria-label="Скачать отчёт"
+              title={t("downloadReport")}
+              aria-label={t("downloadReport")}
             >
               <svg
                 width="20"
@@ -70,8 +74,8 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
             <button
               className={styles.modalClose}
               onClick={onClose}
-              title="Закрыть"
-              aria-label="Закрыть"
+              title={t("close")}
+              aria-label={t("close")}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -90,45 +94,82 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
               </svg>
             </button>
           </div>
+        </div>
 
-          <div className={styles.modalStats}>
-            <div className={styles.modalStat}>
-              <span className={styles.modalStatValue}>
+        <div className={styles.modalStatsGrid}>
+          <div className={styles.modalStatWidget}>
+            <div
+              className={styles.modalStatWidgetIcon}
+              style={{ background: "#ef444418" }}
+            >
+              <Clock size={14} color="#ef4444" strokeWidth={2} />
+            </div>
+            <div className={styles.modalStatWidgetContent}>
+              <span className={styles.modalStatWidgetLabel}>
+                {t("lateAtWork")}
+              </span>
+              <span
+                className={styles.modalStatWidgetValue}
+                style={{ color: "#ef4444" }}
+              >
                 {modalData.monthlyArrivalLateCount || 0}
+                <span className={styles.modalStatWidgetSub}> {t("times")} </span>
+                {modalData.monthlyLateMinutes > 0 && (
+                  <span className={styles.modalStatWidgetTime}>
+                    ({formatLateMinutesToHours(modalData.monthlyLateMinutes)})
+                  </span>
+                )}
               </span>
-              <span className={styles.modalStatLabel}>Опозд. утром</span>
-              {(modalData.monthlyLateMinutes || 0) > 0 && (
-                <span className={styles.modalStatSub}>
-                  {formatLateMinutesToHours(modalData.monthlyLateMinutes)}
-                </span>
-              )}
             </div>
+          </div>
 
-            <div className={styles.modalStatDivider} />
-
-            <div className={styles.modalStat}>
-              <span className={styles.modalStatValue}>
+          <div className={styles.modalStatWidget}>
+            <div
+              className={styles.modalStatWidgetIcon}
+              style={{ background: "#f59e0b18" }}
+            >
+              <Coffee size={14} color="#f59e0b" strokeWidth={2} />
+            </div>
+            <div className={styles.modalStatWidgetContent}>
+              <span className={styles.modalStatWidgetLabel}>
+                {t("afterBreak")}
+              </span>
+              <span
+                className={styles.modalStatWidgetValue}
+                style={{ color: "#f59e0b" }}
+              >
                 {modalData.monthlyLunchLateCount || 0}
+                <span className={styles.modalStatWidgetSub}> {t("times")} </span>
+                {(modalData.monthlyBreakReturnLateMinutes || 0) > 0 && (
+                  <span className={styles.modalStatWidgetTime}>
+                    (
+                    {formatLateMinutesToHours(
+                      modalData.monthlyBreakReturnLateMinutes,
+                    )}
+                    )
+                  </span>
+                )}
               </span>
-              <span className={styles.modalStatLabel}>
-                Опоздание после перерыва
-              </span>
-              {(modalData.monthlyBreakReturnLateMinutes || 0) > 0 && (
-                <span className={styles.modalStatSub}>
-                  {formatLateMinutesToHours(
-                    modalData.monthlyBreakReturnLateMinutes,
-                  )}
-                </span>
-              )}
             </div>
+          </div>
 
-            <div className={styles.modalStatDivider} />
-
-            <div className={styles.modalStat}>
-              <span className={styles.modalStatValue}>
-                {modalData.monthlyLateMoney ?? "0"}
+          <div className={styles.modalStatWidget}>
+            <div
+              className={styles.modalStatWidgetIcon}
+              style={{ background: "#6366f118" }}
+            >
+              <Wallet size={14} color="#6366f1" strokeWidth={2} />
+            </div>
+            <div className={styles.modalStatWidgetContent}>
+              <span className={styles.modalStatWidgetLabel}>
+                {t("latePenaltyAmount")}
               </span>
-              <span className={styles.modalStatLabel}>Сумма за опоздания</span>
+              <span
+                className={styles.modalStatWidgetValue}
+                style={{ color: "#6366f1" }}
+              >
+                {fmt(modalData.monthlyLateMoney)}
+              </span>
             </div>
           </div>
         </div>
@@ -138,13 +179,13 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
             <thead>
               <tr>
                 <th>№</th>
-                <th>Дата</th>
-                <th>По графику</th>
-                <th>Фактический вход</th>
-                <th>Опоздание на работу</th>
-                <th>Перерыв до</th>
-                <th>Вернулся</th>
-                <th>Опоздание после перерыва</th>
+                <th>{t("date")}</th>
+                <th>{t("scheduledStart")}</th>
+                <th>{t("actualEntry")}</th>
+                <th>{t("lateAtWork")}</th>
+                <th>{t("breakEnd")}</th>
+                <th>{t("returned")}</th>
+                <th>{t("lateAfterBreak")}</th>
               </tr>
             </thead>
             <tbody>

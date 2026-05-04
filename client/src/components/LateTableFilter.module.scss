@@ -7,8 +7,7 @@
     justify-content: center;
     align-items: center;
     gap: 10px;
-    min-width: 120px;
-    max-width: 140px;
+    min-width: 50px;
     height: 32px;
     padding: 0 10px;
     font-weight: 600;
@@ -75,7 +74,9 @@
           font-size: var(--font-small);
           color: #4a4a4a;
           z-index: 2;
-          transition: color 0.3s, font-weight 0.3s;
+          transition:
+            color 0.3s,
+            font-weight 0.3s;
 
           &:hover {
             font-weight: 600;

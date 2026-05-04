@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../stores/authStore";
 import styles from "./Profile.module.scss";
 import CenterModal from "./CenterModal";
@@ -52,6 +53,7 @@ const IconHelp = () => (
 );
 
 const Profile = ({ type = "full" }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
@@ -123,14 +125,14 @@ const Profile = ({ type = "full" }) => {
         <div className={styles.popupMenu}>
           <button className={styles.popupItem} onClick={() => handleSettings()}>
             <IconSettings />
-            <span>Настройки</span>
+            <span>{t("settings")}</span>
           </button>
           <button
             className={styles.popupItem}
             onClick={() => window.open("https://t.me/fayoz7", "_blank")}
           >
             <IconHelp />
-            <span>Помощь</span>
+            <span>{t("help")}</span>
           </button>
         </div>
 
@@ -142,7 +144,7 @@ const Profile = ({ type = "full" }) => {
             onClick={() => setLogoutModalOpen(true)}
           >
             <IconLogout />
-            <span>Выйти</span>
+            <span>{t("logout")}</span>
           </button>
         </div>
       </div>
@@ -168,14 +170,14 @@ const Profile = ({ type = "full" }) => {
         isOpen={isLogoutModalOpen}
         onClose={() => setLogoutModalOpen(false)}
         onAccept={handleLogout}
-        tag="Выход"
+        tag={t("exit")}
       />
 
       <OverlaySidebar
         width="400px"
         isOpen={isProfileSettingsOpen}
         onClose={() => setProfileSettingsOpen(false)}
-        title="Настройки профиля"
+        title={t("profileSettings")}
       >
         <ProfileSettings onClose={() => setProfileSettingsOpen(false)} />
       </OverlaySidebar>

@@ -48,7 +48,8 @@
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  z-index: 1000; // чтобы быть поверх других элементов
+  z-index: 1000;
+  list-style: none;
 }
 
 .switcherItem {

@@ -20,11 +20,15 @@ import DownloadButton from "../components/DownloadButton";
 import styles from "./DoorsPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
 import { DoorOpen, Users, CheckCircle } from "lucide-react";
+import { Icons } from "../icons/icons";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
     <div className={styles.statWidgetInner}>
-      <div className={styles.statWidgetIcon} style={{ background: color + "18" }}>
+      <div
+        className={styles.statWidgetIcon}
+        style={{ background: color + "18" }}
+      >
         <Icon size={15} color={color} strokeWidth={2} />
       </div>
       <div className={styles.statWidgetContent}>
@@ -39,7 +43,10 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
       <div className={styles.statWidgetProgressTrack}>
         <div
           className={styles.statWidgetProgressFill}
-          style={{ width: `${Math.min(100, Math.max(0, progress))}%`, background: color }}
+          style={{
+            width: `${Math.min(100, Math.max(0, progress))}%`,
+            background: color,
+          }}
         />
       </div>
     )}
@@ -187,19 +194,19 @@ const DoorsPage = () => {
               <StatWidget
                 icon={DoorOpen}
                 color="#6366f1"
-                label="Всего дверей"
+                label={t("totalDoorsLabel")}
                 value={totalItems}
               />
               <StatWidget
                 icon={Users}
                 color="#10b981"
-                label="Сотрудников"
+                label={t("dashboard.totalEmployees")}
                 value={data.reduce((a, b) => a + (b.employees_count || 0), 0)}
               />
               <StatWidget
                 icon={CheckCircle}
                 color="#3b82f6"
-                label="Активных"
+                label={t("activeCount")}
                 value={data.filter((x) => x.status === "active").length}
                 sub={`/ ${data.length}`}
               />
@@ -285,23 +292,7 @@ const DoorsPage = () => {
               )}
 
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="200"
-                  height="200"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="none"
-                    stroke="#000000"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4m-4 4a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"
-                  />
-                </svg>
-
-                <span>Обновить данные</span>
+                {Icons.refresh}
               </div>
 
               {data.length > 0 && (
@@ -322,7 +313,7 @@ const DoorsPage = () => {
                     onClick={() => handleSort("name")}
                   >
                     <span className={styles.headerContent}>
-                      Имя
+                      {t("name")}
                       <SortArrow
                         active={sortField === "name"}
                         order={sortOrder}
@@ -338,11 +329,11 @@ const DoorsPage = () => {
                       />
                     </span>
                   </th>
-                  <th>Филиал</th>
-                  <th>Координаты</th>
+                  <th>{t("branch")}</th>
+                  <th>{t("coordinates")}</th>
                   <th onClick={() => handleSort("user_count")}>
                     <span className={styles.headerContent}>
-                      Сотрудники
+                      {t("employees")}
                       <SortArrow
                         active={sortField === "user_count"}
                         order={sortOrder}
@@ -351,14 +342,14 @@ const DoorsPage = () => {
                   </th>
                   <th onClick={() => handleSort("status")}>
                     <span className={styles.headerContent}>
-                      Статус
+                      {t("status")}
                       <SortArrow
                         active={sortField === "status"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
-                  {(canEdit || canDelete) && <th>Действие</th>}
+                  {(canEdit || canDelete) && <th>{t("action")}</th>}
                 </tr>
               </thead>
               <tbody>
@@ -391,7 +382,7 @@ const DoorsPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">Нет данных</td>
+                    <td colSpan="11">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -403,7 +394,7 @@ const DoorsPage = () => {
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onAccept={() => handleDelete(selectedItem)}
-        title="Вы уверены, что хотите удалить?"
+        title={t("areYouSureDelete")}
       />
 
       <OverlaySidebar

@@ -5,20 +5,20 @@ import EmployeeFilterForm from "./EmployeeFilterForm";
 import styles from "./SalaryFilter.module.scss";
 
 const SALARY_TYPES = [
-  { value: "", label: "Все" },
+  { value: "", labelKey: "all" },
   { value: "monthly", labelKey: "salaryTypeMonthly" },
   { value: "hourly", labelKey: "salaryTypeHourly" },
   { value: "piecework", labelKey: "salaryTypePiecework" },
 ];
 
-const statusOptions = [
-  { value: "", label: "Все", color: "#6b7280" },
-  { value: "true", label: "Работает", color: "#16a34a" },
-  { value: "false", label: "Уволен", color: "#dc2626" },
+const STATUS_OPTIONS = [
+  { value: "", labelKey: "all", color: "#6b7280" },
+  { value: "true", labelKey: "active", color: "#16a34a" },
+  { value: "false", labelKey: "terminated", color: "#dc2626" },
 ];
 
 const NO_SALARY_OPTIONS = [
-  { value: "", label: "Все", color: "#6b7280" },
+  { value: "", labelKey: "all", color: "#6b7280" },
   { value: "false", labelKey: "salarySet", color: "#16a34a" },
   { value: "true", labelKey: "notSet", color: "#dc2626" },
 ];
@@ -100,6 +100,11 @@ const SalaryFilter = ({ formData, setFormData, onSubmit }) => {
     ...s,
     label: s.labelKey ? t(s.labelKey) : s.label,
     color: s.value === "" ? "#6b7280" : "#059669",
+  }));
+
+  const statusOptions = STATUS_OPTIONS.map((o) => ({
+    ...o,
+    label: t(o.labelKey),
   }));
 
   const noSalaryOptions = NO_SALARY_OPTIONS.map((o) => ({

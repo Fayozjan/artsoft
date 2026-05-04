@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 
 import styles from "./AtWorkTable.module.scss";
+import { useTranslation } from "react-i18next";
 
 const AtWorkTable = ({ data, onClose }) => {
+  const { t } = useTranslation();
   const modalRef = useRef(null);
   const [btnSwitch, setBtnSwich] = useState("arrived");
 
@@ -64,19 +66,19 @@ const AtWorkTable = ({ data, onClose }) => {
             y2="56"
           />
         </svg>
-        <h1>Список присутствующих и отсутствующих сотрудников отдела</h1>
+        <h1>{t("presentAbsentList")}</h1>
         <div className={styles.buttons}>
           <button
             className={btnSwitch === "arrived" ? styles.activeBtn : ""}
             onClick={() => setBtnSwich("arrived")}
           >
-            Пришли
+            {t("checkedIn")}
           </button>
           <button
             className={btnSwitch === "absent" ? styles.activeBtn : ""}
             onClick={() => setBtnSwich("absent")}
           >
-            Не пришли
+            {t("notCheckedIn")}
           </button>
         </div>
 
@@ -86,12 +88,12 @@ const AtWorkTable = ({ data, onClose }) => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th className={styles.table_name_header}>ФИО</th>
-                  <th>Отдел</th>
-                  <th>Должность</th>
-                  <th>Фото</th>
-                  <th>Вход</th>
-                  <th>На рабочем месте</th>
+                  <th className={styles.table_name_header}>{t("fullName")}</th>
+                  <th>{t("department")}</th>
+                  <th>{t("position")}</th>
+                  <th>{t("photo")}</th>
+                  <th>{t("entry")}</th>
+                  <th>{t("atWorkplace")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -116,7 +118,7 @@ const AtWorkTable = ({ data, onClose }) => {
                       ) : null}
                     </td>
                     <td>{item.firstEntry}</td>
-                    <td>{item.lastEvent === "entry" ? "Да" : "Нет"}</td>
+                    <td>{item.lastEvent === "entry" ? t("yes") : t("no")}</td>
                   </tr>
                 ))}
               </tbody>
@@ -128,10 +130,10 @@ const AtWorkTable = ({ data, onClose }) => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th className={styles.table_name_header}>ФИО</th>
-                  <th>Отдел</th>
-                  <th>Должность</th>
-                  <th>Фото</th>
+                  <th className={styles.table_name_header}>{t("fullName")}</th>
+                  <th>{t("department")}</th>
+                  <th>{t("position")}</th>
+                  <th>{t("photo")}</th>
                 </tr>
               </thead>
               <tbody>

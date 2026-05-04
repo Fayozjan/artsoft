@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./MultiSelect.module.scss";
 
 const MultiSelectDepartments = ({ options = [], selected = [], onChange }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -58,7 +60,7 @@ const MultiSelectDepartments = ({ options = [], selected = [], onChange }) => {
   }, [safeSelected, options, onChange]);
 
   const sortedFilteredOptions = [
-    { id: "select_all", name: "Выбрать все" },
+    { id: "select_all", name: t("selectAll") },
     ...filteredOptions.sort((a, b) => {
       const isASelected = safeSelected.includes(a.id);
       const isBSelected = safeSelected.includes(b.id);
@@ -70,7 +72,7 @@ const MultiSelectDepartments = ({ options = [], selected = [], onChange }) => {
     <div ref={containerRef} className={styles.container}>
       <input
         type="text"
-        placeholder="Поиск по отделам..."
+        placeholder={t("searchByDepartment")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => setIsOpen(true)}

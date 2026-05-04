@@ -21,6 +21,11 @@ export const payrollApi = {
     return res.data;
   },
 
+  unapproveSheet: async (id) => {
+    const res = await api.delete(`/payroll/${id}/approve`);
+    return res.data;
+  },
+
   updateAllItemsStatus: async (sheetId, status) => {
     const res = await api.put(`/payroll/${sheetId}/all-status`, { status });
     return res.data;
@@ -55,6 +60,11 @@ export const payrollApi = {
 
   recalculateSalaryBalances: async (sheetId) => {
     const res = await api.put(`/payroll/${sheetId}/recalculate-balances`);
+    return res.data;
+  },
+
+  recalculateDraftItems: async (sheetId) => {
+    const res = await api.put(`/payroll/${sheetId}/recalculate-draft`);
     return res.data;
   },
 

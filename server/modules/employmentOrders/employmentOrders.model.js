@@ -15,7 +15,14 @@ export const EmploymentOrdersModel = {
       orderBy,
       include: {
         employee: {
-          select: { id: true, first_name: true, last_name: true, middle_name: true },
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            middle_name: true,
+            branch: { select: { name: true } },
+            department: { select: { name: true } },
+          },
         },
       },
     });

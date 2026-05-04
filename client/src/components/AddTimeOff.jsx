@@ -19,8 +19,8 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
     selectedEmployeeIds: [],
     type: "hour",
     reason: "",
-    date_from: null,
-    date_to: null,
+    date_from: "",
+    date_to: "",
     credited_hours: 0,
     is_company_paid: false,
   });
@@ -58,7 +58,12 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await createTimeOff(formData);
+      const payload = { ...formData };
+      if (!["day_off", "vacation"].includes(payload.type)) {
+        if (payload.date_from) payload.date_from = new Date(payload.date_from + ":00+05:00").toISOString();
+        if (payload.date_to) payload.date_to = new Date(payload.date_to + ":00+05:00").toISOString();
+      }
+      const res = await createTimeOff(payload);
 
       if (res.success) {
         showAlert(t("success"), "success");
@@ -83,8 +88,6 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
     }));
   };
 
-  const closeAlert = () => setAlert((prev) => ({ ...prev, show: false }));
-
   return (
     <form className={styles.addTimeOff} onSubmit={handleSubmit}>
       <div className={styles.header}>
@@ -94,26 +97,26 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Тип</label>
+          <label>{t("type")}</label>
           <select name="type" onChange={handleChange}>
-            <option value="hour_off">Отгул (почасовой)</option>
-            <option value="day_off">Отгул (день)</option>
-            <option value="vacation">Отпуск</option>
+            <option value="hour_off">{t("hour")}</option>
+            <option value="day_off">{t("day_off")}</option>
+            <option value="vacation">{t("vacation")}</option>
           </select>
         </div>
 
         <div>
-          <label>За счет компании</label>
+          <label>{t("companyPaid")}</label>
           <select name="is_company_paid" onChange={handleChange}>
-            <option value="false">Нет</option>
-            <option value="true">Да</option>
+            <option value="false">{t("no")}</option>
+            <option value="true">{t("yes")}</option>
           </select>
         </div>
       </div>
 
       <div className={styles.row}>
         <div>
-          <label> Дата от</label>
+          <label>{t("filterFrom")}</label>
           <input
             type={
               ["day_off", "vacation"].includes(formData.type)
@@ -128,7 +131,7 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label> Дата до</label>
+          <label>{t("filterTo")}</label>
           <input
             type={
               ["day_off", "vacation"].includes(formData.type)
@@ -144,7 +147,7 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
         </div>
         {formData?.type === "day" && (
           <div className={styles.row_item}>
-            <label>Часы в учёт (в день)</label>
+            <label>{t("creditedHoursPerDay")}</label>
             <input
               type="number"
               name="credited_hours"
@@ -162,7 +165,7 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
       <div className={styles.row}>
         <div className={styles.row_item_user}>
           <label className={styles.label}>
-            Сотрудник
+            {t("employee")}
             <span className={styles.sticker}>
               {formData?.selectedEmployeeIds?.length || 0}
             </span>
@@ -177,7 +180,7 @@ const AddTimeOff = ({ handleClose, onSuccess }) => {
       </div>
       <div className={styles.row}>
         <div className={styles.row_item}>
-          <label>Причина</label>
+          <label>{t("reason")}</label>
           <input
             type="text"
             name="reason"

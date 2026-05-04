@@ -151,6 +151,32 @@ export const DashboardModel = {
       .sort((a, b) => b.count - a.count);
   },
 
+  employeesByDepartment: async (employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const groups = await prisma.employees.groupBy({
+      by: ["department_id"],
+      where: { status: true, ...employeeWhere },
+      _count: { id: true },
+    });
+
+    if (!groups.length) return [];
+
+    const deptIds = groups.map((g) => g.department_id).filter(Boolean);
+    const departments = await prisma.departments.findMany({
+      where: { id: { in: deptIds } },
+      select: { id: true, name: true },
+    });
+
+    const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
+
+    return groups
+      .map((g) => ({
+        department: deptMap[g.department_id] || "—",
+        count: g._count.id,
+      }))
+      .sort((a, b) => b.count - a.count);
+  },
+
   doorTrafficByHour: async (dayStart, dayEnd, employeeWhere = {}) => {
     const prisma = prismaContext.get();
     const passes = await prisma.face_passes.findMany({
@@ -171,6 +197,45 @@ export const DashboardModel = {
       if (hourMap[hour]) {
         if (p.direction === "entry") hourMap[hour].entry++;
         else if (p.direction === "exit") hourMap[hour].exit++;
+      }
+    }
+
+    return Object.values(hourMap);
+  },
+
+  vehicleTrafficByHour: async (dayStart, dayEnd) => {
+    const prisma = prismaContext.get();
+    let passes = await prisma.vehicle_passes.findMany({
+      where: { date: { gte: dayStart, lte: dayEnd } },
+      select: { date: true, direction: true },
+    });
+
+    if (!passes.length) {
+      const latest = await prisma.vehicle_passes.findFirst({
+        orderBy: { date: "desc" },
+        select: { date: true },
+      });
+      if (latest) {
+        const d = new Date(latest.date);
+        const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        const end = new Date(start.getTime() + 86400000 - 1);
+        passes = await prisma.vehicle_passes.findMany({
+          where: { date: { gte: start, lte: end } },
+          select: { date: true, direction: true },
+        });
+      }
+    }
+
+    const hourMap = {};
+    for (let h = 5; h <= 22; h++) {
+      hourMap[h] = { hour: `${String(h).padStart(2, "0")}:00`, entry: 0, exit: 0 };
+    }
+
+    for (const p of passes) {
+      const hour = new Date(p.date).getHours();
+      if (hourMap[hour]) {
+        if (p.direction === "entry" || p.direction === "forward") hourMap[hour].entry++;
+        else if (p.direction === "exit" || p.direction === "reverse") hourMap[hour].exit++;
       }
     }
 
@@ -285,6 +350,8 @@ export const DashboardModel = {
             last_name: true,
             middle_name: true,
             photo: true,
+            branch: { select: { name: true } },
+            department: { select: { name: true } },
           },
         },
       },
@@ -294,6 +361,23 @@ export const DashboardModel = {
   recentVehiclePasses: async (limit = 10) => {
     const prisma = prismaContext.get();
     return prisma.vehicle_passes.findMany({
+      orderBy: { date: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        date: true,
+        plate_number: true,
+        photo: true,
+        direction: true,
+        gate: { select: { id: true, name: true } },
+      },
+    });
+  },
+
+  vehiclePassesToday: async (dayStart, dayEnd, limit = 20) => {
+    const prisma = prismaContext.get();
+    return prisma.vehicle_passes.findMany({
+      where: { date: { gte: dayStart, lte: dayEnd } },
       orderBy: { date: "desc" },
       take: limit,
       select: {
@@ -318,6 +402,7 @@ export const DashboardModel = {
         middle_name: true,
         date_of_birth: true,
         photo: true,
+        branch: { select: { name: true } },
         department: { select: { name: true } },
       },
     });
@@ -446,6 +531,186 @@ export const DashboardModel = {
       .sort((a, b) => b.count - a.count);
   },
 
+  // ===== FINANCE =====
+
+  financeStats: async (employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+
+    const currentSheet = await prisma.payroll_sheets.findFirst({
+      where: { month: currentMonth, year: currentYear },
+    });
+
+    let payrollFund = 0, payrollPaid = 0, maxSalary = 0, minSalary = 0;
+    let latestSheetMonth = null, latestSheetYear = null;
+
+    if (currentSheet) {
+      latestSheetMonth = currentSheet.month;
+      latestSheetYear = currentSheet.year;
+      const itemWhere = {
+        sheet_id: currentSheet.id,
+        ...(Object.keys(employeeWhere).length ? { employee: { status: true, ...employeeWhere } } : {}),
+      };
+      const [sheetAgg, minMaxAgg] = await Promise.all([
+        prisma.payroll_sheet_items.aggregate({
+          where: itemWhere,
+          _sum: { net: true, paid_amount: true },
+        }),
+        prisma.payroll_sheet_items.aggregate({
+          where: { ...itemWhere, status: "approved", net: { gt: 0 } },
+          _max: { net: true },
+          _min: { net: true },
+        }),
+      ]);
+      payrollFund = Number(sheetAgg._sum.net || 0);
+      payrollPaid = Number(sheetAgg._sum.paid_amount || 0);
+      maxSalary   = Number(minMaxAgg._max.net || 0);
+      minSalary   = Number(minMaxAgg._min.net || 0);
+    }
+
+    const empRows = await prisma.employees.findMany({
+      where: { status: true, ...employeeWhere },
+      select: {
+        employeeSalaryHistory: {
+          orderBy: { date_from: "desc" },
+          take: 1,
+          select: { amount: true },
+        },
+      },
+    });
+
+    const amounts = empRows
+      .map((e) => e.employeeSalaryHistory[0]?.amount)
+      .filter((a) => a != null)
+      .map(Number)
+      .filter((a) => a > 0);
+
+    const avgSalary = amounts.length
+      ? Math.round(amounts.reduce((s, a) => s + a, 0) / amounts.length)
+      : 0;
+
+    return {
+      payrollFund,
+      payrollPaid,
+      payrollRemaining: Math.max(0, payrollFund - payrollPaid),
+      averageSalary: avgSalary,
+      maxSalary,
+      minSalary,
+      latestSheetMonth,
+      latestSheetYear,
+    };
+  },
+
+  recentPayments: async (limit = 10, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const where = Object.keys(employeeWhere).length
+      ? { item: { employee: { status: true, ...employeeWhere } } }
+      : {};
+    return prisma.payroll_payment_logs.findMany({
+      where,
+      orderBy: { payment_date: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        amount: true,
+        payment_date: true,
+        note: true,
+        item: {
+          select: {
+            employee: {
+              select: {
+                id: true,
+                first_name: true,
+                last_name: true,
+                middle_name: true,
+                branch: { select: { name: true } },
+                department: { select: { name: true } },
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  recentAdvances: async (limit = 10, employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    return prisma.salary_advances.findMany({
+      where: { employee: { status: true, ...employeeWhere } },
+      orderBy: { advance_date: "desc" },
+      take: limit,
+      select: {
+        id: true,
+        amount: true,
+        advance_date: true,
+        note: true,
+        employee: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            middle_name: true,
+            branch: { select: { name: true } },
+            department: { select: { name: true } },
+          },
+        },
+      },
+    });
+  },
+
+  salaryByBranch: async (employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const employees = await prisma.employees.findMany({
+      where: { status: true, ...employeeWhere },
+      select: {
+        branch_id: true,
+        branch: { select: { name: true } },
+        employeeSalaryHistory: {
+          orderBy: { date_from: "desc" },
+          take: 1,
+          select: { amount: true },
+        },
+      },
+    });
+
+    const map = {};
+    for (const emp of employees) {
+      const amount = Number(emp.employeeSalaryHistory[0]?.amount || 0);
+      if (!amount || !emp.branch_id) continue;
+      if (!map[emp.branch_id]) map[emp.branch_id] = { branch: emp.branch?.name || "—", total: 0 };
+      map[emp.branch_id].total += amount;
+    }
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  },
+
+  salaryByDept: async (employeeWhere = {}) => {
+    const prisma = prismaContext.get();
+    const employees = await prisma.employees.findMany({
+      where: { status: true, ...employeeWhere },
+      select: {
+        department_id: true,
+        department: { select: { name: true } },
+        employeeSalaryHistory: {
+          orderBy: { date_from: "desc" },
+          take: 1,
+          select: { amount: true },
+        },
+      },
+    });
+
+    const map = {};
+    for (const emp of employees) {
+      const amount = Number(emp.employeeSalaryHistory[0]?.amount || 0);
+      if (!amount || !emp.department_id) continue;
+      if (!map[emp.department_id]) map[emp.department_id] = { department: emp.department?.name || "—", total: 0 };
+      map[emp.department_id].total += amount;
+    }
+    return Object.values(map).sort((a, b) => b.total - a.total);
+  },
+
   hiringDynamicsByDay: async (days) => {
     const prisma = prismaContext.get();
     const results = await Promise.all(
@@ -483,6 +748,8 @@ export const DashboardModel = {
             first_name: true,
             last_name: true,
             middle_name: true,
+            branch: { select: { name: true } },
+            department: { select: { name: true } },
           },
         },
       },

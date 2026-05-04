@@ -1,19 +1,21 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 
 import styles from "./AttendanceTableTelegram.module.scss";
 
 const STATUS_KEYS = ["present", "absent", "late", "inside", "left"];
 
 const STATUS_META = {
-  present: { color: "#16a34a", bg: "#f0fdf4", label: "Пришел" },
-  absent: { color: "#dc2626", bg: "#fef2f2", label: "Не пришел" },
-  late: { color: "#d97706", bg: "#fffbeb", label: "Опоздал" },
-  inside: { color: "#2563eb", bg: "#eff6ff", label: "На месте" },
-  left: { color: "#7c3aed", bg: "#f5f3ff", label: "Ушел" },
+  present: { color: "#16a34a", bg: "#f0fdf4", labelKey: "checkedInSingular" },
+  absent: { color: "#dc2626", bg: "#fef2f2", labelKey: "notCheckedInSingular" },
+  late: { color: "#d97706", bg: "#fffbeb", labelKey: "lateSingular" },
+  inside: { color: "#2563eb", bg: "#eff6ff", labelKey: "onSite" },
+  left: { color: "#7c3aed", bg: "#f5f3ff", labelKey: "checkedOutSingular" },
 };
 
 // ── Employee card ─────────────────────────────────────────────────────────────
 const EmployeeCard = ({ emp }) => {
+  const { t } = useTranslation();
   const fullName = emp.employeeFullName || "—";
   const initials = fullName.charAt(0).toUpperCase();
   const activeStatuses = STATUS_KEYS.filter((k) => emp[k] === true);
@@ -43,13 +45,13 @@ const EmployeeCard = ({ emp }) => {
           <div className={styles.cardTime}>
             {emp.firstEntry && (
               <div className={styles.timeBlock}>
-                <span className={styles.timeLabel}>Вход</span>
+                <span className={styles.timeLabel}>{t("entryTime")}</span>
                 <span className={styles.timeValue}>{emp.firstEntry}</span>
               </div>
             )}
             {emp.lastExit && (
               <div className={styles.timeBlock}>
-                <span className={styles.timeLabel}>Выход</span>
+                <span className={styles.timeLabel}>{t("exit")}</span>
                 <span className={styles.timeValue}>{emp.lastExit}</span>
               </div>
             )}
@@ -66,9 +68,9 @@ const EmployeeCard = ({ emp }) => {
                   className={styles.statusBadge}
                   style={{ "--badge-color": m.color, "--badge-bg": m.bg }}
                 >
-                  {m.label}
+                  {t(m.labelKey)}
                   {k === "late" && emp.lateMinutes
-                    ? ` ${emp.lateMinutes} мин`
+                    ? ` ${emp.lateMinutes} ${t("minutesShort")}`
                     : ""}
                 </span>
               );
@@ -87,6 +89,7 @@ const AttendanceTableTelegram = ({
   activeStatusFilters = new Set(),
   onScroll,
 }) => {
+  const { t } = useTranslation();
   const listRef = useRef(null);
 
   const employees = useMemo(() => {
@@ -163,7 +166,7 @@ const AttendanceTableTelegram = ({
             <EmployeeCard key={emp.employeeId} emp={emp} />
           ))
         ) : (
-          <p className={styles.empty}>Никого не нашли</p>
+          <p className={styles.empty}>{t("noData")}</p>
         )}
       </div>
     </div>

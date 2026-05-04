@@ -456,8 +456,11 @@ const EditEmployee = ({
         </div>
       </div>
 
-      {!!formData?.employeeScheduleHistory?.length && (
-        <div className={styles.orderBtnWrapper}>
+      <div
+        className={styles.orderBtnWrapper}
+        style={{ display: "flex", gap: "10px" }}
+      >
+        {!!formData?.employeeScheduleHistory?.length && (
           <button
             type="button"
             className={`${styles.showAllEmploymentBtn} ${styles.btn}`}
@@ -468,10 +471,8 @@ const EditEmployee = ({
             {Icons.calendar}
             {t("employeeWorkScheduleHistory")}
           </button>
-        </div>
-      )}
+        )}
 
-      <div className={styles.orderBtnWrapper}>
         <button
           type="button"
           className={`${styles.showAllEmploymentBtn} ${styles.btn}`}
@@ -597,37 +598,6 @@ const EditEmployee = ({
             {t("showAllEmploymentOrders")}
           </button>
         )}
-
-        {/* {formData?.employmentOrders?.length ? (
-          <>
-            <button
-              type="button"
-              className={`${styles.transferBtn} ${styles.btn} `}
-              onClick={() => handleLeftPanel("transfer", "addEmploymentOrder")}
-            >
-              {Icons.transfer}
-              {t("transferEmployee")}
-            </button>
-
-            <button
-              type="button"
-              className={`${styles.terminateBtn} ${styles.btn} `}
-              onClick={() => handleLeftPanel("terminate", "addEmploymentOrder")}
-            >
-              {Icons.terminate}
-              {t("terminateEmployee")}
-            </button>
-          </>
-        ) : (
-          <button
-            type="button"
-            className={`${styles.hireBtn} ${styles.btn} `}
-            onClick={() => handleLeftPanel("hire", "addEmploymentOrder")}
-          >
-            {Icons.plus}
-            {t("hireEmployee")}
-          </button>
-        )} */}
 
         {isEmployed ? (
           <>

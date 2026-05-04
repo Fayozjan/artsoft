@@ -60,7 +60,7 @@ const generateAttendanceRows = (data, daysInMonth, year, month) => {
     const dailyData = Array.from({ length: daysInMonth }, (_, i) => {
       const day = i + 1;
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
-        day
+        day,
       ).padStart(2, "0")}`;
 
       if (sessions_by_date[dateStr] && sessions_by_date[dateStr].length > 0) {
@@ -89,7 +89,7 @@ const generateAttendanceRows = (data, daysInMonth, year, month) => {
 
     const monthlyTotal = `${String(Math.floor(totalMinutes / 60)).padStart(
       2,
-      "0"
+      "0",
     )}:${String(totalMinutes % 60).padStart(2, "0")}`;
 
     // Формируем строки для каждого сотрудника
@@ -133,7 +133,7 @@ export const downloadPdfAttendance = async (data, date) => {
     data.data || [],
     daysInMonth,
     year,
-    month
+    month,
   );
 
   try {
@@ -143,7 +143,7 @@ export const downloadPdfAttendance = async (data, date) => {
       `Посещаемость сотрудников за ${monthNames[month - 1]} ${year}`,
       doc.internal.pageSize.width / 2,
       10,
-      { align: "center" }
+      { align: "center" },
     );
 
     // Настройки для таблицы
@@ -174,7 +174,7 @@ export const downloadPdfAttendance = async (data, date) => {
           Array.from({ length: daysInMonth }, (_, i) => [
             i + 4,
             { cellWidth: 8 },
-          ])
+          ]),
         ),
       },
     };
@@ -249,7 +249,7 @@ export const downloadExcelAttendance = (data, date) => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(
-        day
+        day,
       ).padStart(2, "0")}`;
       const session = sessions_by_date[dateStr]?.[0];
 
@@ -279,7 +279,7 @@ export const downloadExcelAttendance = (data, date) => {
       workedDays,
       `${Math.floor(totalMinutes / 60)}:${String(totalMinutes % 60).padStart(
         2,
-        "0"
+        "0",
       )}`,
       ...dayCells,
     ]);
@@ -369,7 +369,7 @@ export const exportEmployeesToExcel = (data, fileName = "users.xlsx") => {
 export const downloadEmployeesAtWorkToExcel = (
   data,
   absentUsers,
-  fileName = "report.xlsx"
+  fileName = "report.xlsx",
 ) => {
   // Преобразуем данные в формат, подходящий для Excel
   const presentData = data.map((employee) => ({
@@ -444,147 +444,108 @@ export const formatDate = (dateString) => {
   }
 };
 
-/*
-export const downloadPermissionPdf = (permission) => {
-  const doc = new jsPDF({ format: "a4", unit: "mm" });
-
-  doc.addFileToVFS("Roboto-Regular.ttf", robotoRegularBase64);
-  doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-  doc.setFont("Roboto");
-
-  doc.setFontSize(14);
-  doc.text("Разрешение на отгул", 50, 10, { align: "center" });
-
-  let y = 20;
-
-  const addTwoColumnsLine = (pairs) => {
-    doc.setFontSize(11);
-
-    const leftMargin = 10;
-    const columnGap = 10; // расстояние между колонками
-    const columnWidth = 85; // ширина одной колонки (примерно половина листа A6 с отступами)
-
-    pairs.forEach((pair, index) => {
-      if (!pair) return; // на случай, если пар меньше 2
-
-      const x = leftMargin + index * (columnWidth + columnGap);
-      const text = `${pair.label}: ${pair.value || "-"}`;
-
-      // Для переносов строки, если текст слишком длинный
-      const splitText = doc.splitTextToSize(text, columnWidth);
-      doc.text(splitText, x, y);
-
-      // Высчитываем максимальный сдвиг вниз для следующей строки по длине текста
-      if (splitText.length > 1) {
-        maxLines = Math.max(maxLines, splitText.length);
-      }
-    });
-
-    // Перемещаем y вниз, с учётом максимального количества строк в колонках
-    y += maxLines * 6;
-  };
-
-  const dataPairs = [
-    { label: "Номер", value: permission.permission_number },
-    { label: "ФИО", value: permission.user_full_name },
-    { label: "Отдел", value: permission.department_name },
-    { label: "Должность", value: permission.position_name },
-    { label: "Причина", value: permission.reason },
-    { label: "Дата от", value: permission.date_from },
-    { label: "Дата до", value: permission.date_to },
-    {
-      label: "За счет компании",
-      value: permission.is_company_paid ? "Да" : "Нет",
-    },
-    { label: "Разрешено", value: permission.creator_full_name },
-  ];
-
-  const addLine = (label, value) => {
-    doc.setFontSize(11);
-    doc.text(`${label}: ${value || "-"}`, 10, y);
-    y += 6;
-  };
-
-  // выводим по 2 пары в строку
-  for (let i = 0; i < dataPairs.length; i += 2) {
-    addTwoColumnsLine([dataPairs[i], dataPairs[i + 1]]);
-  }
-
-  y += 10;
-  doc.text("Подпись: ____________________", 10, y);
-
-  doc.save(`permission-${permission.permission_number}.pdf`);
-};
-*/
-
 export const downloadPermissionPdf = async (permission) => {
   const doc = new jsPDF({ format: "a4", unit: "mm" });
 
   doc.addFileToVFS("Roboto-Regular.ttf", robotoRegularBase64);
   doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
-
   doc.addFileToVFS("Roboto-Bold.ttf", robotoBoldBase64);
   doc.addFont("Roboto-Bold.ttf", "Roboto", "bold");
 
-  // Пишем жирным заголовок
   doc.setFont("Roboto", "bold");
   doc.setFontSize(14);
-  doc.text("Рухсатнома", 105, 10, { align: "center" });
+  doc.text("Иш вақтида ташқарига чиқиш рухсатномаси", 105, 10, {
+    align: "center",
+  });
 
-  // Пишем дальше обычным шрифтом
   doc.setFont("Roboto", "normal");
   doc.setFontSize(11);
 
   let y = 20;
 
-  // Формируем ссылку на бота
+  // Функция форматирования времени по Ташкенту
+  const formatValue = (dateStr, type) => {
+    if (!dateStr) return "-";
+    const date = new Date(dateStr);
+
+    // Опции для формата даты (ДД.ММ.ГГГГ)
+    const dateOptions = {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "Asia/Tashkent",
+    };
+
+    // Опции для формата времени (ЧЧ:ММ)
+    const timeOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Asia/Tashkent",
+    };
+
+    const datePart = date.toLocaleDateString("ru-RU", dateOptions);
+
+    if (type === "day_off") {
+      return datePart;
+    }
+
+    const timePart = date.toLocaleTimeString("ru-RU", timeOptions);
+    return `${datePart} ${timePart}`;
+  };
+
   const botUsername = "hrsystemsartsoft_bot";
-  const verifyLink = `https://t.me/${botUsername}?start`;
-
-  // Сгенерировать QR-код в base64 DataURL
+  // Рекомендую добавить ID в ссылку, чтобы QR был уникальным для каждого пропуска
+  const verifyLink = `https://t.me/${botUsername}?start=${permission.id}`;
   const qrDataUrl = await QRCode.toDataURL(verifyLink, { width: 80 });
-
-  // Добавить QR-код на страницу (примерно в правый нижний угол)
   doc.addImage(qrDataUrl, "PNG", 170, 10, 30, 30);
 
   const addTwoColumnsLine = (pairs) => {
     doc.setFontSize(11);
-
     const leftMargin = 10;
-    const columnGap = 10; // расстояние между колонками
-    const columnWidth = 85; // ширина одной колонки (примерно половина листа A4 с отступами)
-
-    let maxLines = 1; // ОБЯЗАТЕЛЬНО объявить и инициализировать
+    const columnGap = 5;
+    const columnWidth = 92;
+    let maxLines = 1;
 
     pairs.forEach((pair, index) => {
-      if (!pair) return; // на случай, если пар меньше 2
-
+      if (!pair) return;
       const x = leftMargin + index * (columnWidth + columnGap);
       const text = `${pair.label}: ${pair.value || "-"}`;
-
       const splitText = doc.splitTextToSize(text, columnWidth);
       doc.text(splitText, x, y);
-
       if (splitText.length > maxLines) {
         maxLines = splitText.length;
       }
     });
-
-    y += maxLines * 6; // сдвигаем y вниз с учётом максимального количества строк
+    y += maxLines * 5;
   };
 
   const dataPairs = [
-    { label: "Номер", value: permission.permission_number },
-    { label: "Сабаб", value: permission.reason },
-    { label: "ФИО", value: permission.user_full_name },
-    { label: "Санадан", value: permission.date_from },
-    { label: "Булим", value: permission.department_name },
-    { label: "Санагача", value: permission.date_to },
-    { label: "Лавозим", value: permission.position_name },
+    { label: "Номер", value: permission.id },
+    {
+      label: "Санадан",
+      value: formatValue(permission.date_from, permission.type),
+    },
+    { label: "ФИО", value: permission.employeeFullName },
+
+    {
+      label: "Санагача",
+      value: formatValue(permission.date_to, permission.type),
+    },
+    {
+      label: "Филиал",
+      value: permission.branch_name,
+    },
+    { label: "Сабаб", value: permission.reason || "" },
+    {
+      label: "Булим",
+      value: permission.department_name,
+    },
     {
       label: "Корхона хисобиданми",
       value: permission.is_company_paid ? "Ха" : "Йук",
     },
+    { label: "Лавозим", value: permission.position_name },
   ];
 
   for (let i = 0; i < dataPairs.length; i += 2) {
@@ -593,10 +554,10 @@ export const downloadPermissionPdf = async (permission) => {
 
   y += 10;
   doc.text(
-    `Рухсат берди: ${permission.creator_full_name}  ___________________`,
+    `Рухсат берди: ${permission.creatorFullName || ""}  ___________________`,
     10,
-    y
+    y,
   );
 
-  doc.save(`permission-${permission.permission_number}.pdf`);
+  doc.save(`permission-${permission.id}.pdf`);
 };

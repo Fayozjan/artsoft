@@ -255,6 +255,7 @@ export const UserService = {
       language,
       view_mode,
       active_branch_id,
+      settings,
     } = data;
 
     const user = await UserModel.getWithPassword(userId);
@@ -284,6 +285,7 @@ export const UserService = {
     if (view_mode !== undefined) updateData.view_mode = view_mode;
     if (active_branch_id !== undefined)
       updateData.active_branch_id = active_branch_id;
+    if (settings !== undefined) updateData.settings = settings;
 
     return UserModel.updateProfile(userId, updateData);
   },

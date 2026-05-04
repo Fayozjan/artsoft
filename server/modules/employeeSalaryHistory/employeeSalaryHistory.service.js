@@ -1,4 +1,5 @@
 import { EmployeeSalaryHistoryModel } from "./employeeSalaryHistory.model.js";
+import { PayrollService } from "../payroll/payroll.service.js";
 
 const VALID_TYPES = ["monthly", "hourly", "piecework"];
 
@@ -39,6 +40,9 @@ export const EmployeeSalaryHistoryService = {
         note: note || null,
         addedBy: { connect: { id: Number(userId) } },
       });
+
+      await PayrollService.recalculateAllDraftItemsForEmployee(empId);
+
       return { success: true, data: record };
     } catch (error) {
       console.error("Ошибка при создании записи зарплаты:", error);
@@ -67,6 +71,9 @@ export const EmployeeSalaryHistoryService = {
       if (note !== undefined) data.note = note || null;
 
       const updated = await EmployeeSalaryHistoryModel.update(id, data);
+
+      await PayrollService.recalculateAllDraftItemsForEmployee(existing.employee_id);
+
       return { success: true, data: updated };
     } catch (error) {
       console.error("Ошибка при обновлении записи зарплаты:", error);
@@ -126,7 +133,7 @@ export const EmployeeSalaryHistoryService = {
             { middle_name: { contains: s, mode: "insensitive" } },
           ];
           if (!isNaN(numVal) && numVal > 0) {
-            conds.push({ employee_number: numVal });
+            conds.push({ employee_number: s });
             conds.push({ id: numVal });
           }
           baseWhere.AND.push({ OR: conds });
@@ -204,6 +211,9 @@ export const EmployeeSalaryHistoryService = {
       if (!existing) return { success: false, message: "Запись не найдена" };
 
       await EmployeeSalaryHistoryModel.deleteById(id);
+
+      await PayrollService.recalculateAllDraftItemsForEmployee(existing.employee_id);
+
       return { success: true, message: "Запись удалена" };
     } catch (error) {
       console.error("Ошибка при удалении записи зарплаты:", error);

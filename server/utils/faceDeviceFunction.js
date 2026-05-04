@@ -1,8 +1,10 @@
 import "dotenv/config";
+import path from "path";
 import fetch from "digest-fetch";
 import pool from "../db.js";
 import { internalIpV4 } from "internal-ip";
 import { config } from "../config.js";
+import { createTempToken } from "../middlewares/tempPhotoToken.js";
 
 import axios from "axios";
 
@@ -25,7 +27,7 @@ export const FaceDeviceClient = {
 
     const payload = {
       UserInfo: {
-        employeeNo: employeeId,
+        employeeNo: String(employeeId),
         userType: "normal",
         Valid: {
           enable: true,
@@ -33,7 +35,12 @@ export const FaceDeviceClient = {
           endTime: "2037-12-31T23:59:59",
         },
         doorRight: "1",
-        RightPlan: [{ doorNo: 1, planTemplateNo: "1" }],
+        RightPlan: [
+          {
+            doorNo: 1,
+            planTemplateNo: "1",
+          },
+        ],
         name: fullName,
       },
     };
@@ -47,6 +54,9 @@ export const FaceDeviceClient = {
     });
 
     if (!res.ok) {
+      const body = await res.text().catch(() => "(no body)");
+      console.error(`[updateUser] ${ip} 400 payload:`, JSON.stringify(payload));
+      console.error(`[updateUser] ${ip} response:`, body);
       throw new Error(`Ошибка обновления пользователя (${res.status})`);
     }
   },
@@ -56,11 +66,14 @@ export const FaceDeviceClient = {
 
     const url = `http://${ip}${api_edit_user_photo}`;
 
-    const tempLinkRes = await axios.get(
-      `http://${serverIp}:${config.port}/api/employees/image-link/${photoPath}`,
+    const filePath = path.join(
+      process.cwd(),
+      "uploads",
+      "employees",
+      photoPath,
     );
-
-    const photoUrl = tempLinkRes.data.url;
+    const token = createTempToken(filePath);
+    const photoUrl = `http://${serverIp}:${config.port}/api/employees/photo/${token}`;
 
     const payload = {
       faceURL: photoUrl,
@@ -230,11 +243,14 @@ export const RemoteFaceDeviceClient = {
 
     const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/Intelligent/FDLib/FDSetUp?format=json`;
 
-    const tempLinkRes = await axios.get(
-      `http://${serverIp}:${config.port}/api/employees/image-link/${photoPath}`,
+    const filePath = path.join(
+      process.cwd(),
+      "uploads",
+      "employees",
+      photoPath,
     );
-
-    const photoUrl = tempLinkRes.data.url;
+    const token = createTempToken(filePath);
+    const photoUrl = `http://${serverIp}:${config.port}/api/employees/photo/${token}`;
 
     const data = {
       faceURL: photoUrl,

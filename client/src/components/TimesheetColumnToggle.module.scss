@@ -1,0 +1,100 @@
+.wrapper {
+  position: relative;
+  font-size: var(--font-small);
+}
+
+.toggleBtn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  width: 50px;
+  height: 32px;
+  padding: 0 10px;
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(162, 161, 168, 0.4);
+  cursor: pointer;
+  background-color: white;
+  box-sizing: border-box;
+
+  svg {
+    color: #64748b;
+  }
+
+  &:hover {
+    border-color: var(--third-color);
+  }
+}
+
+.active {
+  border-color: var(--third-color) !important;
+}
+
+.badge {
+  background: var(--third-color);
+  color: white;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 0 5px;
+  line-height: 16px;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 99999;
+  background: white;
+  border: 1px solid rgba(162, 161, 168, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 8px 6px;
+  min-width: 200px;
+  animation: fadeIn 0.12s ease;
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+.dropdownTitle {
+  font-size: 10px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 8px 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
+
+  input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--third-color);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f1f5f9;
+  }
+}

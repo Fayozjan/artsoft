@@ -15,7 +15,7 @@ const SORT_FIELDS = [
 
 const DEFAULT = { sort_by: "last_name", sort_order: "asc" };
 
-const SalarySort = ({ sort_by = "last_name", sort_order = "asc", onApply }) => {
+const SalarySort = ({ sort_by = "last_name", sort_order = "asc", onApply, fields = SORT_FIELDS }) => {
   const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [local, setLocal] = useState({ sort_by, sort_order });
@@ -92,7 +92,7 @@ const SalarySort = ({ sort_by = "last_name", sort_order = "asc", onApply }) => {
       {isOpen && (
         <div className={styles.sortContent}>
           <div className={styles.fieldList}>
-            {SORT_FIELDS.map((f) => {
+            {fields.map((f) => {
               const isSelected = local.sort_by === f.value;
               return (
                 <div

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
@@ -9,6 +10,7 @@ import Button from "./Button";
 import styles from "./AddEmployeeJob.module.scss";
 
 const AddEmployeeJob = ({ userId, setActiveTab }) => {
+  const { t } = useTranslation();
   const [departments, setDepartments] = useState([]);
   const [branches, setBranches] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -76,12 +78,12 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
       );
 
       if (res.data.success) {
-        showAlert("Успешно", "success");
+        showAlert(t("success"), "success");
         setTimeout(() => setActiveTab("door"), 1000);
       }
       setLoading(false);
     } catch (error) {
-      showAlert("Ошибка", "error");
+      showAlert(t("error"), "error");
       setLoading(false);
     }
   };
@@ -93,7 +95,7 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
           <div className={styles.input_fields}>
             <div className={styles.row}>
               <div className={styles.input_col}>
-                <label>Дата</label>
+                <label>{t("date")}</label>
                 <input
                   type="date"
                   name="event_date"
@@ -103,7 +105,7 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
                 />
               </div>
               <div className={styles.input_col}>
-                <label>Приказ №</label>
+                <label>{t("orderNumber")}</label>
                 <input
                   type="text"
                   name="order_number"
@@ -115,14 +117,14 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
 
             <div className={styles.row}>
               <div className={styles.input_col}>
-                <label>Филиал</label>
+                <label>{t("branch")}</label>
                 <select
                   name="branch_id"
                   value={formData.branch_id}
                   onChange={handleBranchChange}
                   required
                 >
-                  <option value="">Выберите филиал</option>
+                  <option value="">{t("selectBranch")}</option>
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
@@ -131,14 +133,14 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
                 </select>
               </div>
               <div className={styles.input_col}>
-                <label>Отдел</label>
+                <label>{t("department")}</label>
                 <select
                   name="department_id"
                   value={formData.department_id}
                   onChange={handleChange}
                   required
                 >
-                  <option value="">Выберите отдел</option>
+                  <option value="">{t("selectDepartment")}</option>
                   {filteredDepartments.map((dep) => (
                     <option key={dep.id} value={dep.id}>
                       {dep.name}
@@ -147,14 +149,14 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
                 </select>
               </div>
               <div className={styles.input_col}>
-                <label>Должность</label>
+                <label>{t("position")}</label>
                 <select
                   name="position_id"
                   value={formData.position_id}
                   onChange={handleChange}
                   required
                 >
-                  <option value="">Выберите должность</option>
+                  <option value="">{t("selectPosition")}</option>
                   {positions.map((dep) => (
                     <option key={dep.id} value={dep.id}>
                       {dep.name}
@@ -166,7 +168,7 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
 
             <div className={styles.row}>
               <div className={styles.input_col}>
-                <label>Описание</label>
+                <label>{t("note")}</label>
                 <input
                   type="text"
                   name="description"
@@ -178,7 +180,7 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
           </div>
         </div>
         <div className={styles.buttons}>
-          <Button text={"Сохранить и далее"} type="submit" />
+          <Button text={t("save")} type="submit" />
         </div>
       </form>
       {loading && <Loading />}

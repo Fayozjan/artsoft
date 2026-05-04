@@ -12,6 +12,7 @@ export const AuthModel = {
         language: true,
         theme: true,
         sidebar: true,
+        status: true,
         employee: {
           select: {
             first_name: true,

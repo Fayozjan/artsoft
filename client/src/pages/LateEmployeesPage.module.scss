@@ -268,19 +268,40 @@
       }
     }
 
-    .employee {
+    .empCell {
+      padding-left: 8px;
       display: flex;
+      flex-direction: row;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      text-align: left;
+      min-width: 160px;
 
       img {
-        min-width: 35px;
+        flex-shrink: 0;
         width: 35px;
+        min-width: 35px;
         height: 35px;
         border-radius: 50%;
         object-fit: cover;
         box-sizing: border-box;
       }
+    }
+
+    .empInfo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .empName {
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .empSub {
+      font-size: 11px;
+      color: #94a3b8;
     }
 
     .btnMore {

@@ -1,8 +1,55 @@
 import { PayrollModel } from "./payroll.model.js";
+
+// Resolves payout_status: unpaid → partially_paid → paid
+function _resolvePayStatus(covered, totalDue, currentPayoutStatus) {
+  if (!["unpaid", "paid", "partially_paid"].includes(currentPayoutStatus)) return currentPayoutStatus;
+  if (covered >= totalDue) return "paid";
+  if (covered > 0) return "partially_paid";
+  return "unpaid";
+}
 import { EmployeeSalaryHistoryModel } from "../employeeSalaryHistory/employeeSalaryHistory.model.js";
+import { EmployeeWorkScheduleHistoryModel } from "../employeeScheduleHistory/employeeScheduleHistory.model.js";
 import { FacePassesService } from "../facePasses/facePasses.service.js";
 import { TimeOffService } from "../timeOff/timeOff.service.js";
 import { generateAttendanceReport } from "../../utils/attendanceUtils.js";
+
+// Добавляет синтетические записи в events для сотрудников без проходов,
+// чтобы generateAttendanceReport мог обработать их отгулы.
+async function _augmentEventsWithMissingEmployees(events, employees) {
+  const eventsIds = new Set(events.map((e) => String(e.employeeId)));
+  const missing = employees.filter((emp) => !eventsIds.has(String(emp.id)));
+  if (!missing.length) return;
+
+  const scheduleHistories = await EmployeeWorkScheduleHistoryModel.findByEmployeeIds(
+    missing.map((e) => e.id),
+  );
+
+  const schedByEmp = {};
+  for (const sh of scheduleHistories) {
+    const eid = String(sh.employee_id);
+    if (!schedByEmp[eid]) schedByEmp[eid] = [];
+    schedByEmp[eid].push(sh);
+  }
+
+  for (const emp of missing) {
+    events.push({
+      employeeId: emp.id,
+      employeeNumber: emp.employee_number ?? null,
+      employeeFullName:
+        [emp.last_name, emp.first_name, emp.middle_name]
+          .filter(Boolean)
+          .join(" ") + ` (${emp.id})`,
+      employeePhoto: emp.photo ?? null,
+      branchName: emp.branch?.name ?? null,
+      departmentName: emp.department?.name ?? null,
+      positionName: emp.position?.name ?? null,
+      pinfl: emp.pinfl ?? null,
+      workScheduleName: emp.workSchedule?.name ?? null,
+      workSchedule: schedByEmp[String(emp.id)] ?? null,
+      events: [],
+    });
+  }
+}
 
 function countWorkdaysInMonth(year, month) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -65,6 +112,8 @@ async function _generateSheet(userId, year, month, monthStr) {
     FacePassesService.getAll({ userId, filters: { start_date, end_date, employeeIds } }),
     TimeOffService.getAll({ userId, filters: { employeeIds } }),
   ]);
+
+  await _augmentEventsWithMissingEmployees(events, employees);
 
   const attendance = generateAttendanceReport(events, timeOffsResult, monthStr);
   const attMap = new Map(attendance.map((a) => [String(a.employeeId), a]));
@@ -233,10 +282,10 @@ async function _resyncSheetItemForEmployee(employeeId, year, month) {
   if (Math.abs(newAdv - Number(item.advance_total || 0)) > 0.001)
     itemUpdate.advance_total = newAdv;
 
-  if (["approved", "paid"].includes(item.status)) {
+  if (item.status === "approved") {
     const covered    = newAdv + paidAmt;
-    const autoStatus = covered >= totalDue ? "paid" : "approved";
-    if (autoStatus !== item.status) itemUpdate.status = autoStatus;
+    const autoStatus = _resolvePayStatus(covered, totalDue, item.payout_status);
+    if (autoStatus !== item.payout_status) itemUpdate.payout_status = autoStatus;
   }
 
   if (Object.keys(itemUpdate).length > 0)
@@ -270,7 +319,7 @@ async function _syncPrevMonthPayment(item, totalPaid) {
 
   const prevItem = await PayrollModel.findItemBySheetAndEmployee(prevSheet.id, item.employee_id);
   if (!prevItem) return;
-  if (!["approved", "paid"].includes(prevItem.status)) return;
+  if (prevItem.status !== "approved") return;
 
   const prevAdvance  = Number(prevItem.advance_total || 0);
   const prevNet      = Number(prevItem.net);
@@ -283,12 +332,95 @@ async function _syncPrevMonthPayment(item, totalPaid) {
   const prevCashBefore = Math.max(0, prevTotalDue - salaryBal - prevAdvance);
   const newPrevPaid    = parseFloat((prevCashBefore + coverage).toFixed(2));
   // Status: check total coverage (cash + advance)
-  const newPrevStatus = (newPrevPaid + prevAdvance) >= prevTotalDue ? "paid" : "approved";
+  const newPrevPayoutStatus = _resolvePayStatus(newPrevPaid + prevAdvance, prevTotalDue, prevItem.payout_status);
 
   await PayrollModel.updateItem(prevItem.id, {
-    paid_amount: newPrevPaid,
-    status:      newPrevStatus,
+    paid_amount:   newPrevPaid,
+    payout_status: newPrevPayoutStatus,
   });
+}
+
+// ── Private: recalculate carry-over balances for one sheet ────────────────────
+async function _doRecalcBalances(sheetId) {
+  const sheet = await PayrollModel.findSheetById(sheetId);
+  if (!sheet) return { updated: 0 };
+
+  const currentItems = await PayrollModel.getAllSheetItems(sheetId);
+  const employeeIds  = currentItems.map((it) => it.employee_id);
+
+  const advanceMap = await PayrollModel.getAdvanceTotalsForMonth(sheet.year, sheet.month, employeeIds);
+
+  const prevMonth = sheet.month === 1 ? 12 : sheet.month - 1;
+  const prevYear  = sheet.month === 1 ? sheet.year - 1 : sheet.year;
+  const prevSheet = await PayrollModel.findByMonthYear(prevMonth, prevYear);
+  const carryMap  = new Map();
+  if (prevSheet) {
+    const prevItems = await PayrollModel.getItemsForEmployees(prevSheet.id, employeeIds);
+    for (const it of prevItems) {
+      const prevTotal   = Number(it.salary_balance || 0) + Number(it.net || 0);
+      const prevAdvance = Number(it.advance_total  || 0);
+      const prevPaid    = Number(it.paid_amount    || 0) + prevAdvance;
+      const carry       = parseFloat((prevTotal - prevPaid).toFixed(2));
+      if (carry > 0)      carryMap.set(it.employee_id, { salary: carry, debt: 0 });
+      else if (carry < 0) carryMap.set(it.employee_id, { salary: 0, debt: parseFloat((-carry).toFixed(2)) });
+    }
+  }
+
+  let updated = 0;
+  for (const item of currentItems) {
+    const advance = advanceMap.get(item.employee_id) || 0;
+    const carry   = carryMap.get(item.employee_id) || { salary: 0, debt: 0 };
+    const updateData = {};
+
+    if (Math.abs(advance - Number(item.advance_total || 0)) > 0.001)
+      updateData.advance_total = advance;
+    if (Math.abs(carry.salary - Number(item.salary_balance || 0)) > 0.001)
+      updateData.salary_balance = carry.salary;
+    if (carry.debt > 0 && Math.abs(carry.debt - Number(item.debt_balance || 0)) > 0.001)
+      updateData.debt_balance = carry.debt;
+
+    const newDebtBal = "debt_balance" in updateData ? Number(updateData.debt_balance) : Number(item.debt_balance || 0);
+    const curDebtDed = Number(item.debt_deduction || 0);
+    if (curDebtDed > newDebtBal) {
+      updateData.debt_deduction = newDebtBal;
+      if (newDebtBal === 0) updateData.debt_mode = "skip";
+      const adj     = Number(item.manual_adjustment || 0);
+      const lateDed = item.apply_late ? Number(item.late_amount || 0) : 0;
+      const otBonus = item.apply_overtime ? Number(item.overtime_amount || 0) : 0;
+      updateData.net = parseFloat((Number(item.accrued) - newDebtBal + adj - lateDed + otBonus).toFixed(2));
+    }
+
+    if (item.status === "approved") {
+      const net        = Number(item.net);
+      const salBal     = carry.salary;
+      const totalDue   = net + salBal;
+      const paidAmt    = Number(item.paid_amount || 0);
+      const autoStatus = _resolvePayStatus(advance + paidAmt, totalDue, item.payout_status);
+      if (autoStatus !== item.payout_status) updateData.payout_status = autoStatus;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      await PayrollModel.updateItem(item.id, updateData);
+      updated++;
+    }
+  }
+  return { updated };
+}
+
+// ── Private: cascade recalculate balances for all subsequent months ────────────
+async function _cascadeRecalculate(sheetId) {
+  const sheet = await PayrollModel.findSheetById(sheetId);
+  if (!sheet) return;
+  let { year, month } = sheet;
+  for (let i = 0; i < 24; i++) {
+    const nm   = month === 12 ? 1 : month + 1;
+    const ny   = month === 12 ? year + 1 : year;
+    const next = await PayrollModel.findByMonthYear(nm, ny);
+    if (!next) break;
+    await _doRecalcBalances(next.id);
+    month = nm;
+    year  = ny;
+  }
 }
 
 export const PayrollService = {
@@ -347,6 +479,7 @@ export const PayrollService = {
   updateItem: async (itemId, payload) => {
     const item = await PayrollModel.findItemById(itemId);
     if (!item) return { success: false, message: "Item not found" };
+    if (item.payout_status === "paid") return { success: false, message: "payoutPaidCannotEdit" };
 
     let debtDeduction =
       payload.debt_deduction !== undefined
@@ -401,8 +534,8 @@ export const PayrollService = {
       const salaryBal    = Number(item.salary_balance || 0);
       const totalDue     = net + salaryBal;
       data.paid_amount   = parseFloat(paidAmt.toFixed(2));
-      if (["approved", "paid"].includes(item.status)) {
-        data.status = paidAmt >= totalDue ? "paid" : "approved";
+      if (item.status === "approved") {
+        data.payout_status = _resolvePayStatus(paidAmt, totalDue, item.payout_status);
       }
     }
 
@@ -429,6 +562,10 @@ export const PayrollService = {
     if (!["approved", "draft"].includes(status))
       return { success: false, message: "Invalid status" };
     await PayrollModel.bulkUpdateStatus(itemIds, status);
+    if (status === "approved") {
+      const firstItem = await PayrollModel.findItemById(itemIds[0]);
+      if (firstItem) await _doRecalcBalances(firstItem.sheet_id);
+    }
     return { success: true, count: itemIds.length };
   },
 
@@ -436,6 +573,7 @@ export const PayrollService = {
     if (!["approved", "draft"].includes(status))
       return { success: false, message: "Invalid status" };
     await PayrollModel.updateAllItemsStatus(sheetId, status);
+    if (status === "approved") await _doRecalcBalances(sheetId);
     return { success: true };
   },
 
@@ -488,14 +626,14 @@ export const PayrollService = {
   bulkMarkPaid: async (itemIds, status) => {
     if (!Array.isArray(itemIds) || !itemIds.length)
       return { success: false, message: "No items" };
-    if (!["approved", "paid"].includes(status))
+    if (!["unpaid", "paid", "partially_paid"].includes(status))
       return { success: false, message: "Invalid status" };
     await PayrollModel.bulkMarkPaid(itemIds, status);
     return { success: true, count: itemIds.length };
   },
 
   markAllPayoutsStatus: async (sheetId, status) => {
-    if (!["approved", "paid"].includes(status))
+    if (!["unpaid", "paid", "partially_paid"].includes(status))
       return { success: false, message: "Invalid status" };
     await PayrollModel.markAllPayoutsStatus(sheetId, status);
     return { success: true };
@@ -521,13 +659,11 @@ export const PayrollService = {
     const salBal   = Number(item.salary_balance || 0);
     const advance  = Number(item.advance_total  || 0);
     const totalDue = net + salBal;
-    const newStatus = ["approved", "paid"].includes(item.status)
-      ? ((totalPaid + advance) >= totalDue ? "paid" : "approved")
-      : item.status;
+    const newPayoutStatus = _resolvePayStatus(totalPaid + advance, totalDue, item.payout_status);
 
     const updated = await PayrollModel.updateItem(itemId, {
-      paid_amount: parseFloat(totalPaid.toFixed(2)),
-      status:      newStatus,
+      paid_amount:   parseFloat(totalPaid.toFixed(2)),
+      payout_status: newPayoutStatus,
     });
 
     // Propagate payment to previous month if carry-over exists
@@ -550,13 +686,11 @@ export const PayrollService = {
     const salBal   = Number(item.salary_balance || 0);
     const advance  = Number(item.advance_total  || 0);
     const totalDue = net + salBal;
-    const newStatus = ["approved", "paid"].includes(item.status)
-      ? ((totalPaid + advance) >= totalDue ? "paid" : "approved")
-      : item.status;
+    const newPayoutStatus2 = _resolvePayStatus(totalPaid + advance, totalDue, item.payout_status);
 
     const updated = await PayrollModel.updateItem(itemId, {
-      paid_amount: parseFloat(totalPaid.toFixed(2)),
-      status:      newStatus,
+      paid_amount:   parseFloat(totalPaid.toFixed(2)),
+      payout_status: newPayoutStatus2,
     });
 
     // Recalculate previous month after deletion
@@ -570,85 +704,243 @@ export const PayrollService = {
   },
 
   recalculateSalaryBalances: async (sheetId) => {
+    const { updated } = await _doRecalcBalances(sheetId);
+    return { success: true, updated };
+  },
+
+  recalculateDraftItems: async (userId, sheetId) => {
     const sheet = await PayrollModel.findSheetById(sheetId);
     if (!sheet) return { success: false, message: "Sheet not found" };
 
-    const currentItems = await PayrollModel.getAllSheetItems(sheetId);
-    const employeeIds  = currentItems.map((it) => it.employee_id);
+    const monthStr = `${sheet.year}-${String(sheet.month).padStart(2, "0")}`;
+    const totalWorkDays = countWorkdaysInMonth(sheet.year, sheet.month);
+    const start_date = new Date(sheet.year, sheet.month - 1, 0, 0, 0, 0);
+    const end_date   = new Date(sheet.year, sheet.month, 1, 23, 59, 59);
 
-    // Sync advance_total from salary_advances for this month
-    const advanceMap = await PayrollModel.getAdvanceTotalsForMonth(sheet.year, sheet.month, employeeIds);
+    const draftItems = await PayrollModel.getDraftItems(sheetId);
+    if (!draftItems.length) return { success: true, updated: 0 };
 
-    // Carry-over from prev month (accounting for prev advance_total)
-    const prevMonth = sheet.month === 1 ? 12 : sheet.month - 1;
-    const prevYear  = sheet.month === 1 ? sheet.year - 1 : sheet.year;
-    const prevSheet = await PayrollModel.findByMonthYear(prevMonth, prevYear);
-    // employee_id → { salary, debt }
-    const carryMap = new Map();
-    if (prevSheet) {
-      const prevItems = await PayrollModel.getItemsForEmployees(prevSheet.id, employeeIds);
-      for (const it of prevItems) {
-        const prevTotal   = Number(it.salary_balance || 0) + Number(it.net || 0);
-        const prevAdvance = Number(it.advance_total  || 0);
-        const prevPaid    = Number(it.paid_amount    || 0) + prevAdvance;
-        const carry       = parseFloat((prevTotal - prevPaid).toFixed(2));
-        if (carry > 0)      carryMap.set(it.employee_id, { salary: carry, debt: 0 });
-        else if (carry < 0) carryMap.set(it.employee_id, { salary: 0, debt: parseFloat((-carry).toFixed(2)) });
+    const employeeIds = draftItems.map((it) => it.employee_id);
+
+    const [events, timeOffsResult] = await Promise.all([
+      FacePassesService.getAll({ userId, filters: { start_date, end_date, employeeIds } }),
+      TimeOffService.getAll({ userId, filters: { employeeIds } }),
+    ]);
+
+    await _augmentEventsWithMissingEmployees(
+      events,
+      draftItems.map((it) => ({ id: it.employee_id })),
+    );
+
+    const attendance = generateAttendanceReport(events, timeOffsResult, monthStr);
+    const attMap = new Map(attendance.map((a) => [String(a.employeeId), a]));
+
+    const updates = draftItems.map((item) => {
+      const empSalary  = item.employee?.employeeSalaryHistory?.[0];
+      const baseSalary = empSalary ? Number(empSalary.amount) : Number(item.base_salary || 0);
+      const salaryType = empSalary?.salary_type || item.salary_type || "notSet";
+      const att        = attMap.get(String(item.employee_id));
+
+      const workedDays  = att?.totalWorkedDays  || 0;
+      const workedHours = att?.totalWorkedHours || "00:00";
+      const scheduledMinutes = att?.totalScheduledMinutes || 0;
+
+      let accrued = 0;
+      if (salaryType === "monthly" && totalWorkDays > 0) {
+        accrued = parseFloat(((baseSalary / totalWorkDays) * workedDays).toFixed(2));
+      } else if (salaryType === "hourly") {
+        const [h, m] = workedHours.split(":").map(Number);
+        accrued = parseFloat((baseSalary * (h + (m || 0) / 60)).toFixed(2));
+      } else if (salaryType === "piecework") {
+        accrued = baseSalary;
       }
+
+      let perMinuteRate = 0;
+      if (salaryType === "monthly" && scheduledMinutes > 0) {
+        perMinuteRate = baseSalary / scheduledMinutes;
+      } else if (salaryType === "hourly") {
+        perMinuteRate = baseSalary / 60;
+      }
+
+      const lateMinutes     = att?.totalLateTime
+        ? (() => { const [h, m] = att.totalLateTime.split(":").map(Number); return h * 60 + m; })()
+        : 0;
+      const overtimeMinutes = att?.totalOvertimeMinutes || 0;
+      const lateAmount      = parseFloat((lateMinutes     * perMinuteRate).toFixed(2));
+      const overtimeAmount  = parseFloat((overtimeMinutes * perMinuteRate).toFixed(2));
+
+      // Preserve user-modified fields
+      const debtDeduction   = Number(item.debt_deduction   || 0);
+      const manualAdj       = Number(item.manual_adjustment || 0);
+      const applyLate       = item.apply_late;
+      const applyOvertime   = item.apply_overtime;
+
+      const lateDeduction  = applyLate     ? lateAmount     : 0;
+      const overtimeBonus  = applyOvertime ? overtimeAmount : 0;
+      const net = parseFloat((accrued - debtDeduction + manualAdj - lateDeduction + overtimeBonus).toFixed(2));
+
+      return {
+        id:               item.id,
+        base_salary:      baseSalary,
+        salary_type:      salaryType,
+        accrued,
+        late_minutes:     lateMinutes,
+        late_amount:      lateAmount,
+        overtime_minutes: overtimeMinutes,
+        overtime_amount:  overtimeAmount,
+        scheduled_minutes: scheduledMinutes,
+        worked_days:      workedDays,
+        worked_hours:     workedHours,
+        net,
+      };
+    });
+
+    await PayrollModel.batchUpdateDraftItems(sheetId, updates);
+    return { success: true, updated: updates.length };
+  },
+
+  // Recalculate ALL draft items for employee across all months
+  // Uses salary effective for each specific month (not just the latest)
+  recalculateAllDraftItemsForEmployee: async (employeeId) => {
+    const items = await PayrollModel.getAllDraftItemsForEmployee(employeeId);
+    if (!items.length) return;
+
+    const salaryHistory = await EmployeeSalaryHistoryModel.findAllByEmployeeId(employeeId);
+
+    for (const item of items) {
+      const { year, month } = item.sheet;
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay  = new Date(year, month,     0, 23, 59, 59);
+
+      const salary = salaryHistory.find((s) => {
+        const from = new Date(s.date_from);
+        const to   = s.date_to ? new Date(s.date_to) : null;
+        return from <= lastDay && (!to || to >= firstDay);
+      });
+      if (!salary) continue;
+
+      const baseSalary = Number(salary.amount);
+      const salaryType = salary.salary_type;
+      const totalWorkDays = countWorkdaysInMonth(year, month);
+
+      const workedDays       = item.worked_days        || 0;
+      const workedHours      = item.worked_hours        || "00:00";
+      const scheduledMinutes = item.scheduled_minutes   || 0;
+      const lateMinutes      = item.late_minutes        || 0;
+      const overtimeMinutes  = item.overtime_minutes    || 0;
+
+      let accrued = 0;
+      if (salaryType === "monthly" && totalWorkDays > 0) {
+        accrued = parseFloat(((baseSalary / totalWorkDays) * workedDays).toFixed(2));
+      } else if (salaryType === "hourly") {
+        const [h, m] = workedHours.split(":").map(Number);
+        accrued = parseFloat((baseSalary * (h + (m || 0) / 60)).toFixed(2));
+      } else if (salaryType === "piecework") {
+        accrued = baseSalary;
+      }
+
+      let perMinuteRate = 0;
+      if (salaryType === "monthly" && scheduledMinutes > 0) {
+        perMinuteRate = baseSalary / scheduledMinutes;
+      } else if (salaryType === "hourly") {
+        perMinuteRate = baseSalary / 60;
+      }
+
+      const lateAmount     = parseFloat((lateMinutes    * perMinuteRate).toFixed(2));
+      const overtimeAmount = parseFloat((overtimeMinutes * perMinuteRate).toFixed(2));
+
+      const debtDeduction = Number(item.debt_deduction    || 0);
+      const manualAdj     = Number(item.manual_adjustment || 0);
+      const lateDeduction = item.apply_late     ? lateAmount     : 0;
+      const overtimeBonus = item.apply_overtime ? overtimeAmount : 0;
+      const net = parseFloat((accrued - debtDeduction + manualAdj - lateDeduction + overtimeBonus).toFixed(2));
+
+      await PayrollModel.updateItem(item.id, {
+        base_salary:     baseSalary,
+        salary_type:     salaryType,
+        accrued,
+        late_amount:     lateAmount,
+        overtime_amount: overtimeAmount,
+        net,
+      });
     }
 
-    let updated = 0;
-    for (const item of currentItems) {
-      const advance  = advanceMap.get(item.employee_id) || 0;
-      const carry    = carryMap.get(item.employee_id) || { salary: 0, debt: 0 };
+    // Propagate carry-overs in chronological order (items already sorted asc)
+    for (const item of items) {
+      await _propagateCarryToNextMonth(Number(employeeId), item.sheet.year, item.sheet.month);
+    }
+  },
 
-      const updateData = {};
+  // Recalculate one draft item using stored attendance data + fresh salary
+  recalculateDraftItemForEmployee: async (employeeId, year, month) => {
+    const sheet = await PayrollModel.findByMonthYear(month, year);
+    if (!sheet) return;
 
-      if (Math.abs(advance - Number(item.advance_total || 0)) > 0.001)
-        updateData.advance_total = advance;
+    const item = await PayrollModel.getDraftItemForEmployee(sheet.id, employeeId);
+    if (!item) return;
 
-      if (Math.abs(carry.salary - Number(item.salary_balance || 0)) > 0.001)
-        updateData.salary_balance = carry.salary;
+    const empSalary = item.employee?.employeeSalaryHistory?.[0];
+    if (!empSalary) return;
 
-      // Only update debt_balance from advance debt if item was freshly generated (debt_balance == 0)
-      // or existing debt_balance matches the previous advance_debt (avoid overwriting manual debts)
-      if (carry.debt > 0 && Math.abs(carry.debt - Number(item.debt_balance || 0)) > 0.001)
-        updateData.debt_balance = carry.debt;
+    const baseSalary = Number(empSalary.amount);
+    const salaryType = empSalary.salary_type;
+    const totalWorkDays = countWorkdaysInMonth(year, month);
 
-      // Cap debt_deduction if debt_balance changed to a lower value, and recompute net
-      const newDebtBal = "debt_balance" in updateData ? Number(updateData.debt_balance) : Number(item.debt_balance || 0);
-      const curDebtDed = Number(item.debt_deduction || 0);
-      if (curDebtDed > newDebtBal) {
-        updateData.debt_deduction = newDebtBal;
-        if (newDebtBal === 0) updateData.debt_mode = "skip";
-        const adj     = Number(item.manual_adjustment || 0);
-        const lateDed = item.apply_late ? Number(item.late_amount || 0) : 0;
-        const otBonus = item.apply_overtime ? Number(item.overtime_amount || 0) : 0;
-        updateData.net = parseFloat((Number(item.accrued) - newDebtBal + adj - lateDed + otBonus).toFixed(2));
-      }
+    const workedDays       = item.worked_days        || 0;
+    const workedHours      = item.worked_hours        || "00:00";
+    const scheduledMinutes = item.scheduled_minutes   || 0;
+    const lateMinutes      = item.late_minutes        || 0;
+    const overtimeMinutes  = item.overtime_minutes    || 0;
 
-      // Auto-mark paid if advance now covers everything
-      if (["approved", "paid"].includes(item.status)) {
-        const net      = Number(item.net);
-        const salBal   = carry.salary;
-        const totalDue = net + salBal;
-        const paidAmt  = Number(item.paid_amount || 0);
-        const totalCov = advance + paidAmt;
-        const autoStatus = totalCov >= totalDue ? "paid" : "approved";
-        if (autoStatus !== item.status) updateData.status = autoStatus;
-      }
-
-      if (Object.keys(updateData).length > 0) {
-        await PayrollModel.updateItem(item.id, updateData);
-        updated++;
-      }
+    let accrued = 0;
+    if (salaryType === "monthly" && totalWorkDays > 0) {
+      accrued = parseFloat(((baseSalary / totalWorkDays) * workedDays).toFixed(2));
+    } else if (salaryType === "hourly") {
+      const [h, m] = workedHours.split(":").map(Number);
+      accrued = parseFloat((baseSalary * (h + (m || 0) / 60)).toFixed(2));
+    } else if (salaryType === "piecework") {
+      accrued = baseSalary;
     }
 
-    return { success: true, updated };
+    let perMinuteRate = 0;
+    if (salaryType === "monthly" && scheduledMinutes > 0) {
+      perMinuteRate = baseSalary / scheduledMinutes;
+    } else if (salaryType === "hourly") {
+      perMinuteRate = baseSalary / 60;
+    }
+
+    const lateAmount     = parseFloat((lateMinutes    * perMinuteRate).toFixed(2));
+    const overtimeAmount = parseFloat((overtimeMinutes * perMinuteRate).toFixed(2));
+
+    const debtDeduction = Number(item.debt_deduction   || 0);
+    const manualAdj     = Number(item.manual_adjustment || 0);
+    const lateDeduction = item.apply_late     ? lateAmount     : 0;
+    const overtimeBonus = item.apply_overtime ? overtimeAmount : 0;
+    const net = parseFloat((accrued - debtDeduction + manualAdj - lateDeduction + overtimeBonus).toFixed(2));
+
+    await PayrollModel.updateItem(item.id, {
+      base_salary:     baseSalary,
+      salary_type:     salaryType,
+      accrued,
+      late_amount:     lateAmount,
+      overtime_amount: overtimeAmount,
+      net,
+    });
+
+    await _propagateCarryToNextMonth(employeeId, year, month);
   },
 
   approveSheet: async (id, userId) => {
     const updated = await PayrollModel.approveSheet(id, userId);
+    await _cascadeRecalculate(id);
+    return { success: true, data: updated };
+  },
+
+  unapproveSheet: async (id) => {
+    const sheet = await PayrollModel.findSheetById(id);
+    if (!sheet) return { success: false, message: "Sheet not found" };
+    if (sheet.status !== "approved") return { success: false, message: "Sheet is not approved" };
+    const updated = await PayrollModel.unapproveSheet(id);
     return { success: true, data: updated };
   },
 

@@ -21,9 +21,9 @@ import MultiSelectBranches from "./MultiSelectBranches";
 import styles from "./AddUser.module.scss";
 
 const STATIC_MENUS = [
-  { key: "home", label: "Главная" },
-  { key: "finance", label: "Финансы" },
-  { key: "tasks", label: "Задачи" },
+  { key: "home", labelKey: "homeNav" },
+  { key: "finance", labelKey: "financeNav" },
+  { key: "tasks", labelKey: "tasksNav" },
 ];
 
 const EditUser = ({ id, handleClose, onSuccess }) => {
@@ -118,7 +118,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
       }));
     } catch (error) {
       console.error(error);
-      showAlert("Ошибка при загрузке данных", "error");
+      showAlert(t("error"), "error");
       setTimeout(() => handleClose(), 1500);
     } finally {
       setLoading(false);
@@ -171,7 +171,11 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await editUser({ id, data: formData });
+      const payload = {
+        ...formData,
+        telegramId: formData.telegramId?.trim() || null,
+      };
+      const res = await editUser({ id, data: payload });
 
       if (res.success) {
         showAlert(t("success"), "success");
@@ -220,9 +224,9 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
               type="button"
               onClick={handleShowPassword}
               className={styles.togglePassword}
-              aria-label="Показать пароль"
+              aria-label={t("show")}
             >
-              {state.showPassword ? "Скрыть" : "Показать"}
+              {state.showPassword ? t("hide") : t("show")}
             </button>
           </div>
         </div>
@@ -242,7 +246,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         </div>
 
         <div>
-          <label>Телеграм ID</label>
+          <label>{t("telegramId")}</label>
           <input
             type="text"
             name="telegramId"
@@ -262,15 +266,15 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
             value={formData.access_level}
             onChange={handleChange}
           >
-            <option value="absolute">Полный доступ</option>
-            <option value="branch">Филиал</option>
-            <option value="department">Отдел</option>
-            <option value="employee">Сотрудник</option>
+            <option value="absolute">{t("fullAccess")}</option>
+            <option value="branch">{t("branch")}</option>
+            <option value="department">{t("department")}</option>
+            <option value="employee">{t("employee")}</option>
           </select>
         </div>
 
         <div>
-          <label>Статус</label>
+          <label>{t("status")}</label>
           <select
             name="status"
             value={formData.status}
@@ -287,7 +291,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         {formData.access_level === "branch" && (
           <div>
             <label className={styles.label}>
-              Филиалы
+              {t("branches")}
               <span className={styles.sticker}>
                 {formData.branches?.length || 0}
               </span>
@@ -304,7 +308,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         {formData.access_level === "department" && (
           <div>
             <label className={styles.label}>
-              Отделы
+              {t("departments")}
               <span className={styles.sticker}>
                 {formData.departments?.length || 0}
               </span>
@@ -321,14 +325,14 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label>Режим отображения</label>
+          <label>{t("viewMode")}</label>
           <select
             name="view_mode"
             value={formData.view_mode}
             onChange={handleChange}
           >
-            <option value="absolute">Все филиалы</option>
-            <option value="branch">Отдельно по филиалу</option>
+            <option value="absolute">{t("allBranches")}</option>
+            <option value="branch">{t("byBranch")}</option>
           </select>
         </div>
       </div>
@@ -346,7 +350,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
                 }))
               }
             />
-            Игнорировать GPS-проверку
+            {t("ignoreGpsCheck")}
           </label>
         </div>
       </div>
@@ -361,9 +365,9 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
 
           <div className={styles.row}>
             <div>
-              <label>Личный режим для меню</label>
+              <label>{t("personalMenuMode")}</label>
               <div className={styles.checkboxGroup}>
-                {STATIC_MENUS.map(({ key, label }) => (
+                {STATIC_MENUS.map(({ key, labelKey }) => (
                   <label key={key} className={styles.checkboxLabel}>
                     <input
                       type="checkbox"
@@ -379,7 +383,7 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
                         }));
                       }}
                     />
-                    {label}
+                    {t(labelKey)}
                   </label>
                 ))}
               </div>

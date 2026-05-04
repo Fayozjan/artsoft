@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import styles from "./MultiSelect.module.scss";
 
 const MultiSelectUsers = ({ options = [], selected = [], onChange }) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
@@ -73,7 +75,7 @@ const MultiSelectUsers = ({ options = [], selected = [], onChange }) => {
 
   // 📋 Сортируем так, чтобы выбранные были сверху
   const sortedFilteredOptions = [
-    { user_id: "select_all", name: "Выбрать всех" },
+    { user_id: "select_all", name: t("selectAll") },
     ...filteredOptions.sort((a, b) => {
       const isASelected = safeSelected.includes(a.user_id);
       const isBSelected = safeSelected.includes(b.user_id);
@@ -85,7 +87,7 @@ const MultiSelectUsers = ({ options = [], selected = [], onChange }) => {
     <div ref={containerRef} className={styles.container}>
       <input
         type="text"
-        placeholder="Поиск..."
+        placeholder={t("search")}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         onFocus={() => setIsOpen(true)} // открываем при фокусе

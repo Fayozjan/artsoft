@@ -155,6 +155,7 @@ export const UserModel = {
         view_mode: true,
         active_branch_id: true,
         personal_menus: true,
+        settings: true,
         menuAccess: {
           where: { can_view: true },
           select: {
@@ -212,6 +213,7 @@ export const UserModel = {
       view_mode: user.view_mode,
       active_branch_id: user.active_branch_id,
       personal_menus: user.personal_menus,
+      settings: user.settings,
       branches,
       departments,
       menu,

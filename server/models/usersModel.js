@@ -1,5 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prismaContext } from "../utils/prismaContext.js";
 
 export const createUser = async ({
   username,
@@ -11,6 +10,7 @@ export const createUser = async ({
   status,
   menu,
 }) => {
+  const prisma = prismaContext.get();
   return prisma.users.create({
     data: {
       username,
@@ -26,14 +26,15 @@ export const createUser = async ({
 };
 
 export const updateUser = async (id, data) => {
+  const prisma = prismaContext.get();
   return prisma.users.update({
     where: { id: Number(id) },
     data,
   });
 };
 
-// список пользователей
 export const getUsers = async (page = 1, limit = 50) => {
+  const prisma = prismaContext.get();
   const pageNumber = Math.max(parseInt(page, 10), 1);
   const limitNumber = Math.max(parseInt(limit, 10), 1);
   const skip = (pageNumber - 1) * limitNumber;
@@ -43,7 +44,7 @@ export const getUsers = async (page = 1, limit = 50) => {
     take: limitNumber,
     orderBy: { id: "asc" },
     include: {
-      employee: true, // связь с employee
+      employee: true,
     },
   });
 
@@ -60,9 +61,9 @@ export const getUsers = async (page = 1, limit = 50) => {
   };
 };
 
-// один пользователь по id
 export const getUserById = async (id) => {
-  return await prisma.users.findUnique({
+  const prisma = prismaContext.get();
+  return prisma.users.findUnique({
     where: { id },
     select: {
       id: true,
@@ -77,12 +78,11 @@ export const getUserById = async (id) => {
   });
 };
 
-//
 export const getUserMenu = async (userId) => {
+  const prisma = prismaContext.get();
   const user = await prisma.users.findUnique({
     where: { id: userId },
     select: { menu: true },
   });
-
   return user ? user.menu : null;
 };

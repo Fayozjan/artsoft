@@ -111,73 +111,77 @@ export const FaceDevicesService = {
     if (employee.status === false || currentDevices.length === 0) {
       const allFaceDevices = await FaceDeviceModel.findActive();
 
-      for (const device of allFaceDevices) {
-        if (device.is_local) {
-          try {
-            await retry(
-              async () => {
-                await FaceDeviceClient.deleteUser(device.device_ip, id);
-              },
-              { retries: 3, delay: 10000 },
-            );
-          } catch (error) {
-            console.error(
-              `Не удалось удалить пользователя с устройства ${device.device_ip} после всех попыток:`,
-              error.message,
+      await Promise.allSettled(
+        allFaceDevices.map(async (device) => {
+          if (device.is_local) {
+            try {
+              await retry(
+                async () => {
+                  await FaceDeviceClient.deleteUser(device.device_ip, id);
+                },
+                { retries: 3, delay: 10000 },
+              );
+            } catch (error) {
+              console.error(
+                `Не удалось удалить пользователя с устройства ${device.device_ip} после всех попыток:`,
+                error.message,
+              );
+            }
+          } else {
+            // удалённое устройство — создаём задачу
+            await EmployeeDoorTasksService.addTask(
+              employee.id,
+              device.door_id,
+              "delete",
             );
           }
-        } else {
-          // удалённое устройство — создаём задачу
-          await EmployeeDoorTasksService.addTask(
-            employee.id,
-            device.door_id,
-            "delete",
-          );
-        }
-      }
+        }),
+      );
       return;
     }
 
     // Сценарий 2: Обновление/Создание на разрешённых устройствах
-    for (const device of currentDevices) {
-      if (device.is_local) {
-        try {
-          await retry(
-            async () => {
-              await FaceDeviceClient.updateUser(device.device_ip, id, fullName);
-              if (photo) {
-                await FaceDeviceClient.updateUserPhoto(
-                  device.device_ip,
-                  id,
-                  fullName,
-                  photo,
-                );
-              }
-            },
-            {
-              retries: 3,
-              delay: 10000,
-              onError: (err, attempt) => {
-                console.error(
-                  `FaceDevice ${device.device_ip}, попытка ${attempt}:`,
-                  err.message,
-                );
+    await Promise.allSettled(
+      currentDevices.map(async (device) => {
+        if (device.is_local) {
+          try {
+            await retry(
+              async () => {
+                await FaceDeviceClient.updateUser(device.device_ip, id, fullName);
+                if (photo) {
+                  await FaceDeviceClient.updateUserPhoto(
+                    device.device_ip,
+                    id,
+                    fullName,
+                    photo,
+                  );
+                }
               },
-            },
-          );
-        } catch (error) {
-          console.error(
-            `Критическая ошибка синхронизации с устройством ${device.device_ip}:`,
-            error.message,
+              {
+                retries: 3,
+                delay: 10000,
+                onError: (err, attempt) => {
+                  console.error(
+                    `FaceDevice ${device.device_ip}, попытка ${attempt}:`,
+                    err.message,
+                  );
+                },
+              },
+            );
+          } catch (error) {
+            console.error(
+              `Критическая ошибка синхронизации с устройством ${device.device_ip}:`,
+              error.message,
+            );
+          }
+        } else {
+          await EmployeeDoorTasksService.addTask(
+            employee.id,
+            device.door_id,
+            "update",
           );
         }
-      } else {
-        await EmployeeDoorTasksService.addTask(
-          employee.id,
-          device.door_id,
-          "update",
-        );
-      }
-    }
+      }),
+    );
   },
 };

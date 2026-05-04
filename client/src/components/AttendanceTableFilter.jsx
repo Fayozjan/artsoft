@@ -81,8 +81,6 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
           />
         </svg>
 
-        <span>Фильтры</span>
-
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -90,7 +88,7 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
             <div className={styles.date}>
-              <h2>Дата</h2>
+              <h2>{t("date")}</h2>
               <input
                 type="date"
                 name="date"

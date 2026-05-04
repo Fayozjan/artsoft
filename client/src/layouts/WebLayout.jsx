@@ -19,8 +19,13 @@ export default function WebLayout() {
   const { getUserSettings } = useAuthStore();
   const location = useLocation();
   const isHomePage = location.pathname === "/home";
+
+  if (window.Telegram?.WebApp?.initData) {
+    return <Navigate to="/tg" replace />;
+  }
   const outlet = useOutlet();
   const [menuData, setMenuData] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(true);
   const { theme: storedTheme } = getUserSettings();
   const { loading, isAuth } = useAuthCheck();
   const { userSettings } = useAuthStore();
@@ -66,6 +71,8 @@ export default function WebLayout() {
         setMenuData(res);
       } catch (error) {
         console.error("Ошибка получения меню:", error);
+      } finally {
+        setMenuLoading(false);
       }
     };
     fetchUserMenu();
@@ -80,12 +87,29 @@ export default function WebLayout() {
     }
   }, [storedTheme]);
 
-  if (loading) {
+  const isAllowedPath = useMemo(() => {
+    if (menuLoading || !menuData.length) return true;
+    const pathname = location.pathname;
+    for (const menu of menuData) {
+      if (menu.path === pathname) return true;
+      if (menu.children?.length) {
+        if (menu.children.some((child) => pathname.startsWith(child.path)))
+          return true;
+      }
+    }
+    return false;
+  }, [menuLoading, menuData, location.pathname]);
+
+  if (loading || menuLoading) {
     return <Loading />;
   }
 
   if (!isAuth) {
     return <Navigate to="/" replace />;
+  }
+
+  if (!isAllowedPath) {
+    return <Navigate to="/home" replace />;
   }
 
   return (

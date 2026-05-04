@@ -1,6 +1,8 @@
 import React from "react";
 import TimesheetCell from "./TimesheetCell";
 import styles from "./Timesheet.module.scss";
+import { formatMinutesToHours } from "../../../utils/date";
+import { useTranslation } from "react-i18next";
 
 const TimesheetRow = React.memo(
   ({
@@ -14,7 +16,9 @@ const TimesheetRow = React.memo(
     date,
     isExpanded,
     measureRef,
+    visibleColumns,
   }) => {
+    const { t } = useTranslation();
     return (
       <tr
         ref={measureRef}
@@ -33,13 +37,32 @@ const TimesheetRow = React.memo(
         </td>
         <td className={`${styles.stickyName} ${styles.infoCellClickable}`}>
           <div className={styles.empCell}>
-            {employee?.employeePhoto && (
-              <img
-                src={`/api/employees/image/${employee.employeePhoto}`}
-                alt="employee"
-                className={styles.empPhoto}
-              />
-            )}
+            {(() => {
+              const isInactive = employee?.status === false;
+              const statusClass = isInactive ? styles.inactive : "";
+              const initials = (employee?.employeeFullName || "")
+                .split(" ")
+                .filter(Boolean)
+                .slice(0, 2)
+                .map((w) => w[0])
+                .join("")
+                .toUpperCase();
+              return (
+                <div className={`${styles.empAvatar} ${statusClass}`}>
+                  {employee?.employeePhoto ? (
+                    <img
+                      src={`/api/employees/image/${employee.employeePhoto}`}
+                      alt="employee"
+                      className={styles.empPhoto}
+                    />
+                  ) : (
+                    <div className={`${styles.empInitials} ${statusClass}`}>
+                      {initials}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div className={styles.empInfo}>
               <span className={styles.empName}>
                 {employee?.employeeFullName}
@@ -52,16 +75,46 @@ const TimesheetRow = React.memo(
             </div>
           </div>
         </td>
-        <td className={styles.infoCellClickable}>{employee?.positionName}</td>
-        <td className={styles.infoCellClickable}>{employee?.pinfl}</td>
-        <td className={styles.infoCellClickable}>
-          {employee?.workScheduleName}
+        {visibleColumns.position && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {employee?.positionName}
+          </td>
+        )}
+        {visibleColumns.pinfl && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {employee?.pinfl}
+          </td>
+        )}
+        {visibleColumns.workSchedule && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {employee?.workScheduleName}
+          </td>
+        )}
+        {visibleColumns.lateHours && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {employee?.totalLateTime
+              ? `${employee?.totalLateTime} ${t("hoursShort")}`
+              : `00:00 ${t("hoursShort")}`}
+          </td>
+        )}
+        {visibleColumns.overtimeHours && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {`${formatMinutesToHours(employee?.totalOvertimeMinutes)} ${t("hoursShort")}` ||
+              "00:00"}
+          </td>
+        )}
+        {visibleColumns.paidTimeOff && (
+          <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+            {`${employee?.totalPaidTimeOffDays ?? 0} / ${formatMinutesToHours(employee?.totalPaidTimeOffMinutes ?? 0)} ${t("hoursShort")}`}
+          </td>
+        )}
+        <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+          {`${employee?.totalWorkedDays ?? 0} / ${employee?.totalScheduledDays ?? 0}`}
         </td>
-        <td className={styles.infoCellClickable}>
-          {employee?.totalWorkedDays || 0}
-        </td>
-        <td className={styles.infoCellClickable}>
-          {employee?.totalWorkedHours || "00:00"}
+        <td className={`${styles.optionalCol} ${styles.infoCellClickable}`}>
+          {employee?.totalWorkedHours
+            ? `${employee?.totalWorkedHours} / ${formatMinutesToHours(employee?.totalScheduledMinutes)}`
+            : "00:00"}
         </td>
 
         {daysArray.map((day) => {
@@ -86,7 +139,8 @@ const TimesheetRow = React.memo(
     prevProps.currentPage === nextProps.currentPage &&
     prevProps.pageSize === nextProps.pageSize &&
     prevProps.date === nextProps.date &&
-    prevProps.isExpanded === nextProps.isExpanded,
+    prevProps.isExpanded === nextProps.isExpanded &&
+    prevProps.visibleColumns === nextProps.visibleColumns,
 );
 
 TimesheetRow.displayName = "TimesheetRow";

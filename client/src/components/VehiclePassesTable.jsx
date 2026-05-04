@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import Badge from "./Badge";
 import SortArrow from "./SortArrow";
@@ -11,6 +12,7 @@ const VehiclePassesTable = ({
   pageSize,
   viewType = "row",
 }) => {
+  const { t } = useTranslation();
   const [sortField, setSortField] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
 
@@ -142,10 +144,10 @@ const VehiclePassesTable = ({
                     }`}
                   >
                     {event?.direction === "forward"
-                      ? "Въезд"
+                      ? t("forward")
                       : event?.direction === "reverse"
-                        ? "Выезд"
-                        : "Неизвестный"}
+                        ? t("reverse")
+                        : t("unknown")}
                   </div>
                 </div>
 
@@ -186,7 +188,7 @@ const VehiclePassesTable = ({
                         d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5s-1.12 2.5-2.5 2.5z"
                       />
                     </svg>
-                    <span className={styles.cardDetailLabel}>Филиал</span>
+                    <span className={styles.cardDetailLabel}>{t("branch")}</span>
                     <span className={styles.cardDetailValue}>
                       {event.branch_name || "—"}
                     </span>
@@ -233,7 +235,7 @@ const VehiclePassesTable = ({
                         strokeWidth="1.5"
                       />
                     </svg>
-                    <span className={styles.cardDetailLabel}>Ворота</span>
+                    <span className={styles.cardDetailLabel}>{t("gates")}</span>
                     <span className={styles.cardDetailValue}>
                       {event.gate_name || "—"}
                     </span>
@@ -251,7 +253,7 @@ const VehiclePassesTable = ({
                         d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8s8 3.58 8 8s-3.58 8-8 8zm.5-13H11v6l5.25 3.15l.75-1.23l-4.5-2.67z"
                       />
                     </svg>
-                    <span className={styles.cardDetailLabel}>Время</span>
+                    <span className={styles.cardDetailLabel}>{t("time")}</span>
                     <span className={styles.cardDetailValue}>
                       {event.date || "—"}
                     </span>
@@ -261,7 +263,7 @@ const VehiclePassesTable = ({
             );
           })
         ) : (
-          <div className={styles.cardEmpty}>Нет данных</div>
+          <div className={styles.cardEmpty}>{t("noData")}</div>
         )}
       </div>
     );
@@ -275,7 +277,7 @@ const VehiclePassesTable = ({
             <th>№</th>
             <th onClick={() => handleSort("plate_number")}>
               <span className={styles.headerContent}>
-                Транспорт
+                {t("vehicle")}
                 <SortArrow
                   active={sortField === "plate_number"}
                   order={sortOrder}
@@ -284,7 +286,7 @@ const VehiclePassesTable = ({
             </th>
             <th onClick={() => handleSort("branch_name")}>
               <span className={styles.headerContent}>
-                Филиал
+                {t("branch")}
                 <SortArrow
                   active={sortField === "branch_name"}
                   order={sortOrder}
@@ -293,7 +295,7 @@ const VehiclePassesTable = ({
             </th>
             <th onClick={() => handleSort("gate_name")}>
               <span className={styles.headerContent}>
-                Ворота
+                {t("gates")}
                 <SortArrow
                   active={sortField === "gate_name"}
                   order={sortOrder}
@@ -302,7 +304,7 @@ const VehiclePassesTable = ({
             </th>
             <th onClick={() => handleSort("direction")}>
               <span className={styles.headerContent}>
-                Направление
+                {t("direction")}
                 <SortArrow
                   active={sortField === "direction"}
                   order={sortOrder}
@@ -311,11 +313,11 @@ const VehiclePassesTable = ({
             </th>
             <th onClick={() => handleSort("date")}>
               <span className={styles.headerContent}>
-                Время
+                {t("time")}
                 <SortArrow active={sortField === "date"} order={sortOrder} />
               </span>
             </th>
-            <th>Изображение</th>
+            <th>{t("image")}</th>
           </tr>
         </thead>
         <tbody>
@@ -346,7 +348,7 @@ const VehiclePassesTable = ({
             })
           ) : (
             <tr>
-              <td colSpan="11">Нет данных</td>
+              <td colSpan="11">{t("noData")}</td>
             </tr>
           )}
         </tbody>

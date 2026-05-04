@@ -76,7 +76,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
       <div className={styles.row}>
         <div>
           <label htmlFor="name">
-            Название <span style={{ color: "red" }}>*</span>
+            {t("name")} <span style={{ color: "red" }}>*</span>
           </label>
           <input
             type="text"
@@ -90,13 +90,13 @@ const AddDoor = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="branch_id">Филиал</label>
+          <label htmlFor="branch_id">{t("branch")}</label>
           <select
             name="branch_id"
             value={formData.branch_id}
             onChange={handleChange}
           >
-            <option value="">— не выбран —</option>
+            <option value="">{t("notSelected")}</option>
             {branches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -108,7 +108,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
-          <label htmlFor="latitude">Широта (latitude)</label>
+          <label htmlFor="latitude">{t("latitude")}</label>
           <input
             type="number"
             name="latitude"
@@ -119,7 +119,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
           />
         </div>
         <div>
-          <label htmlFor="longitude">Долгота (longitude)</label>
+          <label htmlFor="longitude">{t("longitude")}</label>
           <input
             type="number"
             name="longitude"

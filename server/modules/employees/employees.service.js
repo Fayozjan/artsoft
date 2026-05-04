@@ -34,7 +34,7 @@ export const EmployeeService = {
 
     const employeeData = removeUndefined({
       employee_number: rawData.employee_number
-        ? Number(rawData.employee_number)
+        ? String(rawData.employee_number)
         : undefined,
       last_name: rawData.last_name,
       first_name: rawData.first_name,
@@ -145,6 +145,8 @@ export const EmployeeService = {
       branch_id,
       department_id,
       employee_id,
+      employee_ids,
+      not_employee_ids,
       position_id,
       search,
       gender,
@@ -162,6 +164,9 @@ export const EmployeeService = {
     if (branch_id) where.branch_id = Number(branch_id);
     if (department_id) where.department_id = Number(department_id);
     if (employee_id) where.id = Number(employee_id);
+    if (employee_ids?.length) where.id = { in: employee_ids.map(Number) };
+    if (not_employee_ids?.length)
+      where.id = { notIn: not_employee_ids.map(Number) };
     if (position_id) where.position_id = Number(position_id);
     if (gender) where.gender = gender;
 
@@ -190,10 +195,7 @@ export const EmployeeService = {
       let exactNumericFilters = [];
       if (isValidInt4) {
         // Поиск по числовым полям только если число "влезает" в INT4
-        exactNumericFilters = [
-          { id: numericValue },
-          { employee_number: numericValue },
-        ];
+        exactNumericFilters = [{ id: numericValue }];
       }
 
       // 3. Строковые фильтры (ПИНФЛ и Паспорт — всегда строки)
@@ -525,7 +527,7 @@ export const EmployeeService = {
     const data = {};
 
     if (raw.employee_number !== undefined) {
-      data.employee_number = Number(raw.employee_number);
+      data.employee_number = String(raw.employee_number);
     }
 
     const scalarFields = [

@@ -65,7 +65,7 @@ model employment_orders {
 
 model employees {
   id                                       Int                @id @default(autoincrement())
-  employee_number                          Int?               @unique
+  employee_number                          String?               @unique
   last_name                                String?
   first_name                               String?
   middle_name                              String?            @db.VarChar(255)
@@ -216,6 +216,7 @@ model users {
   personal_menus    String[]  @default([])
   active_branch_id Int?
   ignore_gps_check Boolean  @default(false)
+  settings         Json?
   added_at   DateTime @default(now()) @db.Timestamptz(6)
 
   employee     employees? @relation(fields: [employee_id], references: [id])
@@ -277,6 +278,11 @@ model work_schedules {
   late_tolerance_minutes        Int? @default(0)
   early_leave_tolerance_minutes Int? @default(0)
   late_leave_tolerance_minutes  Int? @default(0)
+
+  // Метод расчёта отработанного времени для fixed/remote
+  // by_period  — сумма всех пар вход/выход
+  // first_last — от первого входа до последнего выхода
+  time_calc_method String? @db.VarChar @default("by_period")
 
   employees          employees[]
   employeeScheduleHistory employee_schedule_history[]
@@ -466,6 +472,7 @@ model payroll_sheet_items {
   salary_balance     Decimal @db.Decimal(15, 2) @default(0)
   paid_amount        Decimal @db.Decimal(15, 2) @default(0)
   status             String  @db.VarChar(20)    @default("draft")
+  payout_status      String  @db.VarChar(20)    @default("unpaid")
 
   sheet       payroll_sheets        @relation(fields: [sheet_id],    references: [id], onDelete: Cascade)
   employee    employees             @relation(fields: [employee_id], references: [id])
