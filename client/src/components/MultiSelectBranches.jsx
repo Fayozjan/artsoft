@@ -65,40 +65,47 @@ const MultiSelectBranches = ({ options = [], selected = [], onChange }) => {
 
   return (
     <div ref={containerRef} className={styles.container}>
-      <input
-        type="text"
-        placeholder={t("searchByBranch")}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        onFocus={() => setIsOpen(true)}
-        className={styles.searchInput}
-      />
+      <div className={styles.inputWrapper}>
+        <input
+          type="text"
+          placeholder={t("searchByBranch")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          className={`${styles.searchInput} ${safeSelected.length ? styles.searchInputActive : ""}`}
+        />
+        {safeSelected.length > 0 && (
+          <span className={styles.countBadge}>{safeSelected.length}</span>
+        )}
+      </div>
 
       {isOpen && (
         <div className={styles.options}>
-          {sortedFilteredOptions.map((option) => (
-            <div
-              key={option.id}
-              onClick={() =>
-                option.id === "select_all"
-                  ? handleSelectAll()
-                  : handleSelect(option)
-              }
-              className={styles.option}
-            >
-              <input
-                type="checkbox"
-                checked={
+          {sortedFilteredOptions.map((option) => {
+            const isChecked =
+              option.id === "select_all"
+                ? safeSelected.length === options.length
+                : safeSelected.includes(option.id);
+            return (
+              <div
+                key={option.id}
+                onClick={() =>
                   option.id === "select_all"
-                    ? safeSelected.length === options.length
-                    : safeSelected.includes(option.id)
+                    ? handleSelectAll()
+                    : handleSelect(option)
                 }
-                readOnly
-                className={styles.checkbox}
-              />
-              {option.name}
-            </div>
-          ))}
+                className={`${styles.option} ${isChecked ? styles.optionSelected : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  readOnly
+                  className={styles.checkbox}
+                />
+                {option.name}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

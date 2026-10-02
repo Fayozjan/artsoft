@@ -1,6 +1,44 @@
 .multiSelectEmployees {
   position: relative;
   font-size: var(--font-small);
+  width: 100%;
+  box-sizing: border-box;
+
+  .inputWrapper {
+    position: relative;
+  }
+
+  .searchInput {
+    width: 100%;
+    padding: 5px 10px;
+    border: 1px solid rgba(162, 161, 168, 0.2);
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+
+  .searchInputActive {
+    border-color: var(--third-color);
+    padding-right: 32px;
+  }
+
+  .countBadge {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--third-color);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
+  }
 
   .options {
     max-height: 180px;
@@ -8,7 +46,7 @@
     left: 0;
     right: 0;
     width: 100%;
-    background-color: #fff;
+    background-color: var(--card-bg);
     overflow-y: auto;
     border: 1px solid rgba(162, 161, 168, 0.4);
     border-radius: 4px;
@@ -21,14 +59,26 @@
       gap: 5px;
       padding: 4px;
       cursor: pointer;
-      border-bottom: 1px solid #f1f1f1;
+      border-bottom: 1px solid var(--border-subtle);
+
+      &:hover {
+        background-color: var(--table-header);
+      }
 
       .checkbox {
         padding: 0;
         margin: 0;
         width: 15px;
         height: 15px;
+        accent-color: var(--third-color);
       }
+    }
+
+    .optionSelected {
+      background-color: var(--table-header);
+      font-weight: 600;
+      color: var(--third-color);
+      border-left: 3px solid var(--third-color);
     }
 
     .noData {

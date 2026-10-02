@@ -2,13 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 import { useAuthStore } from "../stores/authStore";
-import TelegramPageHeader from "./TelegramPageHeader";
 import { FacePassesService } from "../api";
 import { getAttendanceByEmployeeId } from "../api/attendance";
 
 import styles from "./AddFacePassTelegram.module.scss";
 
-const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
+const AddFacePassTelegram = ({ onSuccess }) => {
   const { t } = useTranslation();
   const { showAlert } = useAlertStore();
   const { access } = useAuthStore();
@@ -27,11 +26,13 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
   const [cameraOpen, setCameraOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
-  const [direction, setDirection] = useState("entry");
+  // null — направление ещё не известно, кнопка скрыта (иначе мигает «Начать работу»)
+  const [direction, setDirection] = useState(null);
   const [shiftLoading, setShiftLoading] = useState(true);
 
   useEffect(() => {
     if (!access?.employee_id) {
+      setDirection("entry");
       setShiftLoading(false);
       return;
     }
@@ -45,7 +46,7 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
         const isCurrentlyInside = lastEvent?.direction === "entry";
         setDirection(isCurrentlyInside ? "exit" : "entry");
       })
-      .catch(() => {})
+      .catch(() => setDirection("entry"))
       .finally(() => setShiftLoading(false));
   }, [access?.employee_id]);
 
@@ -255,19 +256,7 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
 
   return (
     <div className={styles.screenWrapper}>
-      <TelegramPageHeader title={t("workRegistration")} onBack={handleClose} />
-
       <div className={styles.scrollContent}>
-        <div className={styles.directionLabel}>
-          <span
-            className={`${styles.directionBadge} ${direction === "exit" ? styles.directionExit : styles.directionEntry}`}
-          >
-            {direction === "entry"
-              ? t("startWork") || "Начать работу"
-              : t("finishWork") || "Завершить работу"}
-          </span>
-        </div>
-
         <div className={styles.cameraSection}>
           <div className={styles.cameraContainer}>
             <video
@@ -342,16 +331,26 @@ const AddFacePassTelegram = ({ handleClose, onSuccess }) => {
           </div>
         )}
         <button
-          className={`${styles.applyBtn} ${direction === "exit" ? styles.finishBtn : ""}`}
+          className={`${styles.applyBtn} ${
+            direction === "exit"
+              ? styles.finishBtn
+              : direction === "entry"
+                ? styles.startBtn
+                : styles.pendingBtn
+          }`}
           onClick={handleSubmit}
-          disabled={isSubmitting || !photo || !location || shiftLoading}
+          disabled={
+            isSubmitting || !photo || !location || shiftLoading || !direction
+          }
           type="button"
         >
           {isSubmitting
             ? t("sending") || "Отправка..."
             : direction === "entry"
-              ? t("entry") || "Отметить вход"
-              : t("exit") || "Отметить выход"}
+              ? t("startWork") || "Начать работу"
+              : direction === "exit"
+                ? t("finishWork") || "Завершить работу"
+                : null}
         </button>
       </div>
     </div>

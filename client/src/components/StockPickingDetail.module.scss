@@ -1,0 +1,255 @@
+.detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+
+    .backBtn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: calc(var(--font-small) + 2px);
+    }
+
+    .titleRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+  }
+
+  .statusBadge {
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: var(--font-small);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  // Кто добавил/подтвердил/провёл — аватарка + ФИО, как на странице Сотрудники.
+  // Отдельная "карточка" с лёгким акцентным фоном — не сливается с блоком дат/сумм выше.
+  .peopleRow {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 0 14px 10px;
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(20, 85, 254, 0.04);
+  }
+
+  // Компактная карточка одного участника — своя белая плашка внутри
+  // общего акцентного блока, не сливается с соседними.
+  .personBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--card-bg);
+    // ФИО (EmployeeCell) своего font-size не задаёт — наследует отсюда,
+    // чуть мельче, чем на странице Сотрудники
+    font-size: calc(var(--font-small) - 1px);
+  }
+
+  .personHead {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .personLabel {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--placeholder-color);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+
+  .personFallback {
+    font-size: var(--font-small);
+    font-weight: 600;
+    color: var(--text-color);
+  }
+
+  .personDate {
+    font-size: 10px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    margin: 10px 14px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--bg-light, var(--card-bg));
+    border: 1px solid var(--border-color);
+
+    .metaItem {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      span:first-child {
+        font-size: var(--font-small);
+        color: var(--text-secondary);
+      }
+
+      span:last-child {
+        font-size: var(--font-body);
+        font-weight: 500;
+      }
+    }
+
+    .metaSub {
+      display: block;
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-secondary);
+    }
+  }
+
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0 14px 10px;
+    padding: 4px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-small);
+
+      th,
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      th {
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+
+      th:last-child,
+      td:last-child {
+        text-align: right;
+      }
+
+      tbody td:last-child {
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      tfoot td {
+        font-weight: 600;
+        border-bottom: none;
+        padding-top: 12px;
+      }
+
+      tfoot tr {
+        background: rgba(20, 85, 254, 0.06);
+      }
+
+      tfoot td:last-child {
+        font-size: calc(var(--font-body) + 3px);
+        font-weight: 700;
+        color: var(--third-color);
+        font-variant-numeric: tabular-nums;
+        border-radius: 0 6px 6px 0;
+      }
+
+      .totalLabel {
+        text-align: right;
+        border-radius: 6px 0 0 6px;
+      }
+
+      .numCol {
+        width: 28px;
+        text-align: center;
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+
+      .moveAttributes {
+        font-size: calc(var(--font-small) - 1px);
+        color: var(--text-secondary);
+      }
+
+      .moveNote {
+        font-style: italic;
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+      background: var(--card-bg);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+
+    .primary {
+      background: var(--third-color);
+      border-color: var(--third-color);
+      color: white;
+    }
+
+    .danger {
+      color: var(--badge-color-disabled);
+    }
+  }
+}

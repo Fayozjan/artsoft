@@ -1,16 +1,60 @@
 .container {
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
+
+  .inputWrapper {
+    position: relative;
+  }
 
   .searchInput {
+    width: 100%;
     padding: 5px 10px;
     border: 1px solid rgba(162, 161, 168, 0.2);
     border-radius: 5px;
+    box-sizing: border-box;
+  }
+
+  .searchInputActive {
+    border-color: var(--third-color);
+    padding-right: 32px;
+  }
+
+  // Внутри форм — рамка как у обычных input/select, а не бледная фильтровая.
+  &.formField {
+    .searchInput,
+    .options {
+      border-color: var(--border-color);
+    }
+
+    .searchInputActive {
+      border-color: var(--third-color);
+    }
+  }
+
+  .countBadge {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 10px;
+    background: var(--third-color);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
   }
 
   .options {
     margin-top: 4px;
     position: absolute;
-    background-color: #fff;
+    background-color: var(--card-bg);
     max-height: 300px;
     overflow-y: auto;
     border: 1px solid rgba(162, 161, 168, 0.2);
@@ -31,18 +75,32 @@
     .option {
       padding: 4px;
       cursor: pointer;
-      border-bottom: 1px solid #f1f1f1;
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       align-items: center;
 
+      &:hover {
+        background-color: var(--table-header);
+      }
+
       .checkbox {
         margin-right: 10px;
+        width: 14px;
+        height: 14px;
+        accent-color: var(--third-color);
       }
 
       input {
         width: auto;
         height: auto;
       }
+    }
+
+    .optionSelected {
+      background-color: var(--table-header);
+      font-weight: 600;
+      color: var(--third-color);
+      border-left: 3px solid var(--third-color);
     }
   }
 
@@ -52,5 +110,20 @@
     font-size: var(--font-body);
     text-align: center;
     user-select: none;
+  }
+}
+
+// Узкий экран (Telegram): список крупнее, пункты удобно нажимать
+@media (max-width: 600px) {
+  .container .options {
+    margin-top: 6px;
+    max-height: 260px;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    font-size: 15px;
+
+    .option {
+      padding: 12px 14px;
+    }
   }
 }

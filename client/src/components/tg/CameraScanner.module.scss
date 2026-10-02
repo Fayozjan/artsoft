@@ -1,0 +1,226 @@
+// Полноэкранная камера сканера кодов.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #000;
+  color: #fff;
+}
+
+.video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+// ── Верхняя строка ───────────────────────────────────────────────────────────
+
+.top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: calc(#{$safe-top} + 12px) 14px 12px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.55), transparent);
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roundBtn,
+.roundSpacer {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+}
+
+.roundBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+.roundBtnOn {
+  background: #ffd60a;
+  color: #000;
+}
+
+// ── Видоискатель ─────────────────────────────────────────────────────────────
+// Затемнение вокруг рамки — огромная тень: внутри рамки картинка чистая.
+
+.frame {
+  position: relative;
+  z-index: 2;
+  width: min(72vw, 320px);
+  aspect-ratio: 1;
+  border-radius: 24px;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  border: 0 solid #fff;
+}
+
+.cornerTl {
+  top: -2px;
+  left: -2px;
+  border-top-width: 4px;
+  border-left-width: 4px;
+  border-top-left-radius: 24px;
+}
+
+.cornerTr {
+  top: -2px;
+  right: -2px;
+  border-top-width: 4px;
+  border-right-width: 4px;
+  border-top-right-radius: 24px;
+}
+
+.cornerBl {
+  bottom: -2px;
+  left: -2px;
+  border-bottom-width: 4px;
+  border-left-width: 4px;
+  border-bottom-left-radius: 24px;
+}
+
+.cornerBr {
+  right: -2px;
+  bottom: -2px;
+  border-right-width: 4px;
+  border-bottom-width: 4px;
+  border-bottom-right-radius: 24px;
+}
+
+.line {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 8%;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, #4d8dff 20%, #4d8dff 80%, transparent);
+  box-shadow: 0 0 12px 2px rgba(77, 141, 255, 0.7);
+  animation: sweep 1.9s ease-in-out infinite alternate;
+}
+
+.hint {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: calc(#{$safe-bottom} + 44px);
+  z-index: 3;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+// ── Ошибка камеры ────────────────────────────────────────────────────────────
+
+.error {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: calc(#{$safe-bottom} + 20px);
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(28, 28, 30, 0.96);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.45;
+    text-align: center;
+  }
+}
+
+.errorBtn {
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: #1455fe;
+  color: #fff;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.errorBtnGhost {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@keyframes sweep {
+  from {
+    top: 8%;
+  }
+
+  to {
+    top: 90%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .line {
+    animation: none;
+    top: 50%;
+  }
+}

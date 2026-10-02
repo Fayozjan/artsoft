@@ -3,6 +3,7 @@ import {
   getActiveBranches,
   getActiveDepartments,
   getActivePositions,
+  EmployeeService,
 } from "../api";
 
 export const useFilterDataStore = create((set, get) => ({
@@ -13,20 +14,32 @@ export const useFilterDataStore = create((set, get) => ({
 
   fetchAllData: async () => {
     try {
-      const [branchesRes, departmentsRes, positionsRes] = await Promise.all([
-        getActiveBranches(),
-        getActiveDepartments(),
-        getActivePositions(),
-      ]);
+      const [branchesRes, departmentsRes, positionsRes, employeesRes] =
+        await Promise.all([
+          getActiveBranches(),
+          getActiveDepartments(),
+          getActivePositions(),
+          EmployeeService.getActive(),
+        ]);
 
       set({
         branches: branchesRes?.data || [],
         departments: departmentsRes?.data || [],
         positions: positionsRes?.data || [],
+        employees: employeesRes?.data || [],
       });
     } catch (error) {
       console.error("Ошибка при загрузке данных:", error);
     }
+  },
+
+  // Список сотрудников/отделов зависит от выбранного филиала логина —
+  // после его смены закэшированные данные устарели. Если ещё ничего не
+  // загружали, ничего не делаем: данные загрузит первый потребитель.
+  refresh: async () => {
+    const { branches, employees } = get();
+    if (!branches.length && !employees.length) return;
+    await get().fetchAllData();
   },
 
   deleteUser: (id) => {

@@ -10,10 +10,27 @@ function formatEventTime(dateStr) {
   });
 }
 
-const TimesheetCell = ({ day, dayData, employeeId, isExpanded }) => {
-  const baseClass = dayData?.timeOff
-    ? `${styles.cell} ${styles.cellGreen}`
-    : styles.cell;
+// Пометки производственного календаря подсвечивают колонку целиком
+const CALENDAR_DAY_STYLE = {
+  holiday: "holidayCol",
+  weekend: "weekendCol",
+  short: "shortCol",
+};
+
+const TimesheetCell = ({ day, dayData, calendarDay, employeeId, isExpanded }) => {
+  // Отгул важнее пометки календаря — свою заливку он не уступает
+  const markStyle =
+    !dayData?.timeOff && calendarDay
+      ? styles[CALENDAR_DAY_STYLE[calendarDay.day_type]]
+      : null;
+
+  const baseClass = [
+    styles.cell,
+    dayData?.timeOff ? styles.cellGreen : "",
+    markStyle || "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   if (isExpanded) {
     const events = dayData?.events || [];
@@ -67,5 +84,6 @@ export default React.memo(
     prevProps.day === nextProps.day &&
     prevProps.employeeId === nextProps.employeeId &&
     prevProps.dayData === nextProps.dayData &&
+    prevProps.calendarDay === nextProps.calendarDay &&
     prevProps.isExpanded === nextProps.isExpanded,
 );

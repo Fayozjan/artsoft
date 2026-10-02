@@ -1,0 +1,343 @@
+// Экран выдачи / правки имущества в Telegram: поля крупные, позиции — карточками
+// со счётчиком количества. Общие поля и кнопки — из tg/TgUi.module.scss.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+$accent: var(--third-color, #1455fe);
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  transform: translateZ(0);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 0 calc(24px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(#{$safe-top} + 8px) 12px 10px 16px;
+  border-bottom: 0.5px solid var(--tg-separator);
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+}
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(20, 85, 254, 0.3);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 13px;
+  font-weight: 800;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.removeRowBtn {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(220, 38, 38, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+  }
+}
+
+.row2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+// ── Подсказки по вводу (замена datalist — не работает в WebKit на iOS) ────────
+
+.suggestRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: -2px;
+}
+
+.suggestChip {
+  flex-shrink: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background: var(--tg-hover);
+    color: $accent;
+  }
+}
+
+// ── Количество: степпер ────────────────────────────────────────────────────
+
+.stepper {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+
+  button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 100%;
+    padding: 0;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: $accent;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:active:not(:disabled) {
+      background: var(--tg-hover);
+    }
+
+    &:disabled {
+      color: var(--text-secondary);
+      opacity: 0.4;
+    }
+  }
+
+  input {
+    width: 44px;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 800;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      margin: 0;
+      -webkit-appearance: none;
+    }
+  }
+}
+
+// ── Добавить позицию ──────────────────────────────────────────────────────
+
+.addRowBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1.5px dashed var(--tg-separator);
+  border-radius: 14px;
+  background: transparent;
+  color: $accent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+// ── Скелетон ─────────────────────────────────────────────────────────────────
+
+.skLine {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

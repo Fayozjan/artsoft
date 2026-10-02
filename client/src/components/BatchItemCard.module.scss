@@ -1,0 +1,296 @@
+// Карточки позиций партии — общие для черновика (BatchReceiptDetail) и
+// принятой партии (WorkDistributionPanel), чтобы выглядели одинаково.
+// Ширина карточки ограничена (--card-max): на широком экране карточки не растягиваются
+// на всю строку, а стоят слева; на узком — сжимаются вместе с окном.
+.itemsGrid {
+  --card-max: 380px;
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, var(--card-max)));
+  justify-content: start;
+  gap: 16px;
+
+  @media (max-width: 1000px) {
+    grid-template-columns: repeat(2, minmax(0, var(--card-max)));
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.itemCard {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 12px;
+  background: var(--card-bg);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  }
+}
+
+// Карточка открывает позицию (принятая партия).
+.itemCardClickable {
+  cursor: pointer;
+
+  &:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
+}
+
+.itemCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 8px 12px;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border-subtle, var(--border-color));
+}
+
+// Название и размер стоят рядом слева; статус и удаление — справа.
+.itemCardTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.itemCardTitle {
+  min-width: 0;
+  font-weight: 700;
+  font-size: 15px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemCardActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.itemDeleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #dc262633;
+  border-radius: 8px;
+  background: #dc26260f;
+  color: #dc2626;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #dc262666;
+    outline-offset: 2px;
+  }
+}
+
+.itemCopyBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--third-color);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:hover {
+    background: var(--third-color);
+    border-color: var(--third-color);
+    color: #fff;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--third-color);
+    outline-offset: 2px;
+  }
+}
+
+.itemStartedBadge {
+  flex-shrink: 0;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f59e0b20;
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.itemSizeBadge {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--third-color);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+// Обе секции — одна и та же сетка 2 колонки; minmax(0, 1fr) не даёт длинному
+// значению раздвинуть колонку и вылезти за карточку.
+.itemCardBody,
+.itemCardFooter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 11px 14px;
+  padding: 13px 14px;
+}
+
+.itemCardBody {
+  flex: 1;
+}
+
+.itemCardFooter {
+  border-top: 1px dashed var(--border-subtle, var(--border-color));
+}
+
+.cardRowFull {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.cardRow {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.cardLabel {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardValue {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardValueEmpty {
+  font-weight: 400;
+  color: var(--text-secondary);
+  opacity: 0.55;
+}
+
+// ── Телефон (Telegram): те же карточки, что у позиций черновика в TG-версии ──
+@media (max-width: 640px) {
+  .itemsGrid {
+    gap: 8px;
+  }
+
+  .itemCard {
+    border: 0.5px solid var(--tg-separator);
+    border-radius: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .itemCardClickable {
+    -webkit-tap-highlight-color: transparent;
+
+    &:hover {
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      transform: none;
+    }
+
+    &:active {
+      background: var(--select-hover-color);
+      transform: scale(0.985);
+    }
+  }
+
+  .itemCardHeader {
+    min-height: 0;
+    padding: 8px 12px;
+    background: transparent;
+    border-bottom: 1px dashed var(--tg-separator);
+  }
+
+  .itemCardTitleGroup {
+    gap: 8px;
+  }
+
+  .itemCardTitle {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .itemSizeBadge {
+    padding: 2px 12px;
+    border-radius: 999px;
+    background: rgba(20, 85, 254, 0.12);
+    color: var(--third-color, #1455fe);
+    font-size: 18px;
+    line-height: 1.2;
+  }
+
+  .itemCardBody,
+  .itemCardFooter {
+    gap: 8px 12px;
+    padding: 9px 12px;
+  }
+
+  .cardLabel {
+    font-size: 11px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .cardValue {
+    font-size: 15px;
+  }
+}

@@ -14,6 +14,14 @@ export default defineConfig({
   },
   server: {
     port: 5000,
+    // https-туннель для Telegram Mini App (cloudflared / ngrok)
+    allowedHosts: [
+      ".trycloudflare.com",
+      ".ngrok-free.app",
+      ".ngrok-free.dev",
+      ".ngrok.app",
+      ".ngrok.io",
+    ],
     proxy: {
       "/api": {
         target: "http://localhost:7000",

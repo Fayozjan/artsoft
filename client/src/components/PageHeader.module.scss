@@ -1,0 +1,314 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-shrink: 0;
+}
+
+// ─── Шапка ────────────────────────────────────────────────────────────────────
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  background: var(--header-bg, var(--card-bg));
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+// Вся крошка — одна кнопка: раздел › страница
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 7px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &:hover {
+    background: var(--bg-light);
+    border-color: var(--border-subtle);
+  }
+}
+
+.crumbOpen {
+  background: var(--bg-light);
+  border-color: var(--third-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--third-color) 14%, transparent);
+
+  .crumbIcon,
+  .chevron {
+    color: var(--third-color);
+  }
+
+  .chevron {
+    transform: rotate(180deg);
+  }
+}
+
+.crumbIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: calc(var(--font-small) + 3px);
+  height: calc(var(--font-small) + 3px);
+  color: var(--third-color);
+  transition: color 0.15s;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.crumbPath {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 2px;
+  min-width: 0;
+}
+
+.crumbParent {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.crumbCurrent {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color);
+  font-size: var(--font-small);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+// Если подстраницы нет, название раздела и есть заголовок страницы
+.crumbParentLeaf {
+  color: var(--text-color);
+  font-size: var(--font-small);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.sep {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.45;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.15s;
+}
+
+.widgetsToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    color: var(--third-color);
+    border-color: var(--third-color);
+    background: var(--bg-light);
+  }
+}
+
+// ─── Выпадающая сетка подстраниц ──────────────────────────────────────────────
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 12px;
+  z-index: 30;
+  box-sizing: border-box;
+  width: 428px;
+  max-width: calc(100vw - 40px);
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 12px 10px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 16px 44px rgba(15, 23, 42, 0.16);
+  transform-origin: top left;
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px 10px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  padding: 3px 9px 3px 5px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    color: var(--third-color);
+    border-color: var(--third-color);
+    background: var(--bg-light);
+  }
+}
+
+.panelTitle {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  // Ровно 5 значков в ряд
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px 2px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px 10px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: var(--bg-light);
+    color: var(--text-color);
+
+    .tileIcon {
+      border-color: var(--third-color);
+      color: var(--third-color);
+      transform: translateY(-1px);
+    }
+  }
+
+  &:active .tileIcon {
+    transform: scale(0.95);
+  }
+}
+
+.tileIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    color 0.16s,
+    transform 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+
+  // Значки из сайдбара приходят с собственными width/height — приводим к одному
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.tileLabel {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-width: 80px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  color: inherit;
+}
+
+.tileActive {
+  color: var(--text-color);
+
+  .tileIcon {
+    border-color: var(--third-color);
+    background: color-mix(in srgb, var(--third-color) 12%, transparent);
+    color: var(--third-color);
+  }
+
+  .tileLabel {
+    font-weight: 700;
+  }
+}

@@ -12,12 +12,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  background: #fcfcfc;
+  background: var(--card-bg);
   border-radius: 16px;
   padding: 22px 22px 20px;
   min-width: 260px;
   max-width: 300px;
-  border: 1.5px solid #b3b2b1;
+  border: 1.5px solid var(--border-color);
 }
 
 .tag {
@@ -46,14 +46,14 @@
 .title {
   font-size: var(--font-small);
   font-weight: 700;
-  color: #2c1a0e;
+  color: var(--text-color);
   margin: 0 0 7px;
   line-height: 1.3;
 }
 
 .text {
   font-size: 13px;
-  color: #9a7e6a;
+  color: var(--placeholder-color);
   line-height: 1.55;
   margin: 0 0 20px;
 }
@@ -89,8 +89,8 @@
   flex: 1;
   padding: 10px 0;
   background: transparent;
-  color: #616161;
-  border: 1.5px solid #c6c6c6;
+  color: var(--text-secondary);
+  border: 1.5px solid var(--border-color);
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
@@ -100,8 +100,8 @@
     color 0.15s ease;
 
   &:hover {
-    border-color: #9e9e9e;
-    color: #000000;
+    border-color: var(--border-color);
+    color: var(--text-color);
   }
 
   &:active {

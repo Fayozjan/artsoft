@@ -17,7 +17,8 @@ api.interceptors.response.use(
       [401, 403].includes(error.response?.status) &&
       !originalRequest._retry &&
       !originalRequest.url.includes("/auth/refresh") &&
-      !originalRequest.url.includes("/auth/login")
+      !originalRequest.url.includes("/auth/login") &&
+      !originalRequest.url.includes("/auth/telegram")
     ) {
       originalRequest._retry = true;
 
@@ -33,7 +34,8 @@ api.interceptors.response.use(
         return api(originalRequest); // повторяем оригинальный запрос
       } catch {
         useAuthStore.getState().logout();
-        window.location.href = "/";
+        const isTelegram = window.location.pathname.startsWith("/tg");
+        window.location.href = isTelegram ? "/tg" : "/";
       }
     }
 

@@ -1,21 +1,15 @@
 import { useCallback } from "react";
 import React from "react";
 import { useScreenStack } from "../context/ScreenStackContext";
-import AddEmployeeTelegram from "../components/AddEmployeeTelegram";
+import EmployeeFormScreenTelegram from "../components/EmployeeFormScreenTelegram";
 
 export const useOpenAddEmployee = (onSuccess) => {
-  const { pushScreen, popScreen } = useScreenStack();
+  const { pushScreen } = useScreenStack();
 
   return useCallback(() => {
     pushScreen(
       "add-employee",
-      React.createElement(AddEmployeeTelegram, {
-        handleClose: popScreen,
-        onSuccess: () => {
-          onSuccess?.();
-          popScreen();
-        },
-      }),
+      React.createElement(EmployeeFormScreenTelegram, { onSaved: onSuccess }),
     );
-  }, [pushScreen, popScreen, onSuccess]);
+  }, [pushScreen, onSuccess]);
 };

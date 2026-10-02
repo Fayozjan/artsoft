@@ -1,4 +1,4 @@
-.overlay {
+﻿.overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
@@ -9,7 +9,7 @@
 }
 
 .content {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 4px;
   min-width: 70vw;
   max-width: 90vw;

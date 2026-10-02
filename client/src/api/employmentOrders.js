@@ -34,6 +34,11 @@ export const addEmploymentOrder = async (data) => {
   };
 };
 
+export const addBulkEmploymentOrders = async (data) => {
+  const res = await api.post("/employment-orders/bulk", data);
+  return res.data;
+};
+
 export const editEmploymentOrderById = async (id, data) => {
   const res = await api.put(`/employment-orders/${id}`, data);
   return {
@@ -48,4 +53,9 @@ export const deleteEmploymentOrderById = async (id) => {
     data: res.data.data,
     success: res.data.success,
   };
+};
+
+export const getEmploymentOrdersStats = async () => {
+  const res = await api.get("/employment-orders/stats");
+  return { success: res.data.success, stats: res.data.stats };
 };

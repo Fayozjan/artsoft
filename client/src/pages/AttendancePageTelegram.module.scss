@@ -1,37 +1,39 @@
-.attendancePage {
+// Посещаемость в Telegram — страница.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+.page {
   position: relative;
-  height: 100dvh;
   width: 100%;
+  height: 100dvh;
   overflow: hidden;
-  background: rgba(18, 18, 18, 0.9);
+  background: var(--tg-bg);
+  color: var(--text-color);
 }
 
-.header {
+.topGlass {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: calc(
-    var(--tg-safe-area-inset-top, 0px) +
-      var(--tg-content-safe-area-inset-top, 0px)
-  );
+  height: $safe-top;
   z-index: 200;
   pointer-events: none;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition:
-    background 0.25s ease,
-    backdrop-filter 0.25s ease;
+  background: var(--tg-bg);
 }
 
-.main {
+.scroll {
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
-  background: rgba(18, 18, 18, 0.9);
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+  // запас под нижнее меню Telegram-режима
+  padding-bottom: calc(72px + #{$safe-bottom});
   scrollbar-width: none;
 
   &::-webkit-scrollbar {
@@ -39,64 +41,297 @@
   }
 }
 
-.searchFilterRow {
+// ── Заголовок и дата ─────────────────────────────────────────────────────────
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(#{$safe-top} + 8px) 12px 2px 16px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.roundBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.93);
+  }
+}
+
+.roundBtnActive {
+  background: rgba(20, 85, 254, 0.14);
+  color: var(--third-color, #1455fe);
+}
+
+.filterBtn {
+  width: 44px;
+  height: 44px;
+}
+
+.spin svg {
+  animation: spin 0.8s linear infinite;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.dateBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 12px 12px;
+  padding: 6px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 10px 24px -16px rgba(0, 0, 0, 0.2);
+}
+
+.navBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.14s ease,
+    opacity 0.14s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active:not(:disabled) {
+    background: var(--tg-surface);
+  }
+
+  &:disabled {
+    opacity: 0.28;
+    cursor: default;
+  }
+}
+
+.datePill {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.14s ease;
+
+  &:active {
+    background: var(--tg-surface);
+  }
+}
+
+.dateIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(20, 85, 254, 0.12);
+  color: var(--third-color, #1455fe);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.dateText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  b {
+    overflow: hidden;
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.25px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  small {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--text-secondary);
+  }
+}
+
+// ── Содержимое ───────────────────────────────────────────────────────────────
+
+.content > * {
+  transition: opacity 0.18s ease;
+}
+
+// Пока грузится другая дата — прежние цифры притушены и не кликаются.
+// Липкую панель не трогаем: она должна оставаться сплошной.
+.stale > *:not(.sticky) {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+// ── Поиск, переключатель вида, активные фильтры ──────────────────────────────
+
+.sticky {
+  position: sticky;
+  top: $safe-top;
+  z-index: 30;
+  padding: 10px 12px 8px;
+  background: var(--tg-bg);
+}
+
+.searchRow {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: calc(
-      var(--tg-safe-area-inset-top, 0px) +
-        var(--tg-content-safe-area-inset-top, 0px)
-    )
-    8px 8px;
-  background: rgba(18, 18, 18, 0.9);
+  margin-bottom: 10px;
 }
 
 .searchBox {
-  flex: 1;
   display: flex;
+  flex: 1;
   align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 0 10px;
-  height: 36px;
+  gap: 8px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--third-color, #1455fe);
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
 }
 
 .searchIcon {
   display: flex;
-  align-items: center;
   flex-shrink: 0;
-  color: #d6d6d6;
+  color: var(--text-secondary);
 
   svg {
-    width: 15px;
-    height: 15px;
-  }
-}
-
-.searchBox input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 14px;
-  color: var(--tg-theme-text-color, #f3f1f1);
-  min-width: 0;
-
-  &::placeholder {
-    color: #6b6b70;
+    width: 19px;
+    height: 19px;
   }
 }
 
 .clearBtn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  color: #8e8e93;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
 
   svg {
     width: 14px;
@@ -104,357 +339,190 @@
   }
 }
 
-.filterBtn {
-  position: relative;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  cursor: pointer;
+// Переключатель вида — «сегмент» в стиле iOS
+.segment {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-
-  svg {
-    color: #d6d6d6;
-    width: 18px;
-    height: 18px;
-  }
-
-  &:active {
-    background: rgba(255, 255, 255, 0.15);
-  }
+  gap: 2px;
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--tg-surface);
 }
 
-.filterBtnActive {
-  background: rgba(36, 129, 204, 0.18);
-  border-color: rgba(36, 129, 204, 0.4);
-}
-
-.filterBadge {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
-  background: #ff3b30;
-  border-radius: 50%;
-  border: 1px solid rgba(18, 18, 18, 0.96);
-}
-
-.chipsRow {
-  top: calc(
-    var(--tg-safe-area-inset-top, 0px) +
-      var(--tg-content-safe-area-inset-top, 0px)
-  );
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0px 10px 5px;
-  overflow-x: auto;
-  flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  background: rgba(18, 18, 18, 0.9);
-}
-
-.chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 28px;
-  padding: 0 11px;
-  border-radius: 20px;
-  border: 1px solid var(--chip-border);
-  background-color: rgba(255, 255, 255, 0.06);
-  color: var(--chip-color);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
+.segmentItem {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 34px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
   white-space: nowrap;
-  flex-shrink: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
   transition:
     background-color 0.18s ease,
-    border-color 0.18s ease,
     color 0.18s ease,
-    transform 0.12s ease;
-
-  &:active {
-    transform: scale(0.96);
-  }
+    box-shadow 0.18s ease;
 }
 
-.chipActive {
-  background-color: var(--chip-active-bg) !important;
-  border-color: var(--chip-active-bg) !important;
-  color: #fff !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-
-  .chipCount {
-    background: rgba(255, 255, 255, 0.25);
-    color: #fff;
-  }
+.segmentActive {
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  color: var(--text-color);
 }
 
-.chipCount {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 18px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.12);
-  color: var(--chip-color);
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease;
-}
-
-.filterPage {
+.activeChips {
   display: flex;
-  flex-direction: column;
-  height: 100vh;
-  background: rgba(18, 18, 18, 0.9);
-  color: #bbb;
-
-  .filterHeader {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-top: calc(
-      var(--tg-safe-area-inset-top, 0px) +
-        var(--tg-content-safe-area-inset-top, 0px)
-    );
-  }
-
-  .filterTitle {
-    font-size: 16px;
-    font-weight: 600;
-  }
-
-  .filterBody {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    padding: 5px 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-
-  .filterSection {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  .fieldLabel {
-    font-size: 14px;
-    font-weight: 600;
-    padding-left: 2px;
-  }
-
-  .dateInput {
-    height: 38px;
-    width: 100%;
-    padding: 0 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(162, 161, 168, 0.4);
-    font-size: 13px;
-    font-weight: 500;
-    box-sizing: border-box;
-    cursor: pointer;
-    transition: border-color 0.2s;
-    background: #2e2e2e;
-    color: white;
-
-    appearance: none;
-    -webkit-appearance: none;
-
-    &:focus {
-      outline: none;
-      border-color: var(--third-color, #4a90e2);
-    }
-  }
-
-  .select {
-    height: 38px;
-    width: 100%;
-    padding: 0 8px;
-    background: #2e2e2e;
-    border-radius: 8px;
-    border: 1px solid rgba(162, 161, 168, 0.4);
-    font-size: 13px;
-    font-weight: 500;
-    color: white;
-  }
-
-  .resetBtn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--third-color, #4a90e2);
-    padding: 10px 0;
-    border-radius: 6px;
-    transition: background 0.15s;
-    text-align: center;
-
-    &:active {
-      background: rgba(0, 0, 0, 0.05);
-    }
-  }
-
-  .filterFooter {
-    flex-shrink: 0;
-    padding: 8px 16px;
-    padding-bottom: calc(
-      env(safe-area-inset-bottom) + var(--tg-safe-area-inset-bottom, 0px) + 50px
-    );
-  }
-
-  .applyBtn {
-    width: 100%;
-    height: 46px;
-    border-radius: 10px;
-    border: none;
-    background: var(--third-color, #4a90e2);
-    color: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-
-    &:active {
-      opacity: 0.85;
-    }
-  }
-}
-
-.stackRoot {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.screen {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  transition:
-    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-
-.screenActive {
-  transform: translateX(0);
-  opacity: 1;
-  pointer-events: auto;
-  z-index: 10;
-}
-
-.screenBehind {
-  transform: translateX(-100%);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 5;
-}
-
-.screenHidden {
-  transform: translateX(100%);
-  opacity: 0;
-  pointer-events: none;
-  z-index: 1;
-}
-
-// ─── Active Filters Bar ───────────────────────────────────────────────────────
-
-.activeFiltersBar {
-  position: sticky;
-  top: calc(
-    var(--tg-safe-area-inset-top, 0px) +
-      var(--tg-content-safe-area-inset-top, 0px)
-  );
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0px 10px 5px;
+  gap: 6px;
+  margin-top: 10px;
   overflow-x: auto;
-  flex-wrap: nowrap;
   scrollbar-width: none;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  -webkit-overflow-scrolling: touch;
+
   &::-webkit-scrollbar {
     display: none;
   }
 }
 
-.activeFiltersBar:empty {
-  display: none;
-}
-
-.activeFilterTag {
+.activeChip {
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
-  height: 24px;
-  padding: 0 8px 0 9px;
-  border-radius: 20px;
-  border: 1px solid var(--tag-border, rgba(255, 255, 255, 0.15));
-  background: var(--tag-bg, rgba(255, 255, 255, 0.07));
-  color: var(--tag-color, #ccc);
-  font-size: 11px;
-  font-weight: 500;
+  height: 28px;
+  padding: 0 6px 0 11px;
+  border-radius: 999px;
+  background: rgba(var(--tone, 20, 85, 254), 0.14);
+  color: var(--tone-text, var(--third-color, #1455fe));
+  font-size: 12px;
+  font-weight: 700;
   white-space: nowrap;
-  flex-shrink: 0;
-
-  svg {
-    width: 12px;
-    height: 12px;
-    opacity: 0.7;
-  }
 
   button {
     display: flex;
     align-items: center;
-    background: none;
-    border: none;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
     padding: 0;
-    margin-left: 2px;
-    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+    background: rgba(var(--tone, 20, 85, 254), 0.18);
     color: inherit;
-    opacity: 0.55;
-    transition: opacity 0.15s;
-
-    &:active {
-      opacity: 1;
-    }
+    cursor: pointer;
 
     svg {
-      width: 10px;
-      height: 10px;
-      color: var(--tag-color, #ccc);
+      width: 11px;
+      height: 11px;
     }
   }
 }
 
-.activeFilterDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
+// ── Поле выбора в шторке фильтров ────────────────────────────────────────────
+
+.select {
+  position: relative;
+  display: block;
+
+  select {
+    padding-right: 40px;
+    text-overflow: ellipsis;
+  }
+
+  svg {
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+}
+
+// ── Скелетон списка ──────────────────────────────────────────────────────────
+
+.skeletonList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.skeletonCard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 18px;
+  background: var(--card-bg);
+}
+
+.skAvatar,
+.skLine {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skAvatar {
   flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+}
+
+.skLines {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skLine {
+  height: 14px;
+  border-radius: 8px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skAvatar,
+  .skLine,
+  .spin svg {
+    animation: none;
+  }
+
+  .content > * {
+    transition: none;
+  }
 }

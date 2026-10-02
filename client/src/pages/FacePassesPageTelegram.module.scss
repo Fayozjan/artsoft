@@ -1,4 +1,8 @@
-// FacePassesPageTelegram — Dark theme (как AttendancePageTelegram)
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+$accent: var(--third-color, #1455fe);
 
 // ─── Page layout ──────────────────────────────────────────────────────────────
 
@@ -7,7 +11,7 @@
   height: 100dvh;
   width: 100%;
   overflow: hidden;
-  background: rgba(18, 18, 18, 0.9);
+  background: var(--tg-bg);
 }
 
 .header {
@@ -15,24 +19,19 @@
   top: 0;
   left: 0;
   right: 0;
-  height: calc(
-    var(--tg-safe-area-inset-top, 0px) +
-      var(--tg-content-safe-area-inset-top, 0px)
-  );
+  height: $safe-top;
   z-index: 200;
   pointer-events: none;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  transition:
-    background 0.25s ease,
-    backdrop-filter 0.25s ease;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: background 0.25s ease, backdrop-filter 0.25s ease;
 }
 
 .main {
   width: 100%;
   height: 100%;
-  background: rgba(18, 18, 18, 0.9);
+  background: var(--tg-bg);
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
@@ -43,37 +42,207 @@
   }
 }
 
-// ─── Search + filter row ──────────────────────────────────────────────────────
+// ─── Hero (title + counter) ───────────────────────────────────────────────────
+
+.hero {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(#{$safe-top} + 8px) 16px 2px;
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.heroCount {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+// ─── Sticky toolbar (search, stats, filter tags) ───────────────────────────────
+
+.toolbar {
+  position: sticky;
+  top: $safe-top;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 12px 10px;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
 
 .searchFilterRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: calc(
-      var(--tg-safe-area-inset-top, 0px) +
-        var(--tg-content-safe-area-inset-top, 0px)
-    )
-    8px 8px;
-  background: rgba(18, 18, 18, 0.9);
+  gap: 10px;
 }
 
 .searchBox {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 7px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 0 10px;
-  height: 36px;
+  gap: 8px;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--tg-separator);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.14);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 16px; // ≥16px — iOS не зумит поле
+    color: var(--text-color);
+
+    &::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.8;
+    }
+  }
 }
 
 .searchIcon {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  color: #d6d6d6;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-hover);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.filterBtn {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0.5px solid var(--tg-separator);
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    background 0.15s,
+    color 0.15s;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+.filterBtnActive {
+  color: $accent;
+  border-color: rgba(20, 85, 254, 0.35);
+  background: rgba(20, 85, 254, 0.1);
+}
+
+.filterBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 2px solid var(--tg-bg);
+  background: $accent;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// ─── Stats summary row ────────────────────────────────────────────────────────
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.statCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 9px 10px;
+  border-radius: 14px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--tg-separator);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  min-width: 0;
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(var(--tone, 100, 116, 139));
 
   svg {
     width: 15px;
@@ -81,95 +250,33 @@
   }
 }
 
-.searchBox input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 14px;
-  color: var(--tg-theme-text-color, #f3f1f1);
-  min-width: 0;
-
-  &::placeholder {
-    color: #6b6b70;
-  }
+.statValue {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tone-text, var(--text-color));
 }
 
-.clearBtn {
-  background: transparent;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  color: #8e8e93;
-
-  svg {
-    width: 14px;
-    height: 14px;
-  }
+.statLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
-.filterBtn {
-  position: relative;
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 0.5px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.08);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-
-  svg {
-    color: #d6d6d6;
-    width: 18px;
-    height: 18px;
-  }
-
-  &:active {
-    background: rgba(255, 255, 255, 0.15);
-  }
-}
-
-.filterBtnActive {
-  background: rgba(36, 129, 204, 0.18);
-  border-color: rgba(36, 129, 204, 0.4);
-}
-
-.filterBadge {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
-  background: #ff3b30;
-  border-radius: 50%;
-  border: 1px solid rgba(18, 18, 18, 0.96);
-}
-
-// ─── Active filters bar ───────────────────────────────────────────────────────
+// ─── Active filter tags ───────────────────────────────────────────────────────
 
 .activeFiltersBar {
-  position: sticky;
-  top: calc(
-    var(--tg-safe-area-inset-top, 0px) +
-      var(--tg-content-safe-area-inset-top, 0px)
-  );
-  z-index: 100;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 0px 10px 5px;
+  gap: 6px;
   overflow-x: auto;
   flex-wrap: nowrap;
   scrollbar-width: none;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   -webkit-overflow-scrolling: touch;
 
   &::-webkit-scrollbar {
@@ -177,51 +284,41 @@
   }
 }
 
-.activeFiltersBar:empty {
-  display: none;
-}
-
 .activeFilterTag {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  height: 24px;
-  padding: 0 8px 0 9px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.07);
-  color: #ccc;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
   flex-shrink: 0;
-
-  svg {
-    width: 12px;
-    height: 12px;
-    opacity: 0.7;
-  }
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px 0 11px;
+  border-radius: 14px;
+  border: 0.5px solid var(--tg-badge-blue-border);
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 
   button {
     display: flex;
     align-items: center;
-    background: none;
-    border: none;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
     padding: 0;
-    margin-left: 2px;
-    cursor: pointer;
+    border: none;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.15);
     color: inherit;
-    opacity: 0.55;
-    transition: opacity 0.15s;
+    cursor: pointer;
 
     &:active {
-      opacity: 1;
+      opacity: 0.6;
     }
 
     svg {
       width: 10px;
       height: 10px;
-      color: #ccc;
     }
   }
 }
@@ -230,10 +327,9 @@
 
 .cardList {
   flex: 1;
-  padding: 8px 10px 75px;
+  padding: 0 10px 75px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -246,10 +342,51 @@
 }
 
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
   text-align: center;
-  color: #555;
-  margin-top: 40px;
-  font-size: 14px;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+// ─── Date group ───────────────────────────────────────────────────────────────
+
+.dateGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dateHeader {
+  padding: 10px 2px 2px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: capitalize;
 }
 
 // ─── Bottom loader (dots) ─────────────────────────────────────────────────────
@@ -272,27 +409,14 @@
   opacity: 0.3;
   animation: dotPulse 1.2s ease-in-out infinite;
 
-  &:nth-child(1) {
-    animation-delay: 0s;
-  }
-  &:nth-child(2) {
-    animation-delay: 0.2s;
-  }
-  &:nth-child(3) {
-    animation-delay: 0.4s;
-  }
+  &:nth-child(1) { animation-delay: 0s; }
+  &:nth-child(2) { animation-delay: 0.2s; }
+  &:nth-child(3) { animation-delay: 0.4s; }
 }
 
 @keyframes dotPulse {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-  }
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 // ─── Single event card ────────────────────────────────────────────────────────
@@ -302,24 +426,49 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 0.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 8px 10px;
-  transition: background 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 16px;
+  padding: 9px 10px;
+  margin-bottom: 8px;
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
   contain: layout style;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 88px;
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--tg-hover);
+  }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .cardAvatar {
   flex-shrink: 0;
-  width: 60px;
-  height: 70px;
-  border-radius: 10%;
+  width: 54px;
+  height: 64px;
+  border-radius: 12px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--tg-avatar-bg);
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 0 0 2px rgba(var(--tone), 0.5);
 
   img {
     width: 100%;
@@ -330,73 +479,214 @@
 
 .avatarFallback {
   font-size: 18px;
-  font-weight: 600;
-  color: #888;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .cardBody {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 3px;
   min-width: 0;
-}
-
-.cardRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .cardName {
   font-size: 14px;
-  font-weight: 600;
-  color: #f0f0f0;
-  margin: 0;
-  white-space: wrap;
+  font-weight: 700;
+  letter-spacing: -0.1px;
+  color: var(--text-color);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardSub {
   font-size: 12px;
-  color: #aaa;
+  font-weight: 500;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
 }
 
-.cardMeta {
+.cardChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  height: 21px;
+  padding: 0 7px;
+  border-radius: 7px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
   font-size: 11px;
-  color: #666;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0;
+
+  svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    opacity: 0.75;
+  }
 }
 
-.dirBadge {
-  padding: 2px 8px;
+// ─── Direction pill (entry / exit) ─────────────────────────────────────────────
+
+.dirPill {
+  flex-shrink: 0;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
+  white-space: nowrap;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
 }
 
 .dirIn {
-  background: rgba(22, 163, 74, 0.2);
-  color: #4ade80;
+  background: var(--tg-dir-in-bg);
+  color: var(--tg-dir-in-color);
 }
 
 .dirOut {
-  background: rgba(220, 38, 38, 0.2);
-  color: #f87171;
+  background: var(--tg-dir-out-bg);
+  color: var(--tg-dir-out-color);
 }
 
-.cardTime {
+// ─── Event detail sheet ─────────────────────────────────────────────────────────
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 6px;
+}
+
+.sheetTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sheetAvatar {
+  flex-shrink: 0;
+  width: 88px;
+  height: 104px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--tg-avatar-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 3px rgba(var(--tone), 0.5);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatarFallback {
+    font-size: 30px;
+  }
+}
+
+.times {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.timeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  min-width: 0;
+
+  b {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.timeLabel {
   font-size: 11px;
-  color: #666;
-  white-space: nowrap;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--tg-separator);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.infoIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.infoLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.infoValue {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 // ─── Filter screen ────────────────────────────────────────────────────────────
@@ -404,99 +694,104 @@
 .filterPage {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  background: rgba(18, 18, 18, 1);
-  color: #bbb;
+  height: 100dvh;
+  background: var(--tg-bg);
+  color: var(--text-color);
 
   .filterHeader {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding-top: calc(
-      var(--tg-safe-area-inset-top, 0px) +
-        var(--tg-content-safe-area-inset-top, 0px)
-    );
+    padding: calc(#{$safe-top} + 8px) 16px 2px;
   }
 
   .filterTitle {
-    font-size: 16px;
-    font-weight: 600;
-    color: #f0f0f0;
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+    color: var(--text-color);
   }
 
   .filterBody {
     flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 10px;
+    padding: 12px 16px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
   }
 
   .filterRow {
     display: flex;
-    gap: 5px;
+    gap: 10px;
   }
 
   .filterField {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
     min-width: 0;
   }
 
   .filterSection {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
   }
 
   .fieldLabel {
-    font-size: 14px;
-    font-weight: 600;
-    color: #bbb;
     padding-left: 2px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
   }
 
-  .dateInput {
-    height: 38px;
+  .dateInput,
+  .select {
     width: 100%;
-    padding: 0 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(162, 161, 168, 0.4);
-    font-size: 13px;
-    font-weight: 500;
+    height: 48px;
+    padding: 0 14px;
     box-sizing: border-box;
+    border-radius: 14px;
+    border: 0.5px solid var(--tg-separator);
+    background-color: var(--card-bg);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-color);
+    outline: none;
     cursor: pointer;
-    transition: border-color 0.2s;
-    background: #2e2e2e;
-    color: white;
-    appearance: none;
-    -webkit-appearance: none;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
 
     &:focus {
-      outline: none;
-      border-color: var(--third-color, #4a90e2);
+      border-color: $accent;
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.14);
     }
   }
 
+  .dateInput {
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
   .select {
-    height: 38px;
-    width: 100%;
-    padding: 0 8px;
-    background: #2e2e2e;
-    border-radius: 8px;
-    border: 1px solid rgba(162, 161, 168, 0.4);
-    font-size: 13px;
-    font-weight: 500;
-    color: white;
+    padding-right: 40px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    appearance: none;
+    -webkit-appearance: none;
   }
 
   .directionGroup {
     display: flex;
-    gap: 6px;
+    gap: 8px;
   }
 
   .dirLabel {
@@ -505,69 +800,71 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    height: 38px;
-    border-radius: 8px;
-    border: 1px solid rgba(162, 161, 168, 0.25);
-    background: rgba(255, 255, 255, 0.06);
-    color: #bbb;
-    font-size: 13px;
+    height: 44px;
+    border-radius: 14px;
+    border: 0.5px solid var(--tg-separator);
+    background: var(--card-bg);
+    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+    color: var(--text-secondary);
+    font-size: 14px;
     font-weight: 500;
     cursor: pointer;
     transition:
       border-color 0.2s,
-      background 0.2s;
+      background 0.2s,
+      color 0.2s;
 
     input[type="checkbox"] {
       display: none;
     }
 
     &:has(input:checked) {
-      border-color: var(--third-color, #4a90e2);
-      background: rgba(74, 144, 226, 0.15);
-      color: var(--third-color, #4a90e2);
-      font-weight: 600;
-    }
-  }
-
-  .resetBtn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    color: var(--third-color, #4a90e2);
-    padding: 10px 0;
-    border-radius: 6px;
-    transition: background 0.15s;
-    text-align: center;
-
-    &:active {
-      background: rgba(0, 0, 0, 0.1);
+      border-color: rgba(20, 85, 254, 0.35);
+      background: rgba(20, 85, 254, 0.1);
+      color: $accent;
+      font-weight: 700;
     }
   }
 
   .filterFooter {
     flex-shrink: 0;
-    padding: 8px 16px;
-    padding-bottom: calc(
-      env(safe-area-inset-bottom) + var(--tg-safe-area-inset-bottom, 0px) + 50px
-    );
+    display: flex;
+    gap: 10px;
+    padding: 10px 16px;
+    padding-bottom: calc(#{$safe-bottom} + 50px);
+  }
+
+  .resetBtn,
+  .applyBtn {
+    height: 50px;
+    border: none;
+    border-radius: 14px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      transform 0.15s,
+      opacity 0.15s;
+
+    &:active {
+      transform: scale(0.97);
+      opacity: 0.85;
+    }
+  }
+
+  .resetBtn {
+    flex: 1;
+    background: var(--tg-surface);
+    color: var(--text-color);
   }
 
   .applyBtn {
-    width: 100%;
-    height: 46px;
-    border-radius: 10px;
-    border: none;
-    background: var(--third-color, #4a90e2);
+    flex: 2;
+    background: $accent;
     color: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s;
-
-    &:active {
-      opacity: 0.85;
-    }
+    box-shadow: 0 6px 16px rgba(20, 85, 254, 0.28);
   }
 }
 

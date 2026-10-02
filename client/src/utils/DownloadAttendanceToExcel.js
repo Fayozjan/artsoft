@@ -2,6 +2,7 @@ import * as XLSX from "xlsx-js-style";
 import { saveAs } from "file-saver";
 import i18n from "../i18n";
 import { formatMinutesToHours } from "./date";
+import { sortTimesheetEmployees } from "./sortTimesheetEmployees";
 
 const getMonthName = (month) => i18n.t(`months.${month}`);
 
@@ -18,7 +19,6 @@ const getBaseHeaders = () => [
   i18n.t("paidTimeOff"),
   i18n.t("workedDays"),
   i18n.t("workedHours"),
-  `${i18n.t("total")} (${i18n.t("hoursShort")}:${i18n.t("minutesShort")})`,
 ];
 
 const getEmployeeBaseRow = (employee) => {
@@ -31,6 +31,7 @@ const getEmployeeBaseRow = (employee) => {
     pinfl,
     workScheduleName,
     totalLateTime,
+    totalLateCount,
     totalOvertimeMinutes,
     totalPaidTimeOffDays,
     totalPaidTimeOffMinutes,
@@ -48,9 +49,7 @@ const getEmployeeBaseRow = (employee) => {
     positionName ?? "",
     pinfl ?? "",
     workScheduleName ?? "",
-    totalLateTime
-      ? `${totalLateTime} ${i18n.t("hoursShort")}`
-      : `00:00 ${i18n.t("hoursShort")}`,
+    `${totalLateCount ?? 0} / ${totalLateTime || "00:00"} ${i18n.t("hoursShort")}`,
     `${formatMinutesToHours(totalOvertimeMinutes)} ${i18n.t("hoursShort")}`,
     `${totalPaidTimeOffDays ?? 0} / ${formatMinutesToHours(totalPaidTimeOffMinutes ?? 0)} ${i18n.t("hoursShort")}`,
     `${totalWorkedDays ?? 0} / ${totalScheduledDays ?? 0}`,
@@ -60,9 +59,9 @@ const getEmployeeBaseRow = (employee) => {
   ];
 };
 
-const BASE_COLS_COUNT = 13;
+const BASE_COLS_COUNT = 12;
 
-const applyStyles = (worksheet, daysInMonth) => {
+const applyStyles = (worksheet) => {
   const thinBorder = {
     top: { style: "thin" },
     bottom: { style: "thin" },
@@ -112,26 +111,33 @@ const getColWidths = (headers, excelData, dayColWidth, daysInMonth) => {
   return [...baseColWidths, ...Array(daysInMonth).fill({ wch: dayColWidth })];
 };
 
-export const downloadFullAttendanceToExcel = (data, date) => {
+export const downloadFullAttendanceToExcel = (
+  data,
+  date,
+  sortField,
+  sortOrder,
+  weekDays,
+) => {
   if (!date || typeof date !== "string") return;
   if (!data || !data.length) return;
 
   const [year, month] = date.split("-").map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const days = weekDays?.length
+    ? weekDays
+    : Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => i + 1);
 
-  const headers = [
-    ...getBaseHeaders(),
-    ...Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`),
-  ];
+  const headers = [...getBaseHeaders(), ...days.map((d) => `${d}`)];
 
   const excelData = [headers];
 
-  data.forEach((employee) => {
+  const sortedData = sortTimesheetEmployees(data, sortField, sortOrder);
+
+  sortedData.forEach((employee) => {
     const { sessions } = employee;
 
     const dayCells = [];
 
-    for (let day = 1; day <= daysInMonth; day++) {
+    for (const day of days) {
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const session = sessions?.[dateStr];
 
@@ -160,8 +166,8 @@ export const downloadFullAttendanceToExcel = (data, date) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(excelData);
 
-  worksheet["!cols"] = getColWidths(headers, excelData, 14, daysInMonth);
-  applyStyles(worksheet, daysInMonth);
+  worksheet["!cols"] = getColWidths(headers, excelData, 14, days.length);
+  applyStyles(worksheet);
 
   XLSX.utils.book_append_sheet(
     workbook,
@@ -174,7 +180,13 @@ export const downloadFullAttendanceToExcel = (data, date) => {
   saveAs(blob, `attendance_detailed_${date}.xlsx`);
 };
 
-export const downloadAttendanceToExcel = (data, date) => {
+export const downloadAttendanceToExcel = (
+  data,
+  date,
+  sortField,
+  sortOrder,
+  weekDays,
+) => {
   if (!date || typeof date !== "string") {
     console.error("Ошибка: параметр 'date' не передан", date);
     return;
@@ -182,30 +194,22 @@ export const downloadAttendanceToExcel = (data, date) => {
   if (!data || !data.length) return;
 
   const [year, month] = date.split("-").map(Number);
-  const daysInMonth = new Date(year, month, 0).getDate();
+  const days = weekDays?.length
+    ? weekDays
+    : Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => i + 1);
 
-  const headers = [
-    ...getBaseHeaders(),
-    ...Array.from({ length: daysInMonth }, (_, i) => `${i + 1}`),
-  ];
+  const headers = [...getBaseHeaders(), ...days.map((d) => `${d}`)];
 
   const excelData = [headers];
 
-  // Сортировка
-  const sortedData = [...data].sort((a, b) => {
-    return (
-      (a.branchName || "").localeCompare(b.branchName || "", "ru") ||
-      (a.departmentName || "").localeCompare(b.departmentName || "", "ru") ||
-      (a.employeeFullName || "").localeCompare(b.employeeFullName || "", "ru")
-    );
-  });
+  const sortedData = sortTimesheetEmployees(data, sortField, sortOrder);
 
   sortedData.forEach((employee) => {
     const { sessions } = employee;
 
     const dayCells = [];
 
-    for (let day = 1; day <= daysInMonth; day++) {
+    for (const day of days) {
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
       const session = sessions?.[dateStr];
 
@@ -226,8 +230,8 @@ export const downloadAttendanceToExcel = (data, date) => {
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.aoa_to_sheet(excelData);
 
-  worksheet["!cols"] = getColWidths(headers, excelData, 6, daysInMonth);
-  applyStyles(worksheet, daysInMonth);
+  worksheet["!cols"] = getColWidths(headers, excelData, 6, days.length);
+  applyStyles(worksheet);
 
   XLSX.utils.book_append_sheet(
     workbook,
@@ -238,4 +242,165 @@ export const downloadAttendanceToExcel = (data, date) => {
   const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
   const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
   saveAs(blob, `attendance_${date}.xlsx`);
+};
+
+const LATENESS_SUB_COLS = 4; // Пришел | Ушел | Опоздание | Сверхурочные
+
+const applyLatenessStyles = (worksheet, branchHeaderRows) => {
+  const thinBorder = {
+    top: { style: "thin" },
+    bottom: { style: "thin" },
+    left: { style: "thin" },
+    right: { style: "thin" },
+  };
+  const branchRowSet = new Set(branchHeaderRows);
+  const range = XLSX.utils.decode_range(worksheet["!ref"]);
+
+  for (let R = range.s.r; R <= range.e.r; ++R) {
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+      const cellAddress = XLSX.utils.encode_cell({ r: R, c: C });
+      if (!worksheet[cellAddress]) continue;
+
+      worksheet[cellAddress].s = {
+        border: thinBorder,
+        alignment: { wrapText: true, vertical: "center", horizontal: "center" },
+        font: { sz: 10 },
+      };
+
+      if (R <= 1) {
+        worksheet[cellAddress].s.font = { bold: true, sz: 10 };
+        worksheet[cellAddress].s.fill = { fgColor: { rgb: "EEEEEE" } };
+      }
+
+      if (branchRowSet.has(R)) {
+        worksheet[cellAddress].s.font = { bold: true, sz: 11 };
+        worksheet[cellAddress].s.fill = { fgColor: { rgb: "DDDDDD" } };
+      }
+    }
+  }
+};
+
+// Приход/уход/опоздание/переработка по дням, сгруппировано по филиалу.
+// weekDays — дни месяца, отображаемые в текущем фильтре страницы (неделя),
+// если null/пусто — берутся все дни месяца, как в остальных форматах скачивания.
+export const downloadLatenessAttendanceToExcel = (
+  data,
+  date,
+  sortField,
+  sortOrder,
+  weekDays,
+) => {
+  if (!date || typeof date !== "string") return;
+  if (!data || !data.length) return;
+
+  const [year, month] = date.split("-").map(Number);
+  const days = weekDays?.length
+    ? weekDays
+    : Array.from({ length: new Date(year, month, 0).getDate() }, (_, i) => i + 1);
+
+  const baseHeaders = [i18n.t("department"), i18n.t("fullName"), i18n.t("position")];
+  const subHeaders = [
+    i18n.t("cameAt"),
+    i18n.t("leftAt"),
+    i18n.t("lateness"),
+    i18n.t("overtimeShort"),
+  ];
+  const colCount = baseHeaders.length + days.length * LATENESS_SUB_COLS + 1;
+
+  const headerRow1 = [...baseHeaders];
+  const headerRow2 = baseHeaders.map(() => "");
+
+  days.forEach((day) => {
+    const label = `${String(day).padStart(2, "0")}.${String(month).padStart(2, "0")}.${year}`;
+    headerRow1.push(label, "", "", "");
+    headerRow2.push(...subHeaders);
+  });
+
+  headerRow1.push(i18n.t("totalShort"));
+  headerRow2.push(i18n.t("lateness"));
+
+  const excelData = [headerRow1, headerRow2];
+  const merges = [];
+
+  for (let c = 0; c < baseHeaders.length; c++) {
+    merges.push({ s: { r: 0, c }, e: { r: 1, c } });
+  }
+  days.forEach((_, i) => {
+    const startCol = baseHeaders.length + i * LATENESS_SUB_COLS;
+    merges.push({ s: { r: 0, c: startCol }, e: { r: 0, c: startCol + LATENESS_SUB_COLS - 1 } });
+  });
+
+  const sortedData = sortTimesheetEmployees(data, sortField, sortOrder);
+
+  const branchesMap = new Map();
+  sortedData.forEach((employee) => {
+    const key = employee.branchName || i18n.t("noBranch");
+    if (!branchesMap.has(key)) branchesMap.set(key, []);
+    branchesMap.get(key).push(employee);
+  });
+
+  const branchNames = [...branchesMap.keys()].sort((a, b) =>
+    a.localeCompare(b, "ru", { sensitivity: "base" }),
+  );
+
+  const branchHeaderRows = [];
+
+  branchNames.forEach((branchName) => {
+    const rowIndex = excelData.length;
+    branchHeaderRows.push(rowIndex);
+    excelData.push([branchName, ...Array(colCount - 1).fill("")]);
+    merges.push({ s: { r: rowIndex, c: 0 }, e: { r: rowIndex, c: colCount - 1 } });
+
+    branchesMap.get(branchName).forEach((employee) => {
+      const { sessions } = employee;
+
+      const row = [
+        employee.departmentName ?? "",
+        employee.employeeFullName ?? "",
+        employee.positionName ?? "",
+      ];
+
+      days.forEach((day) => {
+        const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const session = sessions?.[dateStr];
+
+        row.push(
+          session?.firstEntry || "",
+          session?.lastExit || "",
+          session?.late && session.late !== "00:00" ? session.late : "",
+          session?.lateLeave && session.lateLeave !== "00:00" ? session.lateLeave : "",
+        );
+      });
+
+      row.push(
+        i18n.t("lateDaysOutOf", {
+          count: employee.totalLateCount ?? 0,
+          total: employee.totalScheduledDays ?? 0,
+          time: employee.totalLateTime || "00:00",
+        }),
+      );
+
+      excelData.push(row);
+    });
+  });
+
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+  worksheet["!merges"] = merges;
+
+  worksheet["!cols"] = [
+    { wch: 22 },
+    { wch: 28 },
+    { wch: 22 },
+    ...Array(days.length * LATENESS_SUB_COLS).fill({ wch: 9 }),
+    { wch: 18 },
+  ];
+
+  applyLatenessStyles(worksheet, branchHeaderRows);
+
+  XLSX.utils.book_append_sheet(workbook, worksheet, i18n.t("latenessTimesheet").slice(0, 31));
+
+  const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+  const blob = new Blob([excelBuffer], { type: "application/octet-stream" });
+  saveAs(blob, `attendance_lateness_${date}.xlsx`);
 };

@@ -1,8 +1,8 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-subtle);
   transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   height: 100vh;
@@ -47,7 +47,7 @@
         font-weight: 600;
 
         svg {
-          fill: #2563eb;
+          color: #2563eb;
         }
       }
 
@@ -69,80 +69,90 @@
         display: none;
       }
 
-      .miniPopupWrapper {
-        opacity: 0;
-        position: absolute;
-        left: calc(100% + 8px);
-        top: 0;
-        pointer-events: none;
-        transition: opacity 0.15s;
-        background: #fff;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        padding: 6px;
-        min-width: 180px;
-        z-index: 99999;
-
-        &::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: -10px; // перекрывает зазор
-          width: 10px;
-          height: 100%;
-        }
-
-        p {
-          margin: 0;
-          padding: 6px 10px;
-          font-weight: 600;
-          font-size: 11px;
-          color: #9ca3af;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          border-bottom: 1px solid #f3f4f6;
-          margin-bottom: 4px;
-        }
-
-        .miniPopup {
-          list-style: none;
-          margin: 0;
-          padding: 0;
-
-          li {
-            margin: 0;
-            padding: 0;
-            border: none;
-          }
-
-          a {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #374151;
-            text-decoration: none;
-            transition: background 0.1s;
-
-            &:hover {
-              background: #f3f4f6;
-            }
-
-            &.active {
-              background: #eff6ff;
-              color: #2563eb;
-              font-weight: 500;
-            }
-          }
-        }
-      }
-
+      // Тултип без детей остаётся в DOM внутри .menu — открывается CSS :hover
       &:hover .miniPopupWrapper {
         opacity: 1;
         pointer-events: auto;
+      }
+    }
+  }
+}
+
+// ─── Попап дочерних пунктов мини-режима ────────────────────────────────────────
+// Вынесен на верхний уровень (не вложен в .closed .menuWrapper .menu), потому что
+// рендерится порталом в document.body — вложенные селекторы требовали бы DOM-родства
+// с .menu, которого у портала нет. Позиционирование (position/top/left) в портальном
+// варианте всегда приходит через inline style из SidebarItem и перебивает значения ниже;
+// здесь — только "внешний вид" + дефолты на случай тултипа без детей (тот остаётся
+// обычным потомком .menu и открывается через CSS :hover выше).
+.miniPopupWrapper {
+  opacity: 0;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 6px;
+  min-width: 180px;
+  max-height: calc(100vh - 16px); // фолбэк, пока JS не посчитал точный размер
+  overflow-y: auto;
+  z-index: 99999;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -10px; // перекрывает зазор
+    width: 10px;
+    height: 100%;
+  }
+
+  p {
+    margin: 0;
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--placeholder-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 4px;
+  }
+
+  .miniPopup {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    li {
+      margin: 0;
+      padding: 0;
+      border: none;
+    }
+
+    a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-color);
+      text-decoration: none;
+      transition: background 0.1s;
+
+      &:hover {
+        background: var(--bg-light);
+      }
+
+      &.active {
+        background: #eff6ff;
+        color: #2563eb;
+        font-weight: 500;
       }
     }
   }
@@ -155,7 +165,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 8px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-subtle);
 
   .logoWrapper {
     display: flex;
@@ -183,7 +193,7 @@
     transition: background 0.1s;
 
     &:hover {
-      background: #f3f4f6;
+      background: var(--bg-light);
     }
 
     svg {
@@ -211,11 +221,11 @@
   }
 
   &::-webkit-scrollbar-thumb {
-    background: #d1d5db;
+    background: var(--scroll-color);
     border-radius: 4px;
 
     &:hover {
-      background: #9ca3af;
+      background: var(--placeholder-color);
     }
   }
 
@@ -232,15 +242,15 @@
       text-decoration: none;
       font-size: var(--font-small);
       font-weight: 500;
-      color: #2a2828;
+      color: var(--text-color);
       transition:
         background 0.1s,
         color 0.1s;
       position: relative;
 
       &:hover {
-        background: #f9fafb;
-        color: #111827;
+        background: var(--bg-light);
+        color: var(--text-color);
       }
 
       span {
@@ -304,7 +314,7 @@
   li {
     margin-left: 16px;
     padding-left: 18px;
-    border-left: 2px solid #e5e7eb;
+    border-left: 2px solid var(--border-subtle);
 
     &.activeMenu {
       border-left-color: #2563eb;
@@ -318,12 +328,12 @@
       border-radius: 6px;
       text-decoration: none;
       font-size: var(--font-small);
-      color: #232323;
+      color: var(--text-color);
       transition: all 0.1s;
 
       &:hover {
-        background: #f9fafb;
-        color: #000;
+        background: var(--bg-light);
+        color: var(--text-color);
       }
     }
 
@@ -345,4 +355,251 @@
 .submenuWrapper li {
   will-change: transform;
   backface-visibility: hidden;
+}
+
+// ─── Расположение сайдбара ────────────────────────────────────────────────────
+
+.left {
+  // базовое поведение (border-right уже в .sidebar)
+}
+
+// Сверху: компактная горизонтальная панель без скролла
+.top {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  box-sizing: border-box;
+  height: auto;
+  min-height: 40px;
+  padding: 0 8px;
+  gap: 6px;
+  border-right: none;
+  border-bottom: 1px solid var(--border-subtle);
+
+  // Ничего не растягивается сверх доступной ширины
+  > * {
+    min-width: 0;
+  }
+
+  .sidebarTop {
+    flex: 0 0 auto;
+    padding: 0;
+    border-bottom: none;
+
+    .logoWrapper {
+      font-size: 17px;
+      gap: 5px;
+
+      .logo {
+        height: 30px;
+      }
+    }
+  }
+
+  // Меню по центру, сжимается вместо скролла
+  .menuWrapper {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+    gap: 1px;
+    padding: 0;
+    overflow: visible;
+
+    .menu {
+      position: relative;
+      flex: 0 1 auto;
+      min-width: 0;
+      margin-bottom: 0;
+
+      > a {
+        padding: 4px 8px;
+        gap: 6px;
+        font-size: 13px;
+        white-space: nowrap;
+        min-width: 0;
+
+        span {
+          min-width: 0;
+          max-width: 130px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          transition: none;
+        }
+      }
+
+      svg {
+        width: 17px;
+        height: 17px;
+        flex-shrink: 0;
+      }
+
+      &.activeMenu > a {
+        background: #eff6ff;
+      }
+
+      // Стрелка подменю смотрит вниз
+      &.menuItemHasChildren > a {
+        padding-right: 18px;
+
+        &::after {
+          right: 6px;
+          width: 4px;
+          height: 4px;
+          transform: rotate(45deg);
+          top: calc(50% - 4px);
+        }
+      }
+
+      // Подменю — выпадающий попап под пунктом
+      .miniPopupWrapper {
+        opacity: 0;
+        position: absolute;
+        top: calc(100% + 5px);
+        left: 0;
+        pointer-events: none;
+        transition: opacity 0.15s;
+        background: var(--card-bg);
+        border: 1px solid var(--border-subtle);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 5px;
+        min-width: 180px;
+        z-index: 99999;
+
+        &::before {
+          content: "";
+          position: absolute;
+          top: -8px;
+          left: 0;
+          width: 100%;
+          height: 8px;
+        }
+
+        p {
+          margin: 0 0 4px;
+          padding: 5px 10px;
+          font-weight: 600;
+          font-size: 11px;
+          color: var(--placeholder-color);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .miniPopup {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+
+          li {
+            margin: 0;
+            padding: 0;
+            border: none;
+          }
+
+          a {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 13px;
+            white-space: nowrap;
+            color: var(--text-color);
+            text-decoration: none;
+            transition: background 0.1s;
+
+            &:hover {
+              background: var(--bg-light);
+            }
+
+            &.active {
+              background: #eff6ff;
+              color: #2563eb;
+              font-weight: 500;
+            }
+          }
+        }
+      }
+
+      &:hover .miniPopupWrapper {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      // Последние пункты — попап прижат вправо, чтобы не уходил за экран
+      &:nth-last-child(-n + 2) .miniPopupWrapper {
+        left: auto;
+        right: 0;
+      }
+    }
+  }
+}
+
+// Скрыто: панель выезжает слева поверх страницы по кнопке-язычку
+.drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  transform: translateX(-100%);
+  transition:
+    transform 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s linear 0.2s;
+}
+
+.drawerOpen {
+  visibility: visible;
+  transform: translateX(0);
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawerBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+// Узкий язычок у левого края по центру высоты — не перекрывает шапку страницы
+.drawerHandle {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 56px;
+  padding: 0;
+  transform: translateY(-50%);
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--placeholder-color);
+  cursor: pointer;
+  opacity: 0.6;
+  transition:
+    width 0.15s,
+    opacity 0.15s,
+    color 0.15s;
+
+  &:hover,
+  &:focus-visible {
+    width: 26px;
+    opacity: 1;
+    color: var(--text-color);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 }

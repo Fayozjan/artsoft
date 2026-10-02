@@ -1,4 +1,4 @@
-// ─── table (employees view) ───────────────────────────────────────────────────
+﻿// ─── table (employees view) ───────────────────────────────────────────────────
 
 .tableContainer {
   flex: 1;
@@ -13,7 +13,7 @@
     thead {
       position: sticky;
       top: 0;
-      background: white;
+      background: var(--card-bg);
       z-index: 10;
     }
 
@@ -26,7 +26,7 @@
 
     th {
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -42,42 +42,6 @@
     th:nth-child(1),
     td:nth-child(1) {
       margin-right: 10px;
-    }
-
-    .empCell {
-      padding-left: 8px;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 10px;
-      text-align: left;
-      min-width: 160px;
-
-      img {
-        flex-shrink: 0;
-        width: 35px;
-        min-width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-sizing: border-box;
-      }
-    }
-
-    .empInfo {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .empName {
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    .empSub {
-      font-size: 11px;
-      color: #94a3b8;
     }
 
     .active {
@@ -164,7 +128,7 @@
 .gridDayName {
   display: block;
   font-size: calc(var(--font-small) - 4px);
-  color: #9ca3af;
+  color: var(--placeholder-color);
   text-transform: uppercase;
 }
 
@@ -259,10 +223,19 @@
 }
 
 .gridTotalBadge {
-  display: inline-block;
+  display: block;
   font-weight: 700;
   font-size: var(--font-small);
   color: #4f6ef7;
+}
+
+// Уникальных сотрудников — сверка со списком «по сотрудникам»
+.gridTotalPeople {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #8b93a7;
+  white-space: nowrap;
 }
 
 .gridExpandRow {
@@ -282,7 +255,7 @@
   padding: 10px 16px 8px;
   font-weight: 600;
   font-size: var(--font-small);
-  color: #374151;
+  color: var(--text-color);
   border-bottom: 1px solid var(--border-color, #e5e7eb);
   background: #eef0fb;
 }
@@ -294,7 +267,7 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #9ca3af;
+  color: var(--placeholder-color);
   border-radius: 4px;
   transition: background 0.1s;
 
@@ -368,7 +341,7 @@
 
 .empMeta {
   font-size: var(--font-small);
-  color: #9ca3af;
+  color: var(--placeholder-color);
 }
 
 // Time blocks
@@ -388,13 +361,13 @@
 
 .timeLabel {
   font-size: var(--font-small);
-  color: #9ca3af;
+  color: var(--placeholder-color);
 }
 
 .timeValue {
   font-size: var(--font-small);
   font-weight: 600;
-  color: #374151;
+  color: var(--text-color);
 }
 
 .timeActual {

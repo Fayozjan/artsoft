@@ -1,0 +1,327 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+
+  .main {
+    padding: 2px;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 0;
+
+    .mainHeader {
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+
+      .filters {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+
+        select,
+        .dateInput {
+          height: 32px;
+          padding: 0 8px;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          border-radius: 4px;
+          background-color: var(--card-bg);
+          color: var(--text-color);
+          font-size: var(--font-small);
+          cursor: pointer;
+          box-sizing: border-box;
+
+          &:focus {
+            outline: none;
+            border-color: var(--third-color);
+          }
+        }
+
+        .searchBtn,
+        .resetBtn {
+          height: 32px;
+          padding: 0 12px;
+          border-radius: 4px;
+          font-size: var(--font-small);
+          font-weight: 600;
+          cursor: pointer;
+          box-sizing: border-box;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          background-color: var(--card-bg);
+          color: var(--text-color);
+
+          &:hover {
+            border-color: var(--third-color);
+          }
+        }
+
+        .searchBtn {
+          background-color: var(--third-color);
+          color: #fff;
+          border-color: var(--third-color);
+        }
+      }
+
+      .rightActions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .refreshBtn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 32px;
+          padding: 0 10px;
+          font-size: var(--font-small);
+          font-weight: 600;
+          border-radius: 4px;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          cursor: pointer;
+          box-sizing: border-box;
+          background-color: var(--card-bg);
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+
+          &:hover {
+            border-color: var(--third-color);
+          }
+        }
+      }
+    }
+
+    .tableContainer {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-small);
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+      }
+
+      th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .headerContent {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      th,
+      td {
+        padding: 4px 6px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: center;
+      }
+
+      .clickableRow {
+        cursor: pointer;
+        transition: background 0.1s;
+
+        &:hover {
+          background-color: var(--bg-light);
+        }
+      }
+    }
+  }
+}
+
+.actionBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+
+  &.create {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.update {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.delete {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+.changeCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 5px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.diffContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 0;
+  height: 100%;
+  overflow-y: auto;
+
+  .diffMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 16px;
+    background: var(--bg-light);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+
+    .diffMetaRow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--font-small);
+    }
+
+    .diffMetaLabel {
+      font-weight: 600;
+      color: var(--text-secondary);
+      min-width: 120px;
+    }
+  }
+
+  .diffBody {
+    flex: 1;
+    overflow-x: auto;
+  }
+}
+
+.diffTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+
+  th {
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    background: var(--bg-light);
+    border-bottom: 2px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  td {
+    padding: 5px 10px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  .diffFieldCol {
+    width: 200px;
+  }
+
+  .changedRow {
+    background: rgba(251, 191, 36, 0.08);
+
+    td {
+      border-bottom-color: rgba(251, 191, 36, 0.2);
+    }
+  }
+
+.fieldName {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .fieldNameChanged {
+    color: #b45309;
+    font-weight: 700;
+  }
+
+  .changeDot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #f59e0b;
+    flex-shrink: 0;
+  }
+
+  .oldVal {
+    color: #991b1b;
+    background: rgba(254, 226, 226, 0.3);
+  }
+
+  .newVal {
+    color: #065f46;
+    background: rgba(209, 250, 229, 0.3);
+  }
+
+  .nullVal {
+    color: var(--placeholder-color);
+    font-style: italic;
+  }
+}
+
+.inlineJson {
+  margin: 0;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.nullVal {
+  color: var(--placeholder-color);
+  font-style: italic;
+}

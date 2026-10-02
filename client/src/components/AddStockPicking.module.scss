@@ -1,0 +1,547 @@
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  .header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-color);
+
+    .backBtn {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+    }
+
+    .headerText {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .eyebrow {
+        font-size: calc(var(--font-small) - 1px);
+        color: var(--text-secondary);
+      }
+
+      h2 {
+        margin: 0;
+        padding: 0;
+        font-size: calc(var(--font-small) + 4px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 16px;
+
+    label {
+      display: block;
+      font-size: var(--font-body);
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: var(--font-small);
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    textarea {
+      height: auto;
+      resize: vertical;
+    }
+
+    .note {
+      min-height: 34px;
+      max-height: 200px;
+      overflow-y: auto;
+      resize: none;
+    }
+
+    .lockedValue {
+      display: flex;
+      align-items: center;
+      height: 34px;
+      padding: 6px 8px;
+      border: 1px dashed var(--border-color);
+      border-radius: 5px;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+      background: var(--bg-light);
+      box-sizing: border-box;
+    }
+
+    .rateField {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      input {
+        flex: 1;
+      }
+
+      .refreshRateBtn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        width: 34px;
+        height: 34px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        border-radius: 5px;
+        background: var(--card-bg);
+        color: var(--text-color);
+        cursor: pointer;
+
+        svg {
+          width: 15px;
+          height: 15px;
+        }
+
+        &:hover {
+          border-color: var(--third-color);
+          color: var(--third-color);
+        }
+
+        &:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+
+  .selectTypeHint {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    padding: 8px 0;
+  }
+
+  .additional {
+    margin-bottom: 16px;
+
+    .additionalToggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      background: none;
+      padding: 0 0 8px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: var(--font-small);
+      font-weight: 500;
+
+      &:hover {
+        color: var(--third-color);
+      }
+    }
+
+    .additionalChevron {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s ease;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    .additionalChevronOpen {
+      transform: rotate(180deg);
+    }
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .fullRow {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 1100px) {
+    .grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-color);
+
+    .cancelBtn {
+      height: 32px;
+      padding: 0 16px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      &:hover {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+    }
+  }
+}
+
+.items {
+  margin-top: 6px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-light, var(--card-bg));
+
+  .itemsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+
+    > span {
+      font-size: calc(var(--font-body) + 1px);
+      color: var(--text-color);
+      font-weight: 600;
+    }
+  }
+
+  .itemsColHeader {
+    display: grid;
+    grid-template-columns: 34px 1.8fr 1.6fr 1fr 1fr 1fr 1fr 1fr auto;
+    gap: 8px;
+    padding: 0 8px 6px;
+
+    span {
+      font-size: calc(var(--font-small) - 1px);
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    span:last-child {
+      width: 30px;
+    }
+  }
+
+  // Обёртка строки (поля + характеристики) — разделитель между строками,
+  // чтобы соседние не сливались в кашу при заполненных значениях.
+  .itemRowWrap {
+    padding: 10px 8px;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+
+    &:nth-child(even) {
+      background: rgba(20, 85, 254, 0.03);
+    }
+
+    &:hover {
+      background: rgba(20, 85, 254, 0.06);
+    }
+
+    & + .itemRowWrap {
+      margin-top: 2px;
+      border-top: 1px solid var(--border-color);
+    }
+  }
+
+  .itemRow {
+    display: grid;
+    grid-template-columns: 34px 1.8fr 1.6fr 1fr 1fr 1fr 1fr 1fr auto;
+    gap: 8px;
+    align-items: center;
+
+    // метрики SearchableSelect под остальные поля строки
+    --sws-margin-top: 0px;
+    --sws-height: 34px;
+    --sws-radius: 5px;
+
+    input,
+    select {
+      width: 100%;
+      height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: var(--font-small);
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    // Товар — не SearchableSelect, а кнопка: клик открывает окно выбора
+    // (AddMultipleProductsModal), оно же используется и для добавления сразу
+    // нескольких позиций. Внешне выглядит как остальные поля строки.
+    .productPicker {
+      width: 100%;
+      height: 34px;
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      box-sizing: border-box;
+      background: var(--input-bg, var(--card-bg));
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+
+      &:hover:not(:disabled) {
+        border-color: var(--third-color);
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+    }
+
+    .productPickerValue,
+    .productPickerPlaceholder {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: var(--font-small);
+      font-family: inherit;
+    }
+
+    .productPickerValue {
+      color: var(--text-color);
+      font-weight: 500;
+    }
+
+    .productPickerPlaceholder {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    // Описание — вспомогательное поле, визуально отличаем от значащих
+    // количеств/цены мельче, серым и курсивом (как и в просмотре документа).
+    .descriptionInput {
+      font-style: italic;
+      font-size: calc(var(--font-small) - 1px);
+      color: var(--text-secondary);
+    }
+  }
+
+  // Порядковый номер строки — не поле, просто счётчик, выглядит как остальные
+  // поля строки, но не редактируется
+  .rowNumber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--card-bg);
+    color: var(--text-secondary);
+    font-size: var(--font-small);
+    font-variant-numeric: tabular-nums;
+    box-sizing: border-box;
+  }
+
+  // Характеристики строки (напр. "Цвет") — набор зависит от категории товара,
+  // поэтому отдельным гибким рядом под основной сеткой, а не колонкой в ней.
+  // Отступ слева заводит их под колонку товара, пунктир сверху отделяет от
+  // полей строки — иначе визуально прилипают к товару.
+  .itemAttributes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 0 0 42px;
+    border-top: 1px dashed var(--border-color);
+  }
+
+  // Компактное поле характеристики — фикс. узкая ширина (не тянется на всю
+  // колонку, как обычные поля строки), поиск нужен, когда значений много
+  // (напр. десятки оттенков цвета), SearchableSelect уже режет список и
+  // сам показывает подсказку "ещё N — уточните поиском".
+  .itemAttributeField {
+    width: 150px;
+
+    // метрики SearchableSelect — компактнее обычных полей строки (34px)
+    --sws-margin-top: 2px;
+    --sws-height: 28px;
+    --sws-radius: 6px;
+    --sws-font-size: calc(var(--font-small) - 1px);
+
+    label {
+      display: block;
+      margin-bottom: 2px;
+      font-size: calc(var(--font-small) - 2px);
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  // Сумма строки — не поле ввода, просто посчитанное значение
+  .rowTotal {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 34px;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-color);
+    background: var(--card-bg);
+    box-sizing: border-box;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .totalRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: rgba(20, 85, 254, 0.06);
+
+    span:first-child {
+      color: var(--text-secondary);
+      font-size: var(--font-body);
+      font-weight: 500;
+    }
+
+    span:last-child {
+      font-weight: 700;
+      font-size: calc(var(--font-body) + 4px);
+      color: var(--third-color);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  .removeBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 5px;
+    background: var(--bg-light);
+    color: var(--badge-color-disabled);
+    cursor: pointer;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .addBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px dashed var(--border-color);
+    border-radius: 5px;
+    background: none;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      color 0.15s ease,
+      transform 0.15s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.15s ease;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--third-color);
+      border-style: solid;
+      background: rgba(20, 85, 254, 0.08);
+      color: var(--third-color);
+      transform: translateY(-1px);
+
+      svg {
+        transform: rotate(90deg);
+      }
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .empty {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    padding: 8px 0;
+  }
+}

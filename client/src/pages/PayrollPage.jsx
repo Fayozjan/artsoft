@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Users,
@@ -7,12 +7,11 @@ import {
   Wallet,
   SlidersHorizontal,
   TrendingUp,
-  TrendingDown,
-  BarChart3,
 } from "lucide-react";
 
 import { payrollApi } from "../api/payroll";
 import { useAlertStore } from "../stores/alertStore";
+import { useAuthStore } from "../stores/authStore";
 
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
@@ -21,7 +20,9 @@ import SalarySort from "../components/SalarySort";
 import PayrollTable from "../components/PayrollTable";
 import { Icons } from "../icons/icons";
 
+import Search from "../components/Search";
 import styles from "./PayrollPage.module.scss";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const fmt = (n) =>
   String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
@@ -78,7 +79,9 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
 
 const PayrollPage = () => {
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
   const { showAlert } = useAlertStore();
+  const { viewMode, activeBranchId } = useAuthStore((s) => s.userSettings) || {};
 
   const [month, setMonth] = useState(getCurrentMonth());
   const [formData, setFormData] = useState(initialFilters);
@@ -91,6 +94,30 @@ const PayrollPage = () => {
   const [pageSize, setPageSize] = useState(50);
 
   const [selectedIds, setSelectedIds] = useState([]);
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
 
   // ── Fetch ────────────────────────────────────────────────────────────────────
 
@@ -106,7 +133,7 @@ const PayrollPage = () => {
         page,
         pageSize: size,
         search: filters.search,
-        branch_id: filters.branch_id,
+        branch_id: viewMode === "branch" && activeBranchId ? activeBranchId : filters.branch_id,
         department_id: filters.department_id,
         position_id: filters.position_id,
         salary_type: filters.salary_type,
@@ -139,11 +166,17 @@ const PayrollPage = () => {
     fetchSheet(month, reset, 1, pageSize);
   }, [month]);
 
+  useEffect(() => {
+    if (viewMode === "branch") {
+      fetchSheet(month, formData, 1, pageSize);
+    }
+  }, [activeBranchId]);
+
   // ── Filter / sort / page handlers ────────────────────────────────────────────
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setSelectedIds([]);
-    fetchSheet(month, formData, 1, pageSize);
+    fetchSheet(month, data, 1, pageSize);
   };
 
   const handleFormSubmit = (e) => {
@@ -351,8 +384,12 @@ const PayrollPage = () => {
 
       <div className={styles.main}>
         {/* ── Stats widgets ──────────────────────────────────────────────────── */}
-        {st && (
-          <div className={styles.statsGrid}>
+        {widgetsVisible && st && (
+          <div
+            className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+          >
+            <div className={styles.statsGridInner}>
+              <div className={styles.statsGrid}>
             <StatWidget
               icon={Users}
               color="#6366f1"
@@ -395,18 +432,8 @@ const PayrollPage = () => {
               label={t("statsAdjPlus")}
               value={`+${fmt(st.adj_plus)}`}
             />
-            <StatWidget
-              icon={TrendingDown}
-              color="#ef4444"
-              label={t("statsAdjMinus")}
-              value={fmt(st.adj_minus)}
-            />
-            <StatWidget
-              icon={BarChart3}
-              color={st.adj_sum >= 0 ? "#10b981" : "#ef4444"}
-              label={t("statsAdjTotal")}
-              value={`${st.adj_sum >= 0 ? "+" : ""}${fmt(st.adj_sum)}`}
-            />
+              </div>
+            </div>
           </div>
         )}
 
@@ -420,30 +447,7 @@ const PayrollPage = () => {
               className={styles.monthInput}
             />
 
-            <div className={styles.searchInput}>
-              <span onClick={handleSearch}>{Icons.search}</span>
-              <input
-                type="text"
-                placeholder={t("search")}
-                value={formData.search}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, search: e.target.value }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              {formData.search && (
-                <span
-                  className={styles.clearBtn}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, search: "" }))
-                  }
-                >
-                  {Icons.clear}
-                </span>
-              )}
-            </div>
+            <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
             <PayrollFilter
               formData={formData}
@@ -531,6 +535,7 @@ const PayrollPage = () => {
         {/* ── Table ──────────────────────────────────────────────────────────── */}
         {sheet ? (
           <PayrollTable
+            onScroll={handleTableScroll}
             items={sheet.items || []}
             onItemUpdate={handleItemUpdate}
             selectedIds={selectedIds}

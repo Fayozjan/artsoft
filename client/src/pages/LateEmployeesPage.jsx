@@ -1,8 +1,12 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import { useTranslation } from "react-i18next";
 
-import { getLateEmployees } from "../api";
+import {
+  getActiveBranches,
+  getActivePositions,
+  getLateEmployees,
+} from "../api";
 
 import LateTableFilter from "../components/LateTableFilter";
 import Loading from "../components/Loading";
@@ -14,6 +18,8 @@ import DownloadButton from "../components/DownloadButton";
 import { formatLateMinutesToHours } from "../helpers/time";
 import MonthlyLateReport from "../components/MonthlyLateReport";
 
+import EmployeeCell from "../components/EmployeeCell";
+import Search from "../components/Search";
 import styles from "./LateEmployeesPage.module.scss";
 import { DownloadLate } from "../utils/downloadDoc";
 import { Clock, AlarmClock, Users, Coffee, Wallet } from "lucide-react";
@@ -33,6 +39,35 @@ const LATE_SORT_FIELDS = [
 
 const fmt = (n) =>
   String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
+// "2026-08-01" → "01.08.2026" (без new Date — чтобы не ловить сдвиг по таймзоне)
+const formatDayRu = (isoDay) => {
+  const [y, m, d] = String(isoDay || "").split("-");
+  return d ? `${d}.${m}.${y}` : String(isoDay || "");
+};
+
+// Порядок филиалов и должностей в Excel берём из справочников — как в выгрузке
+// посещаемости. Без sort_order группы упорядочатся по алфавиту
+async function fetchSortMaps() {
+  try {
+    const [branches, positions] = await Promise.all([
+      getActiveBranches(),
+      getActivePositions(),
+    ]);
+
+    return {
+      branchSortMap: new Map(
+        (branches.data || []).map((b) => [b.name, b.sort_order ?? 0]),
+      ),
+      positionSortMap: new Map(
+        (positions.data || []).map((p) => [p.name, p.sort_order ?? 0]),
+      ),
+    };
+  } catch (err) {
+    console.error("не удалось загрузить sort_order справочников", err);
+    return {};
+  }
+}
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
@@ -66,8 +101,11 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
 );
 import LateEmployeeModal from "../components/LateEmployeeModal";
 import { useAuthStore } from "../stores/authStore";
+import { useImagePreviewStore } from "../stores/imagePreviewStore";
+import { useAlertStore } from "../stores/alertStore";
 import { Icons } from "../icons/icons";
 import LateEmployeesTable from "../components/LateEmployeesTable";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 function formatPermissionEndTime(dateString) {
   if (!dateString) return "";
@@ -86,6 +124,9 @@ const LateEmployeesPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [totalItems, setTotalItems] = useState(1);
+  // Итоги за весь период приходят с сервера: страница содержит только часть
+  // сотрудников, по ней виджеты считать нельзя
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [viewType, setViewType] = useState("row");
@@ -93,19 +134,55 @@ const LateEmployeesPage = () => {
   const [formData, setFormData] = useState({
     mode: "day",
     date: new Date().toISOString().slice(0, 10),
-    branch_id: "",
-    department_id: "",
-    employee_id: "",
-    position_id: "",
+    date_from: "",
+    date_to: "",
+    branch_ids: [],
+    department_ids: [],
+    employee_ids: [],
+    position_ids: [],
     include_lunch_late: false,
     sort_by: "last_name",
     sort_order: "asc",
   });
   const [selectedMode, setSelectedMode] = useState("day");
+  // Флаг из применённого запроса, а не из живой формы: колонки не должны
+  // появляться/исчезать до нажатия «Применить»
+  const [appliedIncludeLunch, setAppliedIncludeLunch] = useState(false);
+  // Применённый диапазон режима «за период»: подпись над таблицей и колонки
+  // сетки по филиалам должны меняться только после «Применить»
+  const [appliedPeriod, setAppliedPeriod] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const { viewMode, activeBranchId } =
     useAuthStore((s) => s.userSettings) || {};
 
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
+  const openImagePreview = useImagePreviewStore((s) => s.open);
+  const showAlert = useAlertStore((s) => s.showAlert);
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
 
   const hasAnyPermission = data?.lateEmployeesByMonth?.some(
     (item) => item.have_permission || item.permission_end_time,
@@ -124,25 +201,16 @@ const LateEmployeesPage = () => {
       accessor: "employeeFullName",
       group: "day",
       render: (_, item) => (
-        <div className={styles.empCell}>
-          {item.employeePhoto && (
-            <img
-              src={`/api/employees/image/${item.employeePhoto}`}
-              alt="photo"
-            />
-          )}
-          <div className={styles.empInfo}>
-            <span className={styles.empName}>{item.employeeFullName}</span>
-            <span className={styles.empSub}>
-              {[item.branchName, item.departmentName]
-                .filter(Boolean)
-                .join(" / ")}
-            </span>
-          </div>
-        </div>
+        <EmployeeCell
+          photo={item.employeePhoto}
+          fullName={item.employeeFullName}
+          id={item.employeeId}
+          branch={item.branchName}
+          department={item.departmentName}
+          active={item.employeeStatus !== false}
+        />
       ),
     },
-    { label: t("employeeNumber"), accessor: "employeeNumber", group: "day" },
     { label: t("position"), accessor: "positionName", group: "day" },
 
     {
@@ -163,7 +231,7 @@ const LateEmployeesPage = () => {
     },
 
     {
-      label: t("lateCol"),
+      label: `${t("lateCol")} (${t("hhmmFormat")})`,
       group: "day",
       render: (_, item) => (
         <div className={styles.timeWrapper}>
@@ -174,6 +242,25 @@ const LateEmployeesPage = () => {
           )}
         </div>
       ),
+    },
+
+    {
+      label: t("latePhoto"),
+      accessor: "actualStartPhoto",
+      group: "day",
+      render: (value) =>
+        value ? (
+          <img
+            src={`/api/face-passes/image/${value}`}
+            alt={t("latePhoto")}
+            className={styles.latePhotoThumb}
+            onClick={() =>
+              openImagePreview(`/api/face-passes/image/${value}`)
+            }
+          />
+        ) : (
+          "—"
+        ),
     },
 
     {
@@ -200,7 +287,7 @@ const LateEmployeesPage = () => {
         ]
       : []),
 
-    ...(formData.include_lunch_late
+    ...(appliedIncludeLunch
       ? [
           {
             label: t("breakLabel"),
@@ -245,7 +332,7 @@ const LateEmployeesPage = () => {
         return `${v} ${timeStr}`;
       },
     },
-    ...(formData.include_lunch_late
+    ...(appliedIncludeLunch
       ? [
           {
             label: t("lateAfterBreak"),
@@ -310,13 +397,22 @@ const LateEmployeesPage = () => {
 
   useEffect(() => {
     const now = new Date();
+    const today = now.toISOString().slice(0, 10);
 
-    const newDate =
+    // Период по умолчанию — с начала текущего месяца по сегодня
+    const dateFields =
       formData.mode === "day"
-        ? now.toISOString().slice(0, 10)
-        : now.toISOString().slice(0, 7);
+        ? { date: today, date_from: "", date_to: "" }
+        : formData.mode === "month"
+          ? { date: now.toISOString().slice(0, 7), date_from: "", date_to: "" }
+          : {
+              date: "",
+              date_from: `${today.slice(0, 8)}01`,
+              date_to: today,
+            };
 
     // Сбрасываем данные таблицы
+    setSummary(null);
     setData(
       formData.mode === "day"
         ? []
@@ -326,11 +422,11 @@ const LateEmployeesPage = () => {
     // Полностью сбрасываем formData
     setFormData({
       mode: formData.mode,
-      date: newDate,
-      branch_id: "",
-      department_id: "",
-      employee_id: "",
-      position_id: "",
+      ...dateFields,
+      branch_ids: [],
+      department_ids: [],
+      employee_ids: [],
+      position_ids: [],
       search: "",
       include_lunch_late: false,
       sort_by: "last_name",
@@ -348,18 +444,37 @@ const LateEmployeesPage = () => {
   ) => {
     setLoading(true);
     try {
-      const { data, pagination } = await getLateEmployees({
+      const { data, summary: summaryTotals, pagination } = await getLateEmployees({
         page,
         pageSize: size,
         filters,
       });
 
+      setAppliedIncludeLunch(!!filters.include_lunch_late);
+      setAppliedPeriod(
+        filters.mode === "period"
+          ? { from: filters.date_from, to: filters.date_to }
+          : null,
+      );
       setData(data);
+      setSummary(summaryTotals ?? null);
       setTotalPages(pagination?.totalPages);
       setCurrentPage(pagination?.currentPage ?? currentPage);
       setTotalItems(pagination?.totalItems);
     } catch (err) {
-      console.error(err.message);
+      // Раньше ошибка молча уходила в консоль и страница показывала «нет данных»
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.error || err.response?.data?.message;
+      console.error("getLateEmployees failed", {
+        status,
+        mode: filters?.mode,
+        date: filters?.date,
+        message: serverMessage || err.message,
+      });
+      showAlert(
+        serverMessage || `${t("error")}${status ? ` (${status})` : ""}`,
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -374,6 +489,51 @@ const LateEmployeesPage = () => {
   useEffect(() => {
     fetchData(currentPage);
   }, [currentPage, pageSize]);
+
+  // Excel выгружает весь отфильтрованный список, а не текущую страницу:
+  // тянем данные отдельным запросом с pageSize=all
+  const handleDownload = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const { data: fullData } = await getLateEmployees({
+        page: 1,
+        pageSize: "all",
+        filters: formData,
+      });
+
+      if (formData.mode === "day") {
+        await DownloadLate.day(fullData || [], formData.date);
+        return;
+      }
+
+      const isPeriod = formData.mode === "period";
+
+      if (viewType === "employees") {
+        await DownloadLate.monthByEmployee(
+          fullData?.lateEmployeesByMonth || [],
+          isPeriod ? formData.date_from : formData.date,
+          appliedIncludeLunch,
+          await fetchSortMaps(),
+          isPeriod ? formData.date_to : null,
+        );
+      } else {
+        await DownloadLate.monthByBranch(
+          fullData?.lateByBranchAndDay || [],
+          isPeriod ? formData.date_from : formData.date,
+          isPeriod ? formData.date_to : null,
+        );
+      }
+    } catch (err) {
+      console.error("export failed", err);
+      showAlert(
+        err.response?.data?.error || err.message || t("error"),
+        "error",
+      );
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -395,9 +555,9 @@ const LateEmployeesPage = () => {
     await fetchData(1, formData);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   const handleSortApply = (sort_by, sort_order) => {
@@ -442,26 +602,22 @@ const LateEmployeesPage = () => {
   const lateItems = Array.isArray(data)
     ? data
     : data?.lateEmployeesByMonth || [];
-  const totalLateMinutes = lateItems.reduce(
-    (a, b) => a + (b.lateMinutes || b.monthlyLateMinutes || 0),
-    0,
-  );
-  const totalArrivalLateCount = lateItems.reduce(
-    (a, b) => a + (b.monthlyArrivalLateCount || 0),
-    0,
-  );
-  const totalBreakReturnCount = lateItems.reduce(
-    (a, b) => a + (b.monthlyLunchLateCount || 0),
-    0,
-  );
-  const totalBreakReturnMinutes = lateItems.reduce(
-    (a, b) => a + (b.monthlyBreakReturnLateMinutes || 0),
-    0,
-  );
-  const totalLateMoney = lateItems.reduce(
-    (a, b) => a + (Number(b.monthlyLateMoney) || 0),
-    0,
-  );
+  // Пока сводки нет (старый ответ сервера) — считаем по загруженным строкам
+  const sumBy = (fn) => lateItems.reduce((acc, item) => acc + (fn(item) || 0), 0);
+  const lateEmployeesCount =
+    summary?.lateEmployeesCount ?? (totalItems || lateItems.length);
+  const totalLateMinutes =
+    summary?.totalLateMinutes ??
+    sumBy((b) => b.lateMinutes || b.monthlyLateMinutes);
+  const totalArrivalLateCount =
+    summary?.totalArrivalLateCount ?? sumBy((b) => b.monthlyArrivalLateCount);
+  const totalBreakReturnCount =
+    summary?.totalLunchLateCount ?? sumBy((b) => b.monthlyLunchLateCount);
+  const totalBreakReturnMinutes =
+    summary?.totalBreakReturnMinutes ??
+    sumBy((b) => b.monthlyBreakReturnLateMinutes);
+  const totalLateMoney =
+    summary?.totalLateMoney ?? sumBy((b) => Number(b.monthlyLateMoney));
 
   return (
     <div className={styles.lateEmployeesPage}>
@@ -469,13 +625,17 @@ const LateEmployeesPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {(totalItems > 0 || lateItems.length > 0) && (
-            <div className={styles.statsGrid}>
+          {widgetsVisible && (lateEmployeesCount > 0 || lateItems.length > 0) && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
               <StatWidget
                 icon={Users}
                 color="#ef4444"
                 label={t("lateEmployeesLabel")}
-                value={totalItems || lateItems.length}
+                value={lateEmployeesCount}
               />
               <StatWidget
                 icon={Clock}
@@ -489,13 +649,13 @@ const LateEmployeesPage = () => {
                 color="#6366f1"
                 label={t("average")}
                 value={formatLateMinutesToHours(
-                  lateItems.length > 0
-                    ? Math.round(totalLateMinutes / lateItems.length)
+                  lateEmployeesCount > 0
+                    ? Math.round(totalLateMinutes / lateEmployeesCount)
                     : 0,
                 )}
                 sub={t("hoursShort")}
               />
-              {selectedMode === "month" && totalArrivalLateCount > 0 && (
+              {selectedMode !== "day" && totalArrivalLateCount > 0 && (
                 <StatWidget
                   icon={Clock}
                   color="#dc2626"
@@ -503,20 +663,22 @@ const LateEmployeesPage = () => {
                   value={totalArrivalLateCount}
                 />
               )}
-              {selectedMode === "month" && totalBreakReturnCount > 0 && (
-                <StatWidget
-                  icon={Coffee}
-                  color="#f97316"
-                  label={t("afterBreak")}
-                  value={totalBreakReturnCount}
-                  sub={
-                    totalBreakReturnMinutes > 0
-                      ? `${formatLateMinutesToHours(totalBreakReturnMinutes)} ${t("hoursShort")}`
-                      : undefined
-                  }
-                />
-              )}
-              {selectedMode === "month" && totalLateMoney > 0 && (
+              {selectedMode !== "day" &&
+                appliedIncludeLunch &&
+                totalBreakReturnCount > 0 && (
+                  <StatWidget
+                    icon={Coffee}
+                    color="#f97316"
+                    label={t("afterBreak")}
+                    value={totalBreakReturnCount}
+                    sub={
+                      totalBreakReturnMinutes > 0
+                        ? `${formatLateMinutesToHours(totalBreakReturnMinutes)} ${t("hoursShort")}`
+                        : undefined
+                    }
+                  />
+                )}
+              {selectedMode !== "day" && totalLateMoney > 0 && (
                 <StatWidget
                   icon={Wallet}
                   color="#6366f1"
@@ -524,65 +686,13 @@ const LateEmployeesPage = () => {
                   value={fmt(totalLateMoney)}
                 />
               )}
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
               <LateTableFilter
                 formData={formData}
@@ -654,23 +764,15 @@ const LateEmployeesPage = () => {
                 ? data.length > 0 && (
                     <DownloadButton
                       text={t("save")}
-                      onClick={() => DownloadLate.day(data, formData.date)}
+                      onClick={handleDownload}
+                      loading={exporting}
                     />
                   )
                 : data?.lateEmployeesByMonth?.length > 0 && (
                     <DownloadButton
                       text={t("save")}
-                      onClick={() =>
-                        viewType === "employees"
-                          ? DownloadLate.monthByEmployee(
-                              data?.lateEmployeesByMonth,
-                              formData.date,
-                            )
-                          : DownloadLate.monthByBranch(
-                              data?.lateByBranchAndDay,
-                              formData.date,
-                            )
-                      }
+                      onClick={handleDownload}
+                      loading={exporting}
                     />
                   )}
             </div>
@@ -680,6 +782,7 @@ const LateEmployeesPage = () => {
             formData.date ? (
               viewType === "row" ? (
                 <LateEmployeesTable
+                  onScroll={handleTableScroll}
                   columns={dayColumns}
                   data={data}
                   date={formData.date}
@@ -687,23 +790,39 @@ const LateEmployeesPage = () => {
               ) : viewType === "card" ? (
                 <LateCardList
                   data={Array.isArray(data) ? data : []}
-                  includeLunch={formData.include_lunch_late}
+                  includeLunch={appliedIncludeLunch}
                 />
               ) : (
                 <LateCardListCarousel
                   data={Array.isArray(data) ? data : []}
-                  includeLunch={formData.include_lunch_late}
+                  includeLunch={appliedIncludeLunch}
                 />
               )
             ) : (
               <></>
             )
           ) : (
-            <MonthlyLateReport
-              onMore={setModalData}
-              data={data || []}
-              viewType={viewType}
-            />
+            <>
+              {appliedPeriod && (
+                <div className={styles.periodCaption}>
+                  <span className={styles.periodCaptionLabel}>
+                    {t("period")}
+                  </span>
+                  <span className={styles.periodCaptionValue}>
+                    {formatDayRu(appliedPeriod.from)} —{" "}
+                    {formatDayRu(appliedPeriod.to)}
+                  </span>
+                </div>
+              )}
+              <MonthlyLateReport
+                onMore={setModalData}
+                data={data || []}
+                viewType={viewType}
+                includeLunch={appliedIncludeLunch}
+                dateFrom={appliedPeriod?.from ?? null}
+                dateTo={appliedPeriod?.to ?? null}
+              />
+            </>
           )}
         </div>
       )}
@@ -712,6 +831,7 @@ const LateEmployeesPage = () => {
         <LateEmployeeModal
           modalData={modalData}
           onClose={() => setModalData(null)}
+          includeLunch={appliedIncludeLunch}
         />
       )}
     </div>

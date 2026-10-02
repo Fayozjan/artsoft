@@ -1,0 +1,280 @@
+.form {
+  position: relative;
+  padding-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .header {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 10px;
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: calc(var(--font-small) + 2px);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .headerDocNumber {
+      font-size: var(--font-small);
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .headerActions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .keyboardToggleBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      width: 28px;
+      padding: 0;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 5px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+      }
+
+      &.active {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+    }
+
+    svg {
+      cursor: pointer;
+      transition: transform 0.1s ease;
+
+      &:hover {
+        transform: scale(1.1);
+      }
+    }
+  }
+
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px;
+  }
+
+  .row {
+    padding: 0 0 10px 0;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+
+    > div {
+      flex: 1;
+    }
+
+    .full {
+      flex: 1 1 100%;
+    }
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-small);
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+  }
+
+  .req {
+    color: red;
+  }
+
+  input,
+  select,
+  textarea {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+    background: var(--input-bg);
+    color: var(--text-color);
+  }
+
+  textarea {
+    height: auto;
+    resize: vertical;
+  }
+
+  input[type="date"] {
+    cursor: pointer;
+  }
+
+  .itemsHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 12px 0 8px;
+
+    h3 {
+      margin: 0;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .itemsHeaderActions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .addRowBtn,
+    .scanToggleBtn {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 5px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      background: var(--card-bg);
+      cursor: pointer;
+      font-size: var(--font-small);
+      color: var(--text-color);
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+      }
+    }
+
+    .scanToggleBtn.active {
+      background: var(--third-color);
+      border-color: var(--third-color);
+      color: var(--button-text);
+    }
+  }
+
+  .scanBox {
+    margin-bottom: 12px;
+    padding: 10px;
+    border: 1px dashed var(--third-color);
+    border-radius: 6px;
+    background: var(--bg-light);
+
+    label {
+      display: block;
+      font-size: var(--font-small);
+      margin-bottom: 4px;
+      color: var(--text-secondary);
+    }
+
+    input {
+      height: 34px;
+      border-color: var(--third-color);
+    }
+  }
+
+  .lockedHint {
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: var(--bg-light);
+    color: var(--text-secondary);
+    font-size: var(--font-small);
+  }
+
+  .itemsTableWrap {
+    overflow-x: auto;
+    margin-bottom: 12px;
+  }
+
+  .itemsTable {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 1250px;
+
+    th,
+    td {
+      padding: 4px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    td input {
+      min-width: 80px;
+    }
+
+    // Позиция с начатой работой — только для просмотра.
+    .lockedRow td input:disabled {
+      background: var(--bg-light);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+    }
+
+    .removeRowBtn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 4px;
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      &:hover {
+        color: #dc2626;
+      }
+
+      &:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+
+        &:hover {
+          color: var(--text-secondary);
+        }
+      }
+    }
+  }
+
+  .footer {
+    padding: 8px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-color);
+  }
+}

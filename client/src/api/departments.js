@@ -48,3 +48,18 @@ export const deleteDepartmentById = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const getDepartmentsStaffingOverview = async (params = {}) => {
+  const res = await api.get("/departments/staffing-overview", { params });
+  return {
+    success: res.data.success,
+    data: res.data.data,
+  };
+};
+
+export const importDepartmentsExcel = async (formData) => {
+  const res = await api.post("/departments/import-excel", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};

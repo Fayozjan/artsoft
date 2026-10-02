@@ -1,0 +1,261 @@
+// Экран формы филиала в Telegram: поля по карточкам, «Сохранить» — в шапке справа.
+// Общие поля и кнопки — из tg/TgUi.module.scss.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 30;
+  pointer-events: none;
+  // почти непрозрачная «матовая» панель: контент под ней не мигает при скролле
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  transform: translateZ(0);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 0 calc(24px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Шапка: заголовок слева, «Сохранить» справа. Не скроллится вместе с формой.
+.head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(#{$safe-top} + 8px) 12px 10px 16px;
+  border-bottom: 0.5px solid var(--tg-separator);
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+}
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(20, 85, 254, 0.3);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+}
+
+// ── Заголовок секции ─────────────────────────────────────────────────────────
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.toneBlue {
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+}
+
+.toneAmber {
+  background: var(--tg-badge-amber-bg);
+  color: var(--tg-badge-amber-color);
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+// ── Список: выпадающий выбор ─────────────────────────────────────────────────
+
+.selectWrap {
+  position: relative;
+}
+
+.select {
+  padding-right: 44px;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.selectArrow {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  display: flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+  transform: translateY(-50%);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ── Статус: переключатель ────────────────────────────────────────────────────
+
+.segment {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+}
+
+.segmentBtn {
+  height: 40px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.segmentOn {
+  background: var(--tg-badge-green-bg);
+  color: var(--tg-badge-green-color);
+  box-shadow: inset 0 0 0 1px var(--tg-badge-green-border);
+}
+
+.segmentOff {
+  background: var(--tg-badge-red-bg);
+  color: var(--tg-badge-red-color);
+  box-shadow: inset 0 0 0 1px var(--tg-badge-red-border);
+}
+
+// ── Скелетон ─────────────────────────────────────────────────────────────────
+
+.skLine {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

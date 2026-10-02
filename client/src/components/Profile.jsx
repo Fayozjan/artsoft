@@ -52,7 +52,7 @@ const IconHelp = () => (
   </svg>
 );
 
-const Profile = ({ type = "full" }) => {
+const Profile = ({ type = "full", position = "left" }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
@@ -99,7 +99,7 @@ const Profile = ({ type = "full" }) => {
   return (
     <div
       ref={wrapperRef}
-      className={`${styles.profileWrapper} ${isMini ? styles.mini : ""} ${isOpen ? styles.active : ""}`}
+      className={`${styles.profileWrapper} ${isMini ? styles.mini : ""} ${isOpen ? styles.active : ""} ${position === "top" ? styles.inTopBar : ""}`}
     >
       <div className={`${styles.popup} ${isOpen ? styles.popupVisible : ""}`}>
         <div className={styles.popupHeader}>

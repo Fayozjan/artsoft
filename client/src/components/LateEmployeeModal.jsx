@@ -1,18 +1,55 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Clock, Coffee, Wallet } from "lucide-react";
+import { CalendarDays, Clock, Coffee, Wallet } from "lucide-react";
 
 import { formatLateMinutesToHours } from "../helpers/time";
 import { DownloadLate } from "../utils/downloadDoc";
+import { useImagePreviewStore } from "../stores/imagePreviewStore";
+import SortArrow from "./SortArrow";
 
 import styles from "./LateEmployeeModal.module.scss";
 
 const fmt = (n) =>
   String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-const LateEmployeeModal = ({ modalData, onClose }) => {
+const LateEmployeeModal = ({ modalData, onClose, includeLunch = false }) => {
   const { t } = useTranslation();
+  const openImagePreview = useImagePreviewStore((s) => s.open);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   if (!modalData) return null;
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const sortedDetails = sortField
+    ? [...(modalData.details || [])].sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        return sortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : modalData.details || [];
+
+  const avatarUrl = modalData.employeePhoto
+    ? `/api/employees/image/${modalData.employeePhoto}`
+    : null;
 
   const handleDownload = async () => {
     try {
@@ -21,7 +58,7 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
         year: "numeric",
         month: "long",
       });
-      await DownloadLate.employeeMonth(modalData, monthDate);
+      await DownloadLate.employeeMonth(modalData, monthDate, includeLunch);
     } catch (error) {
       console.error("Download error:", error);
       alert(t("error"));
@@ -34,10 +71,12 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
         <div className={styles.modalHeader}>
           <div className={styles.modalHeaderTop}>
             <div className={styles.modalAvatar}>
-              {modalData.employeePhoto ? (
+              {avatarUrl ? (
                 <img
-                  src={`/api/employees/image/${modalData.employeePhoto}`}
+                  src={avatarUrl}
                   alt=""
+                  onClick={() => openImagePreview(avatarUrl)}
+                  style={{ cursor: "pointer" }}
                 />
               ) : (
                 <span>{modalData.employeeFullName?.[0] ?? "?"}</span>
@@ -97,6 +136,30 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
         </div>
 
         <div className={styles.modalStatsGrid}>
+          <div className={styles.modalStatWidget}>
+            <div
+              className={styles.modalStatWidgetIcon}
+              style={{ background: "#3b82f618" }}
+            >
+              <CalendarDays size={14} color="#3b82f6" strokeWidth={2} />
+            </div>
+            <div className={styles.modalStatWidgetContent}>
+              <span className={styles.modalStatWidgetLabel}>
+                {t("workedDays")}
+              </span>
+              <span
+                className={styles.modalStatWidgetValue}
+                style={{ color: "#3b82f6" }}
+              >
+                {modalData.monthlyAttendedDays || 0}
+                <span className={styles.modalStatWidgetSub}>
+                  {" "}
+                  {t("of")} {modalData.monthlyWorkDays || 0}
+                </span>
+              </span>
+            </div>
+          </div>
+
           <div className={styles.modalStatWidget}>
             <div
               className={styles.modalStatWidgetIcon}
@@ -179,17 +242,52 @@ const LateEmployeeModal = ({ modalData, onClose }) => {
             <thead>
               <tr>
                 <th>№</th>
-                <th>{t("date")}</th>
-                <th>{t("scheduledStart")}</th>
-                <th>{t("actualEntry")}</th>
-                <th>{t("lateAtWork")}</th>
-                <th>{t("breakEnd")}</th>
-                <th>{t("returned")}</th>
-                <th>{t("lateAfterBreak")}</th>
+                <th onClick={() => handleSort("date")}>
+                  <span className={styles.headerContent}>
+                    {t("date")}
+                    <SortArrow active={sortField === "date"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("scheduledStart")}>
+                  <span className={styles.headerContent}>
+                    {t("scheduledStart")}
+                    <SortArrow active={sortField === "scheduledStart"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("actualStart")}>
+                  <span className={styles.headerContent}>
+                    {t("actualEntry")}
+                    <SortArrow active={sortField === "actualStart"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("lateMinutes")}>
+                  <span className={styles.headerContent}>
+                    {t("lateAtWork")}
+                    <SortArrow active={sortField === "lateMinutes"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("scheduledBreakEnd")}>
+                  <span className={styles.headerContent}>
+                    {t("breakEnd")}
+                    <SortArrow active={sortField === "scheduledBreakEnd"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("actualBreakReturn")}>
+                  <span className={styles.headerContent}>
+                    {t("returned")}
+                    <SortArrow active={sortField === "actualBreakReturn"} order={sortOrder} />
+                  </span>
+                </th>
+                <th onClick={() => handleSort("breakReturnLateMinutes")}>
+                  <span className={styles.headerContent}>
+                    {t("lateAfterBreak")}
+                    <SortArrow active={sortField === "breakReturnLateMinutes"} order={sortOrder} />
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {modalData.details?.map((item, i) => (
+              {sortedDetails.map((item, i) => (
                 <tr key={i} className={styles.lateRow}>
                   <td className={styles.lateRowNum}>{i + 1}</td>
                   <td className={styles.lateRowDate}>{item.date}</td>

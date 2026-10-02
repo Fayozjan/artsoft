@@ -1,4 +1,4 @@
-.add_user {
+﻿.add_user {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -24,7 +24,7 @@
     display: block;
     font-size: 14px;
     margin-bottom: 5px;
-    color: #666;
+    color: var(--text-secondary);
   }
 
   .checkbox {
@@ -32,7 +32,7 @@
     justify-content: start;
     gap: 5px;
     padding: 5px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     box-sizing: border-box;
 
@@ -89,7 +89,7 @@
     padding: 40px;
     border-radius: 10px;
 
-    background-color: white;
+    background-color: var(--card-bg);
     text-align: center;
     font-size: 24px;
     font-weight: 600;

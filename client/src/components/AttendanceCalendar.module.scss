@@ -1,4 +1,4 @@
-.calendar_container {
+﻿.calendar_container {
   max-width: 700px;
   margin: 10px auto;
   text-align: center;
@@ -12,7 +12,7 @@
 }
 
 .summary {
-  background: #f9f9f9;
+  background: var(--table-header);
   padding: 5px;
   border-radius: 8px;
   margin-bottom: 10px;
@@ -35,7 +35,7 @@
   }
 
   strong {
-    color: #333;
+    color: var(--text-color);
   }
 }
 
@@ -50,7 +50,7 @@
   }
 
   .day {
-    background: #f0f0f0;
+    background: var(--table-header);
     border-radius: 8px;
     padding: 5px;
     min-height: 40px;
@@ -94,7 +94,7 @@
     }
 
     .no_data {
-      color: #aaa;
+      color: var(--placeholder-color);
     }
   }
 }

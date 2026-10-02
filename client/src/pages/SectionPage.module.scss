@@ -1,0 +1,71 @@
+.page {
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+
+  &:hover {
+    background: var(--bg-light);
+    border-color: var(--third-color);
+    color: var(--text-color);
+
+    .tileIcon {
+      border-color: var(--third-color);
+      color: var(--third-color);
+    }
+  }
+}
+
+.tileIcon {
+  margin-bottom: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--bg-light);
+  color: var(--text-secondary);
+  transition:
+    background 0.16s,
+    border-color 0.16s,
+    color 0.16s;
+
+  svg {
+    width: 21px;
+    height: 21px;
+  }
+}
+
+.tileLabel {
+  max-width: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.25;
+  text-align: center;
+  color: inherit;
+}

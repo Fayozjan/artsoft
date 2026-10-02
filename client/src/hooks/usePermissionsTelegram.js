@@ -1,6 +1,6 @@
 // hooks/usePermissionsTelegram.js
 import { useState, useEffect } from "react";
-import api from "../api/instance";
+import { getUserMenu } from "../api/users";
 
 export const usePermissionsTelegram = (currentPath) => {
   const [menuData, setMenuData] = useState([]);
@@ -9,8 +9,7 @@ export const usePermissionsTelegram = (currentPath) => {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const res = await api.get("/users/menu");
-        setMenuData(res.data);
+        setMenuData(await getUserMenu({ platform: "telegram" }));
       } catch (err) {
         console.error("Ошибка получения меню:", err);
       } finally {

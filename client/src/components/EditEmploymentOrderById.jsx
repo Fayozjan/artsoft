@@ -5,6 +5,7 @@ import { useAlertStore } from "../stores/alertStore";
 
 import Loading from "./Loading";
 import { motion } from "framer-motion";
+import { Icons } from "../icons/icons";
 
 import styles from "./EditEmploymentOrderById.module.scss";
 
@@ -105,36 +106,7 @@ const EditEmploymentOrderById = ({ id, onClickClose, setHistory }) => {
         exit={{ opacity: 0, scale: 0.8 }}
         transition={{ duration: 0.3 }}
       >
-        <svg
-          className={styles.cancel}
-          onClick={() => onClickClose()}
-          viewBox="0 0 256 256"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect fill="none" height="256" width="256" />
-          <line
-            fill="none"
-            stroke="#000"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="24"
-            x1="200"
-            x2="56"
-            y1="56"
-            y2="200"
-          />
-          <line
-            fill="none"
-            stroke="#000"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="24"
-            x1="200"
-            x2="56"
-            y1="200"
-            y2="56"
-          />
-        </svg>
+        <span className={styles.cancel} onClick={() => onClickClose()} style={{ display: "flex", cursor: "pointer" }}>{Icons.clear}</span>
         <form className={styles.employee_form} onSubmit={handleSubmit}>
           <div className={styles.form_group}>
             <div className={styles.input_fields}>

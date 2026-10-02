@@ -105,7 +105,9 @@ const AttendanceCalendar = ({ data }) => {
                 )}
               </div>
 
-              <div className={styles.total_hours}>Итог: {workedHours}</div>
+              <div className={styles.total_hours}>
+                {t("resultTotal")}: {workedHours}
+              </div>
             </div>
           );
         })}

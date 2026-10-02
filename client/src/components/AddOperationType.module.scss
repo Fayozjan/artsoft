@@ -1,0 +1,506 @@
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  .header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-color);
+
+    .backBtn {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+    }
+
+    .headerText {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .eyebrow {
+        font-size: calc(var(--font-small) - 1px);
+        color: var(--text-secondary);
+      }
+
+      h2 {
+        margin: 0;
+        padding: 0;
+        font-size: calc(var(--font-small) + 4px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow-y: auto;
+    padding: 16px;
+
+    // Три блока: данные, допущенные сотрудники, их команды. Каждый скроллится
+    // сам (у сотрудников/команд — список внутри), страница целиком не прыгает.
+    .content {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-rows: minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    // Узкий экран — блоки друг под другом, скроллит вся страница.
+    @media (max-width: 1200px) {
+      display: block;
+
+      .content {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: none;
+      }
+    }
+  }
+
+  .section {
+    min-height: 0;
+    padding: 14px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--card-bg);
+
+    &.sectionData {
+      overflow-y: auto;
+    }
+
+    // Пикер сотрудников растягивается на весь блок; прокручивается его список.
+    &.sectionEmployees {
+      display: flex;
+      flex-direction: column;
+    }
+
+    &.sectionTeams {
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sectionHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+
+      h3 {
+        margin: 0;
+        font-size: var(--font-small);
+        font-weight: 600;
+      }
+
+      .addTeamBtn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 5px 10px;
+        border: 1px solid var(--border-color);
+        border-radius: 5px;
+        background: var(--card-bg);
+        cursor: pointer;
+        font-size: var(--font-small);
+        color: var(--text-color);
+        flex-shrink: 0;
+
+        svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        &:hover {
+          border-color: var(--third-color);
+          color: var(--third-color);
+        }
+      }
+    }
+  }
+
+  .teamsEmpty {
+    color: var(--text-secondary);
+    font-size: var(--font-small);
+  }
+
+  .teamsList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+  }
+
+  .teamCard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--input-bg);
+
+    .teamCardInfo {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      .teamCardName {
+        font-weight: 500;
+        font-size: var(--font-small);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .teamCardCount {
+        font-size: calc(var(--font-small) - 1px);
+        color: var(--text-secondary);
+      }
+    }
+
+    .teamCardActions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+
+      button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-secondary);
+        padding: 4px;
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+
+        &:hover {
+          color: var(--third-color);
+        }
+      }
+    }
+  }
+
+  // Компактная форма команды прямо в блоке "Команды" — вместо отдельной модалки.
+  // flex:1 — тянется на всю высоту секции, а не только под свой контент.
+  .teamForm {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--third-color, #1455fe);
+    border-radius: 6px;
+    background: rgba(20, 85, 254, 0.04);
+    position: relative;
+  }
+
+  .teamFormHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--font-small);
+    font-weight: 600;
+
+    .teamFormClose {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      color: var(--text-secondary);
+
+      svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      &:hover {
+        color: var(--text-color);
+      }
+    }
+  }
+
+  .teamFormName {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+    background: var(--input-bg);
+    color: var(--text-color);
+  }
+
+  .teamFormPicker {
+    flex: 1;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .teamFormActions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    .cancelBtn {
+      height: 30px;
+      padding: 0 12px;
+    }
+  }
+
+  .teamFormSaveBtn {
+    height: 30px;
+    padding: 0 14px;
+    border: none;
+    border-radius: 4px;
+    background: var(--third-color, #1455fe);
+    color: #fff;
+    cursor: pointer;
+    font-size: var(--font-small);
+    font-weight: 500;
+
+    &:hover {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // Блок данных разбит на группы с подзаголовком: параметры, роль в цепочке, связи.
+  .group + .group {
+    margin-top: 20px;
+  }
+
+  .groupTitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    font-size: calc(var(--font-small) - 1px);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+
+    &::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
+  }
+
+  // 6 колонок: обычное поле — половина (3), название и порядок — 4+2.
+  // Ячейка — колонка с прижатием вниз: подписи в 1 и 2 строки в одном ряду
+  // не сдвигают поля, все контролы ряда стоят на одной линии.
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px 16px;
+
+    > div {
+      grid-column: span 3;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-width: 0;
+    }
+
+    > .nameCol {
+      grid-column: span 4;
+    }
+
+    > .orderCol {
+      grid-column: span 2;
+    }
+
+    @media (max-width: 640px) {
+      grid-template-columns: minmax(0, 1fr);
+
+      > div,
+      > .nameCol,
+      > .orderCol {
+        grid-column: auto;
+      }
+    }
+  }
+
+  label {
+    display: block;
+    font-size: var(--font-small);
+    line-height: 1.3;
+    margin-bottom: 3px;
+    color: var(--text-secondary);
+  }
+
+  .req {
+    color: red;
+  }
+
+  .hint {
+    display: block;
+    margin-bottom: 10px;
+    font-size: calc(var(--font-small) - 1px);
+    color: var(--text-secondary);
+  }
+
+  // Подпись поля + значок "?": подсказка во всплывашке вместо текста под полем.
+  // Значок "?" — инлайн после последнего слова, а не у правого края при переносе подписи.
+  .labelRow {
+    display: block;
+    line-height: 1.3;
+  }
+
+  .hintIcon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    margin-left: 5px;
+    vertical-align: -2px;
+    color: var(--text-secondary);
+    cursor: help;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    &:hover .hintTooltip,
+    &:focus .hintTooltip,
+    &:focus-visible .hintTooltip {
+      visibility: visible;
+      opacity: 1;
+    }
+  }
+
+  .hintIconRight .hintTooltip {
+    left: auto;
+    right: 0;
+  }
+
+  // По умолчанию растёт от левого края значка вправо — не обрезается скроллом
+  // секции (см. FieldLabel). .hintIconRight — растёт влево, для правой колонки.
+  .hintTooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    width: max-content;
+    max-width: 240px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    background: var(--text-color);
+    color: var(--card-bg);
+    font-size: calc(var(--font-small) - 1px);
+    font-weight: 400;
+    line-height: 1.3;
+    text-align: left;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  .disabledField {
+    display: flex;
+    align-items: center;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    background: var(--input-bg);
+    opacity: 0.6;
+    box-sizing: border-box;
+  }
+
+  input,
+  select {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+    background: var(--input-bg);
+    color: var(--text-color);
+  }
+
+  // Не только в футере — переиспользуется и в компактной форме команды.
+  .cancelBtn {
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid rgba(162, 161, 168, 0.4);
+    border-radius: 4px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: var(--font-small);
+
+    &:hover {
+      border-color: var(--third-color);
+      color: var(--third-color);
+    }
+  }
+
+  .footer {
+    padding: 10px 16px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    border-top: 1px solid var(--border-color);
+  }
+}

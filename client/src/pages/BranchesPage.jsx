@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
@@ -18,10 +18,12 @@ import SortArrow from "../components/SortArrow";
 import DownloadButton from "../components/DownloadButton";
 import TableFilter from "../components/TableFilter";
 
+import Search from "../components/Search";
 import styles from "./BranchesPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
 import { Building2, LayoutGrid, Users, CheckCircle } from "lucide-react";
 import { Icons } from "../icons/icons";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
@@ -71,6 +73,31 @@ const BranchesPage = () => {
   const [sortField, setSortField] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -179,9 +206,9 @@ const BranchesPage = () => {
     await fetchData(1, formData);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   return (
@@ -190,8 +217,12 @@ const BranchesPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {data.length > 0 && (
-            <div className={styles.statsGrid}>
+          {widgetsVisible && data.length > 0 && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
               <StatWidget
                 icon={Building2}
                 color="#6366f1"
@@ -217,64 +248,13 @@ const BranchesPage = () => {
                 value={data.filter((x) => x.status === "active").length}
                 sub={`/ ${data.length}`}
               />
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
               <TableFilter
                 formData={formData}
@@ -310,7 +290,7 @@ const BranchesPage = () => {
               )}
             </div>
           </div>
-          <div className={styles.tableContainer}>
+          <div className={styles.tableContainer} onScroll={handleTableScroll}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -323,6 +303,15 @@ const BranchesPage = () => {
                       {t("name")}
                       <SortArrow
                         active={sortField === "name"}
+                        order={sortOrder}
+                      />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("sort_order")}>
+                    <span className={styles.headerContent}>
+                      {t("sortOrder")}
+                      <SortArrow
+                        active={sortField === "sort_order"}
                         order={sortOrder}
                       />
                     </span>
@@ -345,20 +334,20 @@ const BranchesPage = () => {
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("departmentCount")}>
+                  <th onClick={() => handleSort("departmentsCount")}>
                     <span className={styles.headerContent}>
                       {t("departments")}
                       <SortArrow
-                        active={sortField === "departmentCount"}
+                        active={sortField === "departmentsCount"}
                         order={sortOrder}
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("employeeCount")}>
+                  <th onClick={() => handleSort("employeesCount")}>
                     <span className={styles.headerContent}>
                       {t("employees")}
                       <SortArrow
-                        active={sortField === "employeeCount"}
+                        active={sortField === "employeesCount"}
                         order={sortOrder}
                       />
                     </span>
@@ -390,6 +379,7 @@ const BranchesPage = () => {
                     <tr key={item.id}>
                       <td>{(currentPage - 1) * pageSize + index + 1}</td>
                       <td>{item.name}</td>
+                      <td>{item.sort_order}</td>
                       <td>{item.id}</td>
                       <td>{item.director}</td>
                       <td>{item.departmentsCount}</td>

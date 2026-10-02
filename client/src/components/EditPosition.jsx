@@ -16,6 +16,7 @@ const EditPosition = ({ id, onSuccess }) => {
   const [formData, setFormData] = useState({
     name: "",
     status: "true",
+    sort_order: 0,
   });
 
   const userSettings = useAuthStore((state) => state.userSettings);
@@ -107,6 +108,16 @@ const EditPosition = ({ id, onSuccess }) => {
             <option value="true">{t("true")}</option>
             <option value="false">{t("false")}</option>
           </select>
+        </div>
+        <div>
+          <label htmlFor="sort_order">{t("sortOrder")}</label>
+          <input
+            type="number"
+            name="sort_order"
+            value={formData?.sort_order}
+            onChange={handleChange}
+            min="0"
+          />
         </div>
       </div>
     </form>

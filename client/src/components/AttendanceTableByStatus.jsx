@@ -7,6 +7,7 @@ import DownloadButton from "./DownloadButton";
 
 import styles from "./AttendanceTableByStatus.module.scss";
 import { formatLateMinutesToHours } from "../helpers/time";
+import { Icons } from "../icons/icons";
 
 const PAGE_SIZE = 50;
 
@@ -29,6 +30,12 @@ export const branchesColumns = [
     key: "name",
     titleKey: "branch",
     sortable: true,
+  },
+  {
+    key: "departmentsCount",
+    titleKey: "departmentsCount",
+    sortable: true,
+    render: (row) => row.departments?.length || 0,
   },
   {
     key: "activeEmployeesCount",
@@ -388,17 +395,7 @@ const AttendanceTableByStatus = ({
       <h4>{modalTitle}</h4>
       <div className={styles.header}>
         <div className={styles.searchInput}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="19"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill="#000000"
-              d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-            />
-          </svg>
+          {Icons.search}
           <input
             type="text"
             placeholder={t("search")}
@@ -407,23 +404,7 @@ const AttendanceTableByStatus = ({
           />
 
           {search && (
-            <svg
-              className={styles.clearBtn}
-              onClick={() => setSearch("")}
-              xmlns="http://www.w3.org/2000/svg"
-              width="19"
-              height="18"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="none"
-                stroke="#000000"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <span className={styles.clearBtn} onClick={() => setSearch("")} style={{ display: "flex", cursor: "pointer" }}>{Icons.clear}</span>
           )}
         </div>
         {Object.keys(data[modalType]).length > 0 && (

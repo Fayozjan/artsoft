@@ -1,32 +1,27 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Clock,
-  CheckCircle,
-  Wallet,
-  AlertCircle,
-  TrendingDown,
-} from "lucide-react";
+import { Users, Wallet, CheckCircle, AlertCircle } from "lucide-react";
 
 import { payrollApi } from "../api/payroll";
 import { useAlertStore } from "../stores/alertStore";
+import { useAuthStore } from "../stores/authStore";
 
 import Loading from "../components/Loading";
 import Pagination from "../components/Pagination";
 import PayrollFilter from "../components/PayrollFilter";
 import SalarySort from "../components/SalarySort";
-import PayoutsTable from "../components/PayoutsTable";
-import { Icons } from "../icons/icons";
+import PayoutsYearTable from "../components/PayoutsYearTable";
+import EmployeeYearModal from "../components/EmployeeYearModal";
+import Search from "../components/Search";
 
 import styles from "./SalaryPayoutsPage.module.scss";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const fmt = (n) =>
-  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
+  String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
-function getCurrentMonth() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-}
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 7 }, (_, i) => CURRENT_YEAR - 5 + i);
 
 const initialFilters = {
   search: "",
@@ -79,14 +74,19 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
 );
 
 // ── SalaryPayoutsPage ─────────────────────────────────────────────────────────
+// Single year-wide view: payout queue and the year report are one table.
+// Each employee row pays its current month; expanding shows every month,
+// each payable on its own.
 
 const SalaryPayoutsPage = () => {
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
   const { showAlert } = useAlertStore();
+  const { viewMode, activeBranchId } = useAuthStore((s) => s.userSettings) || {};
 
-  const [month, setMonth] = useState(getCurrentMonth());
+  const [year, setYear] = useState(CURRENT_YEAR);
   const [formData, setFormData] = useState(initialFilters);
-  const [sheet, setSheet] = useState(null);
+  const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -95,22 +95,51 @@ const SalaryPayoutsPage = () => {
   const [pageSize, setPageSize] = useState(50);
 
   const [selectedIds, setSelectedIds] = useState([]);
+  // Employee whose year breakdown modal is open; the row itself is derived
+  // from the report so a refetch after a payment updates the modal too.
+  const [modalEmployeeId, setModalEmployeeId] = useState(null);
+  // Аванс любому сотруднику, в том числе отсутствующему в отчёте
+
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
 
   // ── Fetch ─────────────────────────────────────────────────────────────────────
 
-  const fetchPayouts = async (
-    m = month,
+  const fetchReport = async (
+    y = year,
     filters = formData,
     page = currentPage,
     size = pageSize,
   ) => {
     setLoading(true);
     try {
-      const res = await payrollApi.getPayouts(m, {
+      const res = await payrollApi.getPayoutsYearReport(y, {
         page,
         pageSize: size,
         search: filters.search,
-        branch_id: filters.branch_id,
+        branch_id: viewMode === "branch" && activeBranchId ? activeBranchId : filters.branch_id,
         department_id: filters.department_id,
         position_id: filters.position_id,
         salary_type: filters.salary_type,
@@ -120,7 +149,7 @@ const SalaryPayoutsPage = () => {
       });
 
       if (res.success) {
-        setSheet(res.data);
+        setReport(res.data);
         setCurrentPage(res.pagination?.currentPage ?? page);
         setTotalPages(res.pagination?.totalPages ?? 1);
         setTotalItems(res.pagination?.total ?? 0);
@@ -140,52 +169,59 @@ const SalaryPayoutsPage = () => {
     setFormData(reset);
     setCurrentPage(1);
     setSelectedIds([]);
-    fetchPayouts(month, reset, 1, pageSize);
-  }, [month]);
+    fetchReport(year, reset, 1, pageSize);
+  }, [year]);
+
+  useEffect(() => {
+    if (viewMode === "branch") fetchReport(year, formData, 1, pageSize);
+  }, [activeBranchId]);
 
   // ── Filter / sort / page handlers ─────────────────────────────────────────────
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setSelectedIds([]);
-    fetchPayouts(month, formData, 1, pageSize);
+    fetchReport(year, data, 1, pageSize);
   };
 
   const handleFormSubmit = (e) => {
     e?.preventDefault();
     setSelectedIds([]);
-    fetchPayouts(month, formData, 1, pageSize);
+    fetchReport(year, formData, 1, pageSize);
   };
 
   const handlePageChange = (newPage) => {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
-    fetchPayouts(month, formData, newPage, pageSize);
+    fetchReport(year, formData, newPage, pageSize);
   };
 
   const handleChangePageSize = (e) => {
     const size = parseInt(e.target.value, 10);
     setPageSize(size);
     setSelectedIds([]);
-    fetchPayouts(month, formData, 1, size);
+    fetchReport(year, formData, 1, size);
   };
 
   const handleSortApply = (sort_by, sort_order) => {
     const updated = { ...formData, sort_by, sort_order };
     setFormData(updated);
     setSelectedIds([]);
-    fetchPayouts(month, updated, 1, pageSize);
+    fetchReport(year, updated, 1, pageSize);
   };
 
   // ── Selection ─────────────────────────────────────────────────────────────────
 
   const handleToggleSelect = (id) => {
+    if (!id) return;
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   };
 
   const handleToggleAll = () => {
-    const pageIds = (sheet?.items || []).map((it) => it.id);
+    const pageIds = (report?.items || [])
+      .map((r) => r.current?.item_id)
+      .filter(Boolean);
     const allSelected = pageIds.every((id) => selectedIds.includes(id));
     setSelectedIds(
       allSelected
@@ -194,118 +230,17 @@ const SalaryPayoutsPage = () => {
     );
   };
 
-  // ── Paid / revert actions ─────────────────────────────────────────────────────
+  // ── Bulk actions on the selected employees' current month ─────────────────────
 
-  const applyBulkPaidStatus = async (ids, status) => {
-    if (!ids.length) return;
-    try {
-      const res = await payrollApi.bulkMarkPaid(ids, status);
-      if (res.success) {
-        setSheet((prev) => {
-          const stats = prev?.stats;
-          let newStats = stats;
-          if (stats) {
-            const affected = prev.items.filter((it) => ids.includes(it.id));
-            let pendingDelta = 0,
-              paidDelta = 0,
-              pendingSumDelta = 0,
-              paidSumDelta = 0;
-            affected.forEach((it) => {
-              if (it.payout_status !== status) {
-                if (status === "paid") {
-                  pendingDelta -= 1;
-                  paidDelta += 1;
-                  pendingSumDelta -= Number(it.net);
-                  paidSumDelta += Number(it.net);
-                } else {
-                  pendingDelta += 1;
-                  paidDelta -= 1;
-                  pendingSumDelta += Number(it.net);
-                  paidSumDelta -= Number(it.net);
-                }
-              }
-            });
-            newStats = {
-              ...stats,
-              pending_count: stats.pending_count + pendingDelta,
-              paid_count: stats.paid_count + paidDelta,
-              pending_sum: stats.pending_sum + pendingSumDelta,
-              paid_sum: stats.paid_sum + paidSumDelta,
-            };
-          }
-          return {
-            ...prev,
-            stats: newStats,
-            items: prev.items.map((it) =>
-              ids.includes(it.id) ? { ...it, payout_status: status } : it,
-            ),
-          };
-        });
-        showAlert(t("saved"), "success");
-      }
-    } catch {
-      showAlert(t("error"), "error");
-    }
-  };
-
-  const applyAllPaidStatus = async (status) => {
-    if (!sheet?.id) return;
-    try {
-      const res = await payrollApi.markAllPayoutsStatus(sheet.id, status);
-      if (res.success) {
-        setSheet((prev) => {
-          const stats = prev?.stats;
-          let newStats = stats;
-          if (stats) {
-            const total = stats.pending_count + stats.paid_count;
-            const totalSum = stats.pending_sum + stats.paid_sum;
-            newStats = {
-              ...stats,
-              pending_count: status === "paid" ? 0 : total,
-              paid_count: status === "paid" ? total : 0,
-              pending_sum: status === "paid" ? 0 : totalSum,
-              paid_sum: status === "paid" ? totalSum : 0,
-            };
-          }
-          return {
-            ...prev,
-            stats: newStats,
-            items: prev.items.map((it) => ({ ...it, payout_status: status })),
-          };
-        });
-        showAlert(t("saved"), "success");
-      }
-    } catch {
-      showAlert(t("error"), "error");
-    }
-  };
-
-  const handlePayAction = async () => {
-    if (selectedIds.length > 0) {
-      await applyBulkPaidStatus(selectedIds, "paid");
-      setSelectedIds([]);
-    } else {
-      await applyAllPaidStatus("paid");
-    }
-  };
-
-  const handleRevertAction = async () => {
-    if (selectedIds.length > 0) {
-      await applyBulkPaidStatus(selectedIds, "unpaid");
-      setSelectedIds([]);
-    } else {
-      await applyAllPaidStatus("unpaid");
-    }
-  };
-
-  const handleRecalculateBalances = async () => {
-    if (!sheet?.id) return;
+  const applyBulkPaidStatus = async (status) => {
+    if (!selectedIds.length) return;
     setLoading(true);
     try {
-      const res = await payrollApi.recalculateSalaryBalances(sheet.id);
+      const res = await payrollApi.bulkMarkPaid(selectedIds, status);
       if (res.success) {
         showAlert(t("saved"), "success");
-        fetchPayouts(month, formData, currentPage, pageSize);
+        setSelectedIds([]);
+        await fetchReport(year, formData, currentPage, pageSize);
       } else {
         showAlert(res.message || t("error"), "error");
       }
@@ -316,23 +251,34 @@ const SalaryPayoutsPage = () => {
     }
   };
 
-  const handlePayItem    = (id) => applyBulkPaidStatus([id], "paid");
-  const handleRevertItem = (id) => applyBulkPaidStatus([id], "unpaid");
-
-  const handleItemUpdate = (updatedItem) => {
-    setSheet((prev) => ({
-      ...prev,
-      items: prev.items.map((it) =>
-        it.id === updatedItem.id ? { ...it, ...updatedItem } : it,
-      ),
-    }));
+  const handleRecalculateBalances = async () => {
+    setLoading(true);
+    try {
+      // One server pass over every sheet of the year, oldest month first
+      const res = await payrollApi.recalculateYearBalances(year);
+      if (!res.success) {
+        showAlert(res.message || t("error"), "error");
+        return;
+      }
+      showAlert(t("saved"), "success");
+      await fetchReport(year, formData, currentPage, pageSize);
+    } catch {
+      showAlert(t("error"), "error");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleChanged = () => fetchReport(year, formData, currentPage, pageSize);
 
   // ── Derived ───────────────────────────────────────────────────────────────────
 
+  const st = report?.stats;
   const selCount = selectedIds.length;
-  const st = sheet?.stats;
-  const total = (st?.pending_count ?? 0) + (st?.paid_count ?? 0);
+  const modalRow =
+    (report?.items || []).find((r) => r.employee?.id === modalEmployeeId) || null;
+  const paidPct =
+    st && st.net > 0 ? Math.min(100, (st.paid / st.net) * 100) : 0;
 
   return (
     <div className={styles.page}>
@@ -340,90 +286,71 @@ const SalaryPayoutsPage = () => {
 
       <div className={styles.main}>
         {/* ── Stats ────────────────────────────────────────────────────────── */}
-        {st && (
-          <div className={styles.statsGrid}>
-            <StatWidget
-              icon={Clock}
-              color="#3b82f6"
-              label={t("statsPending")}
-              value={st.pending_count}
-              sub={total > 0 ? ` / ${total}` : undefined}
-            />
-            <StatWidget
-              icon={CheckCircle}
-              color="#16a34a"
-              label={t("statsPaid")}
-              value={st.paid_count}
-              sub={total > 0 ? `${Math.round((st.paid_count / total) * 100)}%` : "0%"}
-              progress={total > 0 ? (st.paid_count / total) * 100 : 0}
-            />
-            <StatWidget
-              icon={Wallet}
-              color="#3b82f6"
-              label={t("statsPendingSum")}
-              value={fmt(st.pending_sum)}
-            />
-            <StatWidget
-              icon={CheckCircle}
-              color="#16a34a"
-              label={t("statsTotalPaidAmount")}
-              value={fmt(st.total_paid_amount)}
-            />
-            <StatWidget
-              icon={AlertCircle}
-              color="#f59e0b"
-              label={t("statsSalaryBalance")}
-              value={st.total_salary_balance > 0 ? fmt(st.total_salary_balance) : "—"}
-            />
-            <StatWidget
-              icon={AlertCircle}
-              color="#ef4444"
-              label={t("statsTotalDebt")}
-              value={st.total_debt_deduction > 0 ? `−${fmt(st.total_debt_deduction)}` : "—"}
-            />
-            <StatWidget
-              icon={TrendingDown}
-              color="#7c3aed"
-              label={t("statsTotalAdvance")}
-              value={st.total_advance > 0 ? fmt(st.total_advance) : "—"}
-            />
+        {widgetsVisible && st && (
+          <div
+            className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+          >
+            <div className={styles.statsGridInner}>
+              <div className={styles.statsGrid}>
+                <StatWidget
+                  icon={Users}
+                  color="#3b82f6"
+                  label={t("employees")}
+                  value={st.employees}
+                />
+                <StatWidget
+                  icon={Wallet}
+                  color="#1d4ed8"
+                  label={t("currentSalary")}
+                  value={fmt(st.current_base)}
+                />
+                <StatWidget
+                  icon={Wallet}
+                  color="#0f172a"
+                  label={t("lastAccrual")}
+                  value={fmt(st.current_net)}
+                />
+                <StatWidget
+                  icon={AlertCircle}
+                  color="#f59e0b"
+                  label={t("outstanding")}
+                  value={fmt(st.outstanding)}
+                />
+                <StatWidget
+                  icon={Wallet}
+                  color="#0f172a"
+                  label={t("yearAccrued")}
+                  value={fmt(st.net)}
+                />
+                <StatWidget
+                  icon={CheckCircle}
+                  color="#16a34a"
+                  label={t("yearPaid")}
+                  value={fmt(st.paid)}
+                  sub={`${Math.round(paidPct)}%`}
+                  progress={paidPct}
+                />
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── Header ───────────────────────────────────────────────────────── */}
         <div className={styles.mainHeader}>
           <div className={styles.filterWrapper}>
-            <input
-              type="month"
-              value={month}
-              onChange={(e) => setMonth(e.target.value)}
-              className={styles.monthInput}
-            />
+            <select
+              className={styles.yearSelect}
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+            >
+              {YEARS.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
 
-            <div className={styles.searchInput}>
-              <span onClick={handleSearch}>{Icons.search}</span>
-              <input
-                type="text"
-                placeholder={t("search")}
-                value={formData.search}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, search: e.target.value }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              {formData.search && (
-                <span
-                  className={styles.clearBtn}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, search: "" }))
-                  }
-                >
-                  {Icons.clear}
-                </span>
-              )}
-            </div>
+            <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
             <PayrollFilter
               formData={formData}
@@ -452,51 +379,57 @@ const SalaryPayoutsPage = () => {
             <button
               className={styles.recalcBtn}
               onClick={handleRecalculateBalances}
-              disabled={!sheet || loading}
+              disabled={loading}
               title={t("recalculateBalances")}
             >
               {t("recalculateBalances")}
             </button>
 
-            <button
-              className={styles.bulkPayBtn}
-              onClick={handlePayAction}
-              disabled={!sheet || loading}
-            >
-              {selCount > 0
-                ? `${t("markPaidSelected")} (${selCount})`
-                : t("markPaidAll")}
-            </button>
+            {selCount > 0 && (
+              <>
+                <button
+                  className={styles.bulkPayBtn}
+                  onClick={() => applyBulkPaidStatus("paid")}
+                  disabled={loading}
+                >
+                  {`${t("markPaidSelected")} (${selCount})`}
+                </button>
 
-            {(selCount > 0 || (st?.paid_count ?? 0) > 0) && (
-              <button
-                className={styles.bulkRevertBtn}
-                onClick={handleRevertAction}
-                disabled={!sheet || loading}
-              >
-                {selCount > 0
-                  ? `${t("markUnpaidSelected")} (${selCount})`
-                  : t("markUnpaidAll")}
-              </button>
+                <button
+                  className={styles.bulkRevertBtn}
+                  onClick={() => applyBulkPaidStatus("unpaid")}
+                  disabled={loading}
+                >
+                  {`${t("markUnpaidSelected")} (${selCount})`}
+                </button>
+              </>
             )}
           </div>
         </div>
 
         {/* ── Table ────────────────────────────────────────────────────────── */}
-        {sheet ? (
-          <PayoutsTable
-            items={sheet.items || []}
+        {report?.items?.length ? (
+          <PayoutsYearTable
+            onScroll={handleTableScroll}
+            items={report.items}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onToggleAll={handleToggleAll}
-            onPayItem={handlePayItem}
-            onRevertItem={handleRevertItem}
-            onItemUpdate={handleItemUpdate}
+            onOpenEmployee={(row) => setModalEmployeeId(row.employee?.id)}
+            onChanged={handleChanged}
           />
         ) : (
           !loading && <div className={styles.empty}>{t("noData")}</div>
         )}
       </div>
+
+      <EmployeeYearModal
+        isOpen={Boolean(modalRow)}
+        row={modalRow}
+        year={report?.year ?? year}
+        onClose={() => setModalEmployeeId(null)}
+        onChanged={handleChanged}
+      />
     </div>
   );
 };

@@ -1,0 +1,562 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+
+  .main {
+    padding: 2px;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 0;
+  }
+
+  .statsGridWrap {
+    display: grid;
+    grid-template-rows: 1fr;
+    flex-shrink: 0;
+    opacity: 1;
+    transition:
+      grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 0.28s ease;
+  }
+
+  .statsGridWrapHidden {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+
+  .statsGridInner {
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  .statsGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 7px;
+    padding: 6px 5px 3px;
+  }
+
+  .statWidget {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 8px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    transition:
+      box-shadow 0.18s,
+      transform 0.18s;
+
+    &:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      transform: translateY(-2px);
+    }
+  }
+
+  .statWidgetInner {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .statWidgetIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .statWidgetContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .statWidgetLabel {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .statWidgetValue {
+    font-size: 18px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.2;
+  }
+
+  .statWidgetSub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--placeholder-color);
+  }
+
+  .mainHeader {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    flex-shrink: 0;
+
+    .filterWrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    select {
+      width: 90px;
+      height: 32px;
+      border-radius: 4px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      text-align: center;
+      cursor: pointer;
+      background-color: var(--card-bg);
+      color: var(--text-color);
+    }
+
+    .buttonsWrapper {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .refreshBtn {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 4px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        cursor: pointer;
+        box-sizing: border-box;
+        background-color: var(--card-bg);
+
+        svg {
+          width: 18px;
+          height: 18px;
+        }
+
+        &:hover {
+          border: 1px solid var(--third-color);
+        }
+      }
+    }
+  }
+
+  // ── Легенда ───────────────────────────────────────────────────────────────
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .legendItem {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+
+      &::before {
+        content: "";
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        border: 1px solid var(--border-subtle);
+      }
+
+      &.weekend::before {
+        background: rgba(100, 116, 139, 0.28);
+      }
+      &.holiday::before {
+        background: rgba(245, 158, 11, 0.4);
+      }
+      &.short::before {
+        background: rgba(236, 72, 153, 0.35);
+      }
+    }
+  }
+
+  // ── Панель действий над выделением ────────────────────────────────────────
+  .selectionBar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 5px 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    background: var(--bg-light);
+    flex-shrink: 0;
+
+    .selectionCount {
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .nameInput {
+      height: 32px;
+      min-width: 180px;
+      flex: 1 1 180px;
+      max-width: 280px;
+      padding: 0 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      background-color: var(--card-bg);
+      color: var(--text-color);
+      font-size: var(--font-small);
+    }
+
+    .shortInput {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+      white-space: nowrap;
+
+      input {
+        width: 70px;
+        height: 32px;
+        border-radius: 4px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        text-align: center;
+        background-color: var(--card-bg);
+        color: var(--text-color);
+      }
+    }
+
+    // Сегментированный переключатель типа дня
+    .typeButtons {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 3px;
+      border-radius: 999px;
+      background: var(--bg-light);
+      border: 1px solid var(--border-subtle);
+    }
+
+    // Выбор типа — не применяет изменения сразу, только помечает черновик.
+    // Цвет сегмента задаётся переменными, чтобы состояния не дублировать на тип.
+    .typeBtn {
+      --chip: #64748b;
+      --chip-soft: rgba(100, 116, 139, 0.16);
+
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      height: 30px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      font-size: var(--font-small);
+      font-weight: 600;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      transition:
+        background 0.16s ease,
+        color 0.16s ease,
+        border-color 0.16s ease,
+        box-shadow 0.16s ease;
+
+      svg {
+        flex-shrink: 0;
+        opacity: 0.65;
+        transition: opacity 0.16s ease;
+      }
+
+      &:hover:not(:disabled):not(.active) {
+        background: var(--chip-soft);
+        color: var(--chip);
+
+        svg {
+          opacity: 1;
+        }
+      }
+
+      &:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--chip-soft);
+      }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+
+      // Выбранный сегмент: заливка своим цветом + кольцо
+      &.active {
+        background: var(--chip-soft);
+        border-color: var(--chip);
+        color: var(--chip);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+
+        svg {
+          opacity: 1;
+        }
+      }
+
+      &.weekend {
+        --chip: #64748b;
+        --chip-soft: rgba(100, 116, 139, 0.16);
+      }
+      &.holiday {
+        --chip: #d97706;
+        --chip-soft: rgba(245, 158, 11, 0.16);
+      }
+      &.short {
+        --chip: #db2777;
+        --chip-soft: rgba(236, 72, 153, 0.14);
+      }
+
+      // На тёмном фоне тёмные акценты не читаются — берём светлые оттенки
+      :global(html.dark) & {
+        &.weekend {
+          --chip: #94a3b8;
+          --chip-soft: rgba(148, 163, 184, 0.2);
+        }
+        &.holiday {
+          --chip: #fbbf24;
+          --chip-soft: rgba(251, 191, 36, 0.18);
+        }
+        &.short {
+          --chip: #f472b6;
+          --chip-soft: rgba(244, 114, 182, 0.18);
+        }
+
+        &.active {
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+        }
+      }
+    }
+
+    .selectionActions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+    }
+
+    .saveBtn,
+    .deleteBtn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: var(--font-small);
+      font-weight: 600;
+      white-space: nowrap;
+      transition:
+        background 0.15s,
+        border-color 0.15s;
+
+      svg {
+        flex-shrink: 0;
+      }
+
+      &:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+    }
+
+    .saveBtn {
+      border: 1px solid var(--third-color);
+      background: var(--third-color);
+      color: #fff;
+
+      &:hover:not(:disabled) {
+        filter: brightness(0.93);
+      }
+    }
+
+    // Удаление снимает пометку календаря, данные сотрудников не трогает —
+    // поэтому контурная красная, а не залитая
+    .deleteBtn {
+      border: 1px solid rgba(239, 68, 68, 0.7);
+      background: transparent;
+      color: #dc2626;
+
+      &:hover:not(:disabled) {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+      }
+    }
+
+    .clearBtn {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      &:hover:not(:disabled) {
+        border-color: var(--third-color);
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+    }
+  }
+
+  // ── Сетка месяцев ─────────────────────────────────────────────────────────
+  .calendarGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+    padding: 0 5px 10px;
+    overflow-y: auto;
+    min-height: 0;
+    flex: 1;
+  }
+
+  .monthCard {
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 8px;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .monthHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+
+    .monthName {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    .monthMarks {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+  }
+
+  .weekDaysRow,
+  .daysGrid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+  }
+
+  .weekDayLabel {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--placeholder-color);
+    text-transform: uppercase;
+  }
+
+  .blankDay {
+    aspect-ratio: 1;
+  }
+
+  .day {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    color: var(--text-color);
+    background: var(--bg-light);
+    padding: 0;
+    transition:
+      transform 0.12s,
+      box-shadow 0.12s;
+
+    &:hover {
+      transform: scale(1.06);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    &.weekend {
+      background: rgba(100, 116, 139, 0.28);
+      color: var(--text-secondary);
+    }
+
+    &.holiday {
+      background: rgba(245, 158, 11, 0.4);
+      color: #92400e;
+    }
+
+    &.short {
+      background: rgba(236, 72, 153, 0.35);
+      color: #9d174d;
+    }
+
+    &.override {
+      border-color: var(--border-color);
+    }
+
+    &.today {
+      outline: 2px solid var(--third-color);
+      outline-offset: -2px;
+    }
+
+    &.selected {
+      border-color: var(--third-color);
+      box-shadow: inset 0 0 0 2px var(--third-color);
+    }
+
+    .dayDot {
+      position: absolute;
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.7;
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -10,23 +10,68 @@ import {
 import { useAlertStore } from "../stores/alertStore";
 import { useScreenStack } from "../context/ScreenStackContext";
 
-import Loading from "../components/Loading";
-import { Icons } from "../icons/icons";
+import Loading from "../components/LoadingTelegram";
+import TgSheet from "../components/tg/TgSheet";
+import {
+  IconSearch,
+  IconClose,
+  IconFilter,
+  IconLogIn,
+  IconLogOut,
+  IconDoor,
+  IconClock,
+  IconBuilding,
+  IconBriefcase,
+  IconMapPin,
+  IconHash,
+  IconScan,
+} from "../components/tg/tgIcons";
+import { toneStyle } from "../utils/attendanceTelegram";
 
 import styles from "./FacePassesPageTelegram.module.scss";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
 
 const PAGE_SIZE = 50;
 
+// Ключ дня в локальной зоне устройства — группировка карточек по дате съёмки
+const dayKeyOf = (iso) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+};
+
+const isSameDay = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+const dayLabel = (iso, t) => {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(d, today)) return t("attendanceTg.today");
+  if (isSameDay(d, yesterday)) return t("attendanceTg.yesterday");
+
+  return d.toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    weekday: "short",
+  });
+};
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 const FacePassesPageTelegram = () => {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [data, setData] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
   const [doors, setDoors] = useState([]);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [shownEvent, setShownEvent] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { showAlert } = useAlertStore();
   const { t } = useTranslation();
@@ -45,8 +90,8 @@ const FacePassesPageTelegram = () => {
   const today = new Date().toISOString().slice(0, 10);
 
   const initialFormData = {
-    start_date: `${today} 00:00`,
-    end_date: `${today} 23:59`,
+    start_date: `${today}T00:00`,
+    end_date: `${today}T23:59`,
     branch_id: null,
     department_id: null,
     position_id: null,
@@ -93,6 +138,7 @@ const FacePassesPageTelegram = () => {
       const totalPages = pagination?.totalPages || 1;
 
       setData((prev) => (page === 1 ? list : [...prev, ...list]));
+      setTotalItems(pagination?.totalItems ?? 0);
       currentPageRef.current = page;
       hasMoreRef.current = page < totalPages;
     } catch (err) {
@@ -182,170 +228,231 @@ const FacePassesPageTelegram = () => {
     );
   };
 
+  const openEvent = (event) => {
+    setShownEvent(event);
+    setSheetOpen(true);
+  };
+
   usePullToRefresh(() => fetchEvents(), scrollRef, loading);
+
+  // ── Stats: counts among currently loaded events ─────────────────────────────
+  const { entryCount, exitCount } = useMemo(
+    () => ({
+      entryCount: data.filter((x) => x.direction === "entry").length,
+      exitCount: data.filter((x) => x.direction === "exit").length,
+    }),
+    [data],
+  );
+
+  // ── Group loaded events by day ───────────────────────────────────────────────
+  const groups = useMemo(() => {
+    const list = [];
+    let lastKey = null;
+    data.forEach((event) => {
+      const key = dayKeyOf(event.date);
+      if (key !== lastKey) {
+        list.push({ key, label: dayLabel(event.date, t), items: [] });
+        lastKey = key;
+      }
+      list[list.length - 1].items.push(event);
+    });
+    return list;
+  }, [data, t]);
+
+  let renderedCount = 0;
 
   return (
     <div className={styles.page}>
       <div className={styles.header} />
 
       <div className={styles.main} id="scroll-container" ref={scrollRef}>
-        <div className={styles.searchFilterRow}>
-          <div className={styles.searchBox}>
-            <span className={styles.searchIcon}>{Icons.search}</span>
-            <input
-              type="text"
-              placeholder={t("search") || "Поиск..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery.length > 0 && (
-              <button
-                className={styles.clearBtn}
-                onClick={() => setSearchQuery("")}
-              >
-                {Icons.clear}
-              </button>
-            )}
-          </div>
-
-          <button
-            className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
-            onClick={openFilter}
-          >
-            {Icons.filter ?? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
-              </svg>
-            )}
-            {activeFiltersCount > 0 && <span className={styles.filterBadge} />}
-          </button>
+        <div className={styles.hero}>
+          <h1 className={styles.heroTitle}>{t("facePasses")}</h1>
+          {totalItems > 0 && <span className={styles.heroCount}>{totalItems}</span>}
         </div>
 
-        {/* Active filter tags */}
-        {activeFiltersCount > 0 && (
-          <div className={styles.activeFiltersBar}>
-            {(formData.start_date !== initialFormData.start_date ||
-              formData.end_date !== initialFormData.end_date) && (
-              <span className={styles.activeFilterTag}>
-                {formData.start_date &&
-                  `${t("fromLabel")} ${new Date(formData.start_date).toLocaleString("ru-RU", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`}
-                {formData.end_date &&
-                  ` ${t("toLabel")} ${new Date(formData.end_date).toLocaleString("ru-RU", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`}
-                <button
-                  onClick={() => {
-                    const next = {
-                      ...formData,
-                      start_date: initialFormData.start_date,
-                      end_date: initialFormData.end_date,
-                    };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
+        <div className={styles.toolbar}>
+          <div className={styles.searchFilterRow}>
+            <div className={styles.searchBox}>
+              <span className={styles.searchIcon}>
+                <IconSearch />
               </span>
-            )}
+              <input
+                type="text"
+                placeholder={t("search") || "Поиск..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery.length > 0 && (
+                <button
+                  className={styles.clearBtn}
+                  onClick={() => setSearchQuery("")}
+                >
+                  <IconClose />
+                </button>
+              )}
+            </div>
 
-            {formData.department_id && (
-              <span className={styles.activeFilterTag}>
-                {departments.find(
-                  (dep) => String(dep.id) === String(formData.department_id),
-                )?.name || t("department")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, department_id: null };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
-
-            {formData.position_id && (
-              <span className={styles.activeFilterTag}>
-                {positions.find(
-                  (pos) => String(pos.id) === String(formData.position_id),
-                )?.name || t("position")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, position_id: null };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
-
-            {formData.direction && (
-              <span className={styles.activeFilterTag}>
-                {formData.direction === "entry"
-                  ? t("entry") || "Вход"
-                  : t("exit") || "Выход"}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, direction: "" };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
-
-            {formData.selectedDoorIds?.length > 0 && (
-              <span className={styles.activeFilterTag}>
-                {doors
-                  .filter((dep) =>
-                    formData.selectedDoorIds.includes(String(dep.id)),
-                  )
-                  .map((dep) => dep.name)
-                  .join(", ") || t("doors")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, selectedDoorIds: [] };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
+            <button
+              className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
+              onClick={openFilter}
+            >
+              <IconFilter />
+              {activeFiltersCount > 0 && (
+                <span className={styles.filterBadge}>{activeFiltersCount}</span>
+              )}
+            </button>
           </div>
-        )}
+
+          {!loading && data.length > 0 && (
+            <div className={styles.statsRow}>
+              <div className={styles.statCard}>
+                <span className={styles.statIcon}>
+                  <IconDoor />
+                </span>
+                <span className={styles.statValue}>{totalItems}</span>
+                <span className={styles.statLabel}>
+                  {t("totalFacePassesLabel")}
+                </span>
+              </div>
+              <div className={styles.statCard} style={toneStyle("green")}>
+                <span className={styles.statIcon}>
+                  <IconLogIn />
+                </span>
+                <span className={styles.statValue}>{entryCount}</span>
+                <span className={styles.statLabel}>{t("entry")}</span>
+              </div>
+              <div className={styles.statCard} style={toneStyle("red")}>
+                <span className={styles.statIcon}>
+                  <IconLogOut />
+                </span>
+                <span className={styles.statValue}>{exitCount}</span>
+                <span className={styles.statLabel}>{t("exit")}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Active filter tags */}
+          {activeFiltersCount > 0 && (
+            <div className={styles.activeFiltersBar}>
+              {(formData.start_date !== initialFormData.start_date ||
+                formData.end_date !== initialFormData.end_date) && (
+                <span className={styles.activeFilterTag}>
+                  {formData.start_date &&
+                    `${t("fromLabel")} ${new Date(formData.start_date).toLocaleString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                  {formData.end_date &&
+                    ` ${t("toLabel")} ${new Date(formData.end_date).toLocaleString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                  <button
+                    onClick={() => {
+                      const next = {
+                        ...formData,
+                        start_date: initialFormData.start_date,
+                        end_date: initialFormData.end_date,
+                      };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.department_id && (
+                <span className={styles.activeFilterTag}>
+                  {departments.find(
+                    (dep) => String(dep.id) === String(formData.department_id),
+                  )?.name || t("department")}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, department_id: null };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.position_id && (
+                <span className={styles.activeFilterTag}>
+                  {positions.find(
+                    (pos) => String(pos.id) === String(formData.position_id),
+                  )?.name || t("position")}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, position_id: null };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.direction && (
+                <span className={styles.activeFilterTag}>
+                  {formData.direction === "entry"
+                    ? t("entry") || "Вход"
+                    : t("exit") || "Выход"}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, direction: "" };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.selectedDoorIds?.length > 0 && (
+                <span className={styles.activeFilterTag}>
+                  {doors
+                    .filter((dep) =>
+                      formData.selectedDoorIds.includes(String(dep.id)),
+                    )
+                    .map((dep) => dep.name)
+                    .join(", ") || t("doors")}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, selectedDoorIds: [] };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Card list */}
         {loading ? (
@@ -354,14 +461,30 @@ const FacePassesPageTelegram = () => {
           </div>
         ) : (
           <div className={styles.cardList} ref={listRef}>
-            {data.length === 0 && <p className={styles.empty}>{t("noData")}</p>}
-            {data.map((event, idx) => (
-              <EventCard
-                key={event.id || idx}
-                innerRef={idx === data.length - 5 ? sentinelRef : null}
-                event={event}
-                t={t}
-              />
+            {data.length === 0 && (
+              <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <IconScan />
+                </span>
+                <p>{t("noData")}</p>
+              </div>
+            )}
+            {groups.map((group) => (
+              <div key={group.key} className={styles.dateGroup}>
+                <div className={styles.dateHeader}>{group.label}</div>
+                {group.items.map((event) => {
+                  const globalIdx = renderedCount++;
+                  return (
+                    <EventCard
+                      key={event.id || globalIdx}
+                      innerRef={globalIdx === data.length - 5 ? sentinelRef : null}
+                      event={event}
+                      onOpen={() => openEvent(event)}
+                      t={t}
+                    />
+                  );
+                })}
+              </div>
             ))}
             {loadingMore && (
               <div className={styles.bottomLoader}>
@@ -373,6 +496,13 @@ const FacePassesPageTelegram = () => {
           </div>
         )}
       </div>
+
+      <EventSheet
+        event={shownEvent}
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        t={t}
+      />
     </div>
   );
 };
@@ -513,11 +643,10 @@ const FilterScreen = ({
         </div>
       </div>
 
-      <button className={styles.resetBtn} onClick={handleReset}>
-        {t("clearAll") || "Сбросить"}
-      </button>
-
       <div className={styles.filterFooter}>
+        <button className={styles.resetBtn} onClick={handleReset}>
+          {t("clearAll") || "Сбросить"}
+        </button>
         <button className={styles.applyBtn} onClick={() => onApply(localForm)}>
           {t("apply") || "Применить"}
         </button>
@@ -527,7 +656,7 @@ const FilterScreen = ({
 };
 
 // ── Event Card ─────────────────────────────────────────────────────────────────
-const EventCard = ({ event, t, innerRef }) => {
+const EventCard = ({ event, t, innerRef, onOpen }) => {
   const fullName =
     [event.employee.last_name, event.employee.first_name]
       .filter(Boolean)
@@ -535,20 +664,24 @@ const EventCard = ({ event, t, innerRef }) => {
 
   const eventTime = event.date || "";
   const formattedTime = eventTime
-    ? new Date(eventTime).toLocaleString("ru-RU", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
+    ? new Date(eventTime).toLocaleTimeString("ru-RU", {
         hour: "2-digit",
         minute: "2-digit",
       })
     : "—";
 
   const isIn = event.direction === "entry";
+  const tone = isIn ? "green" : "red";
 
   return (
-    <div className={styles.card} ref={innerRef}>
-      <div className={styles.cardAvatar}>
+    <button
+      type="button"
+      className={styles.card}
+      style={toneStyle(tone)}
+      ref={innerRef}
+      onClick={onOpen}
+    >
+      <span className={styles.cardAvatar}>
         {event.photo ? (
           <img
             src={`/api/face-passes/image/${event.photo}`}
@@ -560,36 +693,145 @@ const EventCard = ({ event, t, innerRef }) => {
             {fullName.charAt(0).toUpperCase()}
           </span>
         )}
-      </div>
+      </span>
 
-      <div className={styles.cardBody}>
-        <div className={styles.cardHeader}>
-          <p className={styles.cardName}>
-            {fullName} {event?.employee_id}
-          </p>
-          <p className={styles.cardSub}>
-            {event?.employee?.position?.name || "—"}
-          </p>
-        </div>
+      <span className={styles.cardBody}>
+        <span className={styles.cardName}>{fullName}</span>
+        <span className={styles.cardSub}>
+          {[event?.employee?.position?.name, event?.employee?.department?.name]
+            .filter(Boolean)
+            .join(" · ") || "—"}
+        </span>
 
-        <div className={styles.cardRow}>
-          <p className={styles.cardMeta}>
-            {event?.employee?.department?.name || ""}
-          </p>
-          <span
-            className={`${styles.dirBadge} ${isIn ? styles.dirIn : styles.dirOut}`}
-          >
+        <span className={styles.cardChips}>
+          <span className={styles.chip}>
+            <IconDoor />
+            {event?.door?.name || "—"}
+          </span>
+          <span className={styles.chip}>
+            <IconClock />
+            {formattedTime}
+          </span>
+        </span>
+      </span>
+
+      <span className={`${styles.dirPill} ${isIn ? styles.dirIn : styles.dirOut}`}>
+        {isIn ? <IconLogIn /> : <IconLogOut />}
+        {isIn ? t("entry") || "Вход" : t("exit") || "Выход"}
+      </span>
+    </button>
+  );
+};
+
+// ── Event detail sheet ─────────────────────────────────────────────────────────
+const EventSheet = ({ event, isOpen, onClose, t }) => {
+  if (!event) {
+    return <TgSheet isOpen={isOpen} onClose={onClose} title="" />;
+  }
+
+  const fullName =
+    [event.employee.last_name, event.employee.first_name]
+      .filter(Boolean)
+      .join(" ") || t("unknown");
+
+  const isIn = event.direction === "entry";
+  const tone = isIn ? "green" : "red";
+  const eventDate = event.date ? new Date(event.date) : null;
+
+  const dateText = eventDate
+    ? eventDate.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "—";
+  const timeText = eventDate
+    ? eventDate.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })
+    : "—";
+
+  return (
+    <TgSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={fullName}
+      subtitle={event?.employee?.position?.name}
+    >
+      <div className={styles.sheet} style={toneStyle(tone)}>
+        <div className={styles.sheetTop}>
+          <span className={styles.sheetAvatar}>
+            {event.photo ? (
+              <img
+                src={`/api/face-passes/image/${event.photo}`}
+                alt={fullName}
+                loading="lazy"
+              />
+            ) : (
+              <span className={styles.avatarFallback}>
+                {fullName.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </span>
+
+          <span className={`${styles.dirPill} ${isIn ? styles.dirIn : styles.dirOut}`}>
+            {isIn ? <IconLogIn /> : <IconLogOut />}
             {isIn ? t("entry") || "Вход" : t("exit") || "Выход"}
           </span>
         </div>
 
-        <div className={styles.cardRow}>
-          <p className={styles.cardMeta}>{event?.door?.name || ""}</p>
-          <span className={styles.cardTime}>{formattedTime}</span>
+        <div className={styles.times}>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("date")}</span>
+            <b>{dateText}</b>
+          </div>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("time")}</span>
+            <b>{timeText}</b>
+          </div>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("door")}</span>
+            <b>{event?.door?.name || "—"}</b>
+          </div>
         </div>
+
+        <ul className={styles.info}>
+          <InfoRow
+            icon={<IconHash />}
+            label={t("tabNumber")}
+            value={event?.employee_id}
+          />
+          <InfoRow
+            icon={<IconBriefcase />}
+            label={t("position")}
+            value={event?.employee?.position?.name}
+          />
+          <InfoRow
+            icon={<IconBuilding />}
+            label={t("department")}
+            value={event?.employee?.department?.name}
+          />
+          <InfoRow
+            icon={<IconMapPin />}
+            label={t("branch")}
+            value={event?.employee?.branch?.name}
+          />
+          <InfoRow
+            icon={<IconScan />}
+            label={t("source")}
+            value={event?.source ? t(event.source) : undefined}
+          />
+        </ul>
       </div>
-    </div>
+    </TgSheet>
   );
 };
+
+const InfoRow = ({ icon, label, value }) =>
+  value ? (
+    <li className={styles.infoRow}>
+      <span className={styles.infoIcon}>{icon}</span>
+      <span className={styles.infoLabel}>{label}</span>
+      <span className={styles.infoValue}>{value}</span>
+    </li>
+  ) : null;
 
 export default FacePassesPageTelegram;

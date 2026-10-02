@@ -1,4 +1,4 @@
-.overlay {
+﻿.overlay {
   position: fixed;
   inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
@@ -12,7 +12,7 @@
 .table_body {
   width: 60%;
   position: relative;
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 4px;
   padding: 10px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
@@ -48,10 +48,10 @@
       margin: 10px 0;
       border: 1px solid rgb(186, 186, 186);
       border-radius: 4px;
-      background-color: white;
+      background-color: var(--card-bg);
       font-weight: 700;
       font-size: 16px;
-      color: black;
+      color: var(--text-color);
       cursor: pointer;
       transition: all 0.1s;
 
@@ -96,10 +96,10 @@
     margin: 0;
     border-collapse: collapse;
     box-sizing: border-box;
-    background-color: #fff;
+    background-color: var(--card-bg);
 
     thead {
-      background-color: #efefef;
+      background-color: var(--table-header);
       top: 0;
       z-index: 1;
       position: sticky;
@@ -119,12 +119,19 @@
       font-weight: 600;
     }
 
+    .headerContent {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+
     td {
       padding: 5px;
       margin: 0;
       font-size: 14px;
       border-bottom: 1px solid #eee;
-      color: #333;
+      color: var(--text-color);
     }
 
     td img {

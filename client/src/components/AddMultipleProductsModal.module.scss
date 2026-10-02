@@ -1,0 +1,297 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 20px;
+  width: 100%;
+  // Пошире, чем обычный диалог подтверждения — нужны ещё 4 колонки
+  // (остаток/в упаковке/кол-во/кол-во упаковок), не только название товара.
+  max-width: 760px;
+  max-height: 85vh;
+  border: 1.5px solid var(--border-color);
+}
+
+.title {
+  font-size: calc(var(--font-small) + 3px);
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0 0 12px;
+}
+
+.searchBox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-light, var(--table-header));
+
+  .searchIcon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--third-color);
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  margin: 0;
+  font-family: inherit;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--text-color);
+  background: var(--input-bg, var(--card-bg));
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--third-color);
+    box-shadow: 0 0 0 2px rgba(20, 85, 254, 0.14);
+  }
+}
+
+// Общая сетка для шапки и строк — колонки должны совпадать 1-в-1, иначе
+// значения "съезжают" относительно заголовков.
+$row-grid: 18px minmax(170px, 1fr) 72px 92px 84px 100px;
+
+.listHeader {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: $row-grid;
+  gap: 10px;
+  align-items: center;
+  padding: 0 10px 6px;
+
+  span {
+    font-size: calc(var(--font-small) - 1px);
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--third-color);
+    cursor: pointer;
+  }
+}
+
+.colRight {
+  text-align: right;
+}
+
+.list {
+  flex: 1;
+  // Фикс. минимум — список не "прыгает" по высоте, когда поиск сужает
+  // результаты до одной-двух строк (иначе модалка дёргается при каждом
+  // нажатии клавиши).
+  min-height: min(50vh, 320px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  max-height: 50vh;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--scroll-color);
+    border-radius: 3px;
+  }
+
+  li {
+    display: grid;
+    grid-template-columns: $row-grid;
+    gap: 10px;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    &:hover {
+      background: var(--select-hover-color);
+    }
+
+    input[type="checkbox"] {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--third-color);
+      cursor: pointer;
+    }
+  }
+
+  li.selected {
+    background: rgba(20, 85, 254, 0.08);
+  }
+}
+
+// Остаток / В упаковке — только показ, выровнены вправо как числа.
+.colValue {
+  text-align: right;
+  font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+// Кол-во / Кол-во упаковок — ввести можно сразу тут, без доп. правки строки
+// документа после добавления.
+.qtyInput {
+  width: 100%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: var(--font-small);
+  color: var(--text-color);
+  background: var(--input-bg, var(--card-bg));
+  box-sizing: border-box;
+  cursor: text;
+
+  &::placeholder {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--third-color);
+  }
+}
+
+.optionMain {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.optionName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.optionNote {
+  font-style: italic;
+  font-weight: 400;
+  font-size: calc(var(--font-small) - 1px);
+  color: var(--text-secondary);
+}
+
+.optionCategory {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--font-small) - 2px);
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.empty {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  padding: 20px 0;
+  cursor: default;
+
+  &:hover {
+    background: transparent;
+  }
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}
+
+.cancelBtn {
+  padding: 8px 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.confirmBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: var(--third-color);
+  color: #fff;
+  font-size: var(--font-small);
+  font-weight: 600;
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}

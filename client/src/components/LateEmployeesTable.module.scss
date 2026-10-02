@@ -1,4 +1,4 @@
-.tableContainer {
+﻿.tableContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -32,9 +32,9 @@
       position: sticky;
       top: 0;
       z-index: 12;
-      background: white;
+      background: var(--card-bg);
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -57,9 +57,9 @@
       position: sticky;
       top: 25px;
       z-index: 10;
-      background: white;
+      background: var(--card-bg);
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -67,14 +67,14 @@
 
     .row {
       &:hover td {
-        background: #f8fafc;
+        background: var(--bg-light);
       }
     }
 
     .empty {
       text-align: center;
       padding: 16px;
-      color: #94a3b8;
+      color: var(--placeholder-color);
     }
   }
 }

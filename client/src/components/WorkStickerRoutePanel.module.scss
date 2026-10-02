@@ -1,0 +1,909 @@
+// Панель после приёма: распределение принятого стикера. Рассчитана на тех, кто не
+// дружит с техникой: крупные плитки вместо мелких чипов, нумерованные шаги, одно
+// действие на экране (по умолчанию — один стикер на всё), кнопка-призыв внизу.
+
+// ── Итог приёма: полоска долей и три строки ──────────────────────────────────
+// Компактно вместо трёх плиток: тонкая полоска показывает, как разложено
+// количество стикера, ниже — выполнено / брак / на исправление (последние два,
+// если были) одной строкой каждое: точка, название, число справа.
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 10px;
+  background: var(--bg-light);
+}
+
+.summaryBar {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--border-color);
+}
+
+.summarySeg {
+  flex: 0 0 auto;
+  background: rgb(var(--tone-rgb));
+  transition: width 0.25s ease;
+}
+
+.summaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--font-small);
+  }
+
+  span {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-secondary);
+  }
+
+  b {
+    font-size: calc(var(--font-small) + 3px);
+    font-weight: 700;
+    line-height: 1;
+    color: rgb(var(--tone-rgb));
+  }
+}
+
+.summaryDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--tone-rgb));
+}
+
+.toneGood {
+  --tone-rgb: 22, 163, 74;
+}
+
+.toneBad {
+  --tone-rgb: 220, 38, 38;
+}
+
+.toneWarn {
+  --tone-rgb: 217, 119, 6;
+}
+
+.toneInfo {
+  --tone-rgb: 124, 58, 237;
+}
+
+// ── Панель распределения ─────────────────────────────────────────────────────
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 12px;
+  background: var(--bg-light);
+}
+
+.panelHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panelTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.panelSubtitle {
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+}
+
+// ── Карточка следующей операции ──────────────────────────────────────────────
+// Белая карточка на серой подложке панели, с цветной полосой слева и шапкой:
+// значок, название с пояснением, количество.
+.section {
+  --sec-rgb: 20, 85, 254;
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid rgba(var(--sec-rgb), 0.28);
+  border-left: 4px solid rgb(var(--sec-rgb));
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.sectionNext {
+  --sec-rgb: 20, 85, 254;
+}
+
+.sectionRework {
+  --sec-rgb: 217, 119, 6;
+}
+
+.sectionIncomplete {
+  --sec-rgb: 124, 58, 237;
+}
+
+// Операция не выбрана, а "Раздать дальше" уже нажали: красная рамка и лёгкое "встряхивание".
+.sectionMissing {
+  border-color: #dc2626;
+  border-left-color: #dc2626;
+  animation: sectionShake 0.35s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes sectionShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-5px);
+  }
+
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// Значок в цветном круге.
+.sectionBadge {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgb(var(--sec-rgb));
+  color: #fff;
+  font-size: 17px;
+  font-weight: 700;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.sectionTexts {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.sectionHint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Сколько уходит по этому направлению — справа в шапке: число крупно, подпись под ним.
+.sectionQty {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  color: rgb(var(--sec-rgb));
+
+  b {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+
+// Пояснение в карточке.
+.sectionNote {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--text-color);
+}
+
+// Что не выбрано — после нажатия "Раздать дальше".
+.prompt {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+// ── Плитки операций ──────────────────────────────────────────────────────────
+// Крупные, с местом под палец: выбранная заливается цветом карточки и получает
+// галочку. Выбрана всегда одна.
+.choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 54px;
+  padding: 8px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: rgb(var(--sec-rgb));
+  }
+
+  &:focus-visible {
+    outline: 3px solid rgba(var(--sec-rgb), 0.35);
+    outline-offset: 2px;
+  }
+}
+
+.choiceName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// Кружок справа: пустой у невыбранной плитки, с галочкой — у выбранной.
+.choiceMark {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  color: transparent;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.choiceActive,
+.choiceActive:hover {
+  border-color: rgb(var(--sec-rgb));
+  background: rgb(var(--sec-rgb));
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(var(--sec-rgb), 0.3);
+
+  .choiceMark {
+    border-color: #fff;
+    background: #fff;
+    color: rgb(var(--sec-rgb));
+  }
+}
+
+// ── Дробление: по умолчанию один стикер, остальное спрятано за кнопкой ───────
+.oneSticker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-light);
+}
+
+.oneStickerText {
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.oneStickerActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ghostBtn {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--third-color, #1455fe);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--third-color, #1455fe);
+  }
+}
+
+// Отмечен для объединения — вместо секций "Следующая операция"/футера, до снятия
+// отметки одиночная раздача этого стикера недоступна.
+.awaitingMerge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(20, 85, 254, 0.25);
+  border-radius: 12px;
+  background: rgba(20, 85, 254, 0.06);
+}
+
+.awaitingMergeDot {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--third-color, #1455fe);
+}
+
+.awaitingMergeTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+
+  b {
+    font-size: 15px;
+    color: var(--text-color);
+  }
+
+  span {
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+  }
+}
+
+.splitPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--bg-light);
+}
+
+.splitFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+  align-self: stretch;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.bigInput {
+  box-sizing: border-box;
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 20px;
+  font-weight: 700;
+
+  &:focus {
+    outline: none;
+    border-color: rgb(var(--sec-rgb));
+    box-shadow: 0 0 0 3px rgba(var(--sec-rgb), 0.18);
+  }
+}
+
+.bigInputError,
+.bigInputError:focus {
+  border-color: #dc2626;
+  box-shadow: none;
+}
+
+// Обычное однострочное поле (комментарий): та же рамка, что у bigInput, без крупного шрифта.
+.textInput {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+
+  &:focus {
+    outline: none;
+    border-color: rgb(var(--sec-rgb));
+    box-shadow: 0 0 0 3px rgba(var(--sec-rgb), 0.18);
+  }
+}
+
+// Число стикеров: кнопки − и + по бокам, чтобы не печатать.
+.stepper {
+  display: flex;
+  gap: 8px;
+
+  .bigInput {
+    min-width: 0;
+    text-align: center;
+  }
+}
+
+.stepBtn {
+  flex: 0 0 48px;
+  height: 48px;
+  padding: 0;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    border-color: rgb(var(--sec-rgb));
+    color: rgb(var(--sec-rgb));
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.fieldError {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+// Калькуляция компактно: одинаковые стикеры свёрнуты в плашку "13 × 100", вся
+// строка помещается в одну-две линии (страховочный скролл — на редкий случай
+// множества разных количеств).
+.splitResult {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+// Калькуляция слева, «Не делить» справа на одной линии; при нехватке места кнопка
+// уходит на новую строку, но остаётся у правого края.
+.splitFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+
+  .splitResult,
+  .fieldError {
+    flex: 1 1 0;
+    min-width: 200px;
+  }
+
+  .splitCloseBtn {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}
+
+.splitChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 76px;
+  overflow-y: auto;
+}
+
+.splitChip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 3px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  font-size: 14px;
+  line-height: 20px;
+
+  i {
+    font-style: normal;
+    color: var(--text-secondary);
+  }
+
+  b {
+    color: var(--text-color);
+  }
+}
+
+// Плашка калькуляции словами («99 стикеров по 50 шт.»): весь текст серый, числа —
+// основным цветом и крупнее.
+.splitChipText {
+  display: inline-block;
+  padding: 5px 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+
+  b {
+    font-size: 16px;
+    color: var(--text-color);
+  }
+}
+
+// ── Низ панели: что произойдёт и большая кнопка ──────────────────────────────
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.footerText {
+  flex: 1 1 220px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.footerWarn {
+  color: #d97706;
+}
+
+// "Назад" + "Раздать дальше" — всегда рядом в одной строке справа: не переносятся,
+// при нехватке места сжимается "Раздать дальше", а не уходит на новую строку.
+.footerActions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-left: auto;
+
+  .submit {
+    flex: 0 1 320px;
+    min-width: 0;
+    white-space: nowrap;
+  }
+}
+
+.backBtn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  padding: 0 22px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  // Стрелка «назад» — тот же кружок, что .submitArrow у «Раздать дальше», но
+  // цвета инвертированы (синий кружок, белая стрелка): кнопка светлая, белый кружок
+  // на ней не виден. На hover стрелка уезжает назад.
+  .backArrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--third-color, #1455fe);
+    color: var(--button-text, #fff);
+    box-shadow: 0 2px 6px rgba(20, 85, 254, 0.28);
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke-width: 2.6;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &:hover:not(:disabled) .backArrow svg {
+    transform: translateX(-3px);
+  }
+
+  &:hover:not(:disabled) {
+    border-color: var(--third-color, #1455fe);
+    color: var(--third-color, #1455fe);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.submit {
+  display: inline-flex;
+  flex: 0 1 320px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 220px;
+  height: 52px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--third-color, #1455fe);
+  color: var(--button-text, #fff);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(20, 85, 254, 0.28);
+  transition: filter 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease;
+
+  svg {
+    width: 22px;
+    height: 22px;
+    // Иконка без своей заливки (Icons.plus) иначе чёрная — берёт цвет текста кнопки.
+    fill: currentColor;
+  }
+
+  // Стрелка «дальше»: белый кружок с стрелкой цвета кнопки (как галочка на выбранной
+  // операции), на hover стрелка чуть сдвигается вперёд. Лежит внутри .submit, чтобы
+  // перебить общее fill: currentColor для svg — у стрелки заливки быть не должно.
+  .submitArrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--button-text, #fff);
+    color: var(--third-color, #1455fe);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke-width: 2.6;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &:hover:not(:disabled) .submitArrow svg {
+    transform: translateX(3px);
+  }
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.08);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+// Не всё выбрано: кнопка выглядит "не готовой", но нажимается — по клику покажем, что не так.
+.submitIncomplete {
+  opacity: 0.55;
+  box-shadow: none;
+}
+
+// ── Телефон (Telegram): кнопки во всю ширину, поля не мельче 16px (иначе iOS
+// увеличивает страницу при фокусе), плитки операций в две колонки ─────────────
+@media (max-width: 640px) {
+  .panel {
+    gap: 12px;
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .section {
+    gap: 12px;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .choices {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+
+  .choice {
+    min-height: 56px;
+    border-radius: 14px;
+  }
+
+  .textInput {
+    height: 48px;
+    font-size: 16px;
+  }
+
+  .bigInput {
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .stepBtn {
+    flex-basis: 52px;
+    height: 52px;
+    border-radius: 14px;
+  }
+
+  .splitFooter .splitResult,
+  .splitFooter .fieldError {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .footerText {
+    flex: 1 1 auto;
+    font-size: 13px;
+    text-align: center;
+  }
+
+  .footerActions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+    width: 100%;
+    margin-left: 0;
+    gap: 10px;
+
+    .submit {
+      flex: 1 1 auto;
+      width: 100%;
+    }
+  }
+
+  .submit {
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
+    height: 54px;
+    padding: 0 18px;
+    border-radius: 16px;
+    font-size: 16px;
+  }
+
+  .backBtn {
+    width: 100%;
+    height: 50px;
+    padding: 0 18px;
+    border-radius: 16px;
+  }
+
+  .oneSticker {
+    flex-direction: column;
+    align-items: stretch;
+    border-radius: 14px;
+  }
+
+  .ghostBtn {
+    height: 44px;
+    border-radius: 12px;
+  }
+}
+
+// ── Закреплённый низ страницы (Telegram) ─────────────────────────────────────
+// Подвал уходит порталом в док-панель под прокручиваемой областью: подсказка над
+// кнопками, «Назад» и «Раздать дальше» — одной строкой, чтобы панель была невысокой.
+@media (max-width: 640px) {
+  .footerDocked {
+    gap: 8px;
+
+    .footerText {
+      font-size: 12px;
+      line-height: 1.3;
+    }
+
+    .footerActions {
+      flex-direction: row;
+      align-items: stretch;
+      gap: 8px;
+
+      .submit {
+        flex: 1 1 auto;
+        width: auto;
+        height: 52px;
+      }
+
+      .backBtn {
+        flex: 0 0 auto;
+        width: auto;
+        height: 52px;
+        padding: 0 14px;
+      }
+    }
+  }
+}

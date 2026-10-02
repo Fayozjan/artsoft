@@ -24,9 +24,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
   const { showAlert } = useAlertStore();
 
   useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
+    if (userSettings?.language) i18n.changeLanguage(userSettings.language);
   }, [userSettings, i18n]);
 
   useEffect(() => {
@@ -37,18 +35,13 @@ const AddDoor = ({ handleClose, onSuccess }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       const res = await addDoor(formData);
-
       if (res.success) {
         showAlert(t("success"), "success");
         onSuccess();
@@ -57,10 +50,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
         console.log("Ошибка в ответе сервера:", res.data);
       }
     } catch (error) {
-      console.error(
-        "Ошибка при отправке данных:",
-        error.response ? error.response.data : error.message
-      );
+      console.error("Ошибка при отправке данных:", error.response ? error.response.data : error.message);
       showAlert(t("error"), "error");
       setTimeout(handleClose, 1500);
     }
@@ -91,16 +81,10 @@ const AddDoor = ({ handleClose, onSuccess }) => {
       <div className={styles.row}>
         <div>
           <label htmlFor="branch_id">{t("branch")}</label>
-          <select
-            name="branch_id"
-            value={formData.branch_id}
-            onChange={handleChange}
-          >
+          <select name="branch_id" value={formData.branch_id} onChange={handleChange}>
             <option value="">{t("notSelected")}</option>
             {branches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
         </div>
@@ -115,7 +99,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
             step="any"
             value={formData.latitude}
             onChange={handleChange}
-            placeholder="например: 41.299496"
+            placeholder={t("latitudePlaceholder")}
           />
         </div>
         <div>
@@ -126,7 +110,7 @@ const AddDoor = ({ handleClose, onSuccess }) => {
             step="any"
             value={formData.longitude}
             onChange={handleChange}
-            placeholder="например: 69.240073"
+            placeholder={t("longitudePlaceholder")}
           />
         </div>
       </div>

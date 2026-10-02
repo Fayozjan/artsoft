@@ -15,6 +15,7 @@ import {
   BorderStyle,
 } from "docx";
 import { formatLateMinutesToHours } from "../helpers/time";
+import api from "../api/instance";
 
 const uzbekMonths = [
   "январ",
@@ -883,8 +884,248 @@ export const DownloadOrder = {
   },
 };
 
+// ===== Фото сотрудников в Excel =====
+const PHOTO_RENDER_SIZE = 128; // px — рендерим в 2х для чёткости
+// Ширина колонки в символах → px, как считает сам Excel (MDW = 7px для Calibri 11).
+// Наивное width*7+5 даёт на 5px больше реальности — фото вылезало за рамку
+const MAX_DIGIT_WIDTH = 7;
+const colWidthToPx = (width) =>
+  Math.trunc(
+    ((256 * width + Math.trunc(128 / MAX_DIGIT_WIDTH)) / 256) * MAX_DIGIT_WIDTH,
+  );
+const rowHeightToPx = (height) => Math.trunc((height * 96) / 72);
+
+// Ширину ровно 9 ExcelJS считает дефолтной и <col> не пишет — колонка уезжает
+// на дефолтную ширину Excel. Сдвигаем на сотую
+const safeColWidth = (width) => (width === 9 ? 9.01 : width);
+
+// Ровно 9 нельзя: у ExcelJS DEFAULT_COLUMN_WIDTH = 9, и при таком значении
+// isCustomWidth = false — <col> в файл не пишется, Excel берёт свою дефолтную
+// ширину (шире) и ячейка перестаёт быть квадратной
+const PHOTO_COL_WIDTH = 9.5; // символы → 66px
+const PHOTO_ROW_HEIGHT = 49.5; // pt → 66px, ячейка квадратная
+
+const PHOTO_CELL_WIDTH_PX = colWidthToPx(PHOTO_COL_WIDTH);
+const PHOTO_CELL_HEIGHT_PX = rowHeightToPx(PHOTO_ROW_HEIGHT);
+
+// Размер квадрата берём от ВЫСОТЫ строки: она задана в пунктах и считается
+// одинаково везде. Ширина колонки в px зависит от шрифта Normal у конкретного
+// Excel, поэтому опираться на неё нельзя — но она всегда не меньше высоты
+// строки, значит по горизонтали фото тоже помещается.
+// 0.8 — запас на просмотрщики, которые масштабируют картинку не как строку
+const PHOTO_DISPLAY_SIZE = Math.round(PHOTO_CELL_HEIGHT_PX * 0.8);
+
+// Кадрируем плотнее: на снимках с турникета человек мелкий, сверху потолок
+const PHOTO_ZOOM = 1.3;
+// Доля вертикального запаса, отрезаемая сверху (0 — верх кадра, 1 — низ)
+const PHOTO_VERTICAL_BIAS = 0.4;
+
+async function decodeImage(blob) {
+  if (typeof createImageBitmap === "function") {
+    try {
+      return await createImageBitmap(blob);
+    } catch {
+      // старые браузеры / неподдерживаемый формат — идём через <img>
+    }
+  }
+
+  return await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Не удалось прочитать фото"));
+    };
+    img.src = url;
+  });
+}
+
+// Квадратный кроп «cover»: лишнее по длинной стороне обрезаем, пропорции лица
+// не трогаем. По горизонтали — центр, по вертикали кадр смещён вниз, к лицу
+async function makeAvatarPng(blob) {
+  const img = await decodeImage(blob);
+  const width = img.width;
+  const height = img.height;
+  if (!width || !height) throw new Error("Пустое фото");
+
+  const side = Math.min(width, height) / PHOTO_ZOOM;
+  const sx = (width - side) / 2;
+  const sy = (height - side) * PHOTO_VERTICAL_BIAS;
+
+  const size = PHOTO_RENDER_SIZE;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = size;
+  canvas.height = size;
+
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+
+  img.close?.();
+
+  const png = await new Promise((resolve) =>
+    canvas.toBlob(resolve, "image/png"),
+  );
+  if (!png) throw new Error("Не удалось собрать аватар");
+
+  return { buffer: new Uint8Array(await png.arrayBuffer()), extension: "png" };
+}
+
+// Аватар: фото из анкеты, иначе снимок с последнего опоздания (face pass)
+function resolvePhotoPath(item) {
+  if (item?.employeePhoto) return `/employees/image/${item.employeePhoto}`;
+
+  const latePhoto = item?.actualStartPhoto || item?.lastLatePhoto;
+  return latePhoto ? `/face-passes/image/${latePhoto}` : null;
+}
+
+// Грузим фото параллельно, без дублей. Недоступное фото — инициалы в ячейке
+async function fetchEmployeePhotos(items) {
+  const paths = [
+    ...new Set((items || []).map(resolvePhotoPath).filter(Boolean)),
+  ];
+
+  const entries = await Promise.all(
+    paths.map(async (path) => {
+      try {
+        const res = await api.get(path, { responseType: "blob" });
+        return [path, await makeAvatarPng(res.data)];
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  return new Map(entries.filter(Boolean));
+}
+
+function getInitials(fullName = "") {
+  return fullName
+    .replace(/\s+\(?\d+\)?$/, "")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+// Один imageId на фото; аватар на всю ячейку, рамки ячейки остаются видимыми
+function createPhotoInserter(workbook, worksheet, photos, colNumber) {
+  const ids = new Map();
+
+  // Якорь по одному углу + явный квадратный размер: Excel рисует ровно ext и
+  // ничего не растягивает (при tl+br картинку вписывает в ячейку — а она не
+  // квадратная, если шрифт Normal шире Calibri 11, отсюда и было растяжение)
+  const colOffset =
+    (PHOTO_CELL_WIDTH_PX - PHOTO_DISPLAY_SIZE) / 2 / PHOTO_CELL_WIDTH_PX;
+  const rowOffset =
+    (PHOTO_CELL_HEIGHT_PX - PHOTO_DISPLAY_SIZE) / 2 / PHOTO_CELL_HEIGHT_PX;
+
+  return (item, rowNumber) => {
+    const photoPath = resolvePhotoPath(item);
+    const photo = photoPath ? photos.get(photoPath) : null;
+
+    if (!photo) {
+      // без фото — инициалы, чтобы колонка не выглядела пустой
+      const cell = worksheet.getRow(rowNumber).getCell(colNumber);
+      cell.value = getInitials(item?.employeeFullName);
+      cell.font = { bold: true, size: 12, color: { argb: "FF64748B" } };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      return;
+    }
+
+    if (!ids.has(photoPath)) ids.set(photoPath, workbook.addImage(photo));
+
+    worksheet.addImage(ids.get(photoPath), {
+      tl: { col: colNumber - 1 + colOffset, row: rowNumber - 1 + rowOffset },
+      ext: { width: PHOTO_DISPLAY_SIZE, height: PHOTO_DISPLAY_SIZE },
+      editAs: "oneCell",
+    });
+  };
+}
+
+const THIN_BORDER = {
+  top: { style: "thin" },
+  bottom: { style: "thin" },
+  left: { style: "thin" },
+  right: { style: "thin" },
+};
+
+// "2026-08-01" → "01.08.2026". Строку режем вручную: new Date() для "YYYY-MM-DD"
+// парсит как UTC и в UTC+5 сдвигать не надо, но в других TZ даст предыдущий день
+function formatDayRu(isoDay) {
+  const [y, m, d] = String(isoDay).split("-");
+  return d ? `${d}.${m}.${y}` : String(isoDay);
+}
+
+// Заголовок «за какой период» — добавляется только в режиме «за период»
+function addPeriodTitleRow(worksheet, colCount, dateFrom, dateTo) {
+  const row = worksheet.addRow([
+    `Период: ${formatDayRu(dateFrom)} — ${formatDayRu(dateTo)}`,
+  ]);
+  worksheet.mergeCells(row.number, 1, row.number, colCount);
+  row.font = { bold: true, size: 12 };
+  row.alignment = { horizontal: "left", vertical: "middle" };
+  return row.number;
+}
+
+function styleRowCells(row, colCount, font) {
+  for (let c = 1; c <= colCount; c++) {
+    const cell = row.getCell(c);
+    cell.border = THIN_BORDER;
+    cell.alignment = { vertical: "middle", horizontal: "center" };
+    if (font) cell.font = font;
+  }
+}
+
+// Группировка как в выгрузке посещаемости (buildEmployeesByBranchSheet):
+// филиалы по sort_order → названию, внутри — должность, отдел, ФИО
+function groupLateByBranch(items, { branchSortMap, positionSortMap } = {}) {
+  const branches = new Map();
+
+  items.forEach((item) => {
+    const name = item.branchName || "—";
+    if (!branches.has(name)) {
+      branches.set(name, {
+        name,
+        sortOrder: branchSortMap?.get(name) ?? 0,
+        employees: [],
+      });
+    }
+    branches.get(name).employees.push(item);
+  });
+
+  const byPositionThenName = (a, b) =>
+    (positionSortMap?.get(a.positionName) ?? 0) -
+      (positionSortMap?.get(b.positionName) ?? 0) ||
+    (a.departmentName || "").localeCompare(b.departmentName || "", "ru", {
+      sensitivity: "base",
+    }) ||
+    (a.employeeFullName || "").localeCompare(b.employeeFullName || "", "ru", {
+      sensitivity: "base",
+    });
+
+  return [...branches.values()]
+    .map((branch) => ({
+      ...branch,
+      employees: [...branch.employees].sort(byPositionThenName),
+    }))
+    .sort(
+      (a, b) =>
+        a.sortOrder - b.sortOrder ||
+        a.name.localeCompare(b.name, "ru", { sensitivity: "base" }),
+    );
+}
+
 export const DownloadLate = {
-  employeeMonth: async (modalData, monthDate) => {
+  employeeMonth: async (modalData, monthDate, includeLunch = false) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Опоздания");
 
@@ -915,29 +1156,37 @@ export const DownloadLate = {
     const statsHeaderRow = worksheet.getRow(statsStartRow);
     statsHeaderRow.font = { bold: true, size: 12 };
 
-    worksheet.addRow([
-      "Опоздание на работу (кол-во):",
-      modalData.monthlyArrivalLateCount || 0,
-    ]);
-    worksheet.addRow([
-      "Опоздание на работу (время):",
-      formatLateMinutesToHours(modalData.monthlyLateMinutes),
-    ]);
-    worksheet.addRow([
-      "Опоздание после перерыва (кол-во):",
-      modalData.monthlyLunchLateCount || 0,
-    ]);
-    worksheet.addRow([
-      "Опоздание после перерыва (время):",
-      formatLateMinutesToHours(modalData.monthlyBreakReturnLateMinutes),
-    ]);
-    worksheet.addRow([
-      "Сумма за опоздания:",
-      modalData.monthlyLateMoney || "0",
-    ]);
+    // Строки про перерыв — только если в фильтре включено «после обеда»
+    const statsRows = [
+      ["Рабочих дней по графику:", modalData.monthlyWorkDays || 0],
+      ["Отработано дней:", modalData.monthlyAttendedDays || 0],
+      [
+        "Кол-во опозданий:",
+        modalData.monthlyArrivalLateCount || 0,
+      ],
+      [
+        "Время опоздания (чч:мм):",
+        formatLateMinutesToHours(modalData.monthlyLateMinutes),
+      ],
+      ...(includeLunch
+        ? [
+            [
+              "Кол-во опозданий после перерыва:",
+              modalData.monthlyLunchLateCount || 0,
+            ],
+            [
+              "Время опоздания после перерыва (чч:мм):",
+              formatLateMinutesToHours(modalData.monthlyBreakReturnLateMinutes),
+            ],
+          ]
+        : []),
+      ["Общая сумма штрафа:", modalData.monthlyLateMoney || "0"],
+    ];
+
+    statsRows.forEach((row) => worksheet.addRow(row));
 
     // Стилизация статистики
-    for (let i = statsStartRow + 1; i <= statsStartRow + 5; i++) {
+    for (let i = statsStartRow + 1; i <= statsStartRow + statsRows.length; i++) {
       const row = worksheet.getRow(i);
       row.getCell(1).font = { bold: true };
     }
@@ -945,16 +1194,16 @@ export const DownloadLate = {
     worksheet.addRow([]);
 
     // ===== Таблица деталей =====
-    const tableHeaderRow = statsStartRow + 7;
+    const tableHeaderRow = statsStartRow + statsRows.length + 2;
     const headers = [
       "№",
       "Дата",
       "По графику",
       "Фактический вход",
-      "Опоздание на работу (время)",
-      "Перерыв до",
-      "Вернулся",
-      "Опоздание после перерыва (время)",
+      "Время опоздания (чч:мм)",
+      ...(includeLunch
+        ? ["Перерыв до", "Вернулся", "Время опоздания после перерыва (чч:мм)"]
+        : []),
     ];
 
     worksheet.addRow(headers);
@@ -987,11 +1236,15 @@ export const DownloadLate = {
         item.scheduledStart || "",
         item.actualStart || "",
         item.lateMinutes > 0 ? formatLateMinutesToHours(item.lateMinutes) : "—",
-        item.scheduledBreakEnd?.substring(0, 5) || "—",
-        item.actualBreakReturn || "—",
-        item.breakReturnLateMinutes > 0
-          ? formatLateMinutesToHours(item.breakReturnLateMinutes)
-          : "—",
+        ...(includeLunch
+          ? [
+              item.scheduledBreakEnd?.substring(0, 5) || "—",
+              item.actualBreakReturn || "—",
+              item.breakReturnLateMinutes > 0
+                ? formatLateMinutesToHours(item.breakReturnLateMinutes)
+                : "—",
+            ]
+          : []),
       ];
 
       const newRow = worksheet.addRow(row);
@@ -1028,7 +1281,7 @@ export const DownloadLate = {
         const len = cell.value ? cell.value.toString().length : 0;
         if (len > maxLength) maxLength = len;
       });
-      col.width = Math.min(maxLength + 3, 25); // Макс. ширина 25
+      col.width = safeColWidth(Math.min(maxLength + 3, 25)); // Макс. ширина 25
     });
 
     // Закрепляем заголовок таблицы
@@ -1044,16 +1297,26 @@ export const DownloadLate = {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Опоздание");
 
+    const photos = await fetchEmployeePhotos(data);
+    const PHOTO_COL = 2;
+    const insertPhoto = createPhotoInserter(
+      workbook,
+      worksheet,
+      photos,
+      PHOTO_COL,
+    );
+
     // заголовки
     const headers = [
       "№",
+      "Фото",
       "ФИО",
       "Филиал",
       "Отдел",
       "Должность",
       "По граффику",
       "Вход",
-      "Опоздание (чч:мм)",
+      "Время опоздания (чч:мм)",
     ];
 
     // добавляем заголовок
@@ -1076,6 +1339,7 @@ export const DownloadLate = {
     data.forEach((item, index) => {
       const row = [
         index + 1,
+        "",
         item.employeeFullName,
         item.branchName,
         item.departmentName,
@@ -1086,9 +1350,11 @@ export const DownloadLate = {
       ];
 
       const newRow = worksheet.addRow(row);
+      newRow.height = PHOTO_ROW_HEIGHT;
 
       // границы и выравнивание
-      newRow.eachCell((cell) => {
+      for (let c = 1; c <= headers.length; c++) {
+        const cell = newRow.getCell(c);
         cell.border = {
           top: { style: "thin" },
           bottom: { style: "thin" },
@@ -1096,17 +1362,23 @@ export const DownloadLate = {
           right: { style: "thin" },
         };
         cell.alignment = { vertical: "middle", horizontal: "center" };
-      });
+      }
+
+      insertPhoto(item, newRow.number);
     });
 
     // авто-ширина колонок
     worksheet.columns.forEach((col, i) => {
+      if (i === PHOTO_COL - 1) {
+        col.width = PHOTO_COL_WIDTH;
+        return;
+      }
       let maxLength = headers[i].length;
       col.eachCell({ includeEmpty: true }, (cell) => {
         const len = cell.value ? cell.value.toString().length : 0;
         if (len > maxLength) maxLength = len;
       });
-      col.width = maxLength + 2; // немного отступа
+      col.width = safeColWidth(maxLength + 2); // немного отступа
     });
 
     // закрепляем верхнюю строку
@@ -1119,95 +1391,132 @@ export const DownloadLate = {
       `Опоздание за - ${date}.xlsx`,
     );
   },
-  monthByEmployee: async (data, date) => {
+  // sortMaps = { branchSortMap, positionSortMap } — sort_order из справочников,
+  // чтобы порядок филиалов и должностей совпадал с выгрузкой посещаемости
+  // dateTo задан только в режиме «за период»
+  monthByEmployee: async (
+    data,
+    date,
+    includeLunch = false,
+    sortMaps = {},
+    dateTo = null,
+  ) => {
     if (!Array.isArray(data) || data.length === 0) {
-      console.warn("Нет данных для экспорта по филиалам");
+      console.warn("Нет данных для экспорта по сотрудникам");
       return;
     }
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Опоздание");
 
-    // заголовки
+    const photos = await fetchEmployeePhotos(data);
+    const PHOTO_COL = 2;
+    const insertPhoto = createPhotoInserter(
+      workbook,
+      worksheet,
+      photos,
+      PHOTO_COL,
+    );
+
+    // «Филиал» отдельной колонкой не нужен — он в строке-заголовке группы
     const headers = [
       "№",
+      "Фото",
       "ФИО",
-      "Филиал",
       "Отдел",
       "Должность",
-      "Опоздание на работу (кол-во)",
-      "Опоздание на работу (время)",
-      "Опоздание послес перерыва (кол-во)",
-      "Опоздание после перерыва (время)",
-      "Сумма за опоздания",
+      "Рабочих дней",
+      "Отработано дней",
+      "Кол-во опозданий",
+      "Время опоздания (чч:мм)",
+      ...(includeLunch
+        ? [
+            "Кол-во опозданий после перерыва",
+            "Время опоздания после перерыва (чч:мм)",
+          ]
+        : []),
+      "Общая сумма штрафа",
     ];
 
-    // добавляем заголовок
-    worksheet.addRow(headers);
+    // строки-заголовки филиалов пропускаем при расчёте ширины: объединённая
+    // ячейка иначе растянет первую колонку по длине названия
+    const branchHeaderRows = new Set();
 
-    // стили для шапки
-    const headerRow = worksheet.getRow(1);
-    headerRow.font = { bold: true };
-    headerRow.alignment = { horizontal: "center", vertical: "middle" };
-    headerRow.eachCell((cell) => {
-      cell.border = {
-        top: { style: "thin" },
-        bottom: { style: "thin" },
-        left: { style: "thin" },
-        right: { style: "thin" },
-      };
-    });
+    if (dateTo) {
+      branchHeaderRows.add(
+        addPeriodTitleRow(worksheet, headers.length, date, dateTo),
+      );
+      worksheet.addRow([]);
+    }
 
-    // добавляем данные
-    data.forEach((item, index) => {
-      const row = [
-        index + 1,
-        item.employeeFullName,
-        item.branchName,
-        item.departmentName,
-        item.positionName,
-        item.monthlyArrivalLateCount || 0,
-        formatLateMinutesToHours(item.monthlyLateMinutes),
-        item.monthlyLunchLateCount || 0,
-        formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes),
-        item.monthlyLateMoney || "",
-      ];
+    groupLateByBranch(data, sortMaps).forEach((branch) => {
+      const branchRow = worksheet.addRow([branch.name]);
+      branchHeaderRows.add(branchRow.number);
+      worksheet.mergeCells(
+        branchRow.number,
+        1,
+        branchRow.number,
+        headers.length,
+      );
+      styleRowCells(branchRow, headers.length, { bold: true, size: 12 });
 
-      const newRow = worksheet.addRow(row);
+      const headerRow = worksheet.addRow(headers);
+      styleRowCells(headerRow, headers.length, { bold: true });
 
-      // границы и выравнивание
-      newRow.eachCell((cell) => {
-        cell.border = {
-          top: { style: "thin" },
-          bottom: { style: "thin" },
-          left: { style: "thin" },
-          right: { style: "thin" },
-        };
-        cell.alignment = { vertical: "middle", horizontal: "center" };
+      branch.employees.forEach((item, index) => {
+        const row = [
+          index + 1,
+          "",
+          item.employeeFullName,
+          item.departmentName,
+          item.positionName,
+          item.monthlyWorkDays || 0,
+          item.monthlyAttendedDays || 0,
+          item.monthlyArrivalLateCount || 0,
+          formatLateMinutesToHours(item.monthlyLateMinutes),
+          ...(includeLunch
+            ? [
+                item.monthlyLunchLateCount || 0,
+                formatLateMinutesToHours(item.monthlyBreakReturnLateMinutes),
+              ]
+            : []),
+          item.monthlyLateMoney || "",
+        ];
+
+        const newRow = worksheet.addRow(row);
+        newRow.height = PHOTO_ROW_HEIGHT;
+        styleRowCells(newRow, headers.length);
+
+        insertPhoto(item, newRow.number);
       });
     });
 
     // авто-ширина колонок
-    worksheet.columns.forEach((col, i) => {
-      let maxLength = headers[i].length;
-      col.eachCell({ includeEmpty: true }, (cell) => {
+    const colWidths = headers.map((h) => h.length);
+    worksheet.eachRow((row, rowNumber) => {
+      if (branchHeaderRows.has(rowNumber)) return;
+      row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
         const len = cell.value ? cell.value.toString().length : 0;
-        if (len > maxLength) maxLength = len;
+        if (len > (colWidths[colNumber - 1] ?? 0))
+          colWidths[colNumber - 1] = len;
       });
-      col.width = maxLength + 2; // немного отступа
     });
-
-    // закрепляем верхнюю строку
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    worksheet.columns.forEach((col, i) => {
+      col.width =
+        i === PHOTO_COL - 1
+          ? PHOTO_COL_WIDTH
+          : safeColWidth((colWidths[i] ?? 10) + 2);
+    });
 
     // создаем excel в браузере
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(
       new Blob([buffer], { type: "application/octet-stream" }),
-      `Опоздание за - ${date}.xlsx`,
+      `Опоздание за - ${date}${dateTo ? ` — ${dateTo}` : ""}.xlsx`,
     );
   },
-  monthByBranch: async (data, date) => {
+  // dateTo задан только в режиме «за период»: тогда колонки строим по диапазону
+  monthByBranch: async (data, date, dateTo = null) => {
     if (!Array.isArray(data) || data.length === 0) {
       console.warn("Нет данных для экспорта по филиалам");
       return;
@@ -1216,22 +1525,45 @@ export const DownloadLate = {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Опоздание");
 
-    const targetDate = new Date(date);
-    const year = targetDate.getFullYear();
-    const month = targetDate.getMonth();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const allDates = [];
-    for (let day = 1; day <= daysInMonth; day++) {
-      allDates.push(day.toString());
+    // allDays — ключи "YYYY-MM-DD", allDates — подписи колонок
+    const allDays = [];
+    if (dateTo) {
+      const cursor = new Date(`${date}T00:00:00`);
+      const last = new Date(`${dateTo}T00:00:00`);
+      while (cursor <= last) {
+        const y = cursor.getFullYear();
+        const m = String(cursor.getMonth() + 1).padStart(2, "0");
+        const d = String(cursor.getDate()).padStart(2, "0");
+        allDays.push(`${y}-${m}-${d}`);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+    } else {
+      const targetDate = new Date(date);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let day = 1; day <= daysInMonth; day++) {
+        allDays.push(
+          `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+        );
+      }
     }
+
+    const multiMonth = new Set(allDays.map((d) => d.slice(0, 7))).size > 1;
+    const allDates = allDays.map((d) => {
+      const [, mm, dd] = d.split("-");
+      return multiMonth ? `${dd}.${mm}` : String(Number(dd));
+    });
 
     // Добавляем колонку Итого
     const headers = ["Филиал", ...allDates, "Итого"];
-    worksheet.addRow(headers);
+
+    const titleRowNumber = dateTo
+      ? addPeriodTitleRow(worksheet, headers.length, date, dateTo)
+      : null;
 
     // ===== Шапка =====
-    const headerRow = worksheet.getRow(1);
+    const headerRow = worksheet.addRow(headers);
     headerRow.font = { bold: true };
     headerRow.alignment = { horizontal: "center", vertical: "middle" };
     headerRow.eachCell((cell) => {
@@ -1243,7 +1575,7 @@ export const DownloadLate = {
       };
     });
 
-    let totalByDays = new Array(daysInMonth).fill(0);
+    let totalByDays = new Array(allDays.length).fill(0);
     let grandTotal = 0;
 
     // ===== Данные по филиалам =====
@@ -1251,11 +1583,8 @@ export const DownloadLate = {
       const row = [branch.branchName];
       let rowTotal = 0;
 
-      allDates.forEach((dayNumber, index) => {
-        const dayData = branch.days.find((d) => {
-          const dDate = new Date(d.date);
-          return dDate.getDate() === Number(dayNumber);
-        });
+      allDays.forEach((dayKey, index) => {
+        const dayData = branch.days.find((d) => d.date === dayKey);
 
         const value = dayData ? dayData.lateCount : 0;
 
@@ -1296,21 +1625,25 @@ export const DownloadLate = {
     });
 
     // ===== Авто-ширина =====
+    // строку с периодом пропускаем: объединённая ячейка растянула бы колонку «Филиал»
     worksheet.columns.forEach((col, i) => {
       let maxLength = headers[i].length;
       col.eachCell({ includeEmpty: true }, (cell) => {
+        if (titleRowNumber && cell.row === titleRowNumber) return;
         const len = cell.value ? cell.value.toString().length : 0;
         if (len > maxLength) maxLength = len;
       });
-      col.width = maxLength + 2;
+      col.width = safeColWidth(maxLength + 2);
     });
 
-    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    worksheet.views = [
+      { state: "frozen", ySplit: titleRowNumber ? titleRowNumber + 1 : 1 },
+    ];
 
     const buffer = await workbook.xlsx.writeBuffer();
     saveAs(
       new Blob([buffer], { type: "application/octet-stream" }),
-      `Опоздание за - ${date}.xlsx`,
+      `Опоздание за - ${date}${dateTo ? ` — ${dateTo}` : ""}.xlsx`,
     );
   },
 };

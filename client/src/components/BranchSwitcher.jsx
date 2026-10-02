@@ -9,6 +9,7 @@ export const BranchSwitcher = ({
   activeBranchId,
   onSelect,
   isOpen,
+  compact = false,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const ref = useRef(null);
@@ -45,7 +46,10 @@ export const BranchSwitcher = ({
   }
 
   return (
-    <div className={styles.branchSwitcher} ref={ref}>
+    <div
+      className={`${styles.branchSwitcher} ${compact ? styles.compact : ""}`}
+      ref={ref}
+    >
       <button
         className={styles.branchCurrent}
         onClick={() => setExpanded((p) => !p)}

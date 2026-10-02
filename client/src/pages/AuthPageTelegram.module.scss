@@ -1,5 +1,5 @@
 // Telegram Mini App — Auth Screen
-// Aesthetic: Refined dark glass, Telegram-native feel
+// Aesthetic: Clean light, matches web auth page
 
 .screen {
   min-height: 100dvh;
@@ -10,62 +10,70 @@
   padding: 32px 24px;
   gap: 12px;
 
-  background: #0f1117;
+  background: #f5f7fb;
   background-image:
     radial-gradient(
       ellipse 60% 40% at 50% 0%,
-      rgba(41, 182, 246, 0.12) 0%,
+      rgba(74, 92, 255, 0.1) 0%,
       transparent 70%
     ),
     radial-gradient(
       ellipse 40% 30% at 80% 80%,
-      rgba(100, 181, 246, 0.06) 0%,
+      rgba(37, 99, 235, 0.06) 0%,
       transparent 60%
     );
 }
 
 // ── Logo ─────────────────────────────────────────────────────────────────────
 
+// same brand mark as web (public/logo.png + "OnBase")
 .logoWrap {
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 20px;
   animation: fadeDown 0.5s ease both;
 }
 
 .logo {
-  width: 72px;
-  height: 72px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, #29b6f6 0%, #0288d1 100%);
+  height: 64px;
+  width: 64px;
+  object-fit: contain;
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+.logoText {
+  color: #2563eb;
+  font-weight: 800;
+  font-size: 28px;
+}
+
+// ── Dots ──────────────────────────────────────────────────────────────────────
+
+.dots {
   display: flex;
+  gap: 7px;
+  height: 14px;
   align-items: center;
-  justify-content: center;
-  box-shadow:
-    0 8px 32px rgba(41, 182, 246, 0.35),
-    0 2px 8px rgba(0, 0, 0, 0.4);
-
-  span {
-    font-family: "SF Pro Display", "Helvetica Neue", sans-serif;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    color: #fff;
-  }
-}
-
-// ── Spinner ───────────────────────────────────────────────────────────────────
-
-.spinnerWrap {
-  margin: 4px 0;
+  margin: 2px 0 4px;
   animation: fadeIn 0.4s 0.2s ease both;
-}
 
-.spinner {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 2.5px solid rgba(41, 182, 246, 0.2);
-  border-top-color: #29b6f6;
-  animation: spin 0.8s linear infinite;
+  i {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4a5cff 0%, #2563eb 100%);
+    box-shadow: 0 0 8px rgba(74, 92, 255, 0.4);
+    animation: dotBounce 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+  }
 }
 
 // ── Icon (error/warn states) ──────────────────────────────────────────────────
@@ -86,15 +94,15 @@
   }
 
   &[data-type="warn"] {
-    background: rgba(255, 179, 0, 0.12);
-    color: #ffb300;
-    border: 1.5px solid rgba(255, 179, 0, 0.2);
+    background: rgba(217, 119, 6, 0.12);
+    color: #d97706;
+    border: 1.5px solid rgba(217, 119, 6, 0.25);
   }
 
   &[data-type="error"] {
-    background: rgba(239, 83, 80, 0.12);
-    color: #ef5350;
-    border: 1.5px solid rgba(239, 83, 80, 0.2);
+    background: rgba(220, 38, 38, 0.12);
+    color: #dc2626;
+    border: 1.5px solid rgba(220, 38, 38, 0.25);
   }
 }
 
@@ -105,7 +113,7 @@
   font-size: 20px;
   font-weight: 600;
   letter-spacing: -0.3px;
-  color: #f0f0f0;
+  color: #1d1d1d;
   text-align: center;
   margin: 0;
   animation: fadeUp 0.4s 0.1s ease both;
@@ -115,7 +123,7 @@
   font-family: "SF Pro Text", "Helvetica Neue", sans-serif;
   font-size: 14px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.55);
+  color: #64748b;
   text-align: center;
   margin: 0;
   max-width: 260px;
@@ -124,7 +132,7 @@
 
 .subtext {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.35);
+  color: #94a3b8;
   text-align: center;
   max-width: 240px;
   line-height: 1.5;
@@ -134,7 +142,7 @@
 
 .hint {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.35);
+  color: #94a3b8;
   margin: 0;
   animation: fadeIn 0.4s 0.3s ease both;
 }
@@ -152,9 +160,9 @@
   font-family: "SF Pro Text", "Helvetica Neue", sans-serif;
   letter-spacing: -0.1px;
 
-  background: linear-gradient(135deg, #29b6f6 0%, #0288d1 100%);
+  background: linear-gradient(135deg, #4a5cff 0%, #2563eb 100%);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(41, 182, 246, 0.3);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
 
   transition:
     opacity 0.15s,
@@ -165,15 +173,42 @@
   &:active {
     opacity: 0.85;
     transform: scale(0.97);
-    box-shadow: 0 2px 8px rgba(41, 182, 246, 0.2);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
   }
 }
 
 // ── Animations ────────────────────────────────────────────────────────────────
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
+@keyframes breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes dotBounce {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.45;
+  }
+  35% {
+    transform: translateY(-6px) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo {
+    animation: none;
+  }
+
+  .dots i {
+    animation-duration: 2.4s;
   }
 }
 

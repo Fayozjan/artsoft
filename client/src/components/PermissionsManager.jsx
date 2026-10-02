@@ -42,12 +42,12 @@ const IndeterminateCheckbox = ({
   );
 };
 
-const filterTree = (tree, query) => {
+const filterTree = (tree, query, t) => {
   if (!query) return tree;
   return tree.reduce((acc, node) => {
-    const childMatches = filterTree(node.children || [], query);
+    const childMatches = filterTree(node.children || [], query, t);
     if (
-      node.name.toLowerCase().includes(query.toLowerCase()) ||
+      t(node.name).toLowerCase().includes(query.toLowerCase()) ||
       childMatches.length
     ) {
       acc.push({
@@ -61,7 +61,7 @@ const filterTree = (tree, query) => {
 };
 
 const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const safeAllMenus = allMenus || [];
   const safeUserMenus = userMenus || [];
 
@@ -110,7 +110,10 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
   }, [menusHash, userMenusHash]);
 
   const tree = useMemo(() => buildTree(safeAllMenus), [safeAllMenus]);
-  const filteredTree = useMemo(() => filterTree(tree, search), [tree, search]);
+  const filteredTree = useMemo(
+    () => filterTree(tree, search, t),
+    [tree, search, i18n.language],
+  );
   const { childrenMap } = useMemo(
     () => buildRelations(safeAllMenus),
     [safeAllMenus],
@@ -234,10 +237,12 @@ const PermissionsManager = ({ allMenus, userMenus, onChange }) => {
                 <span
                   className={`${styles.arrow} ${hasChildren ? "" : styles.leaf} ${isOpen ? styles.open : ""}`}
                 >
-                  ▶
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
                 </span>
 
-                <span className={styles.menuName}>{menu.name}</span>
+                <span className={styles.menuName}>{t(menu.name)}</span>
               </div>
             </td>
             <td>

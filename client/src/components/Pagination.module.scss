@@ -10,7 +10,7 @@
     justify-content: center;
     align-items: center;
     height: 30px;
-    background-color: white;
+    background-color: var(--card-bg);
     border: 1px solid rgba(162, 161, 168, 0.4);
     border-radius: 4px;
     padding: 0 8px;
@@ -35,7 +35,7 @@
   .pageCounts {
     font-weight: 600;
     font-size: var(--font-small);
-    color: grey;
+    color: var(--text-secondary);
   }
 
   .pageControls {
@@ -44,7 +44,7 @@
     gap: 10px;
 
     .currentPage {
-      background: #fff;
+      background: var(--card-bg);
       border: 1px solid rgba(162, 161, 168, 0.35);
       border-radius: 4px;
       font-size: var(--font-small);
@@ -58,12 +58,12 @@
       box-sizing: border-box;
 
       span:first-child {
-        color: #000;
+        color: var(--text-color);
         font-weight: 700;
       }
 
       span:last-child {
-        color: #666;
+        color: var(--text-secondary);
       }
     }
 
@@ -77,7 +77,7 @@
         align-items: center;
         height: 28px;
         padding: 0 8px;
-        background-color: white;
+        background-color: var(--card-bg);
         border: 1px solid rgba(162, 161, 168, 0.4);
         border-radius: 4px;
         box-sizing: border-box;
@@ -90,6 +90,71 @@
         svg {
           width: 15px;
           height: 15px;
+        }
+      }
+    }
+  }
+}
+
+// Вариант по центру (боковые панели приёма работы): всё в одну центрированную
+// строку, при нехватке места — переносится, оставаясь по центру. Элементы
+// выровнены по одной высоте, стрелки — квадратные кнопки, номер страницы — плашка.
+.pagination.centered {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 14px;
+  padding: 4px 0;
+
+  .pageSize,
+  .pageControls .currentPage {
+    height: 34px;
+    border-radius: 8px;
+    border-color: rgba(162, 161, 168, 0.4);
+  }
+
+  .pageSize {
+    padding: 0 6px 0 10px;
+
+    select {
+      font-weight: 600;
+    }
+  }
+
+  .pageCounts {
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .pageControls {
+    gap: 8px;
+
+    .currentPage {
+      padding: 0 14px;
+      background: var(--bg-light);
+    }
+
+    .arrows {
+      gap: 6px;
+
+      .arrow {
+        width: 34px;
+        height: 34px;
+        padding: 0;
+        border-radius: 8px;
+        transition:
+          border-color 0.15s ease,
+          background-color 0.15s ease,
+          color 0.15s ease;
+
+        &:hover {
+          border-color: var(--third-color);
+          background: rgba(20, 85, 254, 0.08);
+          color: var(--third-color);
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
         }
       }
     }

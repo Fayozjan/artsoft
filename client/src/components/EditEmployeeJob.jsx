@@ -1,14 +1,17 @@
 import axios from "axios";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 
 import Button from "./Button";
 import Loading from "./Loading";
+import SearchableSelect from "./SearchableSelect";
 
 import styles from "./EditEmployeeJob.module.scss";
 
 const EditEmployeeJob = ({ id }) => {
+  const { t } = useTranslation();
   const { showAlert } = useAlertStore();
   const [departments, setDepartments] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -165,19 +168,15 @@ const EditEmployeeJob = ({ id }) => {
                 </div>
                 <div className={styles.input_col}>
                   <label>{t("position")}</label>
-                  <select
-                    name="position_id"
+                  <SearchableSelect
                     value={formData.position_id}
-                    onChange={handleChange}
+                    options={positions}
+                    data="position"
+                    placeholder={t("selectPosition")}
+                    setFormData={setFormData}
                     required
-                  >
-                    <option value="">{t("selectPosition")}</option>
-                    {positions.map((dep) => (
-                      <option key={dep.id} value={dep.id}>
-                        {dep.name}
-                      </option>
-                    ))}
-                  </select>
+                    noMatches={t("noMatches")}
+                  />
                 </div>
               </div>
             )}

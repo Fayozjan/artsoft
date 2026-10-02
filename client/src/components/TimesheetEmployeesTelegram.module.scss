@@ -1,0 +1,499 @@
+// Табель в Telegram — карточки сотрудников и шторка с календарём месяца.
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.sentinel {
+  display: block;
+  height: 1px;
+}
+
+// ── Карточка ─────────────────────────────────────────────────────────────────
+
+.card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 12px 10px 10px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 84px;
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--select-hover-color);
+  }
+}
+
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  margin: 4px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tg-avatar-bg);
+  box-shadow:
+    0 0 0 2px var(--card-bg),
+    0 0 0 4px rgb(var(--tone));
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.initial {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-secondary);
+}
+
+.main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  svg {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.chipTone {
+  max-width: 100%;
+  overflow: hidden;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  text-overflow: ellipsis;
+}
+
+.pill {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+// ── Пустое состояние ─────────────────────────────────────────────────────────
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+// ── Шторка сотрудника ────────────────────────────────────────────────────────
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 6px;
+}
+
+.sheetTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sheetAvatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tg-avatar-bg);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .initial {
+    font-size: 22px;
+  }
+}
+
+.ratePill {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.statCell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+
+  b {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.statLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+// ── Календарь месяца ─────────────────────────────────────────────────────────
+
+.weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  padding: 0 2px;
+
+  span {
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    text-transform: capitalize;
+    color: var(--text-secondary);
+  }
+}
+
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.dayBlank {
+  aspect-ratio: 1;
+}
+
+.day {
+  position: relative;
+  display: flex;
+  aspect-ratio: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--text-color);
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.14s ease;
+
+  &:active {
+    border-color: rgba(var(--tone), 0.4);
+  }
+}
+
+.dayActive {
+  border-color: rgb(var(--tone));
+}
+
+.dayNum {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.dayHours {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: var(--tone-text);
+}
+
+.dayMark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--tg-badge-amber-color);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  padding: 0 2px;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(var(--tone));
+  }
+}
+
+// ── Подробности дня ──────────────────────────────────────────────────────────
+
+.dayDetail {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.eventRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.eventIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: var(--card-bg);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.eventIn {
+  color: var(--tg-dir-in-color);
+}
+
+.eventOut {
+  color: var(--tg-dir-out-color);
+}
+
+.eventTime {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.eventDoor {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.timeOffCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tone-text);
+
+  svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.emptyDay {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.dayDuration {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+// ── Инфо ─────────────────────────────────────────────────────────────────────
+
+.info {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.infoRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 0.5px solid var(--tg-separator);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.infoIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.infoLabel {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.infoValue {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}

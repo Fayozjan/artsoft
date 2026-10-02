@@ -1,11 +1,44 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-import { getActiveDoors, getDoors } from "../api";
+import { getActiveDoors } from "../api";
+import { Icons } from "../icons/icons";
 
 import MultiSelectDoors from "./MultiSelectDoors";
 import EmployeeFilterForm from "./EmployeeFilterForm";
 
 import styles from "./FacePassesFilter.module.scss";
+
+const SegmentedGroup = ({ label, options, value, onChange }) => {
+  const activeIdx = options.findIndex((o) => o.value === value);
+  return (
+    <div className={styles.segmentedGroup}>
+      <span className={styles.segmentedLabel}>{label}</span>
+      <div className={styles.segmentedTrack}>
+        <div
+          className={styles.segmentedSlider}
+          style={{
+            width: `calc(${100 / options.length}% - 4px)`,
+            left: `calc(${activeIdx * (100 / options.length)}% + 2px)`,
+          }}
+        />
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={`${styles.segmentedBtn} ${value === opt.value ? styles.segmentedBtnActive : ""}`}
+            style={{ color: value === opt.value ? opt.color : undefined }}
+            onClick={() => onChange(opt.value)}
+          >
+            <span style={{ color: opt.color, display: "flex", alignItems: "center" }}>
+              {opt.icon}
+            </span>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const FacePassesFilter = ({
   initialFormData,
@@ -33,19 +66,6 @@ const FacePassesFilter = ({
     setFormData(initialFormData);
   };
 
-  // Загрузка дверей
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await getDoors();
-        setDoors(data);
-      } catch (err) {
-        console.error("Ошибка загрузки данных:", err.message);
-      }
-    };
-    fetchData();
-  }, []);
-
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -59,12 +79,17 @@ const FacePassesFilter = ({
     }));
   };
 
+  // Загрузка только активных дверей
   useEffect(() => {
     const fetchData = async () => {
-      const doors = await getActiveDoors();
+      try {
+        const doors = await getActiveDoors();
 
-      if (doors.success) {
-        setDoors(doors.data);
+        if (doors.success) {
+          setDoors(doors.data);
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err.message);
       }
     };
 
@@ -105,21 +130,7 @@ const FacePassesFilter = ({
         className={`${styles.toggleBtn} + ${activeCount ? styles.active : ""}`}
         onClick={toggleOpen}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="200"
-          height="200"
-          viewBox="0 0 32 32"
-        >
-          <path
-            fill="none"
-            stroke="#000000"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
-          />
-        </svg>
+        {Icons.filter}
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -168,85 +179,27 @@ const FacePassesFilter = ({
               />
             </div>
 
-            <div>
-              <h2>{t("direction")}</h2>
-              <div className={styles.checkboxGroup}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name=""
-                    value=""
-                    checked={formData.direction === ""}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "" }))
-                    }
-                  />
-                  {t("all")}
-                </label>
+            <SegmentedGroup
+              label={t("direction")}
+              options={[
+                { value: "", label: t("all"), color: "#6b7280", icon: Icons.dot },
+                { value: "entry", label: t("entry"), color: "#16a34a", icon: Icons.directionIn },
+                { value: "exit", label: t("exit"), color: "#dc2626", icon: Icons.directionOut },
+              ]}
+              value={formData.direction}
+              onChange={(val) => setFormData((prev) => ({ ...prev, direction: val }))}
+            />
 
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name="direction"
-                    value="entry"
-                    checked={formData.direction === "entry"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "entry" }))
-                    }
-                  />
-                  {t("entry")}
-                </label>
-
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name="direction"
-                    value="exit"
-                    checked={formData.direction === "exit"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "exit" }))
-                    }
-                  />
-                  {t("exit")}
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <h2>{t("source")}</h2>
-              <div className={styles.checkboxGroup}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={formData.source === ""}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, source: "" }))
-                    }
-                  />
-                  {t("all")}
-                </label>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={formData.source === "mobile"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, source: "mobile" }))
-                    }
-                  />
-                  {t("mobile")}
-                </label>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    checked={formData.source === "DEVICE"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, source: "DEVICE" }))
-                    }
-                  />
-                  {t("device")}
-                </label>
-              </div>
-            </div>
+            <SegmentedGroup
+              label={t("source")}
+              options={[
+                { value: "", label: t("all"), color: "#6b7280", icon: Icons.dot },
+                { value: "mobile", label: t("mobile"), color: "#6366f1", icon: Icons.mobile },
+                { value: "DEVICE", label: t("device"), color: "#f59e0b", icon: Icons.monitor },
+              ]}
+              value={formData.source}
+              onChange={(val) => setFormData((prev) => ({ ...prev, source: val }))}
+            />
 
             <div className={styles.actions}>
               <button type="button" onClick={handleReset}>

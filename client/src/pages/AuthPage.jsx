@@ -1,10 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Sun, Moon } from "lucide-react";
 import { useAlertStore } from "../stores/alertStore";
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore, normalizeStartPage } from "../stores/authStore";
 
 import styles from "./AuthPage.module.scss";
+
+// код ошибки от сервера -> ключ перевода
+const ERROR_KEYS = {
+  AUTH_INVALID_CREDENTIALS: "loginError",
+  NOT_REGISTERED: "notRegistered",
+  DISABLED: "accountDisabled",
+  TOO_MANY_ATTEMPTS: "tooManyAttempts",
+};
 
 const AuthPage = () => {
   const { showAlert } = useAlertStore();
@@ -18,17 +27,24 @@ const AuthPage = () => {
     }
   }, []);
 
-  const messageMap = {
-    AUTH_INVALID_CREDENTIALS: t("loginError"),
-    NOT_REGISTERED: t("notRegistered"),
-    DISABLED: t("accountDisabled"),
-  };
-
   const [form, setForm] = useState({ username: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [currentLang, setCurrentLang] = useState(
     localStorage.getItem("language") || i18n.language,
   );
+  const [isDark, setIsDark] = useState(
+    () => (localStorage.getItem("theme") || "light") === "dark",
+  );
+
+  useEffect(() => {
+    const html = document.documentElement;
+    if (isDark) {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }, [isDark]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -45,13 +61,39 @@ const AuthPage = () => {
     e.preventDefault();
     const lang = localStorage.getItem("language") || i18n.language;
 
-    const result = await loginUser({ ...form, language: lang });
+    const result = await loginUser({ ...form, language: lang, theme: isDark ? "dark" : "light" });
 
     if (result.success) {
-      navigate("/home");
-    } else {
-      showAlert(t(messageMap[result.code]), "error");
+      // loginUser уже загрузил settings пользователя; недоступный путь
+      // WebLayout сам перенаправит на /home
+      const { settings } = useAuthStore.getState().userSettings;
+      navigate(normalizeStartPage(settings?.startPage));
+      return;
     }
+
+    // 429 — временная блокировка конкретного логина за перебор пароля
+    if (result.status === 429 || result.code === "TOO_MANY_ATTEMPTS") {
+      showAlert(
+        t("tooManyAttempts", { minutes: result.retryAfterMinutes ?? 15 }),
+        "error",
+      );
+      return;
+    }
+
+    // предупреждаем, сколько попыток осталось до блокировки
+    if (
+      result.code === "AUTH_INVALID_CREDENTIALS" &&
+      Number.isFinite(result.attemptsLeft)
+    ) {
+      showAlert(
+        t("loginErrorAttemptsLeft", { attempts: result.attemptsLeft }),
+        "error",
+      );
+      return;
+    }
+
+    const key = ERROR_KEYS[result.code];
+    showAlert(key ? t(key) : t("error"), "error");
   };
 
   return (
@@ -61,7 +103,16 @@ const AuthPage = () => {
         <span>OnBase</span>
       </div>
 
-      <div className={styles.lang_switcher}>
+      <div className={styles.top_right}>
+        <button
+          className={styles.theme_toggle}
+          onClick={() => setIsDark((prev) => !prev)}
+          type="button"
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
+        <div className={styles.lang_switcher}>
         <button
           onClick={() => handleLanguageChange("ru")}
           className={currentLang === "ru" ? styles.active : ""}
@@ -86,6 +137,7 @@ const AuthPage = () => {
         >
           ENG
         </button>
+      </div>
       </div>
 
       <div className={styles.login_card}>
@@ -115,7 +167,7 @@ const AuthPage = () => {
               placeholder={t("password")}
               value={form.password}
               onChange={handleChange}
-              className={styles.input_field}
+              className={`${styles.input_field} ${styles.input_field_password}`}
             />
             <span
               className={styles.toggle_password}

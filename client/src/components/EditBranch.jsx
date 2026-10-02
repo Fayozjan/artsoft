@@ -21,6 +21,7 @@ const EditBranch = ({ id, onSuccess }) => {
     status: true,
     director_id: "",
     address: "",
+    sort_order: 0,
   });
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -173,6 +174,19 @@ const EditBranch = ({ id, onSuccess }) => {
             name="mfo"
             value={formData.mfo}
             onChange={handleChange}
+            disabled={loading}
+          />
+        </div>
+      </div>
+      <div className={styles.row}>
+        <div>
+          <label>{t("sortOrder")}</label>
+          <input
+            type="number"
+            name="sort_order"
+            value={formData.sort_order}
+            onChange={handleChange}
+            min="0"
             disabled={loading}
           />
         </div>

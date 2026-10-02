@@ -1,0 +1,132 @@
+// Опоздание в Telegram — раскрытый день периода.
+// Карточка дня и её шапка рисуются стилями AttendancePeriodTelegram.
+
+.branch {
+  &:not(:first-child) {
+    margin-top: 6px;
+  }
+}
+
+.branchHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 14px 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+
+  b {
+    overflow: hidden;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  span {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--tg-hover);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.employees {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.employee {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+}
+
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tg-avatar-bg);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 800;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.employeeMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.employeeName {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employeeSub {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  b {
+    font-weight: 700;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+    color: var(--text-secondary);
+  }
+}
+
+.planned {
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  text-decoration-color: rgba(128, 128, 128, 0.5);
+}
+
+.dept {
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+}
+
+.employeePill {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

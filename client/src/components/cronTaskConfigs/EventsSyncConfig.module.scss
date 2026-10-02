@@ -1,0 +1,35 @@
+.presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.presetBtn {
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--card-bg);
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--third-color);
+  }
+}
+
+.presetBtnActive {
+  background: var(--third-color);
+  border-color: var(--third-color);
+  color: #fff;
+}
+
+.hint {
+  margin-top: 6px;
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}

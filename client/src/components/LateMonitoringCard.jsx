@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { formatIsoToLocalDate, formatIsoToLocalDateTime } from "../utils/date";
+import { useImagePreviewStore } from "../stores/imagePreviewStore";
+import { useHideBranch } from "../hooks/useHideBranch";
 import styles from "./LateMonitoringCard.module.scss";
 
 const formatLateTime = (minutes) => {
@@ -42,6 +44,8 @@ const CalendarIcon = () => (
 
 const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
   const { t } = useTranslation();
+  const hideBranch = useHideBranch();
+  const openImagePreview = useImagePreviewStore((s) => s.open);
 
   return (
     <div className={styles.card} style={{ animationDelay: `${index * 0.08}s` }}>
@@ -63,14 +67,20 @@ const LateMonitoringCard = ({ item, index = 0, includeLunch }) => {
           className={styles.avatar}
           src={`/api/face-passes/image/${item.actualStartPhoto}`}
           alt={item.employeeFullName}
+          onClick={() =>
+            openImagePreview(`/api/face-passes/image/${item.actualStartPhoto}`)
+          }
+          style={{ cursor: "pointer" }}
         />
         <div className={styles.topInfo}>
           <h4 className={styles.name}>{item.employeeFullName}</h4>
           <div className={styles.meta}>
-            <div className={styles.metaLabel}>
-              {t("branch")}:{" "}
-              <span className={styles.metaValue}>{item.branchName}</span>
-            </div>
+            {!hideBranch && (
+              <div className={styles.metaLabel}>
+                {t("branch")}:{" "}
+                <span className={styles.metaValue}>{item.branchName}</span>
+              </div>
+            )}
 
             <div className={styles.metaLabel}>
               {t("department")}:{" "}

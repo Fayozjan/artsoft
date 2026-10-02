@@ -8,7 +8,7 @@ import { addEmploymentOrder } from "../api/employmentOrders";
 
 import Button from "./Button";
 import Loading from "./Loading";
-
+import { Icons } from "../icons/icons";
 import styles from "./AddEmploymentOrder.module.scss";
 
 const AddEmploymentOrder = ({
@@ -111,18 +111,7 @@ const AddEmploymentOrder = ({
 
       <div className={styles.header}>
         <h2>{t("addingEmploymentOrder")}</h2>
-        <svg
-          onClick={() => handleClose()}
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 304 384"
-        >
-          <path
-            fill="#000000"
-            d="M299 73L179 192l120 119l-30 30l-120-119L30 341L0 311l119-119L0 73l30-30l119 119L269 43z"
-          />
-        </svg>
+        <span onClick={() => handleClose()} style={{ display: "flex", cursor: "pointer" }}>{Icons.clear}</span>
       </div>
 
       <div className={styles.row}>

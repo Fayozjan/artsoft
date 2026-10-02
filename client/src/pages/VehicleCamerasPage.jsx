@@ -1,30 +1,29 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { usePermissions } from "../hooks/usePermissions";
-import {
-  anprCamerasApi,
-  deleteFaceDeviceById,
-  getFaceDevices,
-} from "../api/index";
+import { anprCamerasApi } from "../api/index";
+import { useAlertStore } from "../stores/alertStore";
 
-import AddFaceDevice from "../components/AddFaceDevice";
-import EditFaceDevice from "../components/EditFaceDevice";
+import AddAnprCamera from "../components/AddAnprCamera";
+import EditAnprCamera from "../components/EditAnprCamera";
 import Button from "../components/Button";
 import Badge from "../components/Badge";
 import Pagination from "../components/Pagination";
 import Loading from "../components/Loading";
 import SortArrow from "../components/SortArrow";
-import FaceDeviceFilter from "../components/FaceDeviceFilter";
+import AnprCameraFilter from "../components/AnprCameraFilter";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
 import DownloadButton from "../components/DownloadButton";
 import TableIcons from "../icons/tableIcons";
 
+import Search from "../components/Search";
 import styles from "./VehicleCamerasPage.module.scss";
 import { ActionCell } from "../components/ActionButtons";
 import { Camera, CheckCircle, XCircle } from "lucide-react";
 import { Icons } from "../icons/icons";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
@@ -67,6 +66,32 @@ const VehicleCamerasPage = () => {
   const [sortField, setSortField] = useState("name");
   const [sortOrder, setSortOrder] = useState("asc");
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
+  const { showAlert } = useAlertStore();
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
   const [modalType, setModalType] = useState(null);
@@ -74,11 +99,12 @@ const VehicleCamerasPage = () => {
   const [selectedItem, setSelectedItem] = useState(null);
 
   const [formData, setFormData] = useState({
-    door_id: "",
+    gate_id: "",
     direction: "",
     search: "",
     status: "",
   });
+
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -92,7 +118,7 @@ const VehicleCamerasPage = () => {
 
   const handleDelete = async (itemId) => {
     try {
-      await deleteFaceDeviceById(itemId);
+      await anprCamerasApi.delete(itemId);
       showAlert(t("success"), "success");
       setShowModal(false);
       fetchData();
@@ -203,9 +229,9 @@ const VehicleCamerasPage = () => {
     await fetchData(1, formData);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   return (
@@ -214,87 +240,40 @@ const VehicleCamerasPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {data.length > 0 && (
-            <div className={styles.statsGrid}>
-              <StatWidget
-                icon={Camera}
-                color="#6366f1"
-                label={t("totalCamerasLabel")}
-                value={totalItems}
-              />
-              <StatWidget
-                icon={CheckCircle}
-                color="#10b981"
-                label={t("activeCount")}
-                value={data.filter((x) => x.status === "active").length}
-                sub={`/ ${data.length}`}
-              />
-              <StatWidget
-                icon={XCircle}
-                color="#ef4444"
-                label={t("inactiveCount")}
-                value={data.filter((x) => x.status !== "active").length}
-              />
+          {widgetsVisible && data.length > 0 && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
+                  <StatWidget
+                    icon={Camera}
+                    color="#6366f1"
+                    label={t("totalCamerasLabel")}
+                    value={totalItems}
+                  />
+                  <StatWidget
+                    icon={CheckCircle}
+                    color="#10b981"
+                    label={t("activeCount")}
+                    value={data.filter((x) => x.status === true).length}
+                    sub={`/ ${data.length}`}
+                  />
+                  <StatWidget
+                    icon={XCircle}
+                    color="#ef4444"
+                    label={t("inactiveCount")}
+                    value={data.filter((x) => x.status !== true).length}
+                  />
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
-
-              <FaceDeviceFilter
+              <AnprCameraFilter
                 formData={formData}
                 setFormData={setFormData}
                 onSubmit={handleFormSubmit}
@@ -328,7 +307,7 @@ const VehicleCamerasPage = () => {
               )}
             </div>
           </div>
-          <div className={styles.tableContainer}>
+          <div className={styles.tableContainer} onScroll={handleTableScroll}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -371,7 +350,7 @@ const VehicleCamerasPage = () => {
                   </th>
                   <th onClick={() => handleSort("gate_name")}>
                     <span className={styles.headerContent}>
-                      {t("door")}
+                      {t("gates")}
                       <SortArrow
                         active={sortField === "gate_name"}
                         order={sortOrder}
@@ -447,7 +426,7 @@ const VehicleCamerasPage = () => {
         width="500px"
       >
         {modalType === "add" && (
-          <AddFaceDevice
+          <AddAnprCamera
             handleClose={() => setModalType(null)}
             onSuccess={() => {
               fetchData();
@@ -455,7 +434,7 @@ const VehicleCamerasPage = () => {
           />
         )}
         {modalType === "edit" && (
-          <EditFaceDevice
+          <EditAnprCamera
             id={selectedItem}
             handleClose={() => setModalType(null)}
             onSuccess={() => {

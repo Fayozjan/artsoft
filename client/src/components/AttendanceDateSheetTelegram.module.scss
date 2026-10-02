@@ -1,0 +1,41 @@
+// Шторка выбора периода посещаемости.
+
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.preset {
+  height: 38px;
+  padding: 0 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.presetActive {
+  border-color: rgba(20, 85, 254, 0.45);
+  background: rgba(20, 85, 254, 0.14);
+  color: var(--third-color, #1455fe);
+}
+
+.dates {
+  padding-bottom: 4px;
+}

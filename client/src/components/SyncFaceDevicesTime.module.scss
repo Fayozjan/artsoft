@@ -1,0 +1,186 @@
+.syncFaceDevicesTime {
+  position: relative;
+  padding-bottom: 8px;
+
+  .header {
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-color);
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: calc(var(--font-small) + 2px);
+    }
+  }
+
+  .modeRow {
+    margin-top: 10px;
+    padding: 0 8px;
+    display: flex;
+    gap: 16px;
+  }
+
+  .modeOption {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--font-small);
+    cursor: pointer;
+
+    input[type="radio"] {
+      width: auto;
+      height: auto;
+    }
+  }
+
+  .timezoneRow {
+    margin-top: 10px;
+    padding: 0 8px;
+
+    label {
+      display: block;
+      font-size: var(--font-small);
+      margin-bottom: 2px;
+      color: var(--text-secondary);
+    }
+
+    select {
+      font-weight: 500;
+      width: 100%;
+      height: 30px;
+      padding: 5px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: var(--font-small);
+      box-sizing: border-box;
+    }
+  }
+
+  .empty {
+    padding: 16px 8px;
+    color: var(--text-secondary);
+    font-size: var(--font-small);
+    text-align: center;
+  }
+
+  .deviceList {
+    margin-top: 10px;
+    padding: 0 8px;
+    max-height: 400px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .summary {
+    margin-top: 10px;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    font-size: var(--font-small);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .summaryOk {
+    color: #10b981;
+    font-weight: 600;
+  }
+
+  .summaryFail {
+    color: #ef4444;
+    font-weight: 600;
+  }
+
+  .onlyFailed {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    color: var(--text-secondary);
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: auto;
+      height: auto;
+    }
+  }
+
+  .orphanList {
+    margin-top: 8px;
+    padding: 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .deviceItem {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .deviceError {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 4px 6px 26px;
+  }
+
+  .deviceErrorText {
+    color: #ef4444;
+    font-size: var(--font-small);
+    font-weight: 500;
+  }
+
+  // Ответ терминала как есть: без перевода, мелко и вторым планом.
+  .deviceErrorDetail {
+    color: var(--text-secondary);
+    font-size: calc(var(--font-small) - 2px);
+    word-break: break-word;
+  }
+
+  .deviceRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 4px;
+    font-size: var(--font-small);
+    cursor: pointer;
+
+    input[type="checkbox"] {
+      width: auto;
+      height: auto;
+      flex-shrink: 0;
+    }
+  }
+
+  // Строка «выбрать все» лежит в списке напрямую, без .deviceItem.
+  .deviceList > .deviceRow {
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .deviceName {
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .deviceIp {
+    color: var(--text-secondary);
+  }
+
+  .resultOk {
+    color: #10b981;
+    font-weight: 700;
+  }
+
+  .resultFail {
+    color: #ef4444;
+    font-weight: 700;
+    cursor: help;
+  }
+}

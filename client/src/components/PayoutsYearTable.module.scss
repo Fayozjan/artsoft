@@ -1,0 +1,172 @@
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+  position: relative;
+}
+
+.table {
+  width: 100%;
+  min-width: 1220px;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+    z-index: 10;
+  }
+
+  th,
+  td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .headerContent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+}
+
+.mainRow {
+  cursor: pointer;
+
+  &:hover td {
+    background: var(--bg-light);
+  }
+}
+
+
+.rowSelected td {
+  background: #eff6ff !important;
+}
+
+.checkCol {
+  width: 36px;
+  text-align: center !important;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: #3b82f6;
+  }
+}
+
+
+
+
+.numCol {
+  width: 36px;
+  color: var(--placeholder-color);
+  font-size: 11px;
+}
+
+.numColTd {
+  color: var(--placeholder-color);
+  font-size: 11px;
+  text-align: center;
+}
+
+.numCell {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color);
+}
+
+.netCell {
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color);
+}
+
+.cellSub {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--placeholder-color);
+  text-transform: lowercase;
+}
+
+
+.paidAmtVal {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.outstandingVal {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.advanceVal {
+  color: #b45309;
+  font-weight: 700;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+
+.actionsCell {
+  vertical-align: middle;
+}
+
+.actionsCellInner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.paidBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
+.payBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid #3b82f6;
+  border-radius: 5px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+  white-space: nowrap;
+
+  &:hover,
+  &.payBtnActive {
+    background: #dbeafe;
+  }
+}
+
+.noData {
+  text-align: center;
+  padding: 40px 0 !important;
+  color: var(--placeholder-color);
+  font-style: italic;
+}

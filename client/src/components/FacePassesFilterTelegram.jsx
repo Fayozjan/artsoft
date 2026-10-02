@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
-import { getActiveDoors, getDoors } from "../api";
+import { getActiveDoors } from "../api";
 
 import MultiSelectDoors from "./MultiSelectDoors";
 import EmployeeFilterForm from "./EmployeeFilterForm";
@@ -33,19 +33,6 @@ const FacePassesFilterTelegram = ({
     setFormData(initialFormData);
   };
 
-  // Загрузка дверей
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data } = await getDoors();
-        setDoors(data);
-      } catch (err) {
-        console.error("Ошибка загрузки данных:", err.message);
-      }
-    };
-    fetchData();
-  }, []);
-
   const handleChange = useCallback((e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
@@ -59,12 +46,17 @@ const FacePassesFilterTelegram = ({
     }));
   };
 
+  // Загрузка только активных дверей
   useEffect(() => {
     const fetchData = async () => {
-      const doors = await getActiveDoors();
+      try {
+        const doors = await getActiveDoors();
 
-      if (doors.success) {
-        setDoors(doors.data);
+        if (doors.success) {
+          setDoors(doors.data);
+        }
+      } catch (err) {
+        console.error("Ошибка загрузки данных:", err.message);
       }
     };
 

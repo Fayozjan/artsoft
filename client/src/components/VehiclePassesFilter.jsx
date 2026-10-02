@@ -1,11 +1,44 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 
 import { getActiveGates } from "../api";
+import { Icons } from "../icons/icons";
 
 import MultiSelectDoors from "./MultiSelectDoors";
 import EmployeeFilterForm from "./EmployeeFilterForm";
 
 import styles from "./VehiclePassesFilter.module.scss";
+
+const SegmentedGroup = ({ label, options, value, onChange }) => {
+  const activeIdx = options.findIndex((o) => o.value === value);
+  return (
+    <div className={styles.segmentedGroup}>
+      <span className={styles.segmentedLabel}>{label}</span>
+      <div className={styles.segmentedTrack}>
+        <div
+          className={styles.segmentedSlider}
+          style={{
+            width: `calc(${100 / options.length}% - 4px)`,
+            left: `calc(${activeIdx * (100 / options.length)}% + 2px)`,
+          }}
+        />
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            className={`${styles.segmentedBtn} ${value === opt.value ? styles.segmentedBtnActive : ""}`}
+            style={{ color: value === opt.value ? opt.color : undefined }}
+            onClick={() => onChange(opt.value)}
+          >
+            <span style={{ color: opt.color, display: "flex", alignItems: "center" }}>
+              {opt.icon}
+            </span>
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 const FacePassesFilter = ({
   initialFormData,
@@ -93,21 +126,7 @@ const FacePassesFilter = ({
         className={`${styles.toggleBtn} + ${activeCount ? styles.active : ""}`}
         onClick={toggleOpen}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="200"
-          height="200"
-          viewBox="0 0 32 32"
-        >
-          <path
-            fill="none"
-            stroke="#000000"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
-          />
-        </svg>
+        {Icons.filter}
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -157,49 +176,16 @@ const FacePassesFilter = ({
               />
             </div>
 
-            <div>
-              <h2>{t("direction")}</h2>
-              <div className={styles.checkboxGroup}>
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name=""
-                    value=""
-                    checked={formData.direction === ""}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "" }))
-                    }
-                  />
-                  {t("all")}
-                </label>
-
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name="direction"
-                    value="forward"
-                    checked={formData.direction === "forward"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "forward" }))
-                    }
-                  />
-                  {t("forward")}
-                </label>
-
-                <label className={styles.checkboxLabel}>
-                  <input
-                    type="checkbox"
-                    name="direction"
-                    value="reverse"
-                    checked={formData.direction === "reverse"}
-                    onChange={() =>
-                      setFormData((prev) => ({ ...prev, direction: "reverse" }))
-                    }
-                  />
-                  {t("reverse")}
-                </label>
-              </div>
-            </div>
+            <SegmentedGroup
+              label={t("direction")}
+              options={[
+                { value: "", label: t("all"), color: "#6b7280", icon: Icons.dot },
+                { value: "forward", label: t("forward"), color: "#16a34a", icon: Icons.arrowForward },
+                { value: "reverse", label: t("reverse"), color: "#dc2626", icon: Icons.arrowBack },
+              ]}
+              value={formData.direction}
+              onChange={(val) => setFormData((prev) => ({ ...prev, direction: val }))}
+            />
 
             <div className={styles.actions}>
               <button type="button" onClick={handleReset}>

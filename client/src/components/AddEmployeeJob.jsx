@@ -6,6 +6,7 @@ import { useAlertStore } from "../stores/alertStore";
 
 import Loading from "./Loading";
 import Button from "./Button";
+import SearchableSelect from "./SearchableSelect";
 
 import styles from "./AddEmployeeJob.module.scss";
 
@@ -150,19 +151,15 @@ const AddEmployeeJob = ({ userId, setActiveTab }) => {
               </div>
               <div className={styles.input_col}>
                 <label>{t("position")}</label>
-                <select
-                  name="position_id"
+                <SearchableSelect
                   value={formData.position_id}
-                  onChange={handleChange}
+                  options={positions}
+                  data="position"
+                  placeholder={t("selectPosition")}
+                  setFormData={setFormData}
                   required
-                >
-                  <option value="">{t("selectPosition")}</option>
-                  {positions.map((dep) => (
-                    <option key={dep.id} value={dep.id}>
-                      {dep.name}
-                    </option>
-                  ))}
-                </select>
+                  noMatches={t("noMatches")}
+                />
               </div>
             </div>
 

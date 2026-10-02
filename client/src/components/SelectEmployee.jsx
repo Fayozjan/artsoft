@@ -169,14 +169,19 @@ function SelectEmployee({
         placeholder={placeholder}
         disabled={disabled}
         required={required}
+        // место под кнопку сброса, чтобы длинное имя не заезжало под неё
+        style={selectedOption ? { paddingRight: 38 } : undefined}
       />
       {selectedOption && (
         <button
           type="button"
           className={styles.clearBtn}
           onClick={resetSelection}
+          aria-label="clear"
         >
-          ✖
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7l10 10M17 7L7 17" />
+          </svg>
         </button>
       )}
 
@@ -194,7 +199,7 @@ function SelectEmployee({
               {/* Подсказка если результатов обрезано */}
               {debouncedSearch && filteredOptions.length === VISIBLE_LIMIT && (
                 <li className={styles.no_matches}>
-                  Уточните запрос для более точного поиска
+                  {t("clarifySearchQuery")}
                 </li>
               )}
             </>

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import Badge from "./Badge";
 import SortArrow from "./SortArrow";
+import { useImagePreviewStore } from "../stores/imagePreviewStore";
 
 import styles from "./VehiclePassesTable.module.scss";
 
@@ -11,10 +12,12 @@ const VehiclePassesTable = ({
   currentPage,
   pageSize,
   viewType = "row",
+  onScroll,
 }) => {
   const { t } = useTranslation();
   const [sortField, setSortField] = useState("date");
   const [sortOrder, setSortOrder] = useState("desc");
+  const openImagePreview = useImagePreviewStore((s) => s.open);
 
   const getSortedData = () => {
     return [...data].sort((a, b) => {
@@ -108,7 +111,7 @@ const VehiclePassesTable = ({
 
   if (viewType === "card") {
     return (
-      <div className={styles.cardGrid}>
+      <div className={styles.cardGrid} onScroll={onScroll}>
         {sortedData.length > 0 ? (
           sortedData.map((event, i) => {
             const plate = parsePlate(event.plate_number);
@@ -117,7 +120,15 @@ const VehiclePassesTable = ({
                 {/* Photo */}
                 <div className={styles.cardPhoto}>
                   {event.photo ? (
-                    <img src={`/api/vehicle-passes/image/${event.photo}`} />
+                    <img
+                      src={`/api/vehicle-passes/image/${event.photo}`}
+                      onClick={() =>
+                        openImagePreview(
+                          `/api/vehicle-passes/image/${event.photo}`,
+                        )
+                      }
+                      style={{ cursor: "pointer" }}
+                    />
                   ) : (
                     <div className={styles.cardPhotoPlaceholder}>
                       <svg
@@ -270,7 +281,7 @@ const VehiclePassesTable = ({
   }
 
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} onScroll={onScroll}>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -340,7 +351,15 @@ const VehiclePassesTable = ({
                   <td>{event.date}</td>
                   <td>
                     {event?.photo && (
-                      <img src={`/api/vehicle-passes/image/${event.photo}`} />
+                      <img
+                        src={`/api/vehicle-passes/image/${event.photo}`}
+                        onClick={() =>
+                          openImagePreview(
+                            `/api/vehicle-passes/image/${event.photo}`,
+                          )
+                        }
+                        style={{ cursor: "pointer" }}
+                      />
                     )}
                   </td>
                 </tr>

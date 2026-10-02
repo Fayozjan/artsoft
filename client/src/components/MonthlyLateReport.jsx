@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import EmployeeCell from "./EmployeeCell";
+import SortArrow from "./SortArrow";
+import { useImagePreviewStore } from "../stores/imagePreviewStore";
 import styles from "./MonthlyLateReport.module.scss";
 
 function formatLateMinutesToHours(minutes) {
@@ -9,8 +12,10 @@ function formatLateMinutesToHours(minutes) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-const EmployeesTable = ({ data = [], onMore }) => {
+const EmployeesTable = ({ data = [], onMore, includeLunch = false }) => {
   const { t } = useTranslation();
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const columns = [
     { label: "№", render: (_, __, i) => i + 1 },
@@ -18,31 +23,40 @@ const EmployeesTable = ({ data = [], onMore }) => {
       label: t("fullName"),
       accessor: "employeeFullName",
       render: (_, item) => (
-        <div className={styles.empCell}>
-          {item.employeePhoto && (
-            <img src={`/api/employees/image/${item.employeePhoto}`} alt="photo" />
-          )}
-          <div className={styles.empInfo}>
-            <span className={styles.empName}>{item.employeeFullName}</span>
-            <span className={styles.empSub}>
-              {[item.branchName, item.departmentName].filter(Boolean).join(" / ")}
-            </span>
-          </div>
-        </div>
+        <EmployeeCell
+          photo={item.employeePhoto}
+          fullName={item.employeeFullName}
+          id={item.employeeId}
+          branch={item.branchName}
+          department={item.departmentName}
+          active={item.employeeStatus !== false}
+        />
       ),
     },
     { label: t("position"), accessor: "positionName" },
+    {
+      label: t("scheduledWorkDays"),
+      accessor: "monthlyWorkDays",
+      render: (v) => v || "—",
+    },
+    {
+      label: t("workedDays"),
+      accessor: "monthlyAttendedDays",
+      render: (v) => v || "—",
+    },
     {
       label: t("lateCount"),
       accessor: "monthlyArrivalLateCount",
       render: (_, item) => {
         const count = item.monthlyArrivalLateCount || 0;
         if (!count) return "—";
-        return count;
+        const attended = item.monthlyAttendedDays || 0;
+        // «опоздал N из M дней, когда пришёл»
+        return attended ? `${count} / ${attended}` : count;
       },
     },
     {
-      label: t("lateTime"),
+      label: `${t("lateTime")} (${t("hhmmFormat")})`,
       accessor: "monthlyArrivalLateCount",
       render: (_, item) => {
         const count = item.monthlyArrivalLateCount || 0;
@@ -51,25 +65,30 @@ const EmployeesTable = ({ data = [], onMore }) => {
         return mins > 0 && formatLateMinutesToHours(mins);
       },
     },
-    {
-      label: t("lateCountAfterBreak"),
-      accessor: "monthlyLunchLateCount",
-      render: (_, item) => {
-        const count = item.monthlyLunchLateCount || 0;
-        if (!count) return "—";
-        return count;
-      },
-    },
-    {
-      label: t("lateTimeAfterBreak"),
-      accessor: "monthlyLunchLateCount",
-      render: (_, item) => {
-        const count = item.monthlyLunchLateCount || 0;
-        const mins = item.monthlyBreakReturnLateMinutes || 0;
-        if (!count) return "—";
-        return mins > 0 && formatLateMinutesToHours(mins);
-      },
-    },
+    // Колонки по обеду — только если в фильтре включено «после обеда»
+    ...(includeLunch
+      ? [
+          {
+            label: t("lateCountAfterBreak"),
+            accessor: "monthlyLunchLateCount",
+            render: (_, item) => {
+              const count = item.monthlyLunchLateCount || 0;
+              if (!count) return "—";
+              return count;
+            },
+          },
+          {
+            label: `${t("lateTimeAfterBreak")} (${t("hhmmFormat")})`,
+            accessor: "monthlyLunchLateCount",
+            render: (_, item) => {
+              const count = item.monthlyLunchLateCount || 0;
+              const mins = item.monthlyBreakReturnLateMinutes || 0;
+              if (!count) return "—";
+              return mins > 0 && formatLateMinutesToHours(mins);
+            },
+          },
+        ]
+      : []),
     {
       label: t("totalLateAmount"),
       accessor: "monthlyLateMoney",
@@ -103,14 +122,50 @@ const EmployeesTable = ({ data = [], onMore }) => {
     },
   ];
 
+  const handleSort = (accessor) => {
+    if (sortField === accessor) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(accessor);
+      setSortOrder("asc");
+    }
+  };
+
+  const sortedData = sortField
+    ? [...data].sort((a, b) => {
+        const aVal = a[sortField];
+        const bVal = b[sortField];
+
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        return sortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : data;
+
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
         <thead>
           <tr>
             {columns.map((col, i) => (
-              <th key={i}>
-                <span className={styles.headerContent}>{col.label}</span>
+              <th
+                key={i}
+                onClick={() => col.accessor && handleSort(col.accessor)}
+                style={{ cursor: col.accessor ? "pointer" : "default" }}
+              >
+                <span className={styles.headerContent}>
+                  {col.label}
+                  {col.accessor && (
+                    <SortArrow active={sortField === col.accessor} order={sortOrder} />
+                  )}
+                </span>
               </th>
             ))}
           </tr>
@@ -123,7 +178,7 @@ const EmployeesTable = ({ data = [], onMore }) => {
               </td>
             </tr>
           ) : (
-            data.map((item, i) => (
+            sortedData.map((item, i) => (
               <tr key={item.identifier || i} className="fade-in">
                 {columns.map((col, j) => (
                   <td key={j}>
@@ -143,15 +198,22 @@ const EmployeesTable = ({ data = [], onMore }) => {
 
 const EmployeeCard = ({ emp }) => {
   const { t } = useTranslation();
+  const openImagePreview = useImagePreviewStore((s) => s.open);
+
+  const avatarUrl = emp.employeePhoto
+    ? `/api/employees/image/${emp.employeePhoto}`
+    : null;
 
   return (
     <div className={styles.employeeCard}>
       <div className={styles.empLeft}>
-        {emp.employeePhoto ? (
+        {avatarUrl ? (
           <img
-            src={`/api/employees/image/${emp.employeePhoto}`}
+            src={avatarUrl}
             alt={emp.employeeFullName}
             className={styles.empPhoto}
+            onClick={() => openImagePreview(avatarUrl)}
+            style={{ cursor: "pointer" }}
           />
         ) : (
           <div className={styles.empPhotoPlaceholder}>
@@ -224,7 +286,7 @@ const EmployeeCard = ({ emp }) => {
   );
 };
 
-const BranchesView = ({ data = [] }) => {
+const BranchesView = ({ data = [], dateFrom = null, dateTo = null }) => {
   const { t } = useTranslation();
   const [activeCell, setActiveCell] = useState(null);
 
@@ -233,6 +295,21 @@ const BranchesView = ({ data = [] }) => {
   );
 
   const allDates = (() => {
+    // Режим «за период»: колонки строим по выбранному диапазону, а не по месяцу
+    if (dateFrom && dateTo) {
+      const dates = [];
+      const cursor = new Date(`${dateFrom}T00:00:00`);
+      const last = new Date(`${dateTo}T00:00:00`);
+      while (cursor <= last) {
+        const y = cursor.getFullYear();
+        const m = String(cursor.getMonth() + 1).padStart(2, "0");
+        const d = String(cursor.getDate()).padStart(2, "0");
+        dates.push(`${y}-${m}-${d}`);
+        cursor.setDate(cursor.getDate() + 1);
+      }
+      return dates;
+    }
+
     const firstDate = data.flatMap((b) => b.days.map((d) => d.date)).sort()[0];
     if (!firstDate) return [];
     const [year, month] = firstDate.split("-").map(Number);
@@ -243,6 +320,9 @@ const BranchesView = ({ data = [] }) => {
       return `${year}-${mm}-${day}`;
     });
   })();
+
+  // Период может пересекать несколько месяцев — тогда в шапке нужен и месяц
+  const multiMonth = new Set(allDates.map((d) => d.slice(0, 7))).size > 1;
 
   const toggleCell = (branchName, date) => {
     const key = `${branchName}__${date}`;
@@ -269,7 +349,12 @@ const BranchesView = ({ data = [] }) => {
               return (
                 <th key={date} className={styles.gridDayTh}>
                   <span className={styles.gridDayNum}>
-                    {d.toLocaleDateString("ru-RU", { day: "2-digit" })}
+                    {d.toLocaleDateString(
+                      "ru-RU",
+                      multiMonth
+                        ? { day: "2-digit", month: "2-digit" }
+                        : { day: "2-digit" },
+                    )}
                   </span>
                   <span className={styles.gridDayName}>
                     {d.toLocaleDateString("ru-RU", { weekday: "short" })}
@@ -277,13 +362,27 @@ const BranchesView = ({ data = [] }) => {
                 </th>
               );
             })}
-            <th className={styles.gridTotalTh}>{t("total")}</th>
+            <th
+              className={styles.gridTotalTh}
+              title={`${t("lateOccurrences")} / ${t("lateEmployeesLabel")}`}
+            >
+              {t("total")}
+            </th>
           </tr>
         </thead>
 
         <tbody>
           {sortedData.map((branch) => {
+            // Итог по филиалу — число СЛУЧАЕВ опоздания за все дни: один
+            // сотрудник попадает в него столько раз, сколько опаздывал. Рядом
+            // показываем уникальных людей, иначе цифра не сходится с таблицей
+            // «по сотрудникам»
             const totalLate = branch.days.reduce((s, d) => s + d.lateCount, 0);
+            const uniqueLateEmployees = new Set(
+              branch.days.flatMap((d) =>
+                (d.employees || []).map((e) => e.employeeId),
+              ),
+            ).size;
 
             const activeDateForBranch = activeCell?.startsWith(
               `${branch.branchName}__`,
@@ -346,7 +445,15 @@ const BranchesView = ({ data = [] }) => {
                   })}
 
                   <td className={styles.gridTotalCell}>
-                    <span className={styles.gridTotalBadge}>{totalLate}</span>
+                    <span
+                      className={styles.gridTotalBadge}
+                      title={t("lateOccurrences")}
+                    >
+                      {totalLate}
+                    </span>
+                    <span className={styles.gridTotalPeople}>
+                      {uniqueLateEmployees} {t("peopleShort")}
+                    </span>
                   </td>
                 </tr>
 
@@ -415,12 +522,31 @@ const BranchesView = ({ data = [] }) => {
   );
 };
 
-const MonthlyLateReport = ({ data, viewType, onMore }) => {
+const MonthlyLateReport = ({
+  data,
+  viewType,
+  onMore,
+  includeLunch = false,
+  dateFrom = null,
+  dateTo = null,
+}) => {
   if (viewType === "branches") {
-    return <BranchesView data={data?.lateByBranchAndDay} />;
+    return (
+      <BranchesView
+        data={data?.lateByBranchAndDay}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+      />
+    );
   }
 
-  return <EmployeesTable data={data?.lateEmployeesByMonth} onMore={onMore} />;
+  return (
+    <EmployeesTable
+      data={data?.lateEmployeesByMonth}
+      onMore={onMore}
+      includeLunch={includeLunch}
+    />
+  );
 };
 
 export default MonthlyLateReport;

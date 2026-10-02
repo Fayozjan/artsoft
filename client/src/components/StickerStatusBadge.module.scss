@@ -1,0 +1,29 @@
+.badge {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+}
+
+.pending {
+  color: #b45309;
+  background: #f59e0b22;
+  border-color: #f59e0b66;
+}
+
+.done {
+  color: #047857;
+  background: #10b98122;
+  border-color: #10b98166;
+}
+
+.scrapped {
+  color: #b91c1c;
+  background: #ef444422;
+  border-color: #ef444466;
+}

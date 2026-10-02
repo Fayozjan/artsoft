@@ -1,5 +1,16 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import EmployeeFilterForm from "./EmployeeFilterForm";
+import CenterModal from "./CenterModal";
+import { Icons } from "../icons/icons";
+import { useAuthStore } from "../stores/authStore";
+import { useAlertStore } from "../stores/alertStore";
+import {
+  getTimesheetFilterPresets,
+  createTimesheetFilterPreset,
+  updateTimesheetFilterPreset,
+  deleteTimesheetFilterPreset,
+} from "../api";
+import { getCurrentIsoWeek, getIsoWeekMonth } from "../utils/date";
 import styles from "./TimesheetFilter.module.scss";
 
 function getCurrentMonth() {
@@ -80,17 +91,115 @@ const SegmentedGroup = ({ label, options, value, onChange }) => {
 };
 
 const INITIAL_FORM = {
+  viewMode: "month",
   month: getCurrentMonth(),
-  branch_id: null,
-  department_id: null,
-  position_id: null,
+  week: getCurrentIsoWeek(),
+  branch_ids: [],
+  department_ids: [],
+  position_ids: [],
+  employee_ids: [],
   status: "",
   hasEvents: "",
 };
 
+// Поля, которые сохраняются в пресете фильтра (месяц не сохраняется)
+const PRESET_FIELDS = [
+  "branch_ids",
+  "department_ids",
+  "position_ids",
+  "employee_ids",
+  "status",
+  "hasEvents",
+];
+
 const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef(null);
+
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  const showAlert = useAlertStore((s) => s.showAlert);
+
+  const [presets, setPresets] = useState([]);
+  const [presetName, setPresetName] = useState("");
+  const [activePresetId, setActivePresetId] = useState(null);
+  const [presetToDelete, setPresetToDelete] = useState(null);
+
+  useEffect(() => {
+    getTimesheetFilterPresets()
+      .then(setPresets)
+      .catch((err) => console.error("Ошибка загрузки фильтров:", err));
+  }, []);
+
+  const handleSavePreset = () => {
+    if (!presetName.trim()) return;
+    const filter = Object.fromEntries(
+      PRESET_FIELDS.map((key) => [key, formData[key] ?? ""]),
+    );
+    createTimesheetFilterPreset({ name: presetName.trim(), filter })
+      .then((preset) => {
+        setPresets((prev) => [...prev, preset]);
+        setPresetName("");
+      })
+      .catch((err) => {
+        console.error("Ошибка сохранения фильтра:", err);
+        showAlert(err.response?.data?.error || t("error"), "error");
+      });
+  };
+
+  const handleUpdatePreset = () => {
+    const preset = presets.find((p) => p.id === activePresetId);
+    if (!preset) return;
+    const filter = Object.fromEntries(
+      PRESET_FIELDS.map((key) => [key, formData[key] ?? ""]),
+    );
+    updateTimesheetFilterPreset(preset.id, { name: preset.name, filter })
+      .then((updated) => {
+        setPresets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      })
+      .catch((err) => {
+        console.error("Ошибка обновления фильтра:", err);
+        showAlert(err.response?.data?.error || t("error"), "error");
+      });
+  };
+
+  const handleSelectPreset = (id) => {
+    if (!id) {
+      setActivePresetId(null);
+      return;
+    }
+    const preset = presets.find((p) => p.id === id);
+    if (!preset) return;
+    setFormData((prev) => ({ ...prev, ...preset.filter, month: prev.month }));
+    setActivePresetId(preset.id);
+  };
+
+  const handleDeletePresetConfirm = () => {
+    const id = presetToDelete;
+    setPresetToDelete(null);
+    if (activePresetId === id) setActivePresetId(null);
+    deleteTimesheetFilterPreset(id)
+      .then(() => setPresets((prev) => prev.filter((p) => p.id !== id)))
+      .catch((err) => {
+        console.error("Ошибка удаления фильтра:", err);
+        showAlert(err.response?.data?.error || t("error"), "error");
+      });
+  };
+
+  const normalizeForCompare = (value) => {
+    if (Array.isArray(value)) {
+      return [...value].map((v) => Number(v)).sort((a, b) => a - b);
+    }
+    return value ?? "";
+  };
+
+  const activePreset = presets.find((p) => p.id === activePresetId);
+  const isPresetDirty =
+    activePreset &&
+    PRESET_FIELDS.some(
+      (key) =>
+        JSON.stringify(normalizeForCompare(formData[key])) !==
+        JSON.stringify(normalizeForCompare(activePreset.filter[key])),
+    );
 
   const statusOptions = [
     { value: "", label: t("all"), color: "#6b7280", icon: <DotIcon /> },
@@ -117,6 +226,8 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
   const activeCount = Object.entries(formData).filter(
     ([key, value]) =>
       key !== "search" &&
+      key !== "viewMode" &&
+      key !== "week" &&
       value != null &&
       value !== "" &&
       (!Array.isArray(value) || value.length > 0),
@@ -126,6 +237,22 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   }, []);
+
+  const handleViewModeChange = (mode) => {
+    setFormData((prev) => {
+      if (mode === "week") {
+        const week = prev.week || getCurrentIsoWeek();
+        return { ...prev, viewMode: "week", week, month: getIsoWeekMonth(week) };
+      }
+      return { ...prev, viewMode: "month" };
+    });
+  };
+
+  const handleWeekChange = (e) => {
+    const week = e.target.value;
+    if (!week) return;
+    setFormData((prev) => ({ ...prev, week, month: getIsoWeekMonth(week) }));
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -153,43 +280,95 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
         className={`${styles.toggleBtn} ${activeCount ? styles.active : ""}`}
         onClick={() => setIsOpen((p) => !p)}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="200"
-          height="200"
-          viewBox="0 0 32 32"
-        >
-          <path
-            fill="none"
-            stroke="#000000"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
-          />
-        </svg>
+        {Icons.filter}
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
       {isOpen && (
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
+            {presets.length > 0 && (
+              <div className={styles.presetList}>
+                <h2>{t("savedFilters")}</h2>
+                <div className={styles.presetRow}>
+                  <select
+                    className={styles.presetSelect}
+                    value={activePresetId ?? ""}
+                    onChange={(e) =>
+                      handleSelectPreset(Number(e.target.value) || null)
+                    }
+                  >
+                    <option value="">{t("select")}</option>
+                    {presets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                  {activePreset?.created_by === currentUserId && (
+                    <>
+                      {isPresetDirty && (
+                        <button
+                          type="button"
+                          className={styles.presetUpdate}
+                          onClick={handleUpdatePreset}
+                          title={t("updateFilter")}
+                        >
+                          {Icons.floppyDisk}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className={styles.presetDelete}
+                        onClick={() => setPresetToDelete(activePreset.id)}
+                        title={t("delete")}
+                      >
+                        {Icons.trashOutline}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <SegmentedGroup
+              label={t("period")}
+              options={[
+                { value: "month", label: t("month") },
+                { value: "week", label: t("week") },
+              ]}
+              value={formData.viewMode || "month"}
+              onChange={handleViewModeChange}
+            />
+
             <div>
-              <h2>{t("month")}</h2>
-              <input
-                className={styles.month}
-                type="month"
-                name="month"
-                value={formData.month}
-                onChange={handleChange}
-                onFocus={(e) => e.target.showPicker?.()}
-              />
+              <h2>{formData.viewMode === "week" ? t("week") : t("month")}</h2>
+              {formData.viewMode === "week" ? (
+                <input
+                  className={styles.month}
+                  type="week"
+                  name="week"
+                  value={formData.week || getCurrentIsoWeek()}
+                  onChange={handleWeekChange}
+                  onFocus={(e) => e.target.showPicker?.()}
+                />
+              ) : (
+                <input
+                  className={styles.month}
+                  type="month"
+                  name="month"
+                  value={formData.month}
+                  onChange={handleChange}
+                  onFocus={(e) => e.target.showPicker?.()}
+                />
+              )}
             </div>
 
             <EmployeeFilterForm
-              filters={["branch", "department", "position"]}
+              filters={["branch", "department", "position", "employee"]}
               formData={formData}
               setFormData={setFormData}
+              multiple
             />
 
             <SegmentedGroup
@@ -210,8 +389,37 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
               }
             />
 
+            <div className={styles.saveRow}>
+              <input
+                className={styles.presetInput}
+                placeholder={t("saveFilterAs")}
+                value={presetName}
+                onChange={(e) => setPresetName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSavePreset();
+                  }
+                }}
+              />
+              <button
+                type="button"
+                className={styles.saveBtn}
+                onClick={handleSavePreset}
+                disabled={!presetName.trim()}
+              >
+                {t("save")}
+              </button>
+            </div>
+
             <div className={styles.actions}>
-              <button type="button" onClick={() => setFormData(INITIAL_FORM)}>
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData(INITIAL_FORM);
+                  setActivePresetId(null);
+                }}
+              >
                 {t("clearAll")}
               </button>
               <button type="submit">{t("apply")}</button>
@@ -219,6 +427,13 @@ const TimesheetFilter = ({ formData, setFormData, onSubmit, t }) => {
           </form>
         </div>
       )}
+
+      <CenterModal
+        isOpen={presetToDelete !== null}
+        onClose={() => setPresetToDelete(null)}
+        onAccept={handleDeletePresetConfirm}
+        tag={t("areYouSureDelete")}
+      />
     </div>
   );
 };

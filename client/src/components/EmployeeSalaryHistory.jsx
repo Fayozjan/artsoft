@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import Loading from "./Loading";
 import { salaryHistoryApi } from "../api/salaryHistory";
 import { useAlertStore } from "../stores/alertStore";
+import { Icons } from "../icons/icons";
 import styles from "./EmployeeSalaryHistory.module.scss";
 
 const SALARY_TYPES = [
@@ -154,19 +155,7 @@ const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false
             {showAddForm ? "✕" : "+ " + t("add")}
           </button>
           {showClose && (
-            <svg
-              onClick={handleClose}
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 304 384"
-              style={{ cursor: "pointer" }}
-            >
-              <path
-                fill="currentColor"
-                d="M299 73L179 192l120 119l-30 30l-120-119L30 341L0 311l119-119L0 73l30-30l119 119L269 43z"
-              />
-            </svg>
+            <span onClick={handleClose} style={{ cursor: "pointer", display: "flex" }}>{Icons.clear}</span>
           )}
         </div>
       </div>
@@ -407,24 +396,14 @@ const EmployeeSalaryHistory = ({ employeeId, handleClose, initialOpenAdd = false
                           onClick={() => handleEditStart(item)}
                           title={t("edit")}
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24">
-                            <path
-                              d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"
-                              fill="currentColor"
-                            />
-                          </svg>
+                          {Icons.edit}
                         </button>
                         <button
                           className={styles.deleteIconBtn}
                           onClick={() => setDeletingId(item.id)}
                           title={t("delete")}
                         >
-                          <svg width="13" height="15" viewBox="0 0 14 18">
-                            <path
-                              d="M1,16 C1,17.1 1.9,18 3,18 L11,18 C12.1,18 13,17.1 13,16 L13,4 L1,4 L1,16 L1,16 Z M14,1 L10.5,1 L9.5,0 L4.5,0 L3.5,1 L0,1 L0,3 L14,3 L14,1 L14,1 Z"
-                              fill="currentColor"
-                            />
-                          </svg>
+                          {Icons.delete}
                         </button>
                       </div>
                     </div>

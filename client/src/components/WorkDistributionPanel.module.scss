@@ -1,0 +1,803 @@
+// Панель распределения работы. Корень — flex-колонка; внутри карточки партии
+// (обычный блочный поток) блоки просто растут, скроллит карточка.
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+// Внутри карточки партии отступы задаёт сама карточка.
+.embedded {
+  .itemDetailBody {
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+.noData {
+  color: var(--text-secondary);
+  padding: 20px;
+  text-align: center;
+}
+
+.sectionCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--bg-light);
+  color: var(--third-color);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+// Кнопка «Добавить и напечатать стикер» — всегда в одну строку: ширина по тексту,
+// а не фиксированные 320px общей кнопки панели (на них длинное название переносится).
+.distributeFooter > button {
+  flex: 0 0 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+// ---- Позиция: операции (итоги, форма печати, стикеры) ----
+
+.itemDetailBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 10px 10px;
+}
+
+// Панель добавления стикеров под чипами: итоги выбранной операции + поля количества.
+.printForm {
+  margin: 0 0 12px;
+  padding: 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 8px;
+
+  .exceedsHint {
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #dc2626;
+  }
+
+  input,
+  select {
+    font-weight: 500;
+    width: 100%;
+    height: 32px;
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+    background: var(--input-bg);
+    color: var(--text-color);
+  }
+
+  // Подпись над полем остаётся при вводе (в отличие от placeholder).
+  .fieldLabel {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+  }
+
+  // Подпись + чип "Макс N" справа: сколько стикеров можно напечатать при введённом
+  // кол-ве на стикер. Клик по чипу подставляет максимум в поле.
+  .fieldLabelRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 16px;
+    margin-bottom: 4px;
+
+    .fieldLabel {
+      margin-bottom: 0;
+    }
+  }
+
+  .maxChip {
+    height: 16px;
+    padding: 0 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: var(--bg-light);
+    color: var(--third-color);
+    font-size: 10px;
+    font-weight: 700;
+    font-family: inherit;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+
+    &:hover:not(:disabled) {
+      border-color: var(--third-color);
+      background: var(--third-color);
+      color: var(--button-text, #fff);
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+  }
+
+  .maxChipEmpty {
+    color: #dc2626;
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+
+    > div {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .fieldQty {
+      flex: 0 0 auto;
+
+      input {
+        width: 21ch;
+      }
+    }
+
+    .fieldGrow {
+      flex: 6 1 220px;
+      min-width: 200px;
+    }
+  }
+
+  .printSubmit {
+    flex: 0 0 auto;
+  }
+
+  // Поля-плашки (общее кол-во / будет напечатано / остаток): подпись сверху, как у
+  // полей ввода, значение в плашке крупно.
+  .row .pillField {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .pill {
+    display: flex;
+    align-items: center;
+    // Одинаковая ширина у всех плашек: подпись сверху помещается целиком,
+    // и плашка не "прыгает" при смене значения.
+    width: 140px;
+    height: 32px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border-radius: 5px;
+    background: var(--bg-light);
+    border: 1px solid var(--border-subtle, var(--border-color));
+    white-space: nowrap;
+
+    .pillValue {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1;
+    }
+  }
+
+  .pillNeutral .pillValue {
+    color: var(--text-color);
+  }
+
+  .pillOk .pillValue {
+    color: #16a34a;
+  }
+
+  .pillAccent .pillValue {
+    color: var(--third-color);
+  }
+
+  .pillDanger .pillValue {
+    color: #dc2626;
+  }
+}
+
+.printedPanel {
+  padding: 12px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 8px;
+}
+
+.printedTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: 10px;
+}
+
+// Обёртка панели распределения (WorkStickerRoutePanel.module.scss даёт ей вид) —
+// вверху страницы позиции и внутри операции с остатком.
+.addBlock {
+  margin-bottom: 12px;
+}
+
+// Пустое состояние позиции: операция ещё не выбрана — что делать дальше.
+.emptyHero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 20px 28px;
+  border: 2px dashed rgba(20, 85, 254, 0.25);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(20, 85, 254, 0.05), transparent 70%);
+  text-align: center;
+
+  h3 {
+    margin: 0;
+    padding: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  p {
+    max-width: 440px;
+    margin: 0;
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+  }
+}
+
+.emptyHeroIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 4px;
+  border-radius: 50%;
+  background: rgba(20, 85, 254, 0.1);
+  color: var(--third-color, #1455fe);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.stickerGroup {
+  margin-bottom: 18px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.stickerGroupHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle, var(--border-color));
+  // Вся шапка раскрывает/сворачивает операцию, в том числе свободное место.
+  cursor: pointer;
+  user-select: none;
+}
+
+// Итоги операции в шапке группы, между названием и фильтрами: количество позиции /
+// напечатано / остаток в одну компактную строку. Прогресс распределения — заливка
+// плашки слева направо (доля напечатанного от количества) с линией по нижнему краю.
+.groupStats {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  height: 28px;
+  margin: 0 auto 0 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 7px;
+}
+
+.groupStatFill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(22, 163, 74, 0.12);
+  background: color-mix(in srgb, #16a34a 12%, transparent);
+  box-shadow: inset 0 -2px 0 rgba(22, 163, 74, 0.7);
+  transition: width 0.3s ease;
+}
+
+// Всё распределено — заливка чуть насыщеннее, линия полная.
+.groupStatFillFull {
+  background: rgba(22, 163, 74, 0.2);
+  background: color-mix(in srgb, #16a34a 20%, transparent);
+  box-shadow: inset 0 -2px 0 #16a34a;
+}
+
+.groupStat {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  align-self: center;
+  gap: 5px;
+  padding: 0 11px;
+  white-space: nowrap;
+
+  & + & {
+    // Разделитель по высоте текста, а не плашки — мягче выглядит поверх заливки.
+    border-left: 1px solid var(--border-subtle, var(--border-color));
+  }
+}
+
+.groupStatValue {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.groupStatLabel {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.groupStatOk .groupStatValue {
+  color: #16a34a;
+}
+
+.groupStatDanger .groupStatValue {
+  color: #dc2626;
+}
+
+.groupStatWarn .groupStatValue {
+  color: #d97706;
+}
+
+.stickerGroupLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.groupAddedBy {
+  font-size: var(--font-small);
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.stickerGroupActions {
+  cursor: default;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.statusFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg-light);
+  border: 1px solid rgba(162, 161, 168, 0.35);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+// Селект статуса — только на телефоне (см. медиазапрос внизу); на десктопе остаются чипы.
+.statusSelectWrap {
+  display: none;
+}
+
+.statusFilterChip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.statusFilterChipActive {
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stickerGroupChevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.stickerGroupChevronOpen {
+  transform: rotate(180deg);
+}
+
+.stickerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.stickerCard {
+  position: relative;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 8px;
+  background: var(--card-bg);
+  overflow: hidden;
+}
+
+.stickerStatusDot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--card-bg);
+}
+
+.stickerCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 20px 6px 8px;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border-subtle, var(--border-color));
+}
+
+.stickerCardCode {
+  font-weight: 700;
+  font-size: var(--font-small);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stickerCardDate {
+  padding: 6px 8px 0;
+  font-weight: 500;
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.stickerCardFooter {
+  padding: 6px 8px;
+  border-top: 1px dashed var(--border-subtle, var(--border-color));
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.stickerCardQty {
+  padding: 2px 8px 6px;
+  font-weight: 500;
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rowActionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background-color 0.15s, color 0.15s;
+
+  svg {
+    width: auto;
+    height: 20px;
+    max-width: 20px;
+  }
+}
+
+.rowActionBtnAccent:hover {
+  color: var(--third-color, #1455fe);
+  background: rgba(20, 85, 254, 0.1);
+}
+
+.rowActionBtnDanger:hover {
+  color: #dc2626;
+  background: rgba(220, 38, 38, 0.1);
+}
+
+// ---- Редактор шаблона стикера (OverlaySidebar, рендерится порталом) ----
+
+.printModal {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.printModalHeader {
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+
+  .printModalHeaderText {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  h2 {
+    margin: 0;
+    padding: 0;
+    font-size: calc(var(--font-small) + 6px);
+    font-weight: 700;
+  }
+}
+
+.printModalSettings {
+  display: flex;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: transform 0.1s ease, color 0.15s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    color: var(--third-color, #1455fe);
+    transform: rotate(30deg);
+  }
+}
+
+.printModalClose {
+  display: flex;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.printModalBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+// ── Телефон (Telegram): поля формы печати крупнее и в колонку ────────────────
+@media (max-width: 640px) {
+  .printForm {
+    padding: 12px;
+    border-radius: 14px;
+
+    input,
+    select {
+      height: 46px;
+      padding: 0 12px;
+      border-radius: 12px;
+      font-size: 16px;
+    }
+
+    .fieldLabel {
+      font-size: 11px;
+    }
+
+    .row {
+      > div {
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+
+      .fieldQty {
+        flex: 1 1 100%;
+
+        input {
+          width: 100%;
+        }
+      }
+
+      .fieldGrow {
+        flex: 1 1 100%;
+        min-width: 0;
+      }
+
+      .pillField {
+        flex: 1 1 calc(50% - 5px);
+      }
+    }
+
+    .pill {
+      width: 100%;
+      height: 46px;
+      border-radius: 12px;
+
+      .pillValue {
+        font-size: 18px;
+      }
+    }
+  }
+
+  .stickerGroupHeader {
+    align-items: flex-start;
+  }
+
+  // Итоги операции — отдельной строкой под названием; не помещаются — листаются вбок.
+  .groupStats {
+    order: 3;
+    flex-basis: 100%;
+    max-width: 100%;
+    margin: 0;
+    height: 36px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .groupStat {
+    padding: 0 9px;
+  }
+
+  .stickerGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .rowActionBtn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .emptyHero {
+    padding: 24px 16px 22px;
+    border-radius: 18px;
+  }
+}
+
+// ── Телефон (Telegram): блок «Операции» позиции ──────────────────────────────
+// Каждая операция — своя карточка; название на всю строку, итоги и фильтры — ниже.
+@media (max-width: 640px) {
+  .printedPanel {
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .printedTitle {
+    margin: 2px 4px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .stickerGroup {
+    margin-bottom: 10px;
+    padding: 12px;
+    border: 0.5px solid var(--tg-separator);
+    border-radius: 16px;
+    background: var(--card-bg);
+  }
+
+  .stickerGroupHeader {
+    gap: 10px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px dashed var(--tg-separator);
+  }
+
+  .stickerGroupLabel {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    min-width: 0;
+    gap: 4px 8px;
+    font-size: 16px;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+  }
+
+  .groupAddedBy {
+    flex-basis: 100%;
+    padding-left: 24px;
+    font-size: 12px;
+  }
+
+  .stickerGroupActions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  // Чипы статуса на телефоне заменены селектом: кнопка занимает всю свободную ширину ряда.
+  .statusFilterGroup {
+    display: none;
+  }
+
+  .statusSelectWrap {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .rowActionBtn {
+    flex-shrink: 0;
+    background: var(--tg-surface);
+    border-radius: 12px;
+  }
+
+  .stickerCard {
+    border-radius: 14px;
+  }
+}

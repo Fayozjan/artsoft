@@ -19,29 +19,126 @@
   --auth-greeting: rgb(29, 29, 29);
   --scroll-color: #b4b4b4;
   --placeholder-color: rgb(63, 63, 63);
+  --text-secondary: #64748b;
+  --bg-light: #f8fafc;
+  --border-subtle: #e2e8f0;
+  --input-bg: #ffffff;
 
   --font-h1: clamp(28px, 3vw, 40px);
   --font-h2: clamp(22px, 2.5vw, 32px);
   --font-h3: clamp(18px, 2vw, 26px);
   --font-body: clamp(13px, 0.9vw, 15px);
   --font-small: clamp(12px, 1vw, 13px);
+
+  /* ── Telegram solid page background (--bg-color has alpha in light mode) ── */
+  --tg-bg: #f0f0f3;
+  --tg-bg-glass: rgba(240, 240, 243, 0.6);
+
+  /* ── Telegram UI tokens ── */
+  --tg-surface: rgba(0, 0, 0, 0.04);
+  --tg-separator: rgba(0, 0, 0, 0.1);
+  --tg-hover: rgba(0, 0, 0, 0.06);
+  --tg-avatar-bg: rgba(0, 0, 0, 0.08);
+
+  --tg-dir-in-bg: rgba(22, 163, 74, 0.12);
+  --tg-dir-in-color: #16a34a;
+  --tg-dir-out-bg: rgba(220, 38, 38, 0.12);
+  --tg-dir-out-color: #dc2626;
+
+  --tg-badge-green-bg: rgba(22, 163, 74, 0.12);
+  --tg-badge-green-color: #16a34a;
+  --tg-badge-green-border: rgba(22, 163, 74, 0.2);
+  --tg-badge-amber-bg: rgba(217, 119, 6, 0.12);
+  --tg-badge-amber-color: #d97706;
+  --tg-badge-amber-border: rgba(217, 119, 6, 0.2);
+  --tg-badge-blue-bg: rgba(37, 99, 235, 0.12);
+  --tg-badge-blue-color: #2563eb;
+  --tg-badge-blue-border: rgba(37, 99, 235, 0.2);
+  --tg-badge-red-bg: rgba(220, 38, 38, 0.12);
+  --tg-badge-red-color: #dc2626;
+  --tg-badge-red-border: rgba(220, 38, 38, 0.2);
+  --tg-badge-purple-bg: rgba(124, 58, 237, 0.12);
+  --tg-badge-purple-color: #7c3aed;
+  --tg-badge-purple-border: rgba(124, 58, 237, 0.2);
+  --tg-badge-pink-bg: rgba(219, 39, 119, 0.12);
+  --tg-badge-pink-color: #db2777;
+  --tg-badge-pink-border: rgba(219, 39, 119, 0.2);
+  --tg-badge-teal-bg: rgba(13, 148, 136, 0.12);
+  --tg-badge-teal-color: #0d9488;
+  --tg-badge-teal-border: rgba(13, 148, 136, 0.2);
+  --tg-badge-gray-bg: rgba(0, 0, 0, 0.06);
+  --tg-badge-gray-color: #666;
+  --tg-badge-gray-border: rgba(0, 0, 0, 0.1);
+
+  --tg-present-color: #16a34a;
+  --tg-present-total-color: var(--text-secondary);
+  --tg-bar-track: rgba(0, 0, 0, 0.08);
 }
 
 html.dark {
-  --bg-color: black;
-  --text-color: white;
-  --card-bg: #111;
-  --button-bg: #333;
-  --button-hover: #444;
-  --table-header: #333;
-  --svg-color: white;
-  --profile-bg: #333;
-  --search--btn-bg: #333;
-  --border-color: #333;
-  --badge-bg-active: green;
-  --badge-color-active: white;
-  --badge-bg-disabled: rgba(245, 23, 23, 0.7);
-  --badge-color-disabled: white;
-  --select-hover-color: #333;
-  --scroll-color: #ddd;
+  --bg-color: #1e1e1e;
+  --text-color: #d4d4d4;
+  --card-bg: #252526;
+  --button-bg: #3c3c3c;
+  --button-hover: #4e4e4e;
+  --button-text: #d4d4d4;
+  --table-header: #2d2d2d;
+  --svg-color: #d4d4d4;
+  --profile-bg: #2d2d2d;
+  --search--btn-bg: #3c3c3c;
+  --border-color: #444444;
+  --badge-bg-active: rgba(41, 153, 43, 0.25);
+  --badge-color-active: #4ec94e;
+  --badge-bg-disabled: rgba(245, 23, 23, 0.25);
+  --badge-color-disabled: #f47474;
+  --select-hover-color: #2a2d2e;
+  --scroll-color: #5a5a5a;
+  --placeholder-color: #858585;
+  --text-secondary: #9e9e9e;
+  --bg-light: #2d2d2d;
+  --border-subtle: #3e3e3e;
+  --input-bg: #3c3c3c;
+
+  --tg-bg: #1e1e1e;
+  --tg-bg-glass: rgba(30, 30, 30, 0.6);
+
+  /* ── Telegram UI tokens (dark) ── */
+  --tg-surface: rgba(255, 255, 255, 0.06);
+  --tg-separator: rgba(255, 255, 255, 0.08);
+  --tg-hover: rgba(255, 255, 255, 0.1);
+  --tg-avatar-bg: rgba(255, 255, 255, 0.08);
+
+  --tg-dir-in-bg: rgba(22, 163, 74, 0.2);
+  --tg-dir-in-color: #4ade80;
+  --tg-dir-out-bg: rgba(220, 38, 38, 0.2);
+  --tg-dir-out-color: #f87171;
+
+  --tg-badge-green-bg: rgba(22, 163, 74, 0.18);
+  --tg-badge-green-color: #4ade80;
+  --tg-badge-green-border: rgba(22, 163, 74, 0.25);
+  --tg-badge-amber-bg: rgba(217, 119, 6, 0.18);
+  --tg-badge-amber-color: #fbbf24;
+  --tg-badge-amber-border: rgba(217, 119, 6, 0.25);
+  --tg-badge-blue-bg: rgba(37, 99, 235, 0.18);
+  --tg-badge-blue-color: #60a5fa;
+  --tg-badge-blue-border: rgba(37, 99, 235, 0.25);
+  --tg-badge-red-bg: rgba(220, 38, 38, 0.18);
+  --tg-badge-red-color: #f87171;
+  --tg-badge-red-border: rgba(220, 38, 38, 0.25);
+  --tg-badge-purple-bg: rgba(124, 58, 237, 0.18);
+  --tg-badge-purple-color: #a78bfa;
+  --tg-badge-purple-border: rgba(124, 58, 237, 0.25);
+  --tg-badge-pink-bg: rgba(219, 39, 119, 0.18);
+  --tg-badge-pink-color: #f472b6;
+  --tg-badge-pink-border: rgba(219, 39, 119, 0.25);
+  --tg-badge-teal-bg: rgba(13, 148, 136, 0.18);
+  --tg-badge-teal-color: #2dd4bf;
+  --tg-badge-teal-border: rgba(13, 148, 136, 0.25);
+  --tg-badge-gray-bg: rgba(255, 255, 255, 0.06);
+  --tg-badge-gray-color: #888;
+  --tg-badge-gray-border: rgba(255, 255, 255, 0.1);
+
+  --tg-present-color: #4ade80;
+  --tg-present-total-color: #444;
+  --tg-bar-track: #252525;
 }

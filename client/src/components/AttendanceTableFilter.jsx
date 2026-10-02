@@ -1,20 +1,30 @@
 import { useState, useRef, useEffect } from "react";
 import EmployeeFilterForm from "./EmployeeFilterForm";
-
+import CenterModal from "./CenterModal";
+import { Icons } from "../icons/icons";
 import styles from "./AttendanceTableFilter.module.scss";
+
+// Порядок кнопок переключателя режима — по нему двигается подложка слайдера
+const MODES = ["day", "period"];
 
 const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
   const wrapperRef = useRef(null);
 
   const initialFormData = {
+    mode: "day",
     date: new Date().toISOString().slice(0, 10),
+    date_from: "",
+    date_to: "",
     branch_id: null,
     department_id: null,
     employee_id: null,
     position_id: null,
   };
+
+  const mode = formData.mode || "day";
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,19 +32,32 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
   };
 
   const activeCount = Object.entries(formData).filter(
-    ([key, value]) => key !== "search" && value !== "",
+    ([key, value]) =>
+      key !== "search" &&
+      key !== "mode" &&
+      value != null &&
+      value !== "" &&
+      // в режиме «за день» даты периода не учитываем и наоборот
+      !(mode === "day" && (key === "date_from" || key === "date_to")) &&
+      !(mode === "period" && key === "date"),
   ).length;
 
   const toggleOpen = () => setIsOpen((prev) => !prev);
 
-  const handleReset = () => {
+  const handleResetClick = () => {
+    setShowResetConfirm(true);
+  };
+
+  const handleResetConfirm = () => {
     setFormData(initialFormData);
+    setShowResetConfirm(false);
   };
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleClickOutside = (e) => {
+      if (e.target.closest("[data-center-modal-overlay]")) return;
       if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
         setIsOpen(false);
       }
@@ -65,21 +88,7 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
         className={`${styles.toggleBtn} ${activeCount ? styles.active : ""}`}
         onClick={toggleOpen}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="200"
-          height="200"
-          viewBox="0 0 32 32"
-        >
-          <path
-            fill="none"
-            stroke="#000000"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
-          />
-        </svg>
+        {Icons.filter}
 
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
@@ -87,16 +96,84 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
       {isOpen && (
         <div className={styles.filterContent}>
           <form onSubmit={onSubmit}>
-            <div className={styles.date}>
-              <h2>{t("date")}</h2>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                required
-                onFocus={(e) => e.target.showPicker?.()}
-              />
+            <div>
+              <h2>{t("period")}</h2>
+              <div className={styles.modeSwitcher}>
+                <div
+                  className={styles.slider}
+                  style={{
+                    transform: `translateX(${
+                      MODES.findIndex((m) => m === mode) * 100
+                    }%)`,
+                  }}
+                />
+                <button
+                  type="button"
+                  className={mode === "day" ? styles.active : ""}
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, mode: "day" }))
+                  }
+                >
+                  {t("perDay")}
+                </button>
+                <button
+                  type="button"
+                  className={mode === "period" ? styles.active : ""}
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      mode: "period",
+                      date_from: prev.date_from || prev.date,
+                      date_to: prev.date_to || prev.date,
+                    }))
+                  }
+                >
+                  {t("perPeriod")}
+                </button>
+              </div>
+            </div>
+
+            <div className={styles.period}>
+              {mode === "day" ? (
+                <div className={styles.date}>
+                  <h2>{t("date")}</h2>
+                  <input
+                    type="date"
+                    name="date"
+                    value={formData.date}
+                    onChange={handleChange}
+                    required
+                    onFocus={(e) => e.target.showPicker?.()}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className={styles.date}>
+                    <h2>{t("dateFrom")}</h2>
+                    <input
+                      type="date"
+                      name="date_from"
+                      value={formData.date_from || ""}
+                      max={formData.date_to || undefined}
+                      onChange={handleChange}
+                      required
+                      onFocus={(e) => e.target.showPicker?.()}
+                    />
+                  </div>
+                  <div className={styles.date}>
+                    <h2>{t("dateTo")}</h2>
+                    <input
+                      type="date"
+                      name="date_to"
+                      value={formData.date_to || ""}
+                      min={formData.date_from || undefined}
+                      onChange={handleChange}
+                      required
+                      onFocus={(e) => e.target.showPicker?.()}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <EmployeeFilterForm
@@ -106,7 +183,7 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
             />
 
             <div className={styles.actions}>
-              <button type="button" onClick={handleReset}>
+              <button type="button" onClick={handleResetClick}>
                 {t("clearAll")}
               </button>
               <button type="submit">{t("apply")}</button>
@@ -114,6 +191,13 @@ const AttendanceTableFilter = ({ formData, setFormData, onSubmit, t }) => {
           </form>
         </div>
       )}
+
+      <CenterModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onAccept={handleResetConfirm}
+        title={t("areYouSureDelete")}
+      />
     </div>
   );
 };

@@ -1,4 +1,4 @@
-.wrapper {
+﻿.wrapper {
   margin-top: 10px;
   width: 100%;
   box-sizing: border-box;
@@ -10,7 +10,7 @@
   margin: 0;
   display: flex;
   font-size: 10px;
-  background: #fff;
+  background: var(--card-bg);
   box-sizing: border-box;
 }
 
@@ -48,7 +48,7 @@
 
 .cell .dayCell {
   min-width: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 1px;
   font-size: 10px;
   text-align: center;
@@ -57,7 +57,7 @@
 
 .dayCell {
   width: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   padding: 1px;
   font-size: 10px;
   text-align: center;

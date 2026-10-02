@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getVehiclePasses } from "../api/vehiclePasses";
@@ -10,8 +10,10 @@ import DownloadButton from "../components/DownloadButton";
 import VehiclePassesTable from "../components/VehiclePassesTable";
 import { Icons } from "../icons/icons";
 
+import Search from "../components/Search";
 import styles from "./VehiclePassesPageWeb.module.scss";
 import { Car, ArrowDownToLine, ArrowUpFromLine } from "lucide-react";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
   <div className={styles.statWidget}>
@@ -53,24 +55,49 @@ const VehiclePassesPage = () => {
   const [totalItems, setTotalItems] = useState(1);
   const [viewType, setViewType] = useState("card");
   const { t } = useTranslation();
-  const [isDropdownOpen, setDropdownOpen] = useState(false);
+  const { widgetsVisible } = useWidgetsStore();
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
 
   const today = new Date().toISOString().slice(0, 10);
 
   const initialFormData = {
-    start_date: `${today} 00:00`,
-    end_date: `${today} 23:59`,
+    start_date: `${today}T00:00`,
+    end_date: `${today}T23:59`,
     branch_id: null,
     selectedGateIds: [],
   };
 
   const [formData, setFormData] = useState({
-    start_date: `${today} 00:00`,
-    end_date: `${today} 23:59`,
+    start_date: `${today}T00:00`,
+    end_date: `${today}T23:59`,
     branch_id: null,
     direction: "",
     selectedGateIds: [],
   });
+
 
   const fetchData = async (
     page = currentPage,
@@ -124,14 +151,13 @@ const VehiclePassesPage = () => {
     setCurrentPage(1);
   }, []);
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   const handleViewChange = (type) => {
     setViewType(type);
-    setDropdownOpen(false);
   };
 
   return (
@@ -140,84 +166,37 @@ const VehiclePassesPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {data.length > 0 && (
-            <div className={styles.statsGrid}>
-              <StatWidget
-                icon={Car}
-                color="#6366f1"
-                label={t("totalPassesLabel")}
-                value={totalItems}
-              />
-              <StatWidget
-                icon={ArrowDownToLine}
-                color="#10b981"
-                label={t("forward")}
-                value={data.filter((x) => x.direction === "forward").length}
-              />
-              <StatWidget
-                icon={ArrowUpFromLine}
-                color="#f59e0b"
-                label={t("reverse")}
-                value={data.filter((x) => x.direction === "reverse").length}
-              />
+          {widgetsVisible && data.length > 0 && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
+                  <StatWidget
+                    icon={Car}
+                    color="#6366f1"
+                    label={t("totalPassesLabel")}
+                    value={totalItems}
+                  />
+                  <StatWidget
+                    icon={ArrowDownToLine}
+                    color="#10b981"
+                    label={t("forward")}
+                    value={data.filter((x) => x.direction === "forward").length}
+                  />
+                  <StatWidget
+                    icon={ArrowUpFromLine}
+                    color="#f59e0b"
+                    label={t("reverse")}
+                    value={data.filter((x) => x.direction === "reverse").length}
+                  />
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
               <VehiclePassesFilter
                 initialFormData={initialFormData}
@@ -226,6 +205,27 @@ const VehiclePassesPage = () => {
                 onSubmit={handleFormSubmit}
                 t={t}
               />
+
+              <div className={styles.viewModeToggle}>
+                <button
+                  type="button"
+                  className={viewType === "row" ? styles.active : ""}
+                  title={t("listView")}
+                  onClick={() => handleViewChange("row")}
+                >
+                  {Icons.list}
+                  <span>{t("listView")}</span>
+                </button>
+                <button
+                  type="button"
+                  className={viewType === "card" ? styles.active : ""}
+                  title={t("cardView")}
+                  onClick={() => handleViewChange("card")}
+                >
+                  {Icons.card}
+                  <span>{t("cardView")}</span>
+                </button>
+              </div>
             </div>
 
             <Pagination
@@ -238,23 +238,6 @@ const VehiclePassesPage = () => {
             />
 
             <div className={styles.buttonsWrapper}>
-              <div className={styles.customDropdown}>
-                <button onClick={() => setDropdownOpen((prev) => !prev)}>
-                  {viewType === "row" ? Icons.list : Icons.card}
-                  {viewType === "row" ? t("listView") : t("cardView")}
-                </button>
-                {isDropdownOpen && (
-                  <ul>
-                    <li onClick={() => handleViewChange("row")}>
-                      {Icons.list} {t("listView")}
-                    </li>
-                    <li onClick={() => handleViewChange("card")}>
-                      {Icons.card} {t("cardView")}
-                    </li>
-                  </ul>
-                )}
-              </div>
-
               <div className={styles.refreshBtn} onClick={() => fetchData()}>
                 {Icons.refresh}
               </div>
@@ -268,6 +251,7 @@ const VehiclePassesPage = () => {
             </div>
           </div>
           <VehiclePassesTable
+            onScroll={handleTableScroll}
             data={data}
             currentPage={currentPage}
             pageSize={pageSize}

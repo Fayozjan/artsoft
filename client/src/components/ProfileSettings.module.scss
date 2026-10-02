@@ -40,7 +40,7 @@
     select {
       font-size: var(--font-small);
       padding: 10px 12px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color);
       border-radius: 8px;
       transition: all 0.2s;
     }

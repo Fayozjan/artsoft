@@ -14,19 +14,18 @@ import {
 
 import Button from "./Button";
 import SelectEmployee from "./SelectEmployee";
-import PermissionsManager from "./PermissionsManager";
+import UserMenuAccess from "./UserMenuAccess";
 import MultiSelectDepartments from "./MultiSelectDepartments";
 import MultiSelectBranches from "./MultiSelectBranches";
 
+import UserExtraSettings from "./UserExtraSettings";
+import UserTelegramSettings from "./UserTelegramSettings";
+import UserFormSaveBar from "./UserFormSaveBar";
+
 import styles from "./AddUser.module.scss";
 
-const STATIC_MENUS = [
-  { key: "home", labelKey: "homeNav" },
-  { key: "finance", labelKey: "financeNav" },
-  { key: "tasks", labelKey: "tasksNav" },
-];
-
-const EditUser = ({ id, handleClose, onSuccess }) => {
+// mobile — вид формы для Telegram (экран на всю ширину, поля в столбик)
+const EditUser = ({ id, handleClose, onSuccess, sidePanels, mobile }) => {
   const [loading, setLoading] = useState(false);
   const { showAlert } = useAlertStore();
   const [formData, setFormData] = useState({
@@ -41,6 +40,12 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
     view_mode: "branch",
     personal_menus: [],
     ignore_gps_check: false,
+    settings: { sidebarPosition: "left", startPage: "/home" },
+    production_operation_ids: [],
+    can_edit_sticker: true,
+    production_own_only: false,
+    telegram_work_punch: false,
+    telegram_menu: null,
   });
 
   const [userMenus, setUserMenus] = useState();
@@ -105,6 +110,28 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
         view_mode: userData.view_mode || "branch", // 👈
         personal_menus: userData.personal_menus || [], // 👈
         ignore_gps_check: userData.ignore_gps_check ?? false,
+        settings: {
+          sidebarPosition: userData.settings?.sidebarPosition || "left",
+          startPage: userData.settings?.startPage || "/home",
+        },
+        production_operation_ids: userData.production_operation_ids || [],
+        can_edit_sticker: userData.can_edit_sticker ?? true,
+        production_own_only: userData.production_own_only ?? false,
+        telegram_work_punch: userData.telegram_work_punch ?? false,
+        // нет строк — отдельного набора нет, телеграм использует веб-права
+        telegram_menu: userData.telegramMenuAccess?.length
+          ? Object.fromEntries(
+              userData.telegramMenuAccess.map((item) => [
+                item.menu_id,
+                {
+                  view: !!item.can_view,
+                  add: !!item.can_add,
+                  update: !!item.can_update,
+                  delete: !!item.can_delete,
+                },
+              ]),
+            )
+          : null,
         password: "",
         menu: menuMap,
       });
@@ -190,10 +217,13 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
   };
 
   return (
-    <form className={styles.addUser} onSubmit={handleSubmit}>
+    <form
+      className={`${styles.addUser} ${mobile ? styles.mobile : ""}`}
+      onSubmit={handleSubmit}
+    >
       <div className={styles.header}>
         <h2>{t("editUser")}</h2>
-        <Button text={t("save")} type={"submit"} />
+        {!mobile && <Button text={t("save")} type={"submit"} />}
       </div>
 
       <div className={styles.row}>
@@ -357,40 +387,32 @@ const EditUser = ({ id, handleClose, onSuccess }) => {
 
       {formData?.access_level !== "employee" && (
         <>
-          <PermissionsManager
+          <UserMenuAccess
+            panel={sidePanels?.access}
             allMenus={allMenus}
             userMenus={userMenus}
+            menu={formData.menu}
             onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
           />
 
-          <div className={styles.row}>
-            <div>
-              <label>{t("personalMenuMode")}</label>
-              <div className={styles.checkboxGroup}>
-                {STATIC_MENUS.map(({ key, labelKey }) => (
-                  <label key={key} className={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={formData.personal_menus?.includes(key) || false}
-                      onChange={(e) => {
-                        const current = formData.personal_menus || [];
-                        const updated = e.target.checked
-                          ? [...current, key]
-                          : current.filter((k) => k !== key);
-                        setFormData((prev) => ({
-                          ...prev,
-                          personal_menus: updated,
-                        }));
-                      }}
-                    />
-                    {t(labelKey)}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+          <UserExtraSettings
+            panel={sidePanels?.extra}
+            formData={formData}
+            setFormData={setFormData}
+            allMenus={allMenus}
+          />
         </>
       )}
+
+      <UserTelegramSettings
+        panel={sidePanels?.telegram}
+        allMenus={allMenus}
+        formData={formData}
+        setFormData={setFormData}
+        menuSettingsEnabled={formData?.access_level !== "employee"}
+      />
+
+      {mobile && <UserFormSaveBar disabled={loading} />}
     </form>
   );
 };

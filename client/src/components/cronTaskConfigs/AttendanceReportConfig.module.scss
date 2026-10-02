@@ -1,0 +1,243 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    display: block;
+    font-size: var(--font-small);
+    margin-bottom: 2px;
+    color: var(--text-secondary);
+  }
+
+  input,
+  select {
+    font-weight: 500;
+    width: 100%;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: var(--font-small);
+    box-sizing: border-box;
+  }
+}
+
+.row {
+  padding: 0 8px 8px 8px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+
+  > div {
+    flex: 1;
+  }
+}
+
+.filterSections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 8px 8px 8px;
+}
+
+.accordionSection {
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.accordionHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: var(--bg-light);
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--font-small);
+  font-weight: 600;
+  color: var(--text-color);
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--table-header);
+  }
+}
+
+.accordionHeaderOpen {
+  background: var(--table-header);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.accordionLabel {
+  flex: 1;
+}
+
+.accordionBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--third-color);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.accordionChevron {
+  color: var(--text-secondary);
+  transition: transform 0.2s;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.accordionChevronOpen {
+  transform: rotate(180deg);
+}
+
+.accordionContent {
+  padding: 8px;
+  background: var(--card-bg);
+}
+
+.chatIdsInputRow {
+  display: flex;
+  gap: 6px;
+
+  input {
+    flex: 1;
+  }
+}
+
+.chatIdsAddBtn {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  background: var(--bg-light);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--text-color);
+
+  &:hover {
+    background: var(--table-header);
+  }
+}
+
+.chatIdsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.chatIdChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 10px;
+  border-radius: 12px;
+  background: var(--table-header);
+  font-size: var(--font-small);
+  font-weight: 500;
+
+  button {
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-secondary);
+    padding: 0 2px;
+
+    &:hover {
+      color: var(--text-color);
+    }
+  }
+}
+
+.chatIdChipError {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+
+  button {
+    color: #dc2626;
+
+    &:hover {
+      color: #b91c1c;
+    }
+  }
+}
+
+.chatIdsEmpty {
+  margin-top: 6px;
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+}
+
+.multiSelect {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.multiSelectLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.multiSelectSearch {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  font-size: var(--font-small);
+  background: var(--bg-light);
+}
+
+.multiSelectList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-small);
+  cursor: pointer;
+  padding: 3px 4px;
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--table-header);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--third-color);
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    height: auto;
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

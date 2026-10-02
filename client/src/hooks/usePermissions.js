@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import api from "../api/instance";
+import { getUserMenu } from "../api/users";
 
 export const usePermissions = (currentPath) => {
   const [menuData, setMenuData] = useState([]);
@@ -8,8 +8,7 @@ export const usePermissions = (currentPath) => {
   useEffect(() => {
     const fetchPermissions = async () => {
       try {
-        const res = await api.get("/users/menu");
-        setMenuData(res.data);
+        setMenuData(await getUserMenu());
       } catch (err) {
         console.error("Ошибка получения меню:", err);
       } finally {
@@ -37,6 +36,7 @@ export const usePermissions = (currentPath) => {
   const permissions = menuItem?.permissions || {};
 
   return {
+    canView: !!permissions.view,
     canAdd: !!permissions.add,
     canEdit: !!permissions.update,
     canDelete: !!permissions.delete,

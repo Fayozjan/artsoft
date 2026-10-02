@@ -1,6 +1,6 @@
-.timelineContainer {
+﻿.timelineContainer {
   padding: 6px;
-  background-color: white;
+  background-color: var(--card-bg);
 
   .header {
     display: flex;
@@ -33,7 +33,7 @@
   text-align: right;
   padding: 4px 10px;
   font-size: var(--font-small);
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -90,11 +90,11 @@
 
   .card {
     position: relative;
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 8px;
     padding: 10px;
     margin-bottom: 10px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-subtle);
     transition: all 0.2s ease;
 
     &:hover {
@@ -136,14 +136,14 @@
         button {
           background: none;
           border: none;
-          color: #94a3b8;
+          color: var(--placeholder-color);
           cursor: pointer;
           padding: 4px;
           border-radius: 4px;
           transition: all 0.2s;
 
           &:hover {
-            background: #f1f5f9;
+            background: var(--bg-light);
             color: #334155;
           }
 
@@ -159,10 +159,10 @@
       p {
         margin: 4px 0;
         font-size: var(--font-small);
-        color: #475569;
+        color: var(--text-secondary);
 
         span {
-          color: #94a3b8;
+          color: var(--placeholder-color);
           font-weight: 500;
           margin-right: 4px;
         }
@@ -172,7 +172,7 @@
         margin-top: 6px;
         padding-top: 6px;
         border-top: 1px dashed #e2e8f0;
-        color: #64748b;
+        color: var(--text-secondary);
       }
     }
 
@@ -180,9 +180,9 @@
     .inlineSelect {
       font-family: inherit;
       font-size: var(--font-small);
-      color: #475569;
+      color: var(--text-secondary);
       border: 1px solid transparent;
-      background: #f8fafc;
+      background: var(--bg-light);
       border-radius: 4px;
       padding: 2px 4px;
       margin-left: 4px;
@@ -192,7 +192,7 @@
 
       &:focus {
         border-color: #cbd5e1;
-        background: #fff;
+        background: var(--card-bg);
         box-shadow: 0 0 0 2px rgba(203, 213, 225, 0.2);
       }
     }
@@ -232,9 +232,9 @@
       }
 
       .cancelBtn {
-        background: white;
-        color: #64748b;
-        border: 1px solid #e2e8f0;
+        background: var(--card-bg);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-subtle);
 
         &:hover {
           font-weight: 600;
@@ -291,11 +291,11 @@
     }
 
     .cancelBtn {
-      background: white;
-      color: #64748b;
-      border: 1px solid #e2e8f0;
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
       &:hover {
-        background: #f8fafc;
+        background: var(--bg-light);
       }
     }
   }
@@ -319,7 +319,7 @@
 .empty {
   text-align: center;
   padding: 40px;
-  color: #94a3b8;
-  background-color: white;
+  color: var(--placeholder-color);
+  background-color: var(--card-bg);
   font-style: italic;
 }

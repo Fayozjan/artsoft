@@ -1,0 +1,1173 @@
+// Accent system: elements set --accent / --accent-soft / --accent-line inline
+// (see accentVars in the JSX). Everything else uses theme variables, so
+// light and dark themes both work.
+
+$radius-card: 18px;
+$radius-input: 14px;
+$shadow-card:
+  0 1px 2px rgba(15, 23, 42, 0.04),
+  0 8px 20px -12px rgba(15, 23, 42, 0.18);
+$gradient-primary: linear-gradient(
+  135deg,
+  var(--third-color, #1455fe) 0%,
+  #6a5cff 100%
+);
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+// ─── Page layout ──────────────────────────────────────────────────────────────
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100%;
+  overflow: hidden;
+  background: var(--tg-bg);
+}
+
+.header {
+  flex-shrink: 0;
+  z-index: 100;
+  padding: 16px 16px 12px;
+  padding-top: calc(
+    var(--tg-safe-area-inset-top, 0px) +
+      var(--tg-content-safe-area-inset-top, 0px) + 16px
+  );
+  background: var(--card-bg);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.addBtn {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  border: none;
+  background: $gradient-primary;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 0 8px 18px -6px rgba(20, 85, 254, 0.55);
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.92);
+    box-shadow: 0 4px 10px -4px rgba(20, 85, 254, 0.5);
+  }
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 88px);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ─── Search ────────────────────────────────────────────────────────────────────
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 13px;
+  display: flex;
+  color: var(--text-secondary);
+  pointer-events: none;
+
+  svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+.searchInput {
+  width: 100%;
+  height: 42px;
+  padding: 0 38px 0 40px;
+  border-radius: $radius-input;
+  border: 1.5px solid transparent;
+  background: var(--tg-surface);
+  font-size: 14px;
+  color: var(--text-color);
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  &:focus {
+    border-color: var(--third-color, #5b8af5);
+    background: var(--card-bg);
+  }
+
+  &::placeholder {
+    color: var(--placeholder-color);
+  }
+}
+
+.searchClear {
+  position: absolute;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-hover);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+// ─── Status chips ──────────────────────────────────────────────────────────────
+
+.chipsRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 12px 16px 4px;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 14px 0 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+  transition: background-color 0.18s ease;
+}
+
+.chipActive {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 6px 14px -4px var(--accent-line);
+
+  .chipDot {
+    background: #fff;
+  }
+}
+
+// ─── Task list ─────────────────────────────────────────────────────────────────
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 14px 0;
+}
+
+.taskCard {
+  position: relative;
+  overflow: hidden;
+  background: var(--card-bg);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: $radius-card;
+  padding: 14px 14px 14px 18px;
+  box-shadow: $shadow-card;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: cardIn 0.34s ease backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition:
+    background 0.15s,
+    transform 0.12s;
+
+  // status accent rail
+  &::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: var(--accent);
+  }
+
+  &:active {
+    background: var(--select-hover-color);
+    transform: scale(0.985);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+.cardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.priorityPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  .metaIcon svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.taskTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-color);
+  line-height: 1.32;
+  letter-spacing: -0.15px;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 0.5px dashed var(--border-color);
+}
+
+.footerAssignee {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.footerAssigneeText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deadlinePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 10px;
+  margin-left: auto;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.overdue {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444 !important;
+}
+
+.metaIcon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+// ─── Assignee block ────────────────────────────────────────────────────────────
+
+.assigneeBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--tg-surface);
+  border-radius: 14px;
+}
+
+.assigneeBlockCompact {
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  padding: 0;
+  background: transparent;
+
+  .assigneeAvatar {
+    width: 36px;
+    height: 36px;
+    border-width: 2px;
+  }
+
+  .assigneeInitials {
+    font-size: 13px;
+  }
+
+  .assigneeName {
+    font-size: 13px;
+  }
+
+  .assigneeSub {
+    font-size: 11px;
+  }
+}
+
+.assigneeAvatar {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--tg-avatar-bg, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2.5px solid transparent;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.assigneeAvatarActive {
+  border-color: #22c55e;
+}
+
+.assigneeAvatarInactive {
+  border-color: #ef4444;
+}
+
+.assigneeInitials {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.assigneeBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.assigneeName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.assigneeId {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.assigneeSub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ─── Empty / loading ───────────────────────────────────────────────────────────
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 64px 16px;
+}
+
+.emptyIcon {
+  width: 76px;
+  height: 76px;
+  border-radius: 26px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+.emptyText {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.loadingWrap {
+  position: relative;
+  height: 120px;
+}
+
+// ─── Sub page (screen stack) ──────────────────────────────────────────────────
+
+.subPage {
+  position: relative;
+  height: 100dvh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--tg-bg);
+  overflow: hidden;
+}
+
+.subHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  padding-top: calc(
+    var(--tg-safe-area-inset-top, 0px) +
+      var(--tg-content-safe-area-inset-top, 0px) + 12px
+  );
+  background: var(--card-bg);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.backBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  border: none;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background 0.15s,
+    transform 0.12s;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+    transform: scale(0.92);
+  }
+}
+
+.subTitle {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.subMain {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 14px 14px 0;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Fixed bottom bar for primary actions (detail actions / submit)
+.actionBar {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+  background: var(--card-bg);
+  border-top: 0.5px solid var(--border-subtle);
+}
+
+// ─── Detail card ──────────────────────────────────────────────────────────────
+
+.detailCard {
+  background: var(--card-bg);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: 22px;
+  box-shadow: $shadow-card;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.detailHero {
+  padding: 18px 16px 16px;
+  background: linear-gradient(160deg, var(--accent-soft) 0%, transparent 75%);
+  border-bottom: 0.5px solid var(--border-subtle);
+}
+
+.detailBadges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.detailTitle {
+  font-size: 21px;
+  font-weight: 800;
+  color: var(--text-color);
+  line-height: 1.25;
+  margin: 0;
+  letter-spacing: -0.4px;
+  overflow-wrap: anywhere;
+}
+
+.detailBody {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.infoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.infoTile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--tg-surface);
+  border-radius: 14px;
+}
+
+.infoTileIcon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--third-color, #5b8af5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.infoTileBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.infoLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.infoValue {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.infoDanger {
+  color: #ef4444;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sectionLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0;
+}
+
+.descriptionText {
+  font-size: 15px;
+  color: var(--text-color);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+// ─── Action buttons ───────────────────────────────────────────────────────────
+
+.actionsRow {
+  display: flex;
+  gap: 10px;
+}
+
+.actionBtn {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border-radius: 14px;
+  border: 1.5px solid transparent;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  padding: 0 14px;
+  box-shadow: 0 8px 18px -8px var(--accent-line);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 0.15s,
+    transform 0.12s;
+
+  &:active:not(:disabled) {
+    opacity: 0.85;
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.actionBtnSecondary {
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+  color: var(--accent);
+  box-shadow: none;
+}
+
+// ─── Comments ─────────────────────────────────────────────────────────────────
+
+.commentsSection {
+  margin-bottom: 8px;
+}
+
+.commentsHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 4px 10px;
+}
+
+.commentsCount {
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.commentsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.commentItem {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: 92%;
+}
+
+.commentMine {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+
+  .commentBubble {
+    background: var(--third-color, #1455fe);
+    border-color: transparent;
+    border-radius: 18px 18px 6px 18px;
+  }
+
+  .commentAuthor,
+  .commentText {
+    color: #fff;
+  }
+
+  .commentTime,
+  .commentDelete {
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .commentAvatar {
+    background: $gradient-primary;
+    color: #fff;
+  }
+}
+
+.commentAvatar {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--tg-avatar-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.commentBubble {
+  min-width: 0;
+  padding: 9px 13px 10px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: 18px 18px 18px 6px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.commentMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+
+.commentAuthor {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.commentTime {
+  font-size: 11px;
+  color: var(--text-secondary);
+  flex: 1;
+  white-space: nowrap;
+}
+
+.commentDelete {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 6px;
+  transition:
+    color 0.15s,
+    background 0.15s;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  &:active {
+    background: rgba(239, 68, 68, 0.18);
+  }
+}
+
+.commentText {
+  font-size: 14px;
+  color: var(--text-color);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.emptyComments {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 18px;
+  background: var(--card-bg);
+  border: 0.5px dashed var(--border-color);
+  border-radius: $radius-card;
+  margin: 0 0 14px;
+}
+
+.commentForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 24px;
+  padding: 6px 6px 6px 16px;
+  box-shadow: $shadow-card;
+  transition: border-color 0.15s;
+
+  &:focus-within {
+    border-color: var(--third-color, #5b8af5);
+  }
+}
+
+.commentInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-size: 14px;
+  line-height: 1.4;
+  resize: none;
+  outline: none;
+  padding: 9px 0;
+  min-height: 22px;
+  max-height: 96px;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--placeholder-color);
+  }
+}
+
+.commentSendBtn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: $gradient-primary;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    opacity 0.15s,
+    transform 0.12s;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    margin-left: -1px;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.9);
+  }
+}
+
+// ─── Add task form ────────────────────────────────────────────────────────────
+
+.formCard {
+  background: var(--card-bg);
+  border: 0.5px solid var(--border-subtle);
+  border-radius: 22px;
+  box-shadow: $shadow-card;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.textInput,
+.textarea {
+  border-radius: $radius-input;
+  border: 1.5px solid transparent;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-size: 15px;
+  box-sizing: border-box;
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  &::placeholder {
+    color: var(--placeholder-color);
+  }
+
+  &:focus {
+    border-color: var(--third-color, #5b8af5);
+    background: var(--card-bg);
+  }
+}
+
+.textInput {
+  height: 46px;
+  padding: 0 14px;
+}
+
+.textarea {
+  padding: 12px 14px;
+  resize: none;
+  line-height: 1.5;
+}
+
+.inputError {
+  border-color: #ef4444 !important;
+}
+
+.errorText {
+  font-size: 12px;
+  font-weight: 500;
+  color: #ef4444;
+}
+
+// Priority segmented control
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  padding: 4px;
+  background: var(--tg-surface);
+  border-radius: $radius-input;
+}
+
+.segBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background 0.18s,
+    color 0.18s,
+    box-shadow 0.18s,
+    transform 0.12s;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.segDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.segBtnActive {
+  background: var(--card-bg);
+  color: var(--accent);
+  box-shadow:
+    0 0 0 1.5px var(--accent-line),
+    0 4px 10px -4px var(--accent-line);
+}
+
+.submitBtn {
+  width: 100%;
+  height: 52px;
+  border-radius: 16px;
+  border: none;
+  background: $gradient-primary;
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 10px 22px -8px rgba(20, 85, 254, 0.55);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    opacity 0.15s,
+    transform 0.12s;
+
+  &:active:not(:disabled) {
+    opacity: 0.9;
+    transform: scale(0.98);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+}

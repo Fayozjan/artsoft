@@ -1,0 +1,131 @@
+// Нижняя шторка (Telegram-версия Производства).
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  // Не выше экрана за вычетом системной шапки Telegram — верх шторки всегда виден.
+  max-height: calc(
+    100dvh - var(--tg-safe-area-inset-top, 0px) -
+      var(--tg-content-safe-area-inset-top, 0px) - 12px
+  );
+  border-radius: 22px 22px 0 0;
+  background: var(--card-bg);
+  color: var(--text-color);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+}
+
+.dragZone {
+  flex-shrink: 0;
+  touch-action: none;
+  cursor: grab;
+}
+
+.handle {
+  display: block;
+  width: 38px;
+  height: 4px;
+  margin: 8px auto 2px;
+  border-radius: 999px;
+  background: var(--tg-separator);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px 10px 18px;
+}
+
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  line-height: 1.25;
+  color: var(--text-color);
+}
+
+.subtitle {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 18px 18px;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.footer {
+  flex-shrink: 0;
+  padding: 10px 18px
+    calc(
+      12px + max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px))
+    );
+  border-top: 0.5px solid var(--tg-separator);
+  background: var(--card-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}

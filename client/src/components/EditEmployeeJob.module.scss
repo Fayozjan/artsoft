@@ -1,4 +1,4 @@
-.user_job {
+﻿.user_job {
   flex: 1;
   width: 100%;
   border: 2px solid rgba(162, 161, 168, 0.2);
@@ -35,13 +35,20 @@
   .input_col {
     flex-grow: 1;
     flex-basis: 0;
+    min-width: 0;
+
+    // метрики SelectWithSearch под остальные поля формы
+    --sws-margin-top: 0px;
+    --sws-height: 41px;
+    --sws-radius: 5px;
+    --sws-font-size: 14px;
   }
 
   label {
     display: block;
     font-size: 14px;
     margin-bottom: 5px;
-    color: #666;
+    color: var(--text-secondary);
   }
 
   .form_group input[type="text"],
@@ -49,10 +56,10 @@
   input[type="date"],
   select {
     font-weight: 500;
-    color: black;
+    color: var(--text-color);
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 14px;
     box-sizing: border-box;
@@ -68,7 +75,7 @@
     justify-content: start;
     gap: 5px;
     padding: 0px 7px 0px 7px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     box-sizing: border-box;
 
@@ -131,7 +138,7 @@
     padding: 40px;
     border-radius: 10px;
 
-    background-color: white;
+    background-color: var(--card-bg);
     text-align: center;
     font-size: 24px;
     font-weight: 600;

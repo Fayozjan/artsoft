@@ -1,5 +1,13 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { useLocation, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "../stores/authStore";
 import SidebarItem from "./SidebarItem";
 import Profile from "./Profile";
@@ -10,43 +18,48 @@ import { BranchSwitcher } from "./BranchSwitcher";
 import styles from "./Sidebar.module.scss";
 
 const Sidebar = ({ menuData }) => {
+  const { t } = useTranslation();
   const userSettings = useAuthStore((state) => state.userSettings);
   const access = useAuthStore((state) => state.access);
   const setSidebarState = useAuthStore((state) => state.setSidebarState);
   const setActiveBranch = useAuthStore((s) => s.setActiveBranch);
 
-  const { sidebar: isOpen, viewMode, activeBranchId } = userSettings;
+  const {
+    sidebar: isOpen,
+    viewMode,
+    activeBranchId,
+    sidebarPosition,
+  } = userSettings;
   const branches = access?.branches ?? [];
   const activeBranch = branches.find((b) => b.id === activeBranchId);
 
+  const isTop = sidebarPosition === "top";
+  // Скрытое меню — выезжающая панель поверх страницы, всегда развёрнутая
+  const isHidden = sidebarPosition === "hidden";
+  const expanded = isHidden || isOpen;
+
   const [openItems, setOpenItems] = useState({});
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Горизонтальный режим: ФИО с должностью показываем, только если хватает места
+  const barRef = useRef(null);
+  const menuRef = useRef(null);
+  const [showProfileInfo, setShowProfileInfo] = useState(false);
 
   const location = useLocation();
 
   const toggleSidebar = () => setSidebarState(!isOpen);
 
-  const toggleItem = useCallback(
-    (id) => {
-      setOpenItems((prev) => {
+  const toggleItem = useCallback((id) => {
+    setOpenItems((prev) => {
+      if (prev[id]) {
         const newState = { ...prev };
-        if (newState[id]) {
-          delete newState[id];
-        } else {
-          // Ограничение: не более 2-х открытых разделов верхнего уровня
-          const topLevelOpenIds = Object.keys(newState).filter((key) =>
-            menuData.some((item) => item.id === key),
-          );
-
-          if (topLevelOpenIds.length >= 2) {
-            delete newState[topLevelOpenIds[0]];
-          }
-          newState[id] = true;
-        }
+        delete newState[id];
         return newState;
-      });
-    },
-    [menuData],
-  );
+      }
+      return { [id]: true };
+    });
+  }, []);
 
   useEffect(() => {
     const newOpenItems = {};
@@ -77,6 +90,64 @@ const Sidebar = ({ menuData }) => {
     setOpenItems(newOpenItems);
   }, [location.pathname, menuData]);
 
+  // Панель закрывается при переходе, смене режима и по Escape
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname, isHidden]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") setDrawerOpen(false);
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [drawerOpen]);
+
+  useLayoutEffect(() => {
+    if (!isTop) {
+      setShowProfileInfo(false);
+      return;
+    }
+
+    const menu = menuRef.current;
+    if (!menu) return;
+
+    // Порог показа заведомо больше ширины блока с ФИО — исключает дрожание
+    const SHOW_AT = 210;
+    const HIDE_AT = 8;
+    const GAP = 1;
+
+    const measure = () => {
+      const items = Array.from(menu.children);
+      const itemsWidth =
+        items.reduce((sum, el) => sum + el.getBoundingClientRect().width, 0) +
+        Math.max(0, items.length - 1) * GAP;
+      const free = menu.clientWidth - itemsWidth;
+
+      // Обрезанная подпись пункта — места точно нет
+      const truncated = Array.from(menu.querySelectorAll("a > span")).some(
+        (el) => el.scrollWidth > el.clientWidth + 1,
+      );
+
+      setShowProfileInfo((prev) =>
+        truncated ? false : free >= (prev ? HIDE_AT : SHOW_AT),
+      );
+    };
+
+    measure();
+
+    const observer = new ResizeObserver(measure);
+    observer.observe(menu);
+    if (barRef.current) observer.observe(barRef.current);
+
+    return () => observer.disconnect();
+  }, [isTop, menuData]);
+
+  // В горизонтальном режиме пункты всегда с подписями, подменю — выпадающее
+  const itemType = isTop ? "top" : expanded ? "full" : "mini";
+
   const renderedMenuItems = useMemo(() => {
     return menuData
       .filter((item) => item.permissions?.view)
@@ -85,30 +156,65 @@ const Sidebar = ({ menuData }) => {
         <SidebarItem
           key={item.id}
           item={item}
-          type={isOpen ? "full" : "mini"}
+          type={itemType}
           toggleItem={toggleItem}
           isSubItemOpen={!!openItems[item.id]}
           openItems={openItems}
         />
       ));
-  }, [menuData, isOpen, openItems, location.pathname, toggleItem]);
+  }, [menuData, itemType, openItems, location.pathname, toggleItem]);
+
+  const positionClass = isTop
+    ? styles.top
+    : isHidden
+      ? styles.drawer
+      : styles.left;
+
+  const sidebarClasses = [
+    styles.sidebar,
+    positionClass,
+    isHidden && drawerOpen ? styles.drawerOpen : "",
+    isTop ? "" : expanded ? styles.open : styles.closed,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <>
-      <div
-        className={`${styles.sidebar} ${isOpen ? styles.open : styles.closed}`}
-      >
+      {isHidden && (
+        <>
+          <button
+            type="button"
+            className={styles.drawerHandle}
+            onClick={() => setDrawerOpen(true)}
+            aria-label={t("showMenu")}
+            title={t("showMenu")}
+          >
+            {Icons.sidebarToggle}
+          </button>
+          {drawerOpen && (
+            <div
+              className={styles.drawerBackdrop}
+              onClick={() => setDrawerOpen(false)}
+            />
+          )}
+        </>
+      )}
+
+      <div className={sidebarClasses} ref={barRef}>
         <div className={styles.sidebarTop}>
-          {isOpen && (
+          {(expanded || isTop) && (
             <Link to="/home" className={styles.logoWrapper}>
               <img src="/logo.png" alt="" className={styles.logo} />
               <span>OnBase</span>
             </Link>
           )}
 
-          <span className={styles.toggle} onClick={toggleSidebar}>
-            {Icons.sidebarToggle}
-          </span>
+          {!isTop && !isHidden && (
+            <span className={styles.toggle} onClick={toggleSidebar}>
+              {Icons.sidebarToggle}
+            </span>
+          )}
         </div>
 
         {viewMode === "branch" && branches?.length > 0 && (
@@ -117,13 +223,19 @@ const Sidebar = ({ menuData }) => {
             activeBranch={activeBranch}
             activeBranchId={activeBranchId}
             onSelect={setActiveBranch}
-            isOpen={isOpen}
+            isOpen={isTop ? true : expanded}
+            compact={isTop}
           />
         )}
 
-        <ul className={styles.menuWrapper}>{renderedMenuItems}</ul>
+        <ul className={styles.menuWrapper} ref={menuRef}>
+          {renderedMenuItems}
+        </ul>
 
-        {<Profile type={!isOpen && "mini"} />}
+        <Profile
+          type={(isTop ? showProfileInfo : expanded) ? "full" : "mini"}
+          position={isHidden ? "left" : sidebarPosition}
+        />
       </div>
     </>
   );

@@ -40,6 +40,13 @@ export const editPositionById = async (id, data) => {
   };
 };
 
+export const importPositionsExcel = async (formData) => {
+  const res = await api.post("/positions/import-excel", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+};
+
 export const deletePositionById = async (id) => {
   if (!id) throw new Error("ID не передан");
 

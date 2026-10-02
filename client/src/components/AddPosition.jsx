@@ -13,6 +13,7 @@ const AddPosition = ({ handleClose, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
+    sort_order: 0,
   });
 
   const { showAlert } = useAlertStore();
@@ -69,6 +70,17 @@ const AddPosition = ({ handleClose, onSuccess }) => {
             value={formData.name}
             onChange={handleChange}
             required
+            disabled={isLoading}
+          />
+        </div>
+        <div>
+          <label>{t("sortOrder")}</label>
+          <input
+            type="number"
+            name="sort_order"
+            value={formData.sort_order}
+            onChange={handleChange}
+            min="0"
             disabled={isLoading}
           />
         </div>

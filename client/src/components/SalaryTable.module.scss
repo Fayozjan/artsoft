@@ -1,4 +1,4 @@
-.tableContainer {
+﻿.tableContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -17,7 +17,7 @@
   thead {
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--card-bg);
     z-index: 10;
   }
 
@@ -32,7 +32,7 @@
 
   th {
     font-weight: 600;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -83,18 +83,18 @@
 }
 
 .noSalary {
-  color: #94a3b8;
+  color: var(--placeholder-color);
   font-style: italic;
   font-size: 11px;
 }
 
 .amount {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-color);
 }
 
 .period {
-  color: #64748b;
+  color: var(--text-secondary);
   font-size: 11px;
   white-space: nowrap;
 }
@@ -111,10 +111,10 @@
   align-items: center;
   gap: 4px;
   padding: 4px 10px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: white;
-  color: #475569;
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 600;
   font-family: inherit;
@@ -159,7 +159,7 @@
 
 .noData {
   text-align: center;
-  color: #94a3b8;
+  color: var(--placeholder-color);
   padding: 40px;
   font-style: italic;
 }

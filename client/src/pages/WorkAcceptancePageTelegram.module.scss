@@ -1,0 +1,753 @@
+// Приём работы в Telegram.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+// ── Шапка: заголовок и переключатель вкладок ─────────────────────────────────
+
+.head {
+  flex-shrink: 0;
+  padding: calc(#{$safe-top} + 14px) 14px 8px;
+}
+
+.title {
+  margin: 0 0 12px 2px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.segment {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 3px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  isolation: isolate;
+}
+
+// Скользящая «таблетка» под активной вкладкой.
+.segmentPill {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  z-index: -1;
+  width: calc((100% - 6px) / 3);
+  border-radius: 11px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  transition: transform 0.28s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.segmentBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 6px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+    width: 17px;
+    height: 17px;
+  }
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  b {
+    min-width: 18px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+    text-align: center;
+  }
+}
+
+.segmentBtnActive {
+  color: var(--text-color);
+
+  svg {
+    color: var(--third-color, #1455fe);
+  }
+}
+
+// ── Панели вкладок ───────────────────────────────────────────────────────────
+
+.panes {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.paneHidden {
+  display: none;
+}
+
+// Закреплённый низ вкладки «Скан»: кнопки «Принять» / «Раздать дальше» лежат здесь
+// (порталом из ScanWorkSticker), а не внутри прокручиваемой панели — всегда внизу
+// экрана, панель над ним укорачивается, поэтому данные под кнопкой не видны.
+.dock {
+  position: relative;
+  z-index: 20;
+  flex-shrink: 0;
+  padding: 10px 14px calc(10px + #{$safe-bottom});
+  border-top: 0.5px solid var(--tg-separator);
+  background: var(--card-bg);
+  box-shadow: 0 -8px 20px -14px rgba(0, 0, 0, 0.35);
+
+  &:empty {
+    display: none;
+  }
+}
+
+.dockHidden {
+  display: none;
+}
+
+// Нижний отступ у экрана уже даёт док-панель — панели над ней хватает небольшого.
+.page:has(.dock:not(:empty):not(.dockHidden)) .pane {
+  padding-bottom: 16px;
+}
+
+// ── Поиск ────────────────────────────────────────────────────────────────────
+
+.searchBar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 4px 12px 10px;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--third-color, #1455fe);
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.searchIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// ── Карточки стикеров ────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 12px 0;
+}
+
+.card {
+  --accent: 245, 158, 11;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+  padding: 14px 14px 14px 18px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 12px;
+    bottom: 12px;
+    left: 0;
+    width: 4px;
+    border-radius: 0 4px 4px 0;
+    background: rgb(var(--accent));
+  }
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--select-hover-color);
+  }
+}
+
+.cardDone {
+  --accent: 22, 163, 74;
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.codeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 9px 5px 11px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.cardDate {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.operation {
+  margin: 0;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.2px;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.batchChip {
+  flex-shrink: 0;
+  max-width: 50%;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(20, 85, 254, 0.12);
+  color: var(--third-color, #1455fe);
+  font-size: 16px;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+// Чип с подписью: «Номер партии» мелко сверху, сам номер крупно снизу.
+.batchChipLabeled {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding: 4px 12px 5px;
+  border-radius: 14px;
+  line-height: 1.15;
+  text-align: right;
+
+  small {
+    font-size: 10px;
+    font-weight: 600;
+    opacity: 0.75;
+  }
+}
+
+.prevInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  b {
+    color: var(--text-color);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.prevCode {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.noteInfo {
+  background: rgba(20, 85, 254, 0.08);
+}
+
+// Исполнители
+
+.workers {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.worker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  b {
+    flex-shrink: 0;
+    color: var(--tg-badge-green-color);
+  }
+}
+
+.teamToggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 7px;
+  height: 32px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(124, 58, 237, 0.12);
+  color: var(--tg-badge-purple-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+
+  svg:last-child {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s ease;
+  }
+
+  b {
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(124, 58, 237, 0.18);
+    font-size: 12px;
+    line-height: 18px;
+  }
+}
+
+.teamToggleOpen svg:last-child {
+  transform: rotate(180deg);
+}
+
+.teamList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+}
+
+// Плитки количеств
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+  gap: 8px;
+}
+
+.tile {
+  --tone: 100, 116, 139;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(var(--tone), 0.12);
+
+  span {
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  b {
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.3px;
+    overflow-wrap: anywhere;
+    color: rgb(var(--tone));
+  }
+}
+
+.tileGood {
+  --tone: 22, 163, 74;
+}
+
+.tileBad {
+  --tone: 220, 38, 38;
+}
+
+.tileWarn {
+  --tone: 217, 119, 6;
+}
+
+.tileInfo {
+  --tone: 124, 58, 237;
+}
+
+.tileMuted {
+  background: var(--tg-surface);
+
+  b {
+    color: var(--text-secondary);
+  }
+}
+
+// Цена / сумма / «Вернуть»
+
+.moneyRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tg-separator);
+}
+
+.money {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  span {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  b {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+}
+
+.moneyTotal b {
+  color: var(--third-color, #1455fe);
+}
+
+.returnBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  margin-left: auto;
+  padding: 0 14px 0 11px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:active {
+    background: rgba(220, 38, 38, 0.18);
+  }
+}
+
+// ── Скелетон / пусто / догрузка ──────────────────────────────────────────────
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+}
+
+.skLine {
+  display: block;
+  height: 13px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.moreLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 0 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--third-color, #1455fe);
+    opacity: 0.3;
+    animation: dotPulse 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmentPill {
+    transition: none;
+  }
+
+  .skLine,
+  .moreLoader span {
+    animation: none;
+  }
+}

@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Users, UserCheck, UserX, Wallet, TrendingUp } from "lucide-react";
 
+import { useAuthStore } from "../stores/authStore";
 import { useAlertStore } from "../stores/alertStore";
 import { usePermissions } from "../hooks/usePermissions";
 import { salaryHistoryApi } from "../api/salaryHistory";
@@ -14,8 +15,10 @@ import SalaryTable from "../components/SalaryTable";
 import OverlaySidebar from "../components/OverlaySidebar";
 import EmployeeSalaryHistory from "../components/EmployeeSalaryHistory";
 
+import Search from "../components/Search";
 import styles from "./SalarySettingPage.module.scss";
 import { Icons } from "../icons/icons";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const fmt = (n) =>
   String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
@@ -122,7 +125,9 @@ const initialFilters = {
 
 const SalarySettingPage = () => {
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
   const { showAlert } = useAlertStore();
+  const { viewMode, activeBranchId } = useAuthStore((s) => s.userSettings) || {};
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
 
@@ -140,6 +145,31 @@ const SalarySettingPage = () => {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [autoOpenAdd, setAutoOpenAdd] = useState(false);
 
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
+
   const fetchData = async (
     page = currentPage,
     filters = formData,
@@ -152,6 +182,7 @@ const SalarySettingPage = () => {
         pageSize: size,
         ...filters,
         no_salary: filters.no_salary,
+        branch_id: viewMode === "branch" && activeBranchId ? activeBranchId : filters.branch_id,
       };
 
       const res = await salaryHistoryApi.getEmployeesWithSalary(params);
@@ -175,8 +206,14 @@ const SalarySettingPage = () => {
     fetchData(1, formData, pageSize);
   }, []);
 
-  const handleSearch = () => {
-    fetchData(1, formData, pageSize);
+  useEffect(() => {
+    if (viewMode === "branch") {
+      fetchData(1, formData, pageSize);
+    }
+  }, [activeBranchId]);
+
+  const handleSearch = (data = formData) => {
+    fetchData(1, data, pageSize);
   };
 
   const handleFormSubmit = (e) => {
@@ -226,61 +263,67 @@ const SalarySettingPage = () => {
 
       <div className={styles.main}>
         {/* ── Stats ── */}
-        {stats && (
-          <div className={styles.statsGrid}>
-            <StatWidget
-              icon={Users}
-              color="#6366f1"
-              label={t("statsTotal")}
-              value={stats.total}
-            />
-            <StatWidget
-              icon={UserCheck}
-              color="#16a34a"
-              label={t("statsWithSalary")}
-              value={stats.with_salary}
-              sub={
-                stats.total > 0
-                  ? `${Math.round((stats.with_salary / stats.total) * 100)}%`
-                  : "0%"
-              }
-              progress={
-                stats.total > 0 ? (stats.with_salary / stats.total) * 100 : 0
-              }
-            />
-            <StatWidget
-              icon={UserX}
-              color="#ef4444"
-              label={t("statsWithoutSalary")}
-              value={stats.without_salary}
-              sub={
-                stats.total > 0
-                  ? `${Math.round((stats.without_salary / stats.total) * 100)}%`
-                  : "0%"
-              }
-              progress={
-                stats.total > 0 ? (stats.without_salary / stats.total) * 100 : 0
-              }
-            />
-            <StatWidget
-              icon={Wallet}
-              color="#3b82f6"
-              label={t("statsTotalSalarySum")}
-              value={fmt(stats.total_sum)}
-            />
-            <StatWidget
-              icon={TrendingUp}
-              color="#f59e0b"
-              label={t("statsAvgSalary")}
-              value={fmt(stats.avg)}
-            />
-            {stats.type_breakdown && (
-              <TypeBreakdownWidget
-                breakdown={stats.type_breakdown}
-                total={stats.with_salary}
-                t={t}
-              />
-            )}
+        {widgetsVisible && stats && (
+          <div
+            className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+          >
+            <div className={styles.statsGridInner}>
+              <div className={styles.statsGrid}>
+                <StatWidget
+                  icon={Users}
+                  color="#6366f1"
+                  label={t("statsTotal")}
+                  value={stats.total}
+                />
+                <StatWidget
+                  icon={UserCheck}
+                  color="#16a34a"
+                  label={t("statsWithSalary")}
+                  value={stats.with_salary}
+                  sub={
+                    stats.total > 0
+                      ? `${Math.round((stats.with_salary / stats.total) * 100)}%`
+                      : "0%"
+                  }
+                  progress={
+                    stats.total > 0 ? (stats.with_salary / stats.total) * 100 : 0
+                  }
+                />
+                <StatWidget
+                  icon={UserX}
+                  color="#ef4444"
+                  label={t("statsWithoutSalary")}
+                  value={stats.without_salary}
+                  sub={
+                    stats.total > 0
+                      ? `${Math.round((stats.without_salary / stats.total) * 100)}%`
+                      : "0%"
+                  }
+                  progress={
+                    stats.total > 0 ? (stats.without_salary / stats.total) * 100 : 0
+                  }
+                />
+                <StatWidget
+                  icon={Wallet}
+                  color="#3b82f6"
+                  label={t("statsTotalSalarySum")}
+                  value={fmt(stats.total_sum)}
+                />
+                <StatWidget
+                  icon={TrendingUp}
+                  color="#f59e0b"
+                  label={t("statsAvgSalary")}
+                  value={fmt(stats.avg)}
+                />
+                {stats.type_breakdown && (
+                  <TypeBreakdownWidget
+                    breakdown={stats.type_breakdown}
+                    total={stats.with_salary}
+                    t={t}
+                  />
+                )}
+              </div>
+            </div>
           </div>
         )}
 
@@ -288,30 +331,7 @@ const SalarySettingPage = () => {
         <div className={styles.mainHeader}>
           <div className={styles.filterWrapper}>
             {/* Search */}
-            <div className={styles.searchInput}>
-              <span onClick={handleSearch}>{Icons.search}</span>
-              <input
-                type="text"
-                placeholder={t("search")}
-                value={formData.search}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, search: e.target.value }))
-                }
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSearch();
-                }}
-              />
-              {formData.search && (
-                <span
-                  className={styles.clearBtn}
-                  onClick={() =>
-                    setFormData((prev) => ({ ...prev, search: "" }))
-                  }
-                >
-                  {Icons.clear}
-                </span>
-              )}
-            </div>
+            <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
             {/* Filter */}
             <SalaryFilter
@@ -351,6 +371,7 @@ const SalarySettingPage = () => {
 
         {/* ── Table ── */}
         <SalaryTable
+          onScroll={handleTableScroll}
           data={data}
           currentPage={currentPage}
           pageSize={pageSize}

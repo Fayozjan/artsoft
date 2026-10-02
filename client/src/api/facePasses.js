@@ -23,4 +23,12 @@ export const FacePassesService = {
       pagination: res.data.pagination,
     };
   },
+  updateFacePass: async (id, data) => {
+    const res = await api.put(`/face-passes/${id}`, data);
+    return res.data;
+  },
+  deleteFacePass: async (id) => {
+    const res = await api.delete(`/face-passes/${id}`);
+    return res.data;
+  },
 };

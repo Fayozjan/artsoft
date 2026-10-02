@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAlertStore } from "../stores/alertStore";
 import { usePermissions } from "../hooks/usePermissions";
-import { deleteDepartmentById, getDepartments } from "../api";
+import { useHideBranch } from "../hooks/useHideBranch";
+import { deleteDepartmentById, getDepartments, importDepartmentsExcel, getActiveBranches } from "../api";
+import { downloadDepartmentImportTemplate } from "../utils/DocGenerator";
 
 import AddDepartment from "../components/AddDepartment";
 import EditDepartment from "../components/EditDepartment";
@@ -15,6 +17,7 @@ import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
 import TableIcons from "../icons/tableIcons";
 
+import Search from "../components/Search";
 import styles from "./DepartmentsPage.module.scss";
 import Loading from "../components/Loading";
 import { Building, Users, CheckCircle } from "lucide-react";
@@ -53,8 +56,11 @@ import DownloadButton from "../components/DownloadButton";
 import DepartmentFilter from "../components/DepartmentFilter";
 import { ActionCell } from "../components/ActionButtons";
 import { Icons } from "../icons/icons";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const DepartmentPage = () => {
+  // фильтрация по филиалу идёт на сервере — свой выбор филиала прячем
+  const hideBranch = useHideBranch();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,9 +71,39 @@ const DepartmentPage = () => {
   const { showAlert } = useAlertStore();
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState(null);
-  const [sortField, setSortField] = useState("branch");
+  const [sortField, setSortField] = useState(hideBranch ? "name" : "branch");
   const [sortOrder, setSortOrder] = useState("asc");
+  const [importLoading, setImportLoading] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+  const [showImportMenu, setShowImportMenu] = useState(false);
+  const importFileRef = useRef(null);
+  const importMenuRef = useRef(null);
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
 
   const currentPath = window.location.pathname;
   const { canAdd, canEdit, canDelete } = usePermissions(currentPath);
@@ -76,6 +112,7 @@ const DepartmentPage = () => {
     branch_id: "",
     status: "",
   });
+
 
   const handleEditClick = (id) => {
     setSelectedItem(id);
@@ -148,10 +185,13 @@ const DepartmentPage = () => {
     }
   };
 
+  const getSortValue = (item, field) =>
+    field === "branch" ? item.branch?.name || "" : item[field];
+
   const getSortedData = () => {
     return [...data].sort((a, b) => {
-      let aVal = a[sortField];
-      let bVal = b[sortField];
+      let aVal = getSortValue(a, sortField);
+      let bVal = getSortValue(b, sortField);
 
       // Пустые значения идут в конец
       if (aVal === null || aVal === undefined) return 1;
@@ -184,14 +224,43 @@ const DepartmentPage = () => {
     }
   };
 
+  useEffect(() => {
+    if (!showImportMenu) return;
+    const handleClickOutside = (e) => {
+      if (importMenuRef.current && !importMenuRef.current.contains(e.target)) {
+        setShowImportMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showImportMenu]);
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setImportLoading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const result = await importDepartmentsExcel(fd);
+      setImportResult(result);
+      fetchData(currentPage, formData, pageSize);
+    } catch (err) {
+      showAlert(err.response?.data?.error || t("errorOccurred"), "error");
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     await fetchData(1, formData);
   };
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   return (
@@ -200,8 +269,12 @@ const DepartmentPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {data.length > 0 && (
-            <div className={styles.statsGrid}>
+          {widgetsVisible && data.length > 0 && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
               <StatWidget
                 icon={Building}
                 color="#6366f1"
@@ -221,64 +294,13 @@ const DepartmentPage = () => {
                 value={data.filter((x) => x.status === "active").length}
                 sub={`/ ${data.length}`}
               />
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
               <DepartmentFilter
                 formData={formData}
@@ -306,28 +328,74 @@ const DepartmentPage = () => {
                 {Icons.refresh}
               </div>
 
-              {data.length > 0 && (
-                <DownloadButton
-                  text={t("save")}
-                  // onClick={() => exportEmployeesToExcel(data)}
+              <div className={styles.importMenuWrapper} ref={importMenuRef}>
+                <button
+                  className={styles.importMenuBtn}
+                  type="button"
+                  disabled={importLoading}
+                  onClick={() => !importLoading && setShowImportMenu((v) => !v)}
+                >
+                  {importLoading && <span className={styles.spinner} />}
+                  {importLoading
+                    ? (t("loading") || "Загрузка...")
+                    : (t("importExcel") || "Импортировать данные")}
+                </button>
+                {showImportMenu && !importLoading && (
+                  <div className={styles.importMenuDropdown}>
+                    <button
+                      className={styles.importMenuItem}
+                      onClick={async () => {
+                        setShowImportMenu(false);
+                        try {
+                          const [{ data: allDepts }, { data: branches }] = await Promise.all([
+                            getDepartments({ page: 1, pageSize: 99999, filters: {} }),
+                            getActiveBranches().catch(() => ({ data: [] })),
+                          ]);
+                          downloadDepartmentImportTemplate(allDepts || [], { branches: branches || [] }, t);
+                        } catch (err) {
+                          showAlert(err.response?.data?.error || t("errorOccurred"), "error");
+                        }
+                      }}
+                    >
+                      {t("downloadTemplate") || "Скачать шаблон"}
+                    </button>
+                    <button
+                      className={styles.importMenuItem}
+                      onClick={() => {
+                        setShowImportMenu(false);
+                        importFileRef.current?.click();
+                      }}
+                    >
+                      {t("importData") || "Импортировать"}
+                    </button>
+                  </div>
+                )}
+                <input
+                  ref={importFileRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  style={{ display: "none" }}
+                  onChange={handleImportFile}
                 />
-              )}
+              </div>
             </div>
           </div>
-          <div className={styles.tableContainer}>
+          <div className={styles.tableContainer} onScroll={handleTableScroll}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>№</th>
-                  <th onClick={() => handleSort("branch")}>
-                    <span className={styles.headerContent}>
-                      {t("branch")}
-                      <SortArrow
-                        active={sortField === "branch"}
-                        order={sortOrder}
-                      />
-                    </span>
-                  </th>
+                  {!hideBranch && (
+                    <th onClick={() => handleSort("branch")}>
+                      <span className={styles.headerContent}>
+                        {t("branch")}
+                        <SortArrow
+                          active={sortField === "branch"}
+                          order={sortOrder}
+                        />
+                      </span>
+                    </th>
+                  )}
                   <th
                     className={styles.table_name_header}
                     onClick={() => handleSort("name")}
@@ -349,11 +417,11 @@ const DepartmentPage = () => {
                       />
                     </span>
                   </th>
-                  <th onClick={() => handleSort("employee_count")}>
+                  <th onClick={() => handleSort("employees_count")}>
                     <span className={styles.headerContent}>
                       {t("employees")}
                       <SortArrow
-                        active={sortField === "employee_count"}
+                        active={sortField === "employees_count"}
                         order={sortOrder}
                       />
                     </span>
@@ -375,7 +443,7 @@ const DepartmentPage = () => {
                   getSortedData().map((item, i) => (
                     <tr key={item.id}>
                       <td>{(currentPage - 1) * pageSize + i + 1}</td>
-                      <td>{item.branch.name}</td>
+                      {!hideBranch && <td>{item.branch?.name}</td>}
                       <td>{item.name}</td>
                       <td>{item.id}</td>
                       <td>{item.employees_count}</td>
@@ -437,6 +505,34 @@ const DepartmentPage = () => {
           />
         )}
       </OverlaySidebar>
+
+      {importResult && (
+        <div className={styles.importOverlay} onClick={() => setImportResult(null)}>
+          <div className={styles.importModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.importModalHeader}>
+              <span>{t("importResult") || "Результат импорта"}</span>
+              <button onClick={() => setImportResult(null)}>{Icons.clear}</button>
+            </div>
+            <div className={styles.importModalBody}>
+              <p>✓ {t("created") || "Создано"}: <strong>{importResult.created ?? 0}</strong></p>
+              <p>✓ {t("updated") || "Обновлено"}: <strong>{importResult.updated ?? 0}</strong></p>
+              <p>— {t("unchanged") || "Без изменений"}: <strong>{importResult.unchanged ?? 0}</strong></p>
+              {importResult.errors?.length > 0 && (
+                <>
+                  <p style={{ color: "#ef4444", marginTop: 12 }}>
+                    ✗ {t("errors") || "Ошибок"}: <strong>{importResult.errors.length}</strong>
+                  </p>
+                  <ul style={{ fontSize: 13, color: "#ef4444", paddingLeft: 16, marginTop: 4 }}>
+                    {importResult.errors.map((e, i) => (
+                      <li key={i}>{t("row")} {e.row}: {e.error || e.code}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

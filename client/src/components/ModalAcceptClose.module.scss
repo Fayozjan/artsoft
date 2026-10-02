@@ -1,4 +1,4 @@
-.overlay {
+﻿.overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -12,7 +12,7 @@
 
   .modal {
     margin: 0 auto;
-    background-color: #fff;
+    background-color: var(--card-bg);
     box-shadow: 0 2px 5px rgba(0, 0.3, 0, 0.3);
     padding: 20px;
     border-radius: 8px;

@@ -1,0 +1,111 @@
+// Опоздание в Telegram — то, чего нет в каркасе «Посещаемости»:
+// выбор сортировки и переключатель «после обеда» в шторке фильтров.
+
+.sortChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sortChip {
+  height: 38px;
+  padding: 0 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.sortChipActive {
+  border-color: rgba(20, 85, 254, 0.45);
+  background: rgba(20, 85, 254, 0.14);
+  color: var(--third-color, #1455fe);
+}
+
+// Строка с переключателем
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  b {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  small {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--text-secondary);
+  }
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--tg-bar-track);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
+    transition: transform 0.2s ease;
+  }
+
+  &:checked {
+    background: #34c759;
+  }
+
+  &:checked::after {
+    transform: translateX(20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch::after {
+    transition: none;
+  }
+}

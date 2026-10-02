@@ -53,6 +53,46 @@ export const payrollApi = {
     return res.data;
   },
 
+  recalculateYearBalances: async (year) => {
+    const res = await api.put(`/payroll/year/${year}/recalculate-balances`);
+    return res.data;
+  },
+
+  addPaymentLogsBulk: async (payments, payload) => {
+    const res = await api.post("/payroll/payments/bulk", { payments, ...payload });
+    return res.data;
+  },
+
+  // Аванс — выплата вперёд: месяц может быть ещё не рассчитан, сервер сам
+  // создаст ведомость и строку сотрудника
+  addAdvance: async (payload) => {
+    const res = await api.post("/payroll/advances", payload);
+    return res.data;
+  },
+
+  // Заём вне ведомости: ни месяца, ни строки расчёта
+  addLoan: async (payload) => {
+    const res = await api.post("/payroll/debts", payload);
+    return res.data;
+  },
+
+  deleteLoan: async (id) => {
+    const res = await api.delete(`/payroll/debts/${id}`);
+    return res.data;
+  },
+
+  getDebtHistory: async (employeeId, year) => {
+    const res = await api.get(`/payroll/employees/${employeeId}/debt-history`, {
+      params: { year },
+    });
+    return res.data;
+  },
+
+  updatePaymentLog: async (itemId, logId, payload) => {
+    const res = await api.put(`/payroll/items/${itemId}/payments/${logId}`, payload);
+    return res.data;
+  },
+
   deletePaymentLog: async (itemId, logId) => {
     const res = await api.delete(`/payroll/items/${itemId}/payments/${logId}`);
     return res.data;
@@ -75,6 +115,11 @@ export const payrollApi = {
     return res.data;
   },
 
+  getPayoutsYearReport: async (year, params = {}) => {
+    const res = await api.get("/payroll/payouts-report", { params: { year, ...params } });
+    return res.data;
+  },
+
   bulkMarkPaid: async (itemIds, status) => {
     const res = await api.put("/payroll/payouts/bulk-status", { itemIds, status });
     return res.data;
@@ -82,28 +127,6 @@ export const payrollApi = {
 
   markAllPayoutsStatus: async (sheetId, status) => {
     const res = await api.put(`/payroll/${sheetId}/payouts-all-status`, { status });
-    return res.data;
-  },
-
-  // ── Salary Advances ─────────────────────────────────────────────────────────
-
-  getAdvances: async (month, params = {}) => {
-    const res = await api.get("/payroll/advances", { params: { month, ...params } });
-    return res.data;
-  },
-
-  createAdvances: async (advances) => {
-    const res = await api.post("/payroll/advances", { advances });
-    return res.data;
-  },
-
-  deleteAdvance: async (id) => {
-    const res = await api.delete(`/payroll/advances/${id}`);
-    return res.data;
-  },
-
-  updateAdvance: async (id, payload) => {
-    const res = await api.put(`/payroll/advances/${id}`, payload);
     return res.data;
   },
 };

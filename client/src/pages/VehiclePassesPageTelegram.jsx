@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getVehiclePasses } from "../api/vehiclePasses";
@@ -6,8 +6,20 @@ import { getActiveGates } from "../api";
 import { useAlertStore } from "../stores/alertStore";
 import { useScreenStack } from "../context/ScreenStackContext";
 
-import Loading from "../components/Loading";
-import { Icons } from "../icons/icons";
+import Loading from "../components/LoadingTelegram";
+import TgSheet from "../components/tg/TgSheet";
+import {
+  IconSearch,
+  IconClose,
+  IconFilter,
+  IconLogIn,
+  IconLogOut,
+  IconCar,
+  IconBarrier,
+  IconClock,
+  IconMapPin,
+} from "../components/tg/tgIcons";
+import { toneStyle } from "../utils/attendanceTelegram";
 
 import styles from "./VehiclePassesPageTelegram.module.scss";
 import { usePullToRefresh } from "../hooks/usePullToRefresh";
@@ -69,13 +81,49 @@ const parsePlate = (raw = "") => {
   };
 };
 
+// Сервер отдаёт date как готовую строку "ДД.ММ.ГГГГ, ЧЧ:ММ:СС" (Asia/Tashkent) —
+// парсить её через `new Date()` ненадёжно (движки WebView расходятся), поэтому
+// день извлекаем из строки, а Date() строим только из чистых DD.MM.YYYY.
+const datePartOf = (raw) => (raw || "").split(", ")[0] || "";
+
+const dayKeyOf = (raw) => datePartOf(raw);
+
+const dayLabel = (raw, t) => {
+  const datePart = datePartOf(raw);
+  if (!datePart) return "";
+
+  const fmt = (d) =>
+    d.toLocaleDateString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+
+  if (datePart === fmt(now)) return t("attendanceTg.today");
+  if (datePart === fmt(yesterday)) return t("attendanceTg.yesterday");
+
+  const [dd, mm, yyyy] = datePart.split(".").map(Number);
+  return new Date(yyyy, mm - 1, dd).toLocaleDateString("ru-RU", {
+    day: "numeric",
+    month: "long",
+    weekday: "short",
+  });
+};
+
 // ── Main page ──────────────────────────────────────────────────────────────────
 const VehiclePassesPageTelegram = () => {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [data, setData] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [gates, setGates] = useState([]);
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
+  const [shownEvent, setShownEvent] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const { showAlert } = useAlertStore();
   const { t } = useTranslation();
@@ -94,9 +142,8 @@ const VehiclePassesPageTelegram = () => {
   const today = new Date().toISOString().slice(0, 10);
 
   const initialFormData = {
-    start_date: `${today} 00:00`,
-    end_date: `${today} 23:59`,
-    branch_id: null,
+    start_date: `${today}T00:00`,
+    end_date: `${today}T23:59`,
     direction: "",
     selectedGateIds: [],
   };
@@ -108,7 +155,6 @@ const VehiclePassesPageTelegram = () => {
   const countActiveFilters = (fd) => {
     let count = 0;
     if (fd.start_date) count++;
-    if (fd.branch_id) count++;
     if (fd.direction) count++;
     if (fd.selectedGateIds?.length) count++;
     return count;
@@ -137,6 +183,7 @@ const VehiclePassesPageTelegram = () => {
       const totalPages = pagination?.totalPages || 1;
 
       setData((prev) => (page === 1 ? list : [...prev, ...list]));
+      setTotalItems(pagination?.totalItems ?? 0);
       currentPageRef.current = page;
       hasMoreRef.current = page < totalPages;
     } catch (err) {
@@ -218,134 +265,201 @@ const VehiclePassesPageTelegram = () => {
     );
   };
 
+  const openEvent = (event) => {
+    setShownEvent(event);
+    setSheetOpen(true);
+  };
+
   usePullToRefresh(() => fetchEvents(), scrollRef, loading);
+
+  // ── Stats: counts among currently loaded events ─────────────────────────────
+  const { entryCount, exitCount } = useMemo(
+    () => ({
+      entryCount: data.filter((x) => x.direction === "entry").length,
+      exitCount: data.filter((x) => x.direction === "exit").length,
+    }),
+    [data],
+  );
+
+  // ── Group loaded events by day ───────────────────────────────────────────────
+  const groups = useMemo(() => {
+    const list = [];
+    let lastKey = null;
+    data.forEach((event) => {
+      const key = dayKeyOf(event.date);
+      if (key !== lastKey) {
+        list.push({ key, label: dayLabel(event.date, t), items: [] });
+        lastKey = key;
+      }
+      list[list.length - 1].items.push(event);
+    });
+    return list;
+  }, [data, t]);
+
+  let renderedCount = 0;
 
   return (
     <div className={styles.page}>
       <div className={styles.header} />
 
       <div className={styles.main} id="scroll-container" ref={scrollRef}>
-        <div className={styles.searchFilterRow}>
-          <div className={styles.searchBox}>
-            <span className={styles.searchIcon}>{Icons.search}</span>
-            <input
-              type="text"
-              placeholder={t("search") || "Поиск..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery.length > 0 && (
-              <button
-                className={styles.clearBtn}
-                onClick={() => setSearchQuery("")}
-              >
-                {Icons.clear}
-              </button>
-            )}
-          </div>
-
-          <button
-            className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
-            onClick={openFilter}
-          >
-            {Icons.filter ?? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
-              </svg>
-            )}
-            {activeFiltersCount > 0 && <span className={styles.filterBadge} />}
-          </button>
+        <div className={styles.hero}>
+          <h1 className={styles.heroTitle}>{t("vehicle-passes")}</h1>
+          {totalItems > 0 && (
+            <span className={styles.heroCount}>{totalItems}</span>
+          )}
         </div>
 
-        {/* Active filter tags */}
-        {activeFiltersCount > 0 && (
-          <div className={styles.activeFiltersBar}>
-            {(formData.start_date !== initialFormData.start_date ||
-              formData.end_date !== initialFormData.end_date) && (
-              <span className={styles.activeFilterTag}>
-                {formData.start_date &&
-                  `${t("filterFrom")}: ${new Date(
-                    formData.start_date,
-                  ).toLocaleString("ru-RU", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`}
-                {formData.end_date &&
-                  ` ${t("filterTo")}: ${new Date(
-                    formData.end_date,
-                  ).toLocaleString("ru-RU", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}`}
-                <button
-                  onClick={() => {
-                    const next = {
-                      ...formData,
-                      start_date: initialFormData.start_date,
-                      end_date: initialFormData.end_date,
-                    };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
+        <div className={styles.toolbar}>
+          <div className={styles.searchFilterRow}>
+            <div className={styles.searchBox}>
+              <span className={styles.searchIcon}>
+                <IconSearch />
               </span>
-            )}
+              <input
+                type="text"
+                placeholder={t("search") || "Поиск..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery.length > 0 && (
+                <button
+                  className={styles.clearBtn}
+                  onClick={() => setSearchQuery("")}
+                >
+                  <IconClose />
+                </button>
+              )}
+            </div>
 
-            {formData.direction && (
-              <span className={styles.activeFilterTag}>
-                {formData.direction === "entry" ? t("forward") : t("reverse")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, direction: "" };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
-
-            {formData.selectedGateIds?.length > 0 && (
-              <span className={styles.activeFilterTag}>
-                {gates
-                  .filter((g) =>
-                    formData.selectedGateIds.includes(String(g.id)),
-                  )
-                  .map((g) => g.name)
-                  .join(", ") || t("gates")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, selectedGateIds: [] };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEvents(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
+            <button
+              className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
+              onClick={openFilter}
+            >
+              <IconFilter />
+              {activeFiltersCount > 0 && (
+                <span className={styles.filterBadge}>
+                  {activeFiltersCount}
+                </span>
+              )}
+            </button>
           </div>
-        )}
+
+          {!loading && data.length > 0 && (
+            <div className={styles.statsRow}>
+              <div className={styles.statCard}>
+                <span className={styles.statIcon}>
+                  <IconCar />
+                </span>
+                <span className={styles.statValue}>{totalItems}</span>
+                <span className={styles.statLabel}>
+                  {t("totalPassesLabel")}
+                </span>
+              </div>
+              <div className={styles.statCard} style={toneStyle("green")}>
+                <span className={styles.statIcon}>
+                  <IconLogIn />
+                </span>
+                <span className={styles.statValue}>{entryCount}</span>
+                <span className={styles.statLabel}>{t("forward")}</span>
+              </div>
+              <div className={styles.statCard} style={toneStyle("red")}>
+                <span className={styles.statIcon}>
+                  <IconLogOut />
+                </span>
+                <span className={styles.statValue}>{exitCount}</span>
+                <span className={styles.statLabel}>{t("reverse")}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Active filter tags */}
+          {activeFiltersCount > 0 && (
+            <div className={styles.activeFiltersBar}>
+              {(formData.start_date !== initialFormData.start_date ||
+                formData.end_date !== initialFormData.end_date) && (
+                <span className={styles.activeFilterTag}>
+                  {formData.start_date &&
+                    `${t("filterFrom")}: ${new Date(
+                      formData.start_date,
+                    ).toLocaleString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                  {formData.end_date &&
+                    ` ${t("filterTo")}: ${new Date(
+                      formData.end_date,
+                    ).toLocaleString("ru-RU", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}`}
+                  <button
+                    onClick={() => {
+                      const next = {
+                        ...formData,
+                        start_date: initialFormData.start_date,
+                        end_date: initialFormData.end_date,
+                      };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.direction && (
+                <span className={styles.activeFilterTag}>
+                  {formData.direction === "entry"
+                    ? t("forward")
+                    : t("reverse")}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, direction: "" };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+
+              {formData.selectedGateIds?.length > 0 && (
+                <span className={styles.activeFilterTag}>
+                  {gates
+                    .filter((g) =>
+                      formData.selectedGateIds.includes(String(g.id)),
+                    )
+                    .map((g) => g.name)
+                    .join(", ") || t("gates")}
+                  <button
+                    onClick={() => {
+                      const next = { ...formData, selectedGateIds: [] };
+                      setFormData(next);
+                      formDataRef.current = next;
+                      setActiveFiltersCount(countActiveFilters(next));
+                      fetchEvents(1, next);
+                    }}
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Card list */}
         {loading ? (
@@ -354,14 +468,32 @@ const VehiclePassesPageTelegram = () => {
           </div>
         ) : (
           <div className={styles.cardList} ref={listRef}>
-            {data.length === 0 && <p className={styles.empty}>{t("noData")}</p>}
-            {data.map((event, idx) => (
-              <VehicleCard
-                key={event.id || idx}
-                innerRef={idx === data.length - 5 ? sentinelRef : null}
-                event={event}
-                t={t}
-              />
+            {data.length === 0 && (
+              <div className={styles.empty}>
+                <span className={styles.emptyIcon}>
+                  <IconCar />
+                </span>
+                <p>{t("noData")}</p>
+              </div>
+            )}
+            {groups.map((group) => (
+              <div key={group.key} className={styles.dateGroup}>
+                <div className={styles.dateHeader}>{group.label}</div>
+                {group.items.map((event) => {
+                  const globalIdx = renderedCount++;
+                  return (
+                    <VehicleCard
+                      key={event.id || globalIdx}
+                      innerRef={
+                        globalIdx === data.length - 5 ? sentinelRef : null
+                      }
+                      event={event}
+                      onOpen={() => openEvent(event)}
+                      t={t}
+                    />
+                  );
+                })}
+              </div>
             ))}
             {loadingMore && (
               <div className={styles.bottomLoader}>
@@ -373,6 +505,13 @@ const VehiclePassesPageTelegram = () => {
           </div>
         )}
       </div>
+
+      <EventSheet
+        event={shownEvent}
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        t={t}
+      />
     </div>
   );
 };
@@ -469,11 +608,10 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
         </div>
       </div>
 
-      <button className={styles.resetBtn} onClick={handleReset}>
-        {t("clearAll") || "Сбросить"}
-      </button>
-
       <div className={styles.filterFooter}>
+        <button className={styles.resetBtn} onClick={handleReset}>
+          {t("clearAll") || "Сбросить"}
+        </button>
         <button className={styles.applyBtn} onClick={() => onApply(localForm)}>
           {t("apply") || "Применить"}
         </button>
@@ -483,66 +621,142 @@ const FilterScreen = ({ gates, formData, initialFormData, onApply, t }) => {
 };
 
 // ── Vehicle Card ───────────────────────────────────────────────────────────────
-const VehicleCard = ({ event, t, innerRef }) => {
-  const plateFormatted = parsePlate(event?.plate_number);
+const VehicleCard = ({ event, t, innerRef, onOpen }) => {
+  const plate = parsePlate(event?.plate_number);
   const branchName = event.branch_name || "";
-  const gateName = event.gate_name || "";
-  const formattedTime = event.date;
+  const gateName = event.gate_name || "—";
 
-  let directionText = t("unknown");
-  if (event.direction === "entry") directionText = t("forward");
-  if (event.direction === "exit") directionText = t("reverse");
+  const timeOnly = (event.date || "").split(", ").pop() || "—";
+
+  const isIn = event.direction === "entry";
+  const tone = isIn ? "green" : event.direction === "exit" ? "red" : "gray";
 
   return (
-    <div className={styles.card} ref={innerRef}>
-      <div className={styles.cardAvatar}>
+    <button
+      type="button"
+      className={styles.card}
+      style={toneStyle(tone)}
+      ref={innerRef}
+      onClick={onOpen}
+    >
+      <span className={styles.cardPhoto}>
         {event.photo ? (
           <img
             src={`/api/vehicle-passes/image/${event.photo}`}
-            alt={plateFormatted.formatted}
+            alt={plate.formatted}
             loading="lazy"
           />
         ) : (
-          <span className={styles.avatarFallback}>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              width="28"
-              height="28"
-            >
-              <path d="M5 11l1.5-4.5h11L19 11" strokeLinecap="round" />
-              <rect x="3" y="11" width="18" height="7" rx="2" />
-              <circle cx="7.5" cy="18" r="1.5" />
-              <circle cx="16.5" cy="18" r="1.5" />
-            </svg>
+          <span className={styles.photoFallback}>
+            <IconCar />
           </span>
         )}
-      </div>
+      </span>
 
-      <div className={styles.cardBody}>
-        <p className={styles.cardName}>{plateFormatted.formatted}</p>
-        {branchName && <p className={styles.cardSub}>{branchName}</p>}
-        {gateName && <p className={styles.cardMeta}>{gateName}</p>}
-      </div>
+      <span className={styles.cardBody}>
+        <span className={styles.cardName}>{plate.formatted}</span>
+        <span className={styles.cardSub}>{branchName || "—"}</span>
 
-      <div className={styles.cardRight}>
-        <span
-          className={`${styles.dirBadge} ${
-            event.direction === "entry"
-              ? styles.dirIn
-              : event.direction === "exit"
-                ? styles.dirOut
-                : styles.dirDefault
-          }`}
-        >
-          {directionText}
+        <span className={styles.cardChips}>
+          <span className={styles.chip}>
+            <IconBarrier />
+            {gateName}
+          </span>
+          <span className={styles.chip}>
+            <IconClock />
+            {timeOnly}
+          </span>
         </span>
-        <span className={styles.cardTime}>{formattedTime}</span>
-      </div>
-    </div>
+      </span>
+
+      <span
+        className={`${styles.dirPill} ${isIn ? styles.dirIn : styles.dirOut}`}
+      >
+        {isIn ? <IconLogIn /> : <IconLogOut />}
+        {isIn ? t("forward") : event.direction === "exit" ? t("reverse") : t("unknown")}
+      </span>
+    </button>
   );
 };
+
+// ── Event detail sheet ─────────────────────────────────────────────────────────
+const EventSheet = ({ event, isOpen, onClose, t }) => {
+  if (!event) {
+    return <TgSheet isOpen={isOpen} onClose={onClose} title="" />;
+  }
+
+  const plate = parsePlate(event.plate_number);
+  const isIn = event.direction === "entry";
+  const tone = isIn ? "green" : event.direction === "exit" ? "red" : "gray";
+
+  const [datePart, timePart] = (event.date || "").split(", ");
+
+  return (
+    <TgSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={plate.formatted}
+      subtitle={event.branch_name}
+    >
+      <div className={styles.sheet} style={toneStyle(tone)}>
+        <span className={styles.sheetPhoto}>
+          {event.photo ? (
+            <img
+              src={`/api/vehicle-passes/image/${event.photo}`}
+              alt={plate.formatted}
+              loading="lazy"
+            />
+          ) : (
+            <span className={styles.photoFallback}>
+              <IconCar />
+            </span>
+          )}
+          <span
+            className={`${styles.dirPill} ${isIn ? styles.dirIn : styles.dirOut}`}
+          >
+            {isIn ? <IconLogIn /> : <IconLogOut />}
+            {isIn
+              ? t("forward")
+              : event.direction === "exit"
+                ? t("reverse")
+                : t("unknown")}
+          </span>
+        </span>
+
+        <div className={styles.times}>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("date")}</span>
+            <b>{datePart || "—"}</b>
+          </div>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("time")}</span>
+            <b>{timePart || "—"}</b>
+          </div>
+          <div className={styles.timeCell}>
+            <span className={styles.timeLabel}>{t("gates")}</span>
+            <b>{event.gate_name || "—"}</b>
+          </div>
+        </div>
+
+        <ul className={styles.info}>
+          <InfoRow
+            icon={<IconMapPin />}
+            label={t("branch")}
+            value={event.branch_name}
+          />
+        </ul>
+      </div>
+    </TgSheet>
+  );
+};
+
+const InfoRow = ({ icon, label, value }) =>
+  value ? (
+    <li className={styles.infoRow}>
+      <span className={styles.infoIcon}>{icon}</span>
+      <span className={styles.infoLabel}>{label}</span>
+      <span className={styles.infoValue}>{value}</span>
+    </li>
+  ) : null;
 
 export default VehiclePassesPageTelegram;

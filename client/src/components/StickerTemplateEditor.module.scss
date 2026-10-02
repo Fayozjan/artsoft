@@ -1,0 +1,481 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: -6px;
+}
+
+.sizeRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+
+    label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    input {
+      width: 84px;
+      padding: 7px 9px;
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      font-size: 13px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--third-color, #1455fe);
+        box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.12);
+      }
+    }
+  }
+}
+
+.chipBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  padding: 7px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  &:hover {
+    color: var(--third-color, #1455fe);
+    border-color: currentColor;
+    background: rgba(20, 85, 254, 0.06);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+
+    &:hover {
+      color: var(--text-secondary);
+      border-color: var(--border-color);
+      background: none;
+    }
+  }
+}
+
+.resetBtn {
+  composes: chipBtn;
+  margin-left: auto;
+}
+
+.dangerBtn {
+  composes: chipBtn;
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.35);
+
+  &:hover {
+    color: #dc2626;
+    background: rgba(220, 38, 38, 0.06);
+  }
+}
+
+// Варианты дизайна: чипы переключают редактируемый вариант, точка — тот, по
+// которому сейчас идёт печать.
+.variantChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.variantChip {
+  composes: chipBtn;
+}
+
+.addVariantBtn {
+  composes: chipBtn;
+  border-style: dashed;
+  color: var(--third-color, #1455fe);
+}
+
+.variantChipSelected {
+  color: var(--third-color, #1455fe);
+  border-color: var(--third-color, #1455fe);
+  background: rgba(20, 85, 254, 0.08);
+  font-weight: 600;
+}
+
+.variantDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
+}
+
+.variantRow {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    flex: 1;
+    min-width: 180px;
+
+    label {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+
+    input {
+      padding: 7px 9px;
+      border: 1px solid var(--border-color);
+      border-radius: 7px;
+      font-size: 13px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--third-color, #1455fe);
+        box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.12);
+      }
+    }
+  }
+}
+
+.activeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 12px;
+  border-radius: 7px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+// content-box: внутренняя область ровно width×SCALE / height×SCALE px, иначе
+// рамка съедала бы по пикселю и блоки в редакторе сдвигались бы относительно
+// печати.
+.canvasWrap {
+  position: relative;
+  box-sizing: content-box;
+  background: #fff;
+  background-image:
+    linear-gradient(to right, rgba(20, 85, 254, 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(20, 85, 254, 0.08) 1px, transparent 1px);
+  background-position: 0 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+  overflow: hidden;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.element {
+  position: absolute;
+  display: flex;
+  align-items: flex-start;
+  cursor: grab;
+  border-radius: 3px;
+  // outline, не border: рамка не должна сдвигать содержимое блока относительно
+  // его реальных координат.
+  outline: 1px dashed transparent;
+  transition: outline-color 0.15s, box-shadow 0.15s;
+
+  &:hover {
+    outline-color: rgba(20, 85, 254, 0.45);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Текст не обрезается по границе блока — как в PDF (там он тоже вылезает, если
+// не влез); обрезает только край стикера (.canvasWrap).
+.elementContent {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.elementSelected {
+  outline-color: transparent;
+  box-shadow: 0 0 0 2px #1455fe, 0 2px 8px rgba(20, 85, 254, 0.25);
+  z-index: 2;
+}
+
+.textPreview {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.qrPreview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+// Умные направляющие (Figma-style): расстояние до ближайшего блока/края
+// канваса во время драга/ресайза. Розовый акцент — специально другой цвет,
+// чтобы не путать с синим выделением блока.
+.guideGroup {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.guideLine {
+  position: absolute;
+  background: #ff3b8d;
+}
+
+.guideLineCanvas {
+  background: rgba(255, 59, 141, 0.4);
+}
+
+.guideLabel {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  background: #ff3b8d;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(255, 59, 141, 0.4);
+}
+
+.resizeHandle {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 11px;
+  height: 11px;
+  background: #fff;
+  border: 2px solid #1455fe;
+  border-radius: 50%;
+  cursor: nwse-resize;
+  transition: transform 0.1s ease;
+
+  &:hover {
+    transform: scale(1.2);
+  }
+}
+
+.deleteHandle {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: #dc2626;
+  color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(220, 38, 38, 0.4);
+  transition: transform 0.1s ease;
+
+  svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  &:hover {
+    transform: scale(1.15);
+  }
+}
+
+// Панель свойств блока: сетка с равными колонками, все контролы прижаты к нижней
+// линии (подписи сверху у полей, у «Жирного» подписи нет), поэтому ряд ровный.
+.fieldPanel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  align-items: end;
+  gap: 12px 14px;
+  padding: 14px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+
+    label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-secondary);
+    }
+
+    input,
+    select {
+      padding: 6px 8px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      width: 100%;
+      height: 32px;
+      box-sizing: border-box;
+      font-size: 13px;
+      background: #fff;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--third-color, #1455fe);
+        box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.12);
+      }
+    }
+  }
+}
+
+.textContentRow {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+
+  label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+  }
+
+  input {
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 13px;
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+
+    &:focus {
+      outline: none;
+      border-color: var(--third-color, #1455fe);
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.12);
+    }
+  }
+}
+
+// Жирный — кнопка-переключатель той же высоты, что и соседние поля панели;
+// сам чекбокс скрыт, состояние видно по подсветке и по значку «B».
+.boldToggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 32px;
+  box-sizing: border-box;
+  padding: 0 12px;
+  background: #fff;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  &:hover {
+    color: var(--third-color, #1455fe);
+    border-color: var(--third-color, #1455fe);
+  }
+
+  &:has(input:checked) {
+    color: var(--third-color, #1455fe);
+    border-color: var(--third-color, #1455fe);
+    background: rgba(20, 85, 254, 0.08);
+    font-weight: 600;
+  }
+
+  &:has(input:focus-visible) {
+    box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.12);
+  }
+}
+
+.boldMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--bg-light);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+
+  input:checked ~ & {
+    background: var(--third-color, #1455fe);
+    color: #fff;
+  }
+}
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.addLabel {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.addBtn {
+  composes: chipBtn;
+  border-style: dashed;
+}
+
+.submitRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+}

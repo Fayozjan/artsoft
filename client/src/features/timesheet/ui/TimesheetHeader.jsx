@@ -3,8 +3,15 @@ import { useTranslation } from "react-i18next";
 import dayjs from "dayjs";
 import styles from "./Timesheet.module.scss";
 
+// Пометки производственного календаря: класс колонки + подпись для тултипа
+const DAY_MARKS = {
+  holiday: { style: "holidayCol", labelKey: "holidayDay" },
+  weekend: { style: "weekendCol", labelKey: "weekendDay" },
+  short: { style: "shortCol", labelKey: "shortDay" },
+};
+
 const TimesheetHeader = React.memo(
-  ({ daysArray, holidayDays, year, month, visibleColumns }) => {
+  ({ daysArray, calendarByDay, year, month, visibleColumns }) => {
     const { t } = useTranslation();
 
     return (
@@ -38,16 +45,37 @@ const TimesheetHeader = React.memo(
             const dateObj = dayjs(
               `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
             );
-            const isSunday = dateObj.day() === 0;
+            const mark = calendarByDay?.get(day);
+            const markInfo = mark ? DAY_MARKS[mark.day_type] : null;
+            // Красное воскресенье не рисуем поверх пометки — иначе два цвета в ячейке
+            const isSunday = !markInfo && dateObj.day() === 0;
+
+            const title = markInfo
+              ? [
+                  t(markInfo.labelKey),
+                  mark.name,
+                  mark.day_type === "short" && mark.short_minutes
+                    ? `−${mark.short_minutes} ${t("minutesShort")}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : undefined;
+
             return (
               <th
                 key={day}
-                className={`${styles.th_with_icon} ${isSunday ? styles.sunday : ""}`}
+                title={title}
+                className={[
+                  styles.th_with_icon,
+                  isSunday ? styles.sunday : "",
+                  markInfo ? styles[markInfo.style] : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 {day}
-                {holidayDays.has(day) && (
-                  <span className={styles.holiday_icon}>⭐</span>
-                )}
+                {markInfo && <span className={styles.dayMarkDot} />}
               </th>
             );
           })}

@@ -32,6 +32,34 @@ export const editFaceDevice = async (id, data) => {
   };
 };
 
+export const getFaceDevicesOnlineStatus = async (ids) => {
+  if (!ids || ids.length === 0) return {};
+  const res = await api.get("/face-devices/online-status", {
+    params: { ids: ids.join(",") },
+  });
+  return res.data.data;
+};
+
+export const getFaceDevicesCapacity = async (ids) => {
+  if (!ids || ids.length === 0) return {};
+  const res = await api.get("/face-devices/capacity", {
+    params: { ids: ids.join(",") },
+  });
+  return res.data.data;
+};
+
+export const syncFaceDevicesTime = async (ids, offsetMinutes, mode = "manual") => {
+  const res = await api.post("/face-devices/sync-time", {
+    ids,
+    offsetMinutes,
+    mode,
+  });
+  return {
+    success: res.data.success,
+    data: res.data.data,
+  };
+};
+
 export const deleteFaceDeviceById = async (id) => {
   if (!id) throw new Error("ID не передан");
 

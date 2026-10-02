@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DateTime } from "luxon";
 
 import { deleteTimeOff, getTimeOff } from "../api";
@@ -12,12 +12,15 @@ import Pagination from "../components/Pagination";
 import Button from "../components/Button";
 import TimeOffFilter from "../components/TimeOffFilter";
 import TimeOffSort from "../components/TimeOffSort";
+import SortArrow from "../components/SortArrow";
 import DownloadButton from "../components/DownloadButton";
 import CenterModal from "../components/CenterModal";
 import OverlaySidebar from "../components/OverlaySidebar";
 import AddTimeOff from "../components/AddTimeOff";
 import EditTimeOff from "../components/EditTimeOff";
 
+import EmployeeCell from "../components/EmployeeCell";
+import Search from "../components/Search";
 import styles from "./TimeOffPage.module.scss";
 import { formatIsoToLocalDate, formatIsoToLocalDateTime } from "../utils/date";
 import { CalendarOff, Building2, Clock } from "lucide-react";
@@ -54,9 +57,35 @@ const StatWidget = ({ icon: Icon, color, label, value, sub, progress }) => (
 );
 import { ActionCell } from "../components/ActionButtons";
 import { Icons } from "../icons/icons";
+import { useWidgetsStore } from "../stores/widgetsStore";
 
 const TimeOffPage = () => {
   const { t } = useTranslation();
+  const { widgetsVisible } = useWidgetsStore();
+  const [widgetsScrollHidden, setWidgetsScrollHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  const handleTableScroll = (e) => {
+    const el = e.currentTarget;
+    const scrollTop = el.scrollTop;
+    const lastScrollTop = lastScrollTopRef.current;
+    lastScrollTopRef.current = scrollTop;
+
+    // мало данных — почти нечего скроллить, скрытие виджета меняет
+    // высоту tableContainer и вызывает бесконечный hide/show (мигание)
+    const maxScroll = el.scrollHeight - el.clientHeight;
+    if (maxScroll < 40) {
+      setWidgetsScrollHidden(false);
+      return;
+    }
+
+    const delta = scrollTop - lastScrollTop;
+    if (scrollTop <= 0) {
+      setWidgetsScrollHidden(false);
+    } else if (delta > 8) {
+      setWidgetsScrollHidden(true);
+    }
+  };
   const { showAlert } = useAlertStore();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -76,12 +105,13 @@ const TimeOffPage = () => {
   const now = DateTime.now().setZone("Asia/Tashkent");
 
   const [formData, setFormData] = useState({
-    date_from: now.startOf("month").toFormat("yyyy-MM-dd 00:00"),
+    date_from: now.toFormat("yyyy-MM-dd 00:00"),
     date_to: now.toFormat("yyyy-MM-dd 23:59"),
     branch_id: null,
     department_id: null,
     position_id: null,
   });
+
 
   const fetchData = async (
     page = currentPage,
@@ -135,9 +165,9 @@ const TimeOffPage = () => {
     setCurrentPage(1);
   }, []);
 
-  const handleSearch = () => {
+  const handleSearch = (data = formData) => {
     setCurrentPage(1);
-    fetchData(1, formData, pageSize);
+    fetchData(1, data, pageSize);
   };
 
   const getSortedData = () => {
@@ -186,6 +216,15 @@ const TimeOffPage = () => {
     setSortOrder(sort_order);
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
   const handleEditClick = (itemId) => {
     setSelectedItem(itemId);
     setModalType("edit");
@@ -214,85 +253,37 @@ const TimeOffPage = () => {
         <Loading />
       ) : (
         <div className={styles.main}>
-          {data.length > 0 && (
-            <div className={styles.statsGrid}>
-              <StatWidget
-                icon={CalendarOff}
-                color="#6366f1"
-                label={t("totalRecordsLabel")}
-                value={totalItems}
-              />
-              <StatWidget
-                icon={Building2}
-                color="#10b981"
-                label={t("companyPaidLabel")}
-                value={data.filter((x) => x.is_company_paid).length}
-              />
-              <StatWidget
-                icon={Clock}
-                color="#f59e0b"
-                label={t("hourlyLabel")}
-                value={data.filter((x) => x.type === "hour").length}
-              />
+          {widgetsVisible && data.length > 0 && (
+            <div
+              className={`${styles.statsGridWrap} ${widgetsScrollHidden ? styles.statsGridWrapHidden : ""}`}
+            >
+              <div className={styles.statsGridInner}>
+                <div className={styles.statsGrid}>
+                  <StatWidget
+                    icon={CalendarOff}
+                    color="#6366f1"
+                    label={t("totalRecordsLabel")}
+                    value={totalItems}
+                  />
+                  <StatWidget
+                    icon={Building2}
+                    color="#10b981"
+                    label={t("companyPaidLabel")}
+                    value={data.filter((x) => x.is_company_paid).length}
+                  />
+                  <StatWidget
+                    icon={Clock}
+                    color="#f59e0b"
+                    label={t("hourlyLabel")}
+                    value={data.filter((x) => x.type === "hour").length}
+                  />
+                </div>
+              </div>
             </div>
           )}
           <div className={styles.mainHeader}>
             <div className={styles.filterWrapper}>
-              <div className={styles.searchInput}>
-                <svg
-                  onClick={() => handleSearch()}
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="19"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    fill="#000000"
-                    d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-                  />
-                </svg>
-                <input
-                  type="text"
-                  placeholder={t("search")}
-                  value={formData.search || ""}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      search: e.target.value,
-                    }))
-                  }
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                />
-
-                {formData.search && (
-                  <svg
-                    className={styles.clearBtn}
-                    onClick={() => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        search: "",
-                      }));
-                    }}
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="19"
-                    height="18"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      fill="none"
-                      stroke="#000000"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                )}
-              </div>
+              <Search formData={formData} setFormData={setFormData} onSearch={handleSearch} />
 
               <TimeOffFilter
                 formData={formData}
@@ -334,20 +325,62 @@ const TimeOffPage = () => {
               )}
             </div>
           </div>
-          <div className={styles.tableContainer}>
+          <div className={styles.tableContainer} onScroll={handleTableScroll}>
             <table className={styles.table}>
               <thead>
                 <tr>
                   <th>№</th>
-                  <th>{t("number")}</th>
-                  <th className={styles.table_name_header}>{t("employee")}</th>
-                  <th>{t("position")}</th>
-                  <th>{t("type")}</th>
-                  <th>{t("reason")}</th>
-                  <th>{t("dateFrom")}</th>
-                  <th>{t("dateTo")}</th>
-                  <th>{t("companyPaid")}</th>
-                  <th>{t("addedBy")}</th>
+                  <th
+                    className={styles.table_name_header}
+                    onClick={() => handleSort("employeeFullName")}
+                  >
+                    <span className={styles.headerContent}>
+                      {t("employee")}
+                      <SortArrow active={sortField === "employeeFullName"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("position_name")}>
+                    <span className={styles.headerContent}>
+                      {t("position")}
+                      <SortArrow active={sortField === "position_name"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("type")}>
+                    <span className={styles.headerContent}>
+                      {t("type")}
+                      <SortArrow active={sortField === "type"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("reason")}>
+                    <span className={styles.headerContent}>
+                      {t("reason")}
+                      <SortArrow active={sortField === "reason"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("date_from")}>
+                    <span className={styles.headerContent}>
+                      {t("dateFrom")}
+                      <SortArrow active={sortField === "date_from"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("date_to")}>
+                    <span className={styles.headerContent}>
+                      {t("dateTo")}
+                      <SortArrow active={sortField === "date_to"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("is_company_paid")}>
+                    <span className={styles.headerContent}>
+                      {t("companyPaid")}
+                      <SortArrow active={sortField === "is_company_paid"} order={sortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleSort("creatorFullName")}>
+                    <span className={styles.headerContent}>
+                      {t("addedBy")}
+                      <SortArrow active={sortField === "creatorFullName"} order={sortOrder} />
+                    </span>
+                  </th>
                   <th>{(canEdit || canDelete) && t("action")}</th>
                 </tr>
               </thead>
@@ -355,30 +388,16 @@ const TimeOffPage = () => {
                 {data?.length > 0 ? (
                   getSortedData().map((item, i) => (
                     <tr key={item.id}>
-                      <td>{(currentPage - 1) * pageSize + i + 1}</td>
                       <td>{item.id}</td>
                       <td>
-                        <div className={styles.empCell}>
-                          {item.employee_photo && (
-                            <img
-                              src={`/api/employees/image/${item.employee_photo}`}
-                              alt="employee"
-                              className={
-                                item.employee_status ? styles.active : styles.terminated
-                              }
-                            />
-                          )}
-                          <div className={styles.empInfo}>
-                            <span className={styles.empName}>
-                              {item.employeeFullName}
-                            </span>
-                            <span className={styles.empSub}>
-                              {[item.branch_name, item.department_name]
-                                .filter(Boolean)
-                                .join(" / ")}
-                            </span>
-                          </div>
-                        </div>
+                        <EmployeeCell
+                          photo={item.employee_photo}
+                          fullName={item.employeeFullName}
+                          id={item.employee_id}
+                          branch={item.branch_name}
+                          department={item.department_name}
+                          active={item.employee_status !== false}
+                        />
                       </td>
                       <td>{item.position_name}</td>
                       <td>{t(item.type)}</td>
@@ -409,7 +428,7 @@ const TimeOffPage = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="11">{t("noData")}</td>
+                    <td colSpan="10">{t("noData")}</td>
                   </tr>
                 )}
               </tbody>
@@ -428,7 +447,7 @@ const TimeOffPage = () => {
       <OverlaySidebar
         isOpen={modalType !== null}
         onClose={() => setModalType(null)}
-        title={modalType === "add" ? t("addHoliday") : t("editHoliday")}
+        title={modalType === "add" ? t("addTimeOff") : t("editTimeOff")}
         width="500px"
       >
         {modalType === "add" && (

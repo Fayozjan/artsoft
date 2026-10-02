@@ -41,6 +41,16 @@ export const editDoor = async (id, data) => {
   };
 };
 
+export const syncDoor = async (id) => {
+  const res = await api.post(`/doors/${id}/sync`);
+  return res.data;
+};
+
+export const syncAllDoors = async () => {
+  const res = await api.post("/doors/sync-all");
+  return res.data;
+};
+
 export const deleteDoorById = async (id) => {
   if (!id) throw new Error("ID не передан");
 

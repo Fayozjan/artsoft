@@ -4,6 +4,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import TimesheetEventModal from "./TimesheetEventModal";
 import TimesheetHeader from "./TimesheetHeader";
 import TimesheetRow from "./TimesheetRow";
+import { sortTimesheetEmployees } from "../../../utils/sortTimesheetEmployees";
 
 import styles from "./Timesheet.module.scss";
 import { useTranslation } from "react-i18next";
@@ -11,12 +12,14 @@ import { useTranslation } from "react-i18next";
 const Timesheet = ({
   data,
   date,
-  holidays,
+  weekDays,
+  calendar,
   currentPage,
   pageSize,
   sortField,
   sortOrder,
   visibleColumns,
+  onScroll,
 }) => {
   const { t } = useTranslation();
   const [year, month] = useMemo(() => {
@@ -24,24 +27,24 @@ const Timesheet = ({
     return [y, m];
   }, [date]);
 
-  const daysArray = useMemo(
-    () =>
-      Array.from(
-        { length: new Date(year, month, 0).getDate() },
-        (_, i) => i + 1,
-      ),
-    [year, month],
-  );
+  const daysArray = useMemo(() => {
+    if (weekDays?.length) return weekDays;
+    return Array.from(
+      { length: new Date(year, month, 0).getDate() },
+      (_, i) => i + 1,
+    );
+  }, [year, month, weekDays]);
 
-  const holidayDays = useMemo(() => {
-    const set = new Set();
-    holidays.forEach((h) => {
-      const from = new Date(h.date_from).getUTCDate();
-      const to = new Date(h.date_to).getUTCDate();
-      for (let d = from; d <= to; d++) set.add(d);
+  // Пометки производственного календаря по номеру дня месяца:
+  // праздник / доп. выходной / сокращённый — подсвечивают всю колонку
+  const calendarByDay = useMemo(() => {
+    const map = new Map();
+    (calendar || []).forEach((d) => {
+      const day = Number(String(d.date).split("-")[2]);
+      if (day) map.set(day, d);
     });
-    return set;
-  }, [holidays]);
+    return map;
+  }, [calendar]);
 
   const [selectedDate, setSelectedDate] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -72,31 +75,10 @@ const Timesheet = ({
     return map;
   }, [data, date]);
 
-  const sortedEmployees = useMemo(() => {
-    return [...data].sort((a, b) => {
-      let aVal = a[sortField] ?? "";
-      let bVal = b[sortField] ?? "";
-
-      if (sortField === "totalWorkedDays")
-        return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
-
-      if (/^\d{2}:\d{2}$/.test(aVal)) {
-        const [ah, am] = aVal.split(":").map(Number);
-        const [bh, bm] = bVal.split(":").map(Number);
-        return sortOrder === "asc"
-          ? ah * 60 + am - (bh * 60 + bm)
-          : bh * 60 + bm - (ah * 60 + am);
-      }
-
-      return sortOrder === "asc"
-        ? String(aVal).localeCompare(String(bVal), "ru", {
-            sensitivity: "base",
-          })
-        : String(bVal).localeCompare(String(aVal), "ru", {
-            sensitivity: "base",
-          });
-    });
-  }, [data, sortField, sortOrder]);
+  const sortedEmployees = useMemo(
+    () => sortTimesheetEmployees(data, sortField, sortOrder),
+    [data, sortField, sortOrder],
+  );
 
   const handleTableClick = useCallback(
     (e) => {
@@ -137,11 +119,14 @@ const Timesheet = ({
   });
 
   return (
-    <div ref={parentRef} className={styles.tableContainer}>
-      <table className={styles.table} onClick={handleTableClick}>
+    <div ref={parentRef} className={styles.tableContainer} onScroll={onScroll}>
+      <table
+        className={`${styles.table} ${weekDays?.length ? styles.weekTable : ""}`}
+        onClick={handleTableClick}
+      >
         <TimesheetHeader
           daysArray={daysArray}
-          holidayDays={holidayDays}
+          calendarByDay={calendarByDay}
           year={year}
           month={month}
           visibleColumns={visibleColumns}
@@ -175,6 +160,7 @@ const Timesheet = ({
                   id={employee.employeeId}
                   index={virtualRow.index}
                   daysArray={daysArray}
+                  calendarByDay={calendarByDay}
                   currentPage={currentPage}
                   pageSize={pageSize}
                   virtualRow={virtualRow}

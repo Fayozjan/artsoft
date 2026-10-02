@@ -1,0 +1,409 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: var(--font-small);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 32px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: var(--font-small);
+  color: var(--text-color);
+  box-sizing: border-box;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover {
+    border-color: var(--third-color);
+    color: var(--third-color);
+  }
+}
+
+// Общая печать всех операций — кнопка в шапке карточки результата (родитель
+// подставляет её через PrintAllButton). Стиль как у главной кнопки панели
+// распределения («Раздать дальше» — .submit в WorkStickerRoutePanel): заливка
+// цветом бренда, скругление, тень — но компактнее, это не главное действие.
+.printAllBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--third-color, #1455fe);
+  color: var(--button-text, #fff);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(20, 85, 254, 0.25);
+  transition:
+    filter 0.15s ease,
+    box-shadow 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    fill: currentColor;
+  }
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+}
+
+.actionBtnDanger {
+  color: #dc2626;
+
+  &:hover {
+    border-color: #dc2626;
+    background: #dc2626;
+    color: #fff;
+  }
+}
+
+
+// Много стикеров (до 200) не должны растягивать карточку — список скроллится.
+// Операции — отдельные карточки с небольшим зазором: границы групп видны сразу,
+// а места занимают лишь на 6px больше, чем сплошной список.
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.rowsFill {
+  max-height: none;
+}
+
+// flex-shrink: 0 — иначе при скролле карточки сжимались бы вместо прокрутки.
+// overflow: clip (не hidden) — скругляет углы, но не ломает sticky шапки.
+.group {
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  overflow: clip;
+}
+
+.groupScrap {
+  border-color: rgba(220, 38, 38, 0.35);
+}
+
+// Заголовок группы — название операции один раз на все стикеры под ним.
+// sticky: при прокрутке длинного списка операция остаётся на виду.
+.groupHeader {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding: 4px 8px 4px 10px;
+  border-bottom: 1px solid var(--border-color);
+  border-left: 3px solid var(--third-color, #1455fe);
+  // Полупрозрачный акцент поверх сплошного фона — иначе строки просвечивали бы
+  // сквозь sticky-заголовок.
+  background-color: var(--card-bg);
+  background-image: linear-gradient(rgba(20, 85, 254, 0.08), rgba(20, 85, 254, 0.08));
+  // Вся шапка кликабельна — сворачивает / раскрывает стикеры операции.
+  cursor: pointer;
+  user-select: none;
+}
+
+// Брак — красная группа, чтобы не спутать с обычными стикерами.
+.groupHeaderScrap {
+  border-left-color: #dc2626;
+  background-image: linear-gradient(rgba(220, 38, 38, 0.08), rgba(220, 38, 38, 0.08));
+
+  .groupName {
+    color: #dc2626;
+  }
+
+  .groupCount {
+    background: #dc2626;
+  }
+}
+
+.groupName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: calc(var(--font-small) + 3px);
+  font-weight: 700;
+  color: var(--third-color, #1455fe);
+}
+
+// Свёрнутая группа — только шапка, поэтому нижняя граница не нужна.
+.groupHeaderCollapsed {
+  border-bottom-color: transparent;
+}
+
+// Свернуть / раскрыть стикеры группы: шеврон вниз — раскрыто, вправо — свёрнуто.
+.toggleBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -4px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    color: var(--third-color, #1455fe);
+  }
+}
+
+.toggleBtnCollapsed svg {
+  transform: rotate(-90deg);
+}
+
+.groupCount {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--third-color, #1455fe);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+// Пометка "Исправление" рядом с названием операции.
+.groupTag {
+  flex-shrink: 0;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.groupTagIncomplete {
+  background: rgba(124, 58, 237, 0.14);
+  color: #7c3aed;
+}
+
+// Печать и PDF группы — справа в шапке.
+.groupActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.groupBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    border-color: var(--third-color, #1455fe);
+    color: var(--third-color, #1455fe);
+  }
+}
+
+// Печать — без заливки: контур и текст акцентного цвета.
+.groupBtnPrimary {
+  border-color: var(--third-color, #1455fe);
+  background: none;
+  color: var(--third-color, #1455fe);
+
+  &:hover {
+    background: rgba(20, 85, 254, 0.08);
+  }
+}
+
+// В группе брака кнопка печати красная — под цвет группы.
+.groupHeaderScrap .groupBtnPrimary {
+  border-color: #dc2626;
+  color: #dc2626;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.08);
+  }
+}
+
+// Стикеры значками: сетка сама подбирает число колонок под ширину карточки.
+.chips {
+  display: grid;
+  // 245px — самая узкая колонка, в которую ещё влезает чип целиком: на широкой
+  // карточке (≈1015px и больше) получается 4 в ряд, на узкой — меньше.
+  grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+  gap: 6px;
+  padding: 8px;
+
+  // display: grid выше перебивает атрибут hidden — свёрнутая группа прячется здесь.
+  &[hidden] {
+    display: none;
+  }
+}
+
+// Кнопки всегда видны, размер под палец: на POS-терминале нет мыши.
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  height: 42px;
+  padding: 0 5px 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+// Номер стикера в группе: мелкий, серый, цифры одной ширины — колонка не прыгает.
+.num {
+  flex-shrink: 0;
+  min-width: 20px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.qty {
+  margin-left: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+
+// Фиксированная ширина под 2 кнопки (3 с удалением) — количества не гуляют.
+// Одна кнопка (печать); с корзиной (canDelete) — две.
+.chipActions {
+  display: flex;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.chipActionsWide {
+  flex-basis: 68px;
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  cursor: pointer;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    color: var(--third-color);
+  }
+
+  &:active {
+    background: var(--border-color);
+  }
+}
+
+// Печать — главное действие: без заливки, выделена цветом иконки.
+.iconBtnPrimary {
+  color: var(--third-color, #1455fe);
+}
+
+.iconBtnDanger:hover {
+  color: #dc2626;
+}
+
+// В группе брака печать красная — под цвет группы.
+.groupScrap .iconBtnPrimary {
+  color: #dc2626;
+}
+
+.empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+}

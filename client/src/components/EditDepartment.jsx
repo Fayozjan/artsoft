@@ -2,95 +2,82 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 
 import { useAuthStore } from "../stores/authStore";
-
 import { useAlertStore } from "../stores/alertStore";
 
+import { editDepartmentById, getActiveBranches, getDepartmentById, getActivePositions } from "../api";
+import { getStaffingPositions, saveStaffingPositions } from "../api/staffingPosition";
+
 import Button from "./Button";
+import StaffingPicker from "./StaffingPicker";
 
 import styles from "./AddDepartment.module.scss";
 
-import {
-  editDepartmentById,
-  getActiveBranches,
-  getDepartmentById,
-} from "../api";
-
 const EditDepartment = ({ id, onSuccess }) => {
   const { showAlert } = useAlertStore();
-  const [formData, setFormData] = useState({
-    name: "",
-    branch_id: null,
-    status: null,
-  });
-
+  const [formData, setFormData] = useState({ name: "", branch_id: null, status: null });
   const [branches, setBranches] = useState([]);
   const [showAllBranches, setShowAllBranches] = useState(false);
+  const [allPositions, setAllPositions] = useState([]);
+  const [staffing, setStaffing] = useState([]);
+
   const userSettings = useAuthStore((state) => state.userSettings);
   const { i18n, t } = useTranslation();
 
   useEffect(() => {
-    if (userSettings?.language) {
-      i18n.changeLanguage(userSettings.language);
-    }
+    if (userSettings?.language) i18n.changeLanguage(userSettings.language);
   }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const branchesRes = await getActiveBranches();
-        if (branchesRes.success) {
-          setBranches(branchesRes.data);
-        } else {
-          console.error("Ошибка при получении списка филиалов");
-        }
-
-        const departmentRes = await getDepartmentById(id);
-        if (departmentRes.success) {
-          setFormData(departmentRes.data);
-        } else {
-          console.error("Ошибка при получении списка филиалов");
+        const [branchRes, deptRes, posRes, staffingRes] = await Promise.all([
+          getActiveBranches(),
+          getDepartmentById(id),
+          getActivePositions(),
+          getStaffingPositions(id),
+        ]);
+        if (branchRes.success) setBranches(branchRes.data);
+        if (deptRes.success) setFormData(deptRes.data);
+        if (posRes.success) setAllPositions(posRes.data);
+        if (staffingRes.success) {
+          setStaffing(
+            (staffingRes.data || []).map((s) => ({
+              position_id: Number(s.position_id),
+              position_name: s.position_name,
+              headcount: Number(s.headcount),
+            }))
+          );
         }
       } catch (error) {
-        console.error("Ошибка при загрузке данных:", error.message);
         showAlert(t("error"), "error");
-        setTimeout(() => cancelButton(), 1500);
       }
     };
-
     fetchData();
   }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
+    setFormData((prev) => ({
+      ...prev,
       [name]:
-        name === "branch_id"
-          ? Number(value)
-          : name === "status"
-          ? value === "true"
-          : value,
+        name === "branch_id" ? Number(value) :
+        name === "status" ? value === "true" :
+        value,
     }));
-  };
-
-  const handleBranchFocus = () => {
-    setShowAllBranches(true);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
-      const res = await editDepartmentById(id, formData);
-      if (res.success) {
+      const [deptRes] = await Promise.all([
+        editDepartmentById(id, formData),
+        saveStaffingPositions(id, staffing.map(({ position_id, headcount }) => ({ position_id, headcount }))),
+      ]);
+      if (deptRes.success) {
         showAlert(t("success"), "success");
         onSuccess();
       }
     } catch (error) {
-      console.error(
-        "Ошибка при обновлении данных:",
-        error.response ? error.response.data : error.message
-      );
       showAlert(t("error"), "error");
     }
   };
@@ -99,19 +86,13 @@ const EditDepartment = ({ id, onSuccess }) => {
     <form className={styles.addDepartment} onSubmit={handleSubmit}>
       <div className={styles.header}>
         <h2>{t("editDepartment")}</h2>
-        <Button text={t("save")} type={"submit"} />
+        <Button text={t("save")} type="submit" />
       </div>
 
       <div className={styles.row}>
         <div>
           <label>{t("name")}</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
+          <input type="text" name="name" value={formData.name} onChange={handleChange} required />
         </div>
       </div>
 
@@ -122,7 +103,7 @@ const EditDepartment = ({ id, onSuccess }) => {
             name="branch_id"
             value={formData.branch_id}
             onChange={handleChange}
-            onFocus={handleBranchFocus}
+            onFocus={() => setShowAllBranches(true)}
             required
           >
             {!showAllBranches && formData.branch_id ? (
@@ -130,14 +111,10 @@ const EditDepartment = ({ id, onSuccess }) => {
                 {branches.find((b) => b.id === formData.branch_id)?.name}
               </option>
             ) : (
-              <option value="" disabled>
-                {t("select")}
-              </option>
+              <option value="" disabled>{t("select")}</option>
             )}
-            {branches.map((branch) => (
-              <option key={branch.id} value={branch.id}>
-                {branch.name}
-              </option>
+            {branches.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
             ))}
           </select>
         </div>
@@ -152,6 +129,8 @@ const EditDepartment = ({ id, onSuccess }) => {
           </select>
         </div>
       </div>
+
+      <StaffingPicker allPositions={allPositions} staffing={staffing} onChange={setStaffing} />
     </form>
   );
 };

@@ -20,6 +20,8 @@ const AddBranch = ({ onSuccess }) => {
     bank_account: "",
     inn: "",
     mfo: "",
+    sort_order: "0",
+    status: true,
   });
   const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
@@ -43,7 +45,7 @@ const AddBranch = ({ onSuccess }) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
       ...prevData,
-      [name]: value,
+      [name]: name === "status" ? value === "true" : value,
     }));
   }, []);
 
@@ -170,6 +172,31 @@ const AddBranch = ({ onSuccess }) => {
             onChange={handleChange}
             disabled={loading}
           />
+        </div>
+      </div>
+      <div className={styles.row}>
+        <div>
+          <label>{t("sortOrder")}</label>
+          <input
+            type="number"
+            name="sort_order"
+            value={formData.sort_order}
+            onChange={handleChange}
+            min="0"
+            disabled={loading}
+          />
+        </div>
+        <div>
+          <label>{t("status")}</label>
+          <select
+            name="status"
+            value={formData.status}
+            onChange={handleChange}
+            disabled={loading}
+          >
+            <option value="true">{t("true")}</option>
+            <option value="false">{t("false")}</option>
+          </select>
         </div>
       </div>
     </form>

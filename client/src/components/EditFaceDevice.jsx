@@ -16,9 +16,11 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
     device_ip: "",
     port: 80,
     door_id: "",
+    mac_address: "",
     serial_number: "",
     password: "",
     is_local: true,
+    purpose: "access",
   });
   const [doors, setDoors] = useState();
   const { t } = useTranslation();
@@ -114,14 +116,27 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
 
       <div className={styles.row}>
         <div>
+          <label>{t("macAddress")}</label>
+          <input
+            type="text"
+            name="mac_address"
+            value={formData.mac_address ?? ""}
+            onChange={handleChange}
+            placeholder="ac:cb:51:00:00:00"
+          />
+        </div>
+        <div>
           <label>{t("serialNumber")}</label>
           <input
             type="text"
             name="serial_number"
-            value={formData.serial_number}
+            value={formData.serial_number ?? ""}
             onChange={handleChange}
           />
         </div>
+      </div>
+
+      <div className={styles.row}>
         <div>
           <label>{t("direction")}</label>
           <select
@@ -132,6 +147,17 @@ const EditFaceDevice = ({ id, handleClose, onSuccess }) => {
             <option value="entry">{t("entry")}</option>
             <option value="exit">{t("exit")}</option>
             <option value="universal">{t("universal")}</option>
+          </select>
+        </div>
+        <div>
+          <label>{t("devicePurpose")}</label>
+          <select
+            name="purpose"
+            value={formData?.purpose ?? "access"}
+            onChange={handleChange}
+          >
+            <option value="access">{t("purposeAccess")}</option>
+            <option value="canteen">{t("purposeCanteen")}</option>
           </select>
         </div>
       </div>

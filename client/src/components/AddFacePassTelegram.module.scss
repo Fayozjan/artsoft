@@ -2,13 +2,18 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #121212;
+  background: var(--tg-bg);
 }
 
 .scrollContent {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  // Ниже нативных кнопок Telegram (закрыть / меню) в fullscreen
+  padding: calc(
+      max(env(safe-area-inset-top, 0px), var(--tg-safe-area-inset-top, 0px)) +
+        var(--tg-content-safe-area-inset-top, 0px) + 16px
+    )
+    12px 12px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -18,49 +23,24 @@
   }
 }
 
-// ─── Лейбл направления ───
-.directionLabel {
-  display: flex;
-  justify-content: center;
-
-  .directionBadge {
-    display: inline-block;
-    padding: 8px 24px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.2px;
-
-    &.directionEntry {
-      background: rgba(74, 222, 128, 0.15);
-      color: #4ade80;
-      border: 1.5px solid rgba(74, 222, 128, 0.35);
-    }
-
-    &.directionExit {
-      background: rgba(248, 113, 113, 0.15);
-      color: #f87171;
-      border: 1.5px solid rgba(248, 113, 113, 0.35);
-    }
-  }
-}
-
-// ─── Камера ───
+// ─── Камера (остаётся тёмной — это viewport камеры) ───
 .cameraSection {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  justify-content: center;
   align-items: center;
 }
 
 .cameraContainer {
   position: relative;
+  flex: 1;
   width: 100%;
+  min-height: 320px;
   border-radius: 16px;
   overflow: hidden;
   background: #000;
-  aspect-ratio: 4 / 5;
 
   .videoFeed {
     width: 100%;
@@ -98,9 +78,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition:
-        transform 0.15s,
-        background 0.15s;
+      transition: transform 0.15s, background 0.15s;
 
       &:active {
         transform: scale(0.88);
@@ -113,41 +91,77 @@
 .cameraControls {
   display: flex;
   justify-content: center;
+  align-items: center;
   width: 100%;
+  min-height: 76px;
 
   .shutterBtn {
-    width: 68px;
-    height: 68px;
+    --shutter-color: #3a3a3c;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    padding: 0;
     border-radius: 50%;
-    border: 4px solid #454545;
-    border-style: double;
-    background: rgba(230, 230, 230, 0.9);
+    border: 4px solid var(--shutter-color);
+    background: transparent;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s ease;
+
+    // На тёмной теме тёмно-серый сливается с фоном — светлее
+    :global(html.dark) & {
+      --shutter-color: #8e8e93;
+    }
+
+    // Внутренний круг
+    &::after {
+      content: "";
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--shutter-color);
+      transition:
+        transform 0.15s ease,
+        opacity 0.15s ease;
+    }
+
     &:active {
-      transform: scale(0.95);
+      transform: scale(0.94);
+
+      &::after {
+        transform: scale(0.86);
+        opacity: 0.85;
+      }
     }
   }
 }
 
 // ─── Форма ───
 .formSection {
-  background: #1c1c1e;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 12px;
+  border: 0.5px solid var(--tg-separator);
+
   .inputGroup {
     label {
-      color: #8e8e93;
+      color: var(--text-secondary);
       font-size: 13px;
       display: block;
       margin-bottom: 4px;
     }
     .locationValue {
-      color: #fff;
+      color: var(--text-color);
       font-size: 15px;
       margin: 0;
       font-family: monospace;
     }
     .locationStatus {
-      color: #8e8e93;
+      color: var(--text-secondary);
       font-size: 14px;
       margin: 0;
     }
@@ -159,7 +173,7 @@
     .retryLocationBtn {
       background: none;
       border: none;
-      color: #007aff;
+      color: var(--third-color, #007aff);
       padding: 0;
       font-size: 14px;
     }
@@ -170,7 +184,8 @@
 .footer {
   padding: 12px 16px;
   padding-bottom: calc(env(safe-area-inset-bottom) + 12px);
-  background: rgba(28, 28, 30, 0.8);
+  background: var(--card-bg);
+  border-top: 0.5px solid var(--tg-separator);
   backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
@@ -182,14 +197,14 @@
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #9e9ea0;
+  color: var(--text-secondary);
 }
 
 .locationSpinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(158, 158, 160, 0.3);
-  border-top-color: #9e9ea0;
+  border: 2px solid var(--tg-separator);
+  border-top-color: var(--text-secondary);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
@@ -225,13 +240,20 @@
   height: 50px;
   border-radius: 12px;
   border: none;
-  background: #007aff;
+  background: var(--third-color, #007aff);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   transition: all 0.2s;
+  &.startBtn {
+    background: #16a34a;
+  }
   &.finishBtn {
     background: #ff3b30;
+  }
+  // направление ещё грузится — место занято, но кнопки не видно
+  &.pendingBtn {
+    visibility: hidden;
   }
   &:disabled {
     opacity: 0.4;

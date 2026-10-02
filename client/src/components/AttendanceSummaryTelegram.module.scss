@@ -1,0 +1,328 @@
+// Посещаемость в Telegram — сводка: кольцо явки и плитки статусов.
+
+// ── Hero ─────────────────────────────────────────────────────────────────────
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 4px 12px 0;
+  padding: 16px;
+  overflow: hidden;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 22px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 12px 28px -18px rgba(0, 0, 0, 0.25);
+
+  // мягкое свечение в углу — единственный декоративный акцент
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      110% 90% at 100% 0%,
+      rgba(20, 85, 254, 0.1),
+      transparent 60%
+    );
+    pointer-events: none;
+  }
+}
+
+.ring {
+  position: relative;
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--tg-bar-track);
+}
+
+.ringSegment {
+  fill: none;
+  stroke: rgb(var(--tone));
+  transition:
+    stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ringCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+
+  b {
+    font-size: 22px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.5px;
+    color: var(--text-color);
+  }
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+}
+
+.heroBody {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.heroCaption {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.heroValue {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 6px;
+
+  b {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -1px;
+    color: var(--text-color);
+  }
+
+  span {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+
+.heroNote {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgb(var(--tone));
+  }
+}
+
+// ── Плитки ───────────────────────────────────────────────────────────────────
+
+.tiles {
+  display: flex;
+  gap: 8px;
+  padding: 12px 12px 4px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 12px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tile {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 136px;
+  padding: 12px;
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  scroll-snap-align: start;
+}
+
+.tileButton {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.tileActive {
+  border-color: rgba(var(--tone), 0.55);
+  background: rgba(var(--tone), 0.12);
+}
+
+.tileTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.tileIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+
+  svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+.tileSub {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tileValue {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.6px;
+}
+
+.tileLabel {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tileTrack {
+  display: block;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tg-bar-track);
+}
+
+.tileFill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: rgb(var(--tone));
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// ── Скелетон ─────────────────────────────────────────────────────────────────
+
+.skeleton {
+  .heroBody {
+    gap: 10px;
+  }
+}
+
+.skBlock {
+  display: block;
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skRing {
+  flex-shrink: 0;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+
+.skTile {
+  flex: 0 0 auto;
+  width: 136px;
+  height: 108px;
+  border-radius: 18px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skBlock {
+    animation: none;
+  }
+
+  .ringSegment,
+  .tileFill {
+    transition: none;
+  }
+}

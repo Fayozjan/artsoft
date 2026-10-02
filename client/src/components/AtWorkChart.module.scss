@@ -1,4 +1,4 @@
-.tableWrapper {
+﻿.tableWrapper {
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -6,7 +6,7 @@
   min-height: 0;
   margin: 10px;
   padding: 5px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
@@ -77,6 +77,13 @@
     font-weight: 700;
   }
 
+  .headerContent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
   :nth-child(1) {
     text-align: center;
   }
@@ -130,7 +137,7 @@
 }
 
 .tooltip {
-  background: white;
+  background: var(--card-bg);
   padding: 0.75rem;
   border-radius: 0.25rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);

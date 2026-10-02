@@ -9,25 +9,44 @@
 
   .main {
     padding: 2px;
-    background-color: white;
+    background-color: var(--card-bg);
     display: flex;
     flex-direction: column;
     border-radius: 4px;
     height: 100%;
     min-height: 0;
 
+    .statsGridWrap {
+      display: grid;
+      grid-template-rows: 1fr;
+      flex-shrink: 0;
+      opacity: 1;
+      transition:
+        grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.28s ease;
+    }
+
+    .statsGridWrapHidden {
+      grid-template-rows: 0fr;
+      opacity: 0;
+    }
+
+    .statsGridInner {
+      overflow: hidden;
+      min-height: 0;
+    }
+
     .statsGrid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 7px;
       padding: 6px 5px 3px;
-      flex-shrink: 0;
     }
 
     .statWidget {
       position: relative;
-      background: white;
-      border: 1px solid #e2e8f0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
       border-radius: 8px;
       padding: 8px 11px;
       display: flex;
@@ -66,7 +85,7 @@
 
     .statWidgetLabel {
       font-size: 12px;
-      color: #64748b;
+      color: var(--text-secondary);
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
@@ -83,12 +102,12 @@
     .statWidgetSub {
       font-size: 12px;
       font-weight: 500;
-      color: #94a3b8;
+      color: var(--placeholder-color);
     }
 
     .statWidgetProgressTrack {
       height: 3px;
-      background: #f1f5f9;
+      background: var(--bg-light);
       border-radius: 2px;
       overflow: hidden;
     }
@@ -97,6 +116,33 @@
       height: 100%;
       border-radius: 2px;
       transition: width 0.4s ease;
+    }
+
+    // Подпись «за какой период» над таблицей в режиме «за период»
+    .periodCaption {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 5px 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      background: var(--table-header);
+      font-size: var(--font-small);
+      flex-shrink: 0;
+    }
+
+    .periodCaptionLabel {
+      color: var(--placeholder-color);
+      text-transform: uppercase;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .periodCaptionValue {
+      font-weight: 600;
+      color: var(--text-color);
     }
 
     .mainHeader {
@@ -170,7 +216,7 @@
           border: 1px solid rgba(162, 161, 168, 0.4);
           cursor: pointer;
           box-sizing: border-box;
-          background-color: white;
+          background-color: var(--card-bg);
         }
 
         .autoRefresh {
@@ -186,13 +232,13 @@
           border: 1px solid rgba(162, 161, 168, 0.4);
           cursor: pointer;
           box-sizing: border-box;
-          background-color: white;
+          background-color: var(--card-bg);
 
           .toggle {
             width: 40px;
             height: 20px;
             appearance: none;
-            background: #ccc;
+            background: var(--border-color);
             border-radius: 20px;
             position: relative;
             cursor: pointer;
@@ -207,7 +253,7 @@
               position: absolute;
               width: 18px;
               height: 18px;
-              background: white;
+              background: var(--card-bg);
               border-radius: 50%;
               top: 1px;
               left: 1px;
@@ -234,7 +280,7 @@
           border: 1px solid rgba(162, 161, 168, 0.4);
           cursor: pointer;
           box-sizing: border-box;
-          background-color: white;
+          background-color: var(--card-bg);
 
           svg {
             width: 18px;
@@ -253,8 +299,8 @@
           .loader {
             width: 20px;
             height: 20px;
-            border: 3px solid #ccc;
-            border-top-color: #000;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--text-color);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
           }
@@ -266,42 +312,6 @@
           }
         }
       }
-    }
-
-    .empCell {
-      padding-left: 8px;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 10px;
-      text-align: left;
-      min-width: 160px;
-
-      img {
-        flex-shrink: 0;
-        width: 35px;
-        min-width: 35px;
-        height: 35px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-sizing: border-box;
-      }
-    }
-
-    .empInfo {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .empName {
-      font-weight: 600;
-      color: #1e293b;
-    }
-
-    .empSub {
-      font-size: 11px;
-      color: #94a3b8;
     }
 
     .btnMore {
@@ -335,7 +345,7 @@
     .timeMain {
       font-size: 13px;
       font-weight: 600;
-      color: #1a1a1a;
+      color: var(--text-color);
       white-space: nowrap;
     }
 
@@ -369,6 +379,22 @@
       background: rgba(220, 38, 38, 0.1);
       color: #dc2626;
       border: 1px solid rgba(220, 38, 38, 0.2);
+    }
+
+    .latePhotoThumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      display: block;
+      margin: 0 auto;
+      cursor: pointer;
+      border: 1px solid var(--border-color, #e2e8f0);
+      transition: transform 0.15s ease;
+
+      &:hover {
+        transform: scale(1.06);
+      }
     }
 
     .photoLink {

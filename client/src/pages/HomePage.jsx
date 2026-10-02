@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { t as i18t } from "i18next";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -18,9 +17,6 @@ import {
   ChevronDown,
   ChevronUp,
   MapPin,
-  RefreshCw,
-  Search,
-  X,
   Briefcase,
   Wallet,
   CheckSquare,
@@ -48,10 +44,11 @@ import {
   Legend,
 } from "recharts";
 import { getDashboardAll } from "../api/dashboard";
+import { getDepartmentsStaffingOverview } from "../api/departments";
 import { getAttendance } from "../api/attendance";
 import { getEmploymentOrders } from "../api/employmentOrders";
-import { EmployeeService } from "../api";
 import { useAuthStore } from "../stores/authStore";
+import { useHideBranch } from "../hooks/useHideBranch";
 import styles from "./HomePage.module.scss";
 
 // ─── Design tokens ──────────────────────────────────────────────────────────────
@@ -335,32 +332,6 @@ const Card = ({
   </motion.div>
 );
 
-// ─── Placeholder card ───────────────────────────────────────────────────────────
-const PlaceholderCard = ({ title, icon: Icon, iconColor, t }) => (
-  <motion.div variants={rowFade} className={styles.card}>
-    <div className={styles.cardHeader}>
-      <div className={styles.cardTitleRow}>
-        {Icon && (
-          <span
-            className={styles.cardIconWrap}
-            style={{ background: iconColor + "15", color: iconColor }}
-          >
-            <Icon size={15} strokeWidth={2.2} />
-          </span>
-        )}
-        <h3 className={styles.cardTitle}>{title}</h3>
-      </div>
-    </div>
-    <div className={styles.cardBody}>
-      <div className={styles.placeholderBody}>
-        <span className={styles.placeholderBadge}>
-          {t("dashboard.comingSoon")}
-        </span>
-      </div>
-    </div>
-  </motion.div>
-);
-
 // ─── Dashboard section wrapper ──────────────────────────────────────────────────
 const DashboardSection = ({ title, icon: Icon, iconColor, children }) => (
   <div className={styles.section}>
@@ -495,6 +466,9 @@ const attInitials = (fullName) => {
 const fullName = (e) =>
   [e?.last_name, e?.first_name].filter(Boolean).join(" ") || "—";
 
+const empSub = (branch, department, hideBranch) =>
+  [hideBranch ? null : branch, department].filter(Boolean).join(" / ");
+
 // ─── Pass feed item ──────────────────────────────────────────────────────────────
 const DIRECTION_STYLE = {
   entry: {
@@ -526,45 +500,58 @@ const DIRECTION_STYLE = {
 
 const PassItem = ({ item, t, isVehicle }) => {
   const dir = DIRECTION_STYLE[item.direction] ?? DIRECTION_STYLE.unknown;
-  const imgSrc = isVehicle
-    ? item.photo
-      ? `/api/vehicle-passes/image/${item.photo}`
-      : null
-    : item.photo
-      ? `/api/face-passes/image/${item.photo}`
-      : item.employee?.photo
-        ? `/api/employees/image/${item.employee.photo}`
-        : null;
+  const hideBranch = useHideBranch();
+
+  if (isVehicle) {
+    const imgSrc = item.photo ? `/api/vehicle-passes/image/${item.photo}` : null;
+    return (
+      <div className={styles.feedItem}>
+        <div className={`${styles.feedAvatar} ${styles.feedAvatarCar}`}>
+          {imgSrc ? <img src={imgSrc} alt="" /> : <Car size={16} strokeWidth={1.5} />}
+        </div>
+        <div className={styles.feedInfo}>
+          <span className={styles.feedName}>{item.plate_number || "—"}</span>
+          <span className={styles.feedSub}>{item.gate?.name || "—"}</span>
+        </div>
+        <div className={styles.feedRight}>
+          <span className={styles.feedDateTime}>{fmtDateTime(item.date)}</span>
+          <span className={styles[dir.badge]}>{t(dir.key)}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const imgSrc = item.photo
+    ? `/api/face-passes/image/${item.photo}`
+    : item.employee?.photo
+      ? `/api/employees/image/${item.employee.photo}`
+      : null;
 
   return (
     <div className={styles.feedItem}>
-      <div
-        className={`${styles.feedAvatar} ${isVehicle ? styles.feedAvatarCar : ""}`}
-        style={isVehicle ? {} : { background: dir.bg }}
-      >
-        {imgSrc ? (
-          <img src={imgSrc} alt="" />
-        ) : isVehicle ? (
-          <Car size={16} strokeWidth={1.5} />
-        ) : (
-          <span className={styles.feedInitials}>{initials(item.employee)}</span>
-        )}
-      </div>
-      <div className={styles.feedInfo}>
-        <span className={styles.feedName}>
-          {isVehicle
-            ? item.plate_number || "—"
-            : `${fullName(item.employee)} (${item.employee?.id || item.employee_id})`}
-        </span>
-        <span className={styles.feedSub}>
-          {isVehicle
-            ? item.gate?.name || "—"
-            : [item.employee?.branch?.name, item.employee?.department?.name]
-                .filter(Boolean)
-                .join(" / ") ||
+      <div className={styles.empCell}>
+        <div className={styles.empAvatar}>
+          {imgSrc ? (
+            <img src={imgSrc} alt="" className={styles.empPhoto} />
+          ) : (
+            <div className={styles.empInitials}>{initials(item.employee)}</div>
+          )}
+        </div>
+        <div className={styles.empInfo}>
+          <span className={styles.empName}>
+            {fullName(item.employee)}
+            <span className={styles.empId}> ({item.employee?.id || item.employee_id})</span>
+          </span>
+          <span className={styles.empSub}>
+            {empSub(
+              item.employee?.branch?.name,
+              item.employee?.department?.name,
+              hideBranch,
+            ) ||
               item.door?.name ||
               "—"}
-        </span>
+          </span>
+        </div>
       </div>
       <div className={styles.feedRight}>
         <span className={styles.feedDateTime}>{fmtDateTime(item.date)}</span>
@@ -575,24 +562,32 @@ const PassItem = ({ item, t, isVehicle }) => {
 };
 
 // ─── Time-off item ───────────────────────────────────────────────────────────────
-const TimeOffItem = ({ item, t }) => (
+const TimeOffItem = ({ item, t }) => {
+  const hideBranch = useHideBranch();
+  return (
   <div className={styles.feedItem}>
-    <div
-      className={styles.feedAvatar}
-      style={{ background: "linear-gradient(135deg,#ef4444,#dc2626)" }}
-    >
-      <span className={styles.feedInitials}>{initials(item.employee)}</span>
-    </div>
-    <div className={styles.feedInfo}>
-      <span
-        className={styles.feedName}
-      >{`${fullName(item.employee)} (${item.employee.id})`}</span>
-      <span className={styles.feedSub}>
-        {[item.employee?.branch?.name, item.employee?.department?.name]
-          .filter(Boolean)
-          .join(" / ") || "—"}
-      </span>
-      <span className={styles.feedSub}>{item.reason || "—"}</span>
+    <div className={styles.empCell}>
+      <div className={styles.empAvatar}>
+        {item.employee?.photo ? (
+          <img src={`/api/employees/image/${item.employee.photo}`} alt="" className={styles.empPhoto} />
+        ) : (
+          <div className={styles.empInitials}>{initials(item.employee)}</div>
+        )}
+      </div>
+      <div className={styles.empInfo}>
+        <span className={styles.empName}>
+          {fullName(item.employee)}
+          <span className={styles.empId}> ({item.employee.id})</span>
+        </span>
+        <span className={styles.empSub}>
+          {empSub(
+            item.employee?.branch?.name,
+            item.employee?.department?.name,
+            hideBranch,
+          ) || "—"}
+        </span>
+        <span className={styles.empSub}>{item.reason || "—"}</span>
+      </div>
     </div>
     <div className={styles.feedRight}>
       <span className={styles.feedDateTime}>
@@ -601,29 +596,32 @@ const TimeOffItem = ({ item, t }) => (
       <span className={styles.badgeTimeOff}>{t(item.type) || item.type}</span>
     </div>
   </div>
-);
+  );
+};
 
 // ─── Birthday item ───────────────────────────────────────────────────────────────
 const BirthdayItem = ({ item, t }) => {
   const isToday = item.daysLeft === 0;
+  const hideBranch = useHideBranch();
   return (
     <div className={`${styles.bdayItem} ${isToday ? styles.bdayToday : ""}`}>
-      <div className={styles.bdayAvatar}>
-        {item.photo ? (
-          <img src={`/api/employees/image/${item.photo}`} alt="" />
-        ) : (
-          <span>{initials(item)}</span>
-        )}
-      </div>
-      <div className={styles.bdayInfo}>
-        <span
-          className={styles.bdayName}
-        >{`${fullName(item)} (${item.id})`}</span>
-        <span className={styles.bdayDept}>
-          {[item.branch?.name, item.department?.name]
-            .filter(Boolean)
-            .join(" / ") || "—"}
-        </span>
+      <div className={styles.empCell}>
+        <div className={styles.empAvatar}>
+          {item.photo ? (
+            <img src={`/api/employees/image/${item.photo}`} alt="" className={styles.empPhoto} />
+          ) : (
+            <div className={styles.empInitials}>{initials(item)}</div>
+          )}
+        </div>
+        <div className={styles.empInfo}>
+          <span className={styles.empName}>
+            {fullName(item)}
+            <span className={styles.empId}> ({item.id})</span>
+          </span>
+          <span className={styles.empSub}>
+            {empSub(item.branch?.name, item.department?.name, hideBranch) || "—"}
+          </span>
+        </div>
       </div>
       <div className={styles.bdayRight}>
         <span className={styles.bdayDate}>
@@ -647,66 +645,33 @@ const BirthdayItem = ({ item, t }) => {
 // ─── Payment item ────────────────────────────────────────────────────────────────
 const PaymentItem = ({ item }) => {
   const emp = item.item?.employee;
+  const hideBranch = useHideBranch();
   return (
     <div className={styles.feedItem}>
-      <div
-        className={styles.feedAvatar}
-        style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}
-      >
-        <span className={styles.feedInitials}>{initials(emp)}</span>
-      </div>
-      <div className={styles.feedInfo}>
-        <span className={styles.feedName}>
-          {fullName(emp)}
-          {emp?.id ? ` (${emp.id})` : ""}
-        </span>
-        <span className={styles.feedSub}>
-          {[emp?.branch?.name, emp?.department?.name]
-            .filter(Boolean)
-            .join(" / ") || "—"}
-        </span>
-        {item.note && <span className={styles.feedSub}>{item.note}</span>}
+      <div className={styles.empCell}>
+        <div className={styles.empAvatar}>
+          {emp?.photo ? (
+            <img src={`/api/employees/image/${emp.photo}`} alt="" className={styles.empPhoto} />
+          ) : (
+            <div className={styles.empInitials}>{initials(emp)}</div>
+          )}
+        </div>
+        <div className={styles.empInfo}>
+          <span className={styles.empName}>
+            {fullName(emp)}
+            {emp?.id ? <span className={styles.empId}> ({emp.id})</span> : ""}
+          </span>
+          <span className={styles.empSub}>
+            {empSub(emp?.branch?.name, emp?.department?.name, hideBranch) || "—"}
+          </span>
+          {item.note && <span className={styles.empSub}>{item.note}</span>}
+        </div>
       </div>
       <div className={styles.feedRight}>
         <span className={styles.feedDateTime}>
           {fmtDateShort(item.payment_date)}
         </span>
         <span style={{ color: "#10b981", fontWeight: 600, fontSize: 13 }}>
-          {Number(item.amount).toLocaleString("ru-RU")}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-// ─── Advance item ────────────────────────────────────────────────────────────────
-const AdvanceItem = ({ item }) => {
-  const emp = item.employee;
-  return (
-    <div className={styles.feedItem}>
-      <div
-        className={styles.feedAvatar}
-        style={{ background: "linear-gradient(135deg,#f59e0b,#d97706)" }}
-      >
-        <span className={styles.feedInitials}>{initials(emp)}</span>
-      </div>
-      <div className={styles.feedInfo}>
-        <span className={styles.feedName}>
-          {fullName(emp)}
-          {emp?.id ? ` (${emp.id})` : ""}
-        </span>
-        <span className={styles.feedSub}>
-          {[emp?.branch?.name, emp?.department?.name]
-            .filter(Boolean)
-            .join(" / ") || "—"}
-        </span>
-        {item.note && <span className={styles.feedSub}>{item.note}</span>}
-      </div>
-      <div className={styles.feedRight}>
-        <span className={styles.feedDateTime}>
-          {fmtDateShort(item.advance_date)}
-        </span>
-        <span style={{ color: "#f59e0b", fontWeight: 600, fontSize: 13 }}>
           {Number(item.amount).toLocaleString("ru-RU")}
         </span>
       </div>
@@ -736,6 +701,121 @@ const SalaryBar = ({ label, total, max, delay = 0 }) => {
   );
 };
 
+// ─── Tasks ───────────────────────────────────────────────────────────────────────
+const TASK_STATUS_COLORS = {
+  draft: "#94a3b8",
+  assigned: "#f59e0b",
+  in_progress: "#3b82f6",
+  done: "#10b981",
+  confirmed: "#6366f1",
+  cancelled: "#ef4444",
+};
+
+const TASK_PRIORITY_COLORS = {
+  low: "#10b981",
+  medium: "#f59e0b",
+  high: "#ef4444",
+};
+
+const taskAssigneeName = (task) => {
+  if (task.assignee_employee) return fullName(task.assignee_employee);
+  return (
+    task.assignee_department?.name ||
+    task.assignee_position?.name ||
+    task.assignee_user?.username ||
+    "—"
+  );
+};
+
+const daysUntil = (date) => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((d - today) / 86400000);
+};
+
+const TaskItem = ({ task, t, showDeadline = false }) => {
+  const hideBranch = useHideBranch();
+  const emp = task.assignee_employee;
+  const statusColor = TASK_STATUS_COLORS[task.status] || "#94a3b8";
+  const priorityColor = TASK_PRIORITY_COLORS[task.priority] || "#f59e0b";
+  const sub = emp
+    ? empSub(emp.branch?.name, emp.department?.name, hideBranch)
+    : null;
+  const left = showDeadline && task.deadline ? daysUntil(task.deadline) : null;
+
+  return (
+    <div className={styles.taskItem}>
+      <span
+        className={styles.taskPriority}
+        style={{ background: priorityColor }}
+        title={t(`priority.${task.priority}`)}
+      />
+      <div className={styles.empAvatar}>
+        {emp?.photo ? (
+          <img
+            src={`/api/employees/image/${emp.photo}`}
+            alt=""
+            className={styles.empPhoto}
+          />
+        ) : (
+          <div className={styles.empInitials}>
+            {emp ? initials(emp) : <CheckSquare size={15} strokeWidth={2} />}
+          </div>
+        )}
+      </div>
+      <div className={styles.taskMain}>
+        <span className={styles.taskTitle}>{task.title}</span>
+        <span className={styles.empSub}>
+          {[taskAssigneeName(task), sub].filter(Boolean).join(" / ")}
+        </span>
+      </div>
+      <div className={styles.feedRight}>
+        <span className={styles.feedDateTime}>
+          {fmtDateShort(showDeadline ? task.deadline : task.created_at)}
+        </span>
+        {showDeadline ? (
+          <span
+            className={`${styles.taskDays} ${left <= 1 ? styles.taskDaysSoon : ""}`}
+          >
+            {left <= 0
+              ? t("dashboard.today")
+              : t("dashboard.inDays", { count: left })}
+          </span>
+        ) : (
+          <span
+            className={styles.taskBadge}
+            style={{
+              background: `${statusColor}1f`,
+              color: statusColor,
+              borderColor: `${statusColor}3d`,
+            }}
+          >
+            {t(`status.${task.status}`)}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const TaskStatusBar = ({ label, count, max, color, delay = 0 }) => (
+  <div className={styles.hbarRow}>
+    <span className={styles.hbarLabel}>{label}</span>
+    <div className={styles.hbarTrack}>
+      <motion.div
+        className={styles.hbarFill}
+        style={{ background: `linear-gradient(90deg,${color},${color}aa)` }}
+        initial={{ width: 0 }}
+        animate={{ width: max > 0 ? `${(count / max) * 100}%` : 0 }}
+        transition={{ duration: 0.7, ease: "easeOut", delay }}
+      />
+    </div>
+    <span className={styles.hbarCount}>{count}</span>
+  </div>
+);
+
 // ─── Pie legend with expand ──────────────────────────────────────────────────────
 const PieLegend = ({ data, nameKey = "branch" }) => {
   const use2Col = data.length > 5;
@@ -760,32 +840,39 @@ const PieLegend = ({ data, nameKey = "branch" }) => {
 };
 
 // ─── Top arrivals/departures list ────────────────────────────────────────────────
-const ArrivalItem = ({ item, timeKey, label }) => (
+const ArrivalItem = ({ item, timeKey, label }) => {
+  const hideBranch = useHideBranch();
+  return (
   <div className={styles.arrItem}>
-    <div className={styles.arrAvatar}>
-      {item.employee?.photo ? (
-        <img src={`/api/employees/image/${item.employee.photo}`} alt="" />
-      ) : (
-        <span>{initials(item.employee)}</span>
-      )}
-    </div>
-    <div className={styles.arrInfo}>
-      <span className={styles.arrName}>
-        {fullName(item.employee)}
-        {item.employee?.id ? ` (${item.employee.id})` : ""}
-      </span>
-      <span className={styles.arrDept}>
-        {[item.employee?.branch?.name, item.employee?.department?.name]
-          .filter(Boolean)
-          .join(" / ") || "—"}
-      </span>
+    <div className={styles.empCell}>
+      <div className={styles.empAvatar}>
+        {item.employee?.photo ? (
+          <img src={`/api/employees/image/${item.employee.photo}`} alt="" className={styles.empPhoto} />
+        ) : (
+          <div className={styles.empInitials}>{initials(item.employee)}</div>
+        )}
+      </div>
+      <div className={styles.empInfo}>
+        <span className={styles.empName}>
+          {fullName(item.employee)}
+          {item.employee?.id ? <span className={styles.empId}> ({item.employee.id})</span> : ""}
+        </span>
+        <span className={styles.empSub}>
+          {empSub(
+            item.employee?.branch?.name,
+            item.employee?.department?.name,
+            hideBranch,
+          ) || "—"}
+        </span>
+      </div>
     </div>
     <div className={styles.arrTime}>
       <span className={styles.arrTimeVal}>{fmtTime(item[timeKey])}</span>
       <span className={styles.arrTimeLabel}>{label}</span>
     </div>
   </div>
-);
+  );
+};
 
 // ─── Time helpers for attendance module (HH:MM strings or ISO datetimes) ────────
 const fmtTimeOrStr = (val) => {
@@ -806,23 +893,28 @@ const fmtLateMin = (mins) => {
 };
 
 // ─── Late item (schedule / actual / late minutes) ─────────────────────────────────
-const LateItem = ({ emp }) => (
+const LateItem = ({ emp }) => {
+  const hideBranch = useHideBranch();
+  return (
   <div className={styles.lateItem}>
-    <div className={styles.arrAvatar}>
-      {emp.employeePhoto ? (
-        <img src={`/api/employees/image/${emp.employeePhoto}`} alt="" />
-      ) : (
-        <span>{attInitials(emp.employeeFullName)}</span>
-      )}
+    <div className={styles.empCell}>
+      <div className={styles.empAvatar}>
+        {emp.employeePhoto ? (
+          <img src={`/api/employees/image/${emp.employeePhoto}`} alt="" className={styles.empPhoto} />
+        ) : (
+          <div className={styles.empInitials}>{attInitials(emp.employeeFullName)}</div>
+        )}
+      </div>
+      <div className={styles.empInfo}>
+        <span className={styles.empName}>
+          {(emp.employeeFullName || "—").replace(/\s*\(\d+\)\s*$/, "")}
+          {emp.employeeId ? <span className={styles.empId}> ({emp.employeeId})</span> : ""}
+        </span>
+        <span className={styles.empSub}>
+          {empSub(emp.branchName, emp.departmentName, hideBranch) || "—"}
+        </span>
+      </div>
     </div>
-    <div className={styles.lateInfo}>
-      <span className={styles.arrName}>{emp.employeeFullName || "—"}</span>
-      <span className={styles.arrDept}>
-        {[emp.branchName, emp.departmentName].filter(Boolean).join(" / ") ||
-          "—"}
-      </span>
-    </div>
-
     <div className={styles.lateTimes}>
       <span className={styles.lateTimeChip}>
         <span className={styles.lateTimeLbl}>{i18t("scheduleLabel")}</span>
@@ -837,24 +929,31 @@ const LateItem = ({ emp }) => (
       )}
     </div>
   </div>
-);
+  );
+};
 
 // ─── Attendance list item (attendance module data shape) ─────────────────────────
-const AttItem = ({ emp, timeVal, timeLabel }) => (
+const AttItem = ({ emp, timeVal, timeLabel }) => {
+  const hideBranch = useHideBranch();
+  return (
   <div className={styles.arrItem}>
-    <div className={styles.arrAvatar}>
-      {emp.employeePhoto ? (
-        <img src={`/api/employees/image/${emp.employeePhoto}`} alt="" />
-      ) : (
-        <span>{attInitials(emp.employeeFullName)}</span>
-      )}
-    </div>
-    <div className={styles.arrInfo}>
-      <span className={styles.arrName}>{emp.employeeFullName || "—"}</span>
-      <span className={styles.arrDept}>
-        {[emp.branchName, emp.departmentName].filter(Boolean).join(" / ") ||
-          "—"}
-      </span>
+    <div className={styles.empCell}>
+      <div className={styles.empAvatar}>
+        {emp.employeePhoto ? (
+          <img src={`/api/employees/image/${emp.employeePhoto}`} alt="" className={styles.empPhoto} />
+        ) : (
+          <div className={styles.empInitials}>{attInitials(emp.employeeFullName)}</div>
+        )}
+      </div>
+      <div className={styles.empInfo}>
+        <span className={styles.empName}>
+          {(emp.employeeFullName || "—").replace(/\s*\(\d+\)\s*$/, "")}
+          {emp.employeeId ? <span className={styles.empId}> ({emp.employeeId})</span> : ""}
+        </span>
+        <span className={styles.empSub}>
+          {empSub(emp.branchName, emp.departmentName, hideBranch) || "—"}
+        </span>
+      </div>
     </div>
     {timeVal && (
       <div className={styles.arrTime}>
@@ -863,213 +962,6 @@ const AttItem = ({ emp, timeVal, timeLabel }) => (
       </div>
     )}
   </div>
-);
-
-// ─── Quick search overlay ────────────────────────────────────────────────────────
-const QuickSearch = ({ open, onClose, menuItems, t }) => {
-  const navigate = useNavigate();
-  const [q, setQ] = useState("");
-  const [employees, setEmployees] = useState([]);
-  const [empLoading, setEmpLoading] = useState(false);
-  const inputRef = useRef(null);
-
-  useEffect(() => {
-    if (open) {
-      setQ("");
-      setEmployees([]);
-      setTimeout(() => inputRef.current?.focus(), 60);
-    }
-  }, [open]);
-
-  useEffect(() => {
-    if (!q.trim() || q.trim().length < 2) {
-      setEmployees([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setEmpLoading(true);
-      try {
-        const { data } = await EmployeeService.getAll({
-          search: q.trim(),
-          pageSize: 5,
-        });
-        setEmployees(data || []);
-      } catch {
-        setEmployees([]);
-      } finally {
-        setEmpLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [q]);
-
-  const pageResults = q.trim()
-    ? menuItems.filter((m) =>
-        (m.name || "").toLowerCase().includes(q.toLowerCase()),
-      )
-    : menuItems.slice(0, 8);
-
-  const select = (path) => {
-    navigate(path);
-    onClose();
-  };
-
-  const empFullName = (emp) =>
-    [emp.last_name, emp.first_name, emp.middle_name]
-      .filter(Boolean)
-      .join(" ") || "—";
-
-  const hasResults = employees.length > 0 || pageResults.length > 0;
-
-  return (
-    <AnimatePresence>
-      {open && (
-        <motion.div
-          className={styles.searchOverlay}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          onClick={onClose}
-        >
-          <motion.div
-            className={styles.searchBox}
-            initial={{ opacity: 0, scale: 0.96, y: -12 }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              y: 0,
-              transition: { duration: 0.22 },
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.96,
-              y: -12,
-              transition: { duration: 0.15 },
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className={styles.searchInputRow}>
-              <Search size={16} className={styles.searchIcon} />
-              <input
-                ref={inputRef}
-                className={styles.searchInput}
-                placeholder={t("dashboard.searchPlaceholder")}
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-              />
-              {q && (
-                <button className={styles.searchClear} onClick={() => setQ("")}>
-                  <X size={14} />
-                </button>
-              )}
-              <kbd className={styles.searchEsc}>Esc</kbd>
-            </div>
-            <div className={styles.searchResults}>
-              {employees.length > 0 && (
-                <>
-                  <div className={styles.searchSectionLabel}>
-                    {t("employees")}
-                  </div>
-                  {employees.map((emp) => (
-                    <button
-                      key={emp.id}
-                      className={styles.searchResultItem}
-                      onClick={() => select("/employees")}
-                    >
-                      <UserCircle
-                        size={13}
-                        className={styles.searchResultIcon}
-                      />
-                      <span>{empFullName(emp)}</span>
-                      <span className={styles.searchResultPath}>
-                        #{emp.id}
-                        {emp.department?.name
-                          ? ` · ${emp.department.name}`
-                          : ""}
-                      </span>
-                    </button>
-                  ))}
-                </>
-              )}
-
-              {pageResults.length > 0 && (
-                <>
-                  {employees.length > 0 && (
-                    <div className={styles.searchSectionLabel}>
-                      {t("dashboard.pages") || "Страницы"}
-                    </div>
-                  )}
-                  {pageResults.map((m, i) => (
-                    <button
-                      key={i}
-                      className={styles.searchResultItem}
-                      onClick={() => select(m.path)}
-                    >
-                      <Zap size={13} className={styles.searchResultIcon} />
-                      <span>{t(m.name) || m.name}</span>
-                      <span className={styles.searchResultPath}>{m.path}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-
-              {empLoading && <div className={styles.searchEmpty}>...</div>}
-
-              {!empLoading && q.trim().length >= 2 && !hasResults && (
-                <div className={styles.searchEmpty}>
-                  {t("dashboard.noSearchResults")}
-                </div>
-              )}
-
-              {!q.trim() && pageResults.length === 0 && (
-                <div className={styles.searchEmpty}>
-                  {t("dashboard.noSearchResults")}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
-
-// ─── Greeting ───────────────────────────────────────────────────────────────────
-const Greeting = ({ user, t, onRefresh, refreshing, onSearch }) => {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("ru-RU", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  return (
-    <motion.div className={styles.greeting} variants={rowFade}>
-      <div className={styles.greetingLeft}>
-        <div className={styles.greetingText}>
-          <span className={styles.greetingHi}>
-            {t(`dashboard.greeting`)}
-            {user?.first_name ? `, ${user.first_name}` : ""}! 👋
-          </span>
-        </div>
-        <span className={styles.greetingDate}>{dateStr}</span>
-      </div>
-
-      <div className={styles.greetingActions}>
-        <button className={styles.searchTriggerBtn} onClick={onSearch}>
-          <Search size={18} />
-          <span>{t("dashboard.quickSearch")}</span>
-        </button>
-        <button
-          className={`${styles.refreshBtn} ${refreshing ? styles.refreshBtnSpin : ""}`}
-          onClick={onRefresh}
-          title={t("dashboard.refresh")}
-        >
-          <RefreshCw size={15} />
-        </button>
-      </div>
-    </motion.div>
   );
 };
 
@@ -1078,20 +970,20 @@ const HomePage = () => {
   const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const access = useAuthStore((s) => s.access);
+  const { viewMode, activeBranchId } = useAuthStore((s) => s.userSettings) || {};
 
   const [summary, setSummary] = useState(null);
   const [analytics, setAnalytics] = useState(null);
   const [feeds, setFeeds] = useState(null);
   const [finance, setFinance] = useState(null);
+  const [tasksData, setTasksData] = useState(null);
   const [attendanceData, setAttendanceData] = useState(null);
   const [sumLoading, setSumLoading] = useState(true);
   const [anaLoading, setAnaLoading] = useState(true);
   const [feedLoading, setFeedLoading] = useState(true);
   const [finLoading, setFinLoading] = useState(true);
+  const [tasksLoading, setTasksLoading] = useState(true);
   const [attLoading, setAttLoading] = useState(true);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const [attendancePeriod, setAttendancePeriod] = useState("week");
   const [hiringPeriod, setHiringPeriod] = useState("month");
   const [selectedBranch, setSelectedBranch] = useState("all");
@@ -1099,6 +991,8 @@ const HomePage = () => {
   const [newEmployees, setNewEmployees] = useState([]);
   const [terminatedEmployees, setTerminatedEmployees] = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
+  const [vacanciesCount, setVacanciesCount] = useState(null);
+  const [vacLoading, setVacLoading] = useState(true);
   const branchDropRef = useRef(null);
 
   // ── access helpers ────────────────────────────────────────────────────────────
@@ -1110,8 +1004,9 @@ const HomePage = () => {
   const hasVehicleAccess =
     access?.menu?.some((m) => m.path?.includes("vehicle-passes")) ?? true;
 
-  // ── menu items for search ─────────────────────────────────────────────────────
-  const menuItems = access?.menu?.filter((m) => m.path) ?? [];
+  // ── branch filter from viewMode ───────────────────────────────────────────────
+  const branchFilter = viewMode === "branch" && activeBranchId ? activeBranchId : null;
+  const hideBranch = !!branchFilter;
 
   // ── data loading ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1119,12 +1014,15 @@ const HomePage = () => {
     setAnaLoading(true);
     setFeedLoading(true);
     setFinLoading(true);
-    getDashboardAll()
-      .then(({ summary, analytics, feeds, finance }) => {
+    setTasksLoading(true);
+    const params = branchFilter ? { branch_id: branchFilter } : {};
+    getDashboardAll(params)
+      .then(({ summary, analytics, feeds, finance, tasks }) => {
         setSummary(summary);
         setAnalytics(analytics);
         setFeeds(feeds);
         setFinance(finance ?? null);
+        setTasksData(tasks ?? null);
       })
       .catch(console.error)
       .finally(() => {
@@ -1132,15 +1030,34 @@ const HomePage = () => {
         setAnaLoading(false);
         setFeedLoading(false);
         setFinLoading(false);
+        setTasksLoading(false);
       });
-  }, [refreshKey]);
+  }, [branchFilter]);
+
+  useEffect(() => {
+    setVacLoading(true);
+    const params = branchFilter ? { branch_id: branchFilter } : {};
+    getDepartmentsStaffingOverview(params)
+      .then(({ data }) => {
+        const total = (data || []).reduce((s, d) => s + (d.vacancies || 0), 0);
+        setVacanciesCount(total);
+      })
+      .catch(console.error)
+      .finally(() => setVacLoading(false));
+  }, [branchFilter]);
 
   useEffect(() => {
     setAttLoading(true);
     const today = new Date().toISOString().split("T")[0];
-    getAttendance({ filters: { date: today } })
+    const filters = branchFilter ? { date: today, branch_id: branchFilter } : { date: today };
+    getAttendance({ filters })
       .then((res) => {
         setAttendanceData(res.data);
+        // режим одного филиала — селектор филиала не нужен, всегда активный
+        if (branchFilter) {
+          setSelectedBranch(String(branchFilter));
+          return;
+        }
         const firstId = res.data.branches?.[0]?.id;
         if (firstId) {
           setSelectedBranch((prev) =>
@@ -1150,33 +1067,15 @@ const HomePage = () => {
       })
       .catch(console.error)
       .finally(() => setAttLoading(false));
-  }, [refreshKey]);
-
-  const handleRefresh = useCallback(() => {
-    setRefreshing(true);
-    setRefreshKey((k) => k + 1);
-    setTimeout(() => setRefreshing(false), 800);
-  }, []);
-
-  // ── Ctrl+K listener ───────────────────────────────────────────────────────────
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        setSearchOpen((v) => !v);
-      }
-      if (e.key === "Escape") setSearchOpen(false);
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [branchFilter]);
 
   // ── Employment orders (new hires + terminated) ────────────────────────────────
   useEffect(() => {
     setOrdersLoading(true);
+    const extraFilter = branchFilter ? { branch_id: branchFilter } : {};
     Promise.all([
-      getEmploymentOrders({ filters: { type: "hire" }, pageSize: 5 }),
-      getEmploymentOrders({ filters: { type: "terminate" }, pageSize: 5 }),
+      getEmploymentOrders({ filters: { type: "hire", ...extraFilter }, pageSize: 5 }),
+      getEmploymentOrders({ filters: { type: "terminate", ...extraFilter }, pageSize: 5 }),
     ])
       .then(([hires, terms]) => {
         setNewEmployees(hires.data ?? []);
@@ -1184,7 +1083,7 @@ const HomePage = () => {
       })
       .catch(console.error)
       .finally(() => setOrdersLoading(false));
-  }, [refreshKey]);
+  }, [branchFilter]);
 
   // ── Branch dropdown outside click ─────────────────────────────────────────────
   useEffect(() => {
@@ -1216,7 +1115,10 @@ const HomePage = () => {
     total > 0 && val != null ? Math.round((val / total) * 100) : null;
 
   // ── Branches for attendance selector (from attendance module) ────────────────
-  const attBranches = attendanceData?.branches ?? [];
+  // сервер отдаёт все доступные филиалы; в режиме одного филиала оставляем активный
+  const attBranches = (attendanceData?.branches ?? []).filter(
+    (b) => !branchFilter || b.id === branchFilter,
+  );
   const branchNameToId = Object.fromEntries(
     attBranches.map((b) => [b.name, b.id]),
   );
@@ -1313,64 +1215,52 @@ const HomePage = () => {
     },
   ];
 
-  // ── Tasks placeholder mock stats ──────────────────────────────────────────────
-  const TASKS_MOCK = [
+  // ── Tasks stats (real data) ───────────────────────────────────────────────────
+  const taskStats = tasksData?.stats;
+
+  const TASK_STAT_DEFS = [
     {
+      key: "totalTasks",
       icon: CheckSquare,
-      color: "#6366f1",
-      labelKey: "totalTasks",
-      value: "—",
-      sub: t("dashboard.comingSoon"),
+      value: taskStats?.total,
+      gradient: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+      bg: "rgba(99,102,241,0.12)",
+      stroke: "#6366f1",
+      pctOfTotal: false,
     },
     {
+      key: "tasksInProgress",
       icon: Timer,
-      color: "#06b6d4",
-      labelKey: "tasksInProgress",
-      value: "—",
-      sub: null,
+      value: taskStats?.inProgress,
+      gradient: "linear-gradient(135deg,#06b6d4,#3b82f6)",
+      bg: "rgba(6,182,212,0.12)",
+      stroke: "#06b6d4",
+      pctOfTotal: true,
     },
     {
+      key: "tasksOverdue",
       icon: AlertCircle,
-      color: "#ef4444",
-      labelKey: "tasksOverdue",
-      value: "—",
-      sub: null,
+      value: taskStats?.overdue,
+      gradient: "linear-gradient(135deg,#ef4444,#dc2626)",
+      bg: "rgba(239,68,68,0.12)",
+      stroke: "#ef4444",
+      pctOfTotal: true,
     },
     {
+      key: "tasksCompleted",
       icon: Zap,
-      color: "#10b981",
-      labelKey: "tasksCompleted",
-      value: "—",
-      sub: null,
+      value: taskStats?.completed,
+      gradient: "linear-gradient(135deg,#10b981,#059669)",
+      bg: "rgba(16,185,129,0.12)",
+      stroke: "#10b981",
+      pctOfTotal: true,
     },
   ];
 
+  const taskStatusMax = tasksData?.byStatus?.[0]?.count ?? 1;
+
   return (
     <div className={styles.page}>
-      <QuickSearch
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        menuItems={menuItems}
-        t={t}
-      />
-
-      {/* ── Page actions bar ──────────────────────────────────── */}
-      <div className={styles.pageActionsBar}>
-        <button
-          className={styles.searchTriggerBtn}
-          onClick={() => setSearchOpen(true)}
-        >
-          <Search size={15} />
-          <span>{t("dashboard.quickSearch")}</span>
-        </button>
-        <button
-          className={`${styles.refreshBtn} ${refreshing ? styles.refreshBtnSpin : ""}`}
-          onClick={handleRefresh}
-          title={t("dashboard.refresh")}
-        >
-          <RefreshCw size={15} />
-        </button>
-      </div>
 
       {/* ══════════════════════════════════════════════════════════
           SECTION 1: ПОСЕЩАЕМОСТЬ
@@ -1607,8 +1497,9 @@ const HomePage = () => {
             }
           >
             {(() => {
+              // в режиме одного филиала данные уже приходят по нему — не режем повторно
               const filtered =
-                selectedBranch === "all"
+                branchFilter || selectedBranch === "all"
                   ? deptAttendance
                   : deptAttendance.filter(
                       (d) => String(d.branchId) === selectedBranch,
@@ -1829,12 +1720,15 @@ const HomePage = () => {
             loading={sumLoading}
             pct={null}
           />
-          <MockCard
-            icon={UserCircle}
-            color="#ec4899"
+          <StatCard
+            icon={Briefcase}
             label={t("dashboard.totalVacancies")}
-            value="—"
-            sub={t("dashboard.comingSoon")}
+            value={vacanciesCount}
+            gradient="linear-gradient(135deg,#f59e0b,#d97706)"
+            bg="rgba(245,158,11,0.12)"
+            stroke="#f59e0b"
+            loading={vacLoading}
+            pct={null}
           />
         </motion.div>
 
@@ -1946,45 +1840,39 @@ const HomePage = () => {
               <div className={styles.orderList}>
                 {newEmployees.map((o) => (
                   <div key={o.id} className={styles.orderItem}>
-                    <div
-                      className={styles.orderAvatar}
-                      style={{
-                        background: "linear-gradient(135deg,#22c55e,#16a34a)",
-                      }}
-                    >
-                      <span>
-                        {(
-                          [o.employee?.last_name, o.employee?.first_name]
+                    <div className={styles.empCell}>
+                      <div className={styles.empAvatar}>
+                        {o.employee?.photo ? (
+                          <img src={`/api/employees/image/${o.employee.photo}`} alt="" className={styles.empPhoto} />
+                        ) : (
+                          <div className={styles.empInitials}>
+                            {([o.employee?.last_name, o.employee?.first_name]
+                              .filter(Boolean)
+                              .join(" ") || "")
+                              .trim()
+                              .split(/\s+/)
+                              .map((w) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase() || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.empInfo}>
+                        <span className={styles.empName}>
+                          {[o.employee?.last_name, o.employee?.first_name, o.employee?.middle_name]
                             .filter(Boolean)
-                            .join(" ") || ""
-                        )
-                          .trim()
-                          .split(/\s+/)
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase() || "?"}
-                      </span>
-                    </div>
-                    <div className={styles.orderInfo}>
-                      <span className={styles.orderName}>
-                        {[
-                          o.employee?.last_name,
-                          o.employee?.first_name,
-                          o.employee?.middle_name,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "—"}
-                        {o.employee?.id ? ` (${o.employee.id})` : ""}
-                      </span>
-                      <span className={styles.orderDate}>
-                        {[
-                          o.employee?.branch?.name,
-                          o.employee?.department?.name,
-                        ]
-                          .filter(Boolean)
-                          .join(" / ") || "—"}
-                      </span>
+                            .join(" ") || "—"}
+                          {o.employee?.id ? <span className={styles.empId}> ({o.employee.id})</span> : ""}
+                        </span>
+                        <span className={styles.empSub}>
+                          {empSub(
+                            o.employee?.branch?.name,
+                            o.employee?.department?.name,
+                            hideBranch,
+                          ) || "—"}
+                        </span>
+                      </div>
                     </div>
                     <div className={styles.feedRight}>
                       <span className={styles.feedDateTime}>
@@ -2011,45 +1899,39 @@ const HomePage = () => {
               <div className={styles.orderList}>
                 {terminatedEmployees.map((o) => (
                   <div key={o.id} className={styles.orderItem}>
-                    <div
-                      className={styles.orderAvatar}
-                      style={{
-                        background: "linear-gradient(135deg,#ef4444,#dc2626)",
-                      }}
-                    >
-                      <span>
-                        {(
-                          [o.employee?.last_name, o.employee?.first_name]
+                    <div className={styles.empCell}>
+                      <div className={styles.empAvatar}>
+                        {o.employee?.photo ? (
+                          <img src={`/api/employees/image/${o.employee.photo}`} alt="" className={styles.empPhoto} />
+                        ) : (
+                          <div className={styles.empInitials}>
+                            {([o.employee?.last_name, o.employee?.first_name]
+                              .filter(Boolean)
+                              .join(" ") || "")
+                              .trim()
+                              .split(/\s+/)
+                              .map((w) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase() || "?"}
+                          </div>
+                        )}
+                      </div>
+                      <div className={styles.empInfo}>
+                        <span className={styles.empName}>
+                          {[o.employee?.last_name, o.employee?.first_name, o.employee?.middle_name]
                             .filter(Boolean)
-                            .join(" ") || ""
-                        )
-                          .trim()
-                          .split(/\s+/)
-                          .map((w) => w[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase() || "?"}
-                      </span>
-                    </div>
-                    <div className={styles.orderInfo}>
-                      <span className={styles.orderName}>
-                        {[
-                          o.employee?.last_name,
-                          o.employee?.first_name,
-                          o.employee?.middle_name,
-                        ]
-                          .filter(Boolean)
-                          .join(" ") || "—"}
-                        {o.employee?.id ? ` (${o.employee.id})` : ""}
-                      </span>
-                      <span className={styles.orderDate}>
-                        {[
-                          o.employee?.branch?.name,
-                          o.employee?.department?.name,
-                        ]
-                          .filter(Boolean)
-                          .join(" / ") || "—"}
-                      </span>
+                            .join(" ") || "—"}
+                          {o.employee?.id ? <span className={styles.empId}> ({o.employee.id})</span> : ""}
+                        </span>
+                        <span className={styles.empSub}>
+                          {empSub(
+                            o.employee?.branch?.name,
+                            o.employee?.department?.name,
+                            hideBranch,
+                          ) || "—"}
+                        </span>
+                      </div>
                     </div>
                     <div className={styles.feedRight}>
                       <span className={styles.feedDateTime}>
@@ -2340,9 +2222,9 @@ const HomePage = () => {
           ))}
         </motion.div>
 
-        {/* Payments + advances + salary — one row, equal heights */}
+        {/* Payments + salary — one row, equal heights */}
         <motion.div
-          className={styles.row3Eq}
+          className={styles.row2Eq}
           variants={stagger}
           initial="hidden"
           whileInView="show"
@@ -2360,25 +2242,6 @@ const HomePage = () => {
               <div className={styles.feedList}>
                 {finance.recentPayments.slice(0, 5).map((item) => (
                   <PaymentItem key={item.id} item={item} />
-                ))}
-              </div>
-            ) : (
-              <Empty text={t("noData")} />
-            )}
-          </Card>
-
-          <Card
-            title={t("dashboard.recentAdvances")}
-            icon={DollarSign}
-            iconColor="#f59e0b"
-            loading={finLoading}
-            skH={240}
-            className={styles.cardEq}
-          >
-            {finance?.recentAdvances?.length ? (
-              <div className={styles.feedList}>
-                {finance.recentAdvances.slice(0, 5).map((item) => (
-                  <AdvanceItem key={item.id} item={item} />
                 ))}
               </div>
             ) : (
@@ -2432,7 +2295,7 @@ const HomePage = () => {
         icon={CheckSquare}
         iconColor="#8b5cf6"
       >
-        {/* Tasks placeholder widgets — full width */}
+        {/* Tasks stat widgets — full width */}
         <motion.div
           className={styles.gridFull}
           variants={stagger}
@@ -2440,44 +2303,94 @@ const HomePage = () => {
           whileInView="show"
           viewport={{ once: true, amount: 0.05 }}
         >
-          {TASKS_MOCK.map((w, i) => (
-            <MockCard
-              key={i}
-              icon={w.icon}
-              color={w.color}
-              label={t(`dashboard.${w.labelKey}`)}
-              value={w.value}
-              sub={w.sub}
-            />
-          ))}
+          {TASK_STAT_DEFS.map(
+            ({ key, icon, value, gradient, bg, stroke, pctOfTotal }) => (
+              <StatCard
+                key={key}
+                icon={icon}
+                label={t(`dashboard.${key}`)}
+                value={value}
+                gradient={gradient}
+                bg={bg}
+                stroke={stroke}
+                loading={tasksLoading}
+                pct={pctOfTotal ? pct(value, taskStats?.total) : null}
+              />
+            ),
+          )}
         </motion.div>
 
-        {/* Recent tasks + tasks chart + deadlines */}
+        {/* Recent tasks + tasks by status + deadlines — equal heights */}
         <motion.div
-          className={styles.row3}
+          className={styles.row3Eq}
           variants={stagger}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, amount: 0.05 }}
         >
-          <PlaceholderCard
+          <Card
             title={t("dashboard.recentTasks")}
             icon={CheckSquare}
             iconColor="#6366f1"
-            t={t}
-          />
-          <PlaceholderCard
+            loading={tasksLoading}
+            skH={280}
+            className={styles.cardEq}
+          >
+            {tasksData?.recentTasks?.length ? (
+              <div className={styles.taskList}>
+                {tasksData.recentTasks.map((task) => (
+                  <TaskItem key={task.id} task={task} t={t} />
+                ))}
+              </div>
+            ) : (
+              <Empty text={t("noData")} />
+            )}
+          </Card>
+
+          <Card
             title={t("dashboard.tasksByStatus")}
             icon={TrendingUp}
             iconColor="#8b5cf6"
-            t={t}
-          />
-          <PlaceholderCard
+            loading={tasksLoading}
+            skH={280}
+            className={styles.cardEq}
+          >
+            {tasksData?.byStatus?.length ? (
+              <div className={styles.deptBarList}>
+                {tasksData.byStatus.map((s, i) => (
+                  <TaskStatusBar
+                    key={s.status}
+                    label={t(`status.${s.status}`)}
+                    count={s.count}
+                    max={taskStatusMax}
+                    color={TASK_STATUS_COLORS[s.status] || "#94a3b8"}
+                    delay={i * 0.06}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Empty text={t("noData")} />
+            )}
+          </Card>
+
+          <Card
             title={t("dashboard.upcomingDeadlines")}
             icon={Timer}
             iconColor="#ef4444"
-            t={t}
-          />
+            loading={tasksLoading}
+            skH={280}
+            className={styles.cardEq}
+          >
+            {tasksData?.upcomingDeadlines?.length ? (
+              <div className={styles.taskList}>
+                {tasksData.upcomingDeadlines.map((task) => (
+                  <TaskItem key={task.id} task={task} t={t} showDeadline />
+                ))}
+              </div>
+            ) : (
+              <Empty text={t("noData")} />
+            )}
+          </Card>
         </motion.div>
       </DashboardSection>
 

@@ -5,8 +5,8 @@
 
 .toolbar {
   padding: 8px;
-  background: #f9f9f9;
-  border: 1px solid #e0e0e0;
+  background: var(--table-header);
+  border: 1px solid var(--border-color);
   border-bottom: none;
   border-radius: 8px 8px 0 0;
 }
@@ -19,7 +19,7 @@
 
   .toolbarTitle {
     font-weight: 500;
-    color: #111;
+    color: var(--text-color);
   }
 
   .stats {
@@ -36,8 +36,8 @@
       font-weight: 500;
 
       &:nth-child(1) {
-        background: #e0e0e0;
-        color: #333;
+        background: var(--table-header);
+        color: var(--text-color);
       }
 
       &:nth-child(2) {
@@ -66,14 +66,15 @@
 }
 
 .search {
+  flex: 1;
   min-width: 100px;
   height: 28px;
-  padding: 0 10px 0 28px;
-  border: 1px solid #ddd;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
 
   outline: none;
-  background: #fff;
+  background: var(--input-bg);
 
   &:focus {
     border-color: #4f8ef7;
@@ -84,24 +85,24 @@
 .ctrlBtn {
   height: 28px;
   padding: 0 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 6px;
-  background: #fff;
-  color: #555;
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s;
 
   &:hover {
-    background: #f0f0f0;
-    color: #111;
-    border-color: #bbb;
+    background: var(--table-header);
+    color: var(--text-color);
+    border-color: var(--border-color);
   }
 }
 
 .tableWrap {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
   border-radius: 0 0 8px 8px;
   overflow: hidden;
 
@@ -112,7 +113,7 @@
   }
 
   thead tr {
-    background: #f9f9f9;
+    background: var(--table-header);
   }
 
   th {
@@ -120,7 +121,7 @@
     text-align: center;
     font-size: 12px;
     font-weight: 500;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
 
     &.colMenu {
@@ -131,7 +132,7 @@
 
   td {
     padding: 5px 10px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--border-subtle);
     text-align: center;
     vertical-align: middle;
 
@@ -145,7 +146,7 @@
   }
 
   tr:hover td {
-    background: #fafafa;
+    background: var(--bg-light);
   }
 
   input[type="checkbox"] {
@@ -158,11 +159,11 @@
 
 .rootRow > td:first-child .menuName {
   font-weight: 500;
-  color: #111;
+  color: var(--text-color);
 }
 
 .childRow td {
-  background: #fdfdfd;
+  background: var(--card-bg);
 }
 
 .menuCell {
@@ -175,42 +176,111 @@
   cursor: pointer;
 }
 
+// Шеврон раскрытия: в круглой подложке, при раскрытии поворачивается вниз
 .arrow {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
-  font-size: 9px;
-  color: #999;
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  background: var(--table-header);
   cursor: pointer;
-  border-radius: 4px;
-  transition: transform 0.15s;
+  border-radius: 50%;
+  transition:
+    background 0.15s,
+    color 0.15s;
   flex-shrink: 0;
 
+  svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform 0.2s ease;
+  }
+
   &:hover {
-    background: #f0f0f0;
-    color: #333;
+    background: var(--border-color);
+    color: var(--text-color);
   }
 
   &.open {
-    transform: rotate(90deg);
+    background: rgba(26, 86, 219, 0.12);
+    color: #1a56db;
+
+    svg {
+      transform: rotate(90deg);
+    }
   }
 
+  // Пункт без вложенных — пустое место, чтобы названия выровнялись
   &.leaf {
     cursor: default;
-    color: transparent;
+    background: transparent;
+
+    svg {
+      display: none;
+    }
   }
 }
 
 .menuName {
   font-size: 12px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .empty {
   padding: 24px;
   text-align: center;
-  color: #aaa;
+  color: var(--placeholder-color);
   font-size: 12px;
+}
+
+// Узкий экран (Telegram): панель инструментов переносится, таблица прокручивается
+// вбок, а колонка «Меню» остаётся на месте.
+@media (max-width: 600px) {
+  .toolbarTop {
+    flex-wrap: wrap;
+  }
+
+  .toolbarBottom {
+    flex-wrap: wrap;
+
+    .search {
+      flex: 1 1 100%;
+    }
+  }
+
+  .tableWrap {
+    overflow-x: auto;
+
+    table {
+      min-width: 480px;
+    }
+
+    th.colMenu,
+    td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background: var(--card-bg);
+    }
+
+    // колонка названия уже, чем на десктопе (35%): больше места чекбоксам
+    th.colMenu {
+      width: 27%;
+    }
+
+    td:first-child {
+      padding-right: 4px;
+    }
+
+    thead th.colMenu {
+      background: var(--table-header);
+    }
+  }
 }

@@ -1,0 +1,1063 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+// The modal keeps its place; the history card is absolutely positioned
+// beside it, so opening it never shifts the main window.
+.stack {
+  position: relative;
+  // Wide by default; only squeezed when the viewport cannot host the
+  // history card that opens to the right.
+  width: min(780px, calc(100vw - 380px));
+  min-width: min(680px, calc(100vw - 40px));
+  max-width: 100%;
+  height: 84vh;
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.headerMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.headerNameRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.headerName {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerId {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-light);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.headerSub {
+  font-size: 12px;
+  color: var(--placeholder-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerYear {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-light);
+  border-radius: 6px;
+  padding: 3px 9px;
+  flex-shrink: 0;
+}
+
+.closeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.12s;
+
+  &:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+}
+
+// ── Year totals ───────────────────────────────────────────────────────────────
+
+.totals {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.total {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.totalLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--placeholder-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.totalValue {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color);
+}
+
+.paidVal {
+  color: #16a34a;
+}
+
+.logLoanTag {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #b45309;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.logLoanAmount {
+  color: #b45309;
+}
+
+.totalValueLink {
+  cursor: pointer;
+  border-bottom: 1px dashed currentColor;
+  transition: opacity 0.12s;
+
+  &:hover {
+    opacity: 0.75;
+  }
+}
+
+// Сколько из остатка месяца ушло в погашение долга
+.dueDebtNote {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 600;
+  color: #16a34a;
+  white-space: nowrap;
+}
+
+// ── Debt history card ─────────────────────────────────────────────────────────
+
+.debtTotals {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-light);
+}
+
+.debtTotal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+}
+
+.debtTotalLabel {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--placeholder-color);
+  text-align: center;
+}
+
+.debtTotalValue {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color);
+}
+
+.eventTagIssue,
+.eventTagRepay {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.eventTagIssue {
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  color: #b45309;
+}
+
+.eventTagRepay {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #15803d;
+}
+
+// Подпись под значением виджета: сколько ушло в погашение долга
+.totalSub {
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #15803d;
+  text-align: center;
+}
+
+.totalValueWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+// Круглая «+» вплотную к сумме долга. Абсолютная относительно обёртки, поэтому
+// цифра остаётся по центру колонки, а кнопка не растягивает ячейку.
+.loanBtn {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid #fcd34d;
+  border-radius: 50%;
+  background: #fffbeb;
+  color: #b45309;
+  cursor: pointer;
+  opacity: 0.8;
+  transition: all 0.12s;
+
+  &:hover {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #fff;
+    opacity: 1;
+    transform: translateY(-50%) scale(1.12);
+  }
+}
+
+.dueVal {
+  color: #3b82f6;
+}
+
+// ── Months ────────────────────────────────────────────────────────────────────
+
+// minmax(0, …) — without it an fr track never shrinks below its content,
+// so nowrap cells push the last column out of the card.
+$month-cols: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 128px 118px;
+
+.monthHead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: $month-cols;
+  gap: 10px;
+  align-items: center;
+  // Same box metrics as .monthItem (padding + 1px border), so both grids
+  // resolve to identical track widths and every column lines up.
+  margin: 0 0 4px;
+  padding: 10px 20px 10px 10px;
+  background: var(--card-bg);
+  border: 1px solid transparent;
+  border-bottom-color: var(--border-color);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.monthList {
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 8px 8px;   // + 10px of row padding = 18px to the first column
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  flex: 1;
+}
+
+.monthItem {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: $month-cols;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 9px 20px 9px 10px;   // mirrored by .monthHead
+  border: 1px solid transparent;
+  // barely-there separator between months
+  border-bottom-color: rgba(128, 128, 128, 0.14);
+  border-radius: 8px;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.12s;
+
+  // the totals row draws its own top border
+  &:last-child,
+  &:has(+ .monthTotal) {
+    border-bottom-color: transparent;
+  }
+
+  &:hover {
+    background: var(--bg-light);
+  }
+
+  &.monthItemActive {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+}
+
+// Totals row closing the month list
+.monthTotal {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: $month-cols;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
+  padding: 10px 20px 10px 10px;
+  border: 1px solid transparent;
+  border-top: 1px solid var(--border-color);
+  font-weight: 700;
+
+  .monthName,
+  .monthNet,
+  .monthPaid,
+  .monthDue {
+    font-weight: 700;
+  }
+}
+
+.monthName {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--text-color);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.monthNet {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-color);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.debtVal {
+  color: #b45309;
+}
+
+.monthPaid,
+.monthDue {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--placeholder-color);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.advanceBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+  background: #fffbeb;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+
+  &:hover {
+    background: #f59e0b;
+    color: #fff;
+  }
+}
+
+// Текущий месяц — подсветка гаснет к правому краю, чтобы цифры оставались
+// на чистом фоне, плюс пилюля «сейчас» у названия
+.monthItemCurrent {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.14) 0%,
+    rgba(59, 130, 246, 0.04) 45%,
+    transparent 75%
+  );
+
+  .monthName {
+    font-weight: 700;
+  }
+}
+
+.currentBadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.monthItemEmpty {
+  cursor: default;
+
+  .monthName,
+  .monthNet,
+  .monthPaid,
+  .monthDue {
+    color: var(--placeholder-color);
+  }
+
+  &:hover {
+    background: transparent;
+  }
+}
+
+.monthBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 6px;
+  border-radius: 5px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.monthBadgePaid {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.monthBadgeDue {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.monthBadgeEmpty {
+  background: var(--bg-light);
+  color: var(--placeholder-color);
+}
+
+.monthAction {
+  display: flex;
+  justify-content: center;
+  font-size: 12px;
+  color: var(--placeholder-color);
+}
+
+.payBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 11px;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.12s;
+
+  &:hover {
+    background: #3b82f6;
+    color: #fff;
+  }
+}
+
+// ── Side card: payment history ────────────────────────────────────────────────
+
+.sideWrapper {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 100%;
+  margin-left: 14px;
+  display: flex;
+  min-height: 0;
+}
+
+.sideCard {
+  display: flex;
+  flex-direction: column;
+  width: 340px;
+  max-height: 100%;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.sideHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.sideHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.sideTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.sideSub {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+  color: var(--placeholder-color);
+}
+
+.sideBody {
+  overflow-y: auto;
+  padding: 10px 14px;
+  min-height: 0;
+  flex: 1;
+}
+
+.sideEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  color: var(--placeholder-color);
+  font-size: 13px;
+  font-style: italic;
+}
+
+.logList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.logItem {
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--bg-light);
+  transition: border-color 0.12s, background 0.12s;
+
+  &:hover {
+    border-color: #bfdbfe;
+    background: var(--card-bg);
+  }
+}
+
+.logRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  flex-shrink: 0;
+}
+
+.logAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+
+  &:hover {
+    border-color: #3b82f6;
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  &.logActionDanger:hover {
+    border-color: #ef4444;
+    background: #fef2f2;
+    color: #dc2626;
+  }
+}
+
+.logDate {
+  font-size: 12px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.logAmount {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #16a34a;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.logNote {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--placeholder-color);
+  word-break: break-word;
+}
+
+.confirmRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.confirmText {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.confirmNo,
+.confirmYes {
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.confirmNo {
+  border: 1px solid var(--border-subtle);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.confirmYes {
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #dc2626;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ── Inline edit form ──────────────────────────────────────────────────────────
+
+.logItemEditing {
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #eff6ff;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.editLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--placeholder-color);
+}
+
+.editInput {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--card-bg);
+  font-size: 12px;
+  font-family: inherit;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+  }
+}
+
+.editActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.editCancel,
+.editSave {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.editCancel {
+  border: 1px solid var(--border-subtle);
+  background: var(--card-bg);
+  color: var(--text-secondary);
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.editSave {
+  border: 1px solid #3b82f6;
+  background: #3b82f6;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #2563eb;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ── Advance card ──────────────────────────────────────────────────────────────
+
+.advanceHint {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.advanceBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  background: var(--bg-light);
+}
+
+.advanceBoxLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #b45309;
+}
+
+.advanceBoxValue {
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #b45309;
+}
+
+.advanceSave {
+  flex: 1;
+  height: 30px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+  border: 1px solid #f59e0b;
+  background: #f59e0b;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #d97706;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.advanceLimit {
+  margin: 2px 0 6px;
+  font-size: 10.5px;
+  color: #92400e;
+}
+
+.deductZone {
+  &:not(:empty) {
+    padding: 12px 14px 0;
+  }
+}
+
+// ── Add payment ───────────────────────────────────────────────────────────────
+
+.payZone {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.payHint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+
+  b {
+    font-variant-numeric: tabular-nums;
+    color: #1d4ed8;
+  }
+}
+
+.payOpenBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  width: 100%;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover {
+    background: #2563eb;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.sideFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--placeholder-color);
+  flex-shrink: 0;
+}
+
+.sideFooterValue {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  color: #16a34a;
+}
+
+// ── Total payment form ────────────────────────────────────────────────────────
+
+.remainingBox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.remainingBoxLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #1d4ed8;
+}
+
+.remainingBoxValue {
+  font-size: 20px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1d4ed8;
+}
+
+// ── Allocation preview inside the pay form ────────────────────────────────────
+
+.allocation {
+  margin: 4px 0 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+
+.allocationTitle {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--placeholder-color);
+  margin-bottom: 5px;
+}
+
+.allocationRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0;
+  font-size: 12px;
+}
+
+.allocationMonth {
+  text-transform: capitalize;
+  color: var(--text-secondary);
+}
+
+.allocationAmount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #1d4ed8;
+}

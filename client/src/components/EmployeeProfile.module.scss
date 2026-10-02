@@ -1,0 +1,1020 @@
+// Карточка сотрудника: полноэкранная модалка с вкладками историй.
+// Палитра целиком на переменных темы — светлая и тёмная выглядят одинаково цельно.
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  position: relative;
+  width: min(1360px, 100%);
+  // фиксированная рабочая высота: окно не скачет при переключении вкладок
+  // с разным объёмом контента
+  height: min(860px, calc(100vh - 48px));
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+}
+
+.closeBtn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.26);
+    transform: rotate(90deg);
+  }
+}
+
+.loadingWrap {
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Шапка ──────────────────────────────────────────────────────────────── */
+
+.hero {
+  position: relative;
+  // без этого flex сжимает шапку под max-height модалки,
+  // и overflow: hidden обрезает нижнюю строку KPI
+  flex-shrink: 0;
+  padding: 22px 24px 0;
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 45%, #0ea5e9 100%);
+  color: #fff;
+  overflow: hidden;
+}
+
+.heroGlow {
+  position: absolute;
+  top: -120px;
+  right: -60px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.22), transparent 65%);
+  pointer-events: none;
+}
+
+.heroMain {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 84px;
+  height: 84px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.avatarInactive {
+  filter: grayscale(0.8);
+  opacity: 0.75;
+}
+
+.avatarInitials {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.heroInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroNameRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.heroName {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.heroId {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.heroSub {
+  margin-top: 4px;
+  font-size: 13.5px;
+  opacity: 0.9;
+}
+
+.heroMeta {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.heroMetaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  color: #fff;
+  text-decoration: none;
+  transition: background 0.18s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.28);
+  }
+}
+
+// Кнопки шапки: отступ справа оставляет место крестику закрытия
+.heroActions {
+  align-self: flex-start;
+  margin-right: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editBtn,
+.pdfBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+
+  &:hover {
+    background: #fff;
+    color: #4338ca;
+  }
+}
+
+// вторичная кнопка — рамка без заливки, чтобы «Редактировать» осталась главной
+.pdfBtn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.28);
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: progress;
+    background: transparent;
+    color: #fff;
+  }
+}
+
+/* ── KPI ────────────────────────────────────────────────────────────────── */
+
+.kpiRow {
+  position: relative;
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 12px 12px 0 0;
+  overflow: hidden;
+}
+
+.kpi {
+  padding: 11px 14px;
+  background: rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  backdrop-filter: blur(2px);
+}
+
+/* KPI эффективности ведёт на одноимённую вкладку */
+.kpiClickable {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+}
+
+.kpiLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.8;
+}
+
+.kpiValue {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.kpiSub {
+  font-size: 11.5px;
+  opacity: 0.78;
+}
+
+.positive {
+  color: #bbf7d0;
+}
+
+.negative {
+  color: #fecaca;
+}
+
+/* ── Вкладки ────────────────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+  padding: 0 14px;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.18s;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.tabActive {
+  color: #4f46e5;
+  border-bottom-color: #4f46e5;
+}
+
+.tabCount {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 20px;
+  background: var(--tg-surface);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.tabActive .tabCount {
+  background: rgba(79, 70, 229, 0.14);
+  color: #4f46e5;
+}
+
+/* ── Контент ────────────────────────────────────────────────────────────── */
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 20px 24px;
+  background: var(--card-bg);
+  color: var(--text-color);
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--scroll-color);
+    border-radius: 4px;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+  // все ряды одной высоты + stretch по умолчанию => все карточки одинаковые
+  grid-auto-rows: 1fr;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-light);
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+
+  h4 {
+    margin: 0;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: var(--text-color);
+  }
+}
+
+.cardHeaderAction {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.yearSelect {
+  width: 92px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--card-bg);
+  color: var(--text-color);
+  transition: border-color 0.2s;
+
+  &:focus,
+  &:hover {
+    outline: none;
+    border-color: var(--third-color);
+  }
+}
+
+.cardBody {
+  flex: 1;
+  padding: 10px 14px 12px;
+}
+
+.tableCard {
+  margin-top: 14px;
+}
+
+.field {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 0;
+  font-size: 13px;
+  border-bottom: 1px dashed var(--border-subtle);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.fieldLabel {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  min-width: 110px;
+}
+
+.fieldValue {
+  flex: 1;
+  color: var(--text-color);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.scheduleMode {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12.5px;
+  color: var(--text-color);
+}
+
+.empty {
+  padding: 34px 12px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+/* ── Чипы ───────────────────────────────────────────────────────────────── */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.chip_green {
+  background: var(--tg-badge-green-bg);
+  color: var(--tg-badge-green-color);
+  border-color: var(--tg-badge-green-border);
+}
+.chip_red {
+  background: var(--tg-badge-red-bg);
+  color: var(--tg-badge-red-color);
+  border-color: var(--tg-badge-red-border);
+}
+.chip_blue {
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  border-color: var(--tg-badge-blue-border);
+}
+.chip_amber {
+  background: var(--tg-badge-amber-bg);
+  color: var(--tg-badge-amber-color);
+  border-color: var(--tg-badge-amber-border);
+}
+.chip_purple {
+  background: var(--tg-badge-purple-bg);
+  color: var(--tg-badge-purple-color);
+  border-color: var(--tg-badge-purple-border);
+}
+.chip_gray {
+  background: var(--tg-badge-gray-bg);
+  color: var(--tg-badge-gray-color);
+  border-color: var(--tg-badge-gray-border);
+}
+
+/* Непрозрачные чипы для шапки: фон не зависит от темы,
+   потому что лежит поверх фиксированного градиента */
+.chipSolid_green {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: rgba(255, 255, 255, 0.55);
+}
+.chipSolid_red {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── График зарплаты ────────────────────────────────────────────────────── */
+
+.chartCard {
+  margin-bottom: 16px;
+  padding: 14px 16px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-light);
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.chartTitle {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-secondary);
+}
+
+.chartGrowth {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.up {
+  color: #16a34a;
+}
+
+.down {
+  color: #ef4444;
+}
+
+.chartBars {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 140px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.chartBarWrap {
+  flex: 1 0 54px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.chartBarValue {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.chartBar {
+  width: 100%;
+  max-width: 46px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #6366f1, #4f46e5);
+  transition: filter 0.18s;
+
+  &:hover {
+    filter: brightness(1.15);
+  }
+}
+
+.chartBarLabel {
+  font-size: 10.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── Таймлайн ───────────────────────────────────────────────────────────── */
+
+.timeline {
+  position: relative;
+  padding-left: 22px;
+}
+
+.tlItem {
+  position: relative;
+  padding-bottom: 14px;
+}
+
+.tlDot {
+  position: absolute;
+  left: -22px;
+  top: 16px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--border-color);
+  border: 2px solid var(--card-bg);
+  box-shadow: 0 0 0 2px var(--border-subtle);
+  z-index: 1;
+}
+
+.tlDotActive {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2);
+}
+
+.order_hire {
+  background: #16a34a;
+}
+.order_transfer {
+  background: #3b82f6;
+}
+.order_leave {
+  background: #f59e0b;
+}
+.order_terminate {
+  background: #ef4444;
+}
+
+.tlLine {
+  position: absolute;
+  left: -17px;
+  top: 28px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--border-subtle);
+}
+
+/* Сетка карточек истории (зарплаты, графики): карточки не тянутся во всю
+   ширину модалки — колонки подстраиваются под ширину окна */
+.historyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.historyCard {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-light);
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
+  }
+}
+
+// текущая запись (без date_to) — зелёный акцент вместо точки таймлайна
+.historyCardActive {
+  border-left-color: #16a34a;
+}
+
+.tlCard {
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-light);
+  padding: 12px 14px;
+  transition: box-shadow 0.18s, transform 0.18s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.tlCardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tlTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.tlAmount {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.tlDiff {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tlPeriod {
+  margin-top: 3px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.tlNote {
+  margin-top: 8px;
+  padding: 7px 10px;
+  border-left: 3px solid var(--border-color);
+  border-radius: 0 6px 6px 0;
+  background: var(--tg-surface);
+  font-size: 12.5px;
+  color: var(--text-color);
+}
+
+.tlFoot {
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.orderFields {
+  margin-top: 8px;
+}
+
+/* ── Мини-статистика ────────────────────────────────────────────────────── */
+
+.miniStats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.miniStat {
+  padding: 11px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 11px;
+  background: var(--bg-light);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+
+  span {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: var(--text-secondary);
+  }
+
+  strong {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  .positive {
+    color: #16a34a;
+  }
+
+  .negative {
+    color: #ef4444;
+  }
+}
+
+/* ── Таблицы ────────────────────────────────────────────────────────────── */
+
+.tableWrap {
+  overflow-x: auto;
+  border-radius: 10px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+
+  th {
+    padding: 9px 10px;
+    text-align: left;
+    white-space: nowrap;
+    background: var(--table-header);
+    color: var(--text-secondary);
+    font-weight: 700;
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-color);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.clickableRow {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--select-hover-color);
+  }
+}
+
+// месяц без ведомости — строка-заглушка, приглушена, кликать нечего
+.emptyRow {
+  color: var(--text-secondary);
+
+  td {
+    opacity: 0.75;
+  }
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.strong {
+  font-weight: 700;
+}
+
+.nowrap {
+  white-space: nowrap;
+}
+
+.chevron {
+  color: var(--text-secondary);
+  transition: transform 0.18s;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.logsRow td {
+  padding: 0;
+  background: var(--tg-surface);
+}
+
+.logs {
+  padding: 10px 14px;
+}
+
+.logsTitle {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.logRow {
+  display: grid;
+  grid-template-columns: 110px 130px 1fr;
+  gap: 10px;
+  padding: 4px 0;
+  font-size: 12.5px;
+  border-bottom: 1px dashed var(--border-subtle);
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  strong {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.logNote {
+  color: var(--text-secondary);
+}
+
+/* ── Имущество ──────────────────────────────────────────────────────────── */
+
+.assetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 12px;
+}
+
+.assetCard {
+  padding: 13px 15px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-light);
+  transition: box-shadow 0.18s;
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.assetActive {
+  border-left: 3px solid #3b82f6;
+}
+
+.assetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.assetName {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-color);
+}
+
+.assetQty {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--tg-surface);
+  font-size: 11.5px;
+}
+
+.assetSpec {
+  margin-top: 4px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.assetFields {
+  margin-top: 8px;
+
+  .fieldLabel {
+    min-width: 96px;
+  }
+}
+
+/* ── Адаптив ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .overlay {
+    padding: 0;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  // в одну колонку равные ряды дали бы пустоту под короткими карточками
+  .grid {
+    grid-auto-rows: auto;
+  }
+
+  .heroMain {
+    flex-wrap: wrap;
+  }
+
+  .avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  .heroName {
+    font-size: 18px;
+  }
+
+  .heroActions {
+    margin-right: 0;
+    flex-wrap: wrap;
+  }
+
+  .fieldLabel {
+    min-width: 92px;
+  }
+}

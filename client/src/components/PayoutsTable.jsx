@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { payrollApi } from "../api/payroll";
 import { useAlertStore } from "../stores/alertStore";
+import { Icons } from "../icons/icons";
+import EmployeeCell from "./EmployeeCell";
+import SortArrow from "./SortArrow";
 import styles from "./PayoutsTable.module.scss";
 
 const fmt = (n) =>
@@ -18,57 +21,6 @@ const fmtDate = (d) => {
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
-
-const IconCheck = () => (
-  <svg
-    width="13"
-    height="13"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
-
-const IconUndo = () => (
-  <svg
-    width="13"
-    height="13"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M3 7v6h6" />
-    <path d="M3 13C5 8.5 9.5 5 15 5a9 9 0 0 1 6 15" />
-  </svg>
-);
-
-const IconTrash = () => (
-  <svg
-    width="12"
-    height="12"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="3 6 5 6 21 6" />
-    <path d="M19 6l-1 14H6L5 6" />
-    <path d="M10 11v6M14 11v6" />
-    <path d="M9 6V4h6v2" />
-  </svg>
-);
-
-// ── AmountPickerPopover (debt only) ────────────────────────────────────────────
 
 const QUICK_PCTS = [25, 50, 75, 100];
 
@@ -174,8 +126,10 @@ function AmountPickerPopover({
             placeholder="0"
             onChange={(e) => {
               const raw = e.target.value.replace(/\D/g, "");
-              if (raw === "") { setAmount(""); setPct(""); }
-              else applyAmount(raw);
+              if (raw === "") {
+                setAmount("");
+                setPct("");
+              } else applyAmount(raw);
             }}
           />
         </div>
@@ -223,19 +177,16 @@ function AmountPickerPopover({
   );
 }
 
-// ── PaymentPopover ─────────────────────────────────────────────────────────────
-// Dedicated popover for payments: date picker + history + new amount
-
 function PaymentPopover({ item, onSave, onDelete, onClose }) {
   const { t } = useTranslation();
   const popRef = useRef();
 
-  const salaryBal = Number(item.salary_balance || 0);
   const net = Number(item.net || 0);
-  const totalDue = net + salaryBal;
-  const advanceAmt = Number(item.advance_total || 0);
+  const debtDed = Number(item.debt_deduction || 0);
+  // Удержанное в счёт долга на руки не выдаётся — из суммы к выплате вычитается
+  const totalDue = net - debtDed;
   const alreadyPaid = Number(item.paid_amount || 0);
-  const remaining = Math.max(0, totalDue - advanceAmt - alreadyPaid);
+  const remaining = Math.max(0, totalDue - alreadyPaid);
 
   const [logs, setLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(true);
@@ -322,12 +273,13 @@ function PaymentPopover({ item, onSave, onDelete, onClose }) {
     >
       <div className={styles.popoverTitle}>{t("paymentTitle")}</div>
 
-      {/* Summary */}
-      {salaryBal > 0 && (
+      {/* Summary. Переноса между месяцами больше нет — вместо него показываем,
+          сколько из начисленного ушло в погашение долга */}
+      {debtDed > 0 && (
         <div className={styles.popoverRow}>
-          <span className={styles.popoverRowLabel}>{t("salaryBalance")}</span>
-          <span className={styles.popoverRowValue} style={{ color: "#f59e0b" }}>
-            {fmt(salaryBal)}
+          <span className={styles.popoverRowLabel}>{t("currentDeduction")}</span>
+          <span className={styles.popoverRowValue} style={{ color: "#dc2626" }}>
+            −{fmt(debtDed)}
           </span>
         </div>
       )}
@@ -341,14 +293,6 @@ function PaymentPopover({ item, onSave, onDelete, onClose }) {
           {fmt(totalDue)}
         </span>
       </div>
-      {advanceAmt > 0 && (
-        <div className={styles.popoverRow}>
-          <span className={styles.popoverRowLabel}>{t("advancePrePaid")}</span>
-          <span className={styles.popoverRowValue} style={{ color: "#7c3aed" }}>
-            −{fmt(advanceAmt)}
-          </span>
-        </div>
-      )}
       {alreadyPaid > 0 && (
         <div className={styles.popoverRow}>
           <span className={styles.popoverRowLabel}>{t("alreadyPaid")}</span>
@@ -395,7 +339,7 @@ function PaymentPopover({ item, onSave, onDelete, onClose }) {
                   disabled={deletingId === log.id}
                   title={t("confirmDelete")}
                 >
-                  <IconTrash />
+                  {Icons.trash}
                 </button>
               </div>
             ))
@@ -432,8 +376,10 @@ function PaymentPopover({ item, onSave, onDelete, onClose }) {
                 placeholder="0"
                 onChange={(e) => {
                   const raw = e.target.value.replace(/\D/g, "");
-                  if (raw === "") { setAmount(""); setPct(""); }
-                  else applyAmount(raw);
+                  if (raw === "") {
+                    setAmount("");
+                    setPct("");
+                  } else applyAmount(raw);
                 }}
               />
             </div>
@@ -499,8 +445,6 @@ function PaymentPopover({ item, onSave, onDelete, onClose }) {
   );
 }
 
-// ── PayoutsTable ───────────────────────────────────────────────────────────────
-
 const PayoutsTable = ({
   items = [],
   selectedIds = [],
@@ -516,6 +460,8 @@ const PayoutsTable = ({
 
   // activePopover: { type: "payment"|"debt", itemId, rect }
   const [activePopover, setActivePopover] = useState(null);
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
 
   const allSelected =
     items.length > 0 && items.every((it) => selectedIds.includes(it.id));
@@ -525,9 +471,6 @@ const PayoutsTable = ({
     if (headerCheckRef.current)
       headerCheckRef.current.indeterminate = someSelected && !allSelected;
   }, [someSelected, allSelected]);
-
-  const getFullName = (emp) =>
-    [emp.last_name, emp.first_name, emp.middle_name].filter(Boolean).join(" ");
 
   const openPopover = (e, itemId, type) => {
     e.stopPropagation();
@@ -595,6 +538,36 @@ const PayoutsTable = ({
 
   const activeItem = items.find((it) => it.id === activePopover?.itemId);
 
+  const empFullName = (emp) =>
+    [emp?.last_name, emp?.first_name, emp?.middle_name].filter(Boolean).join(" ");
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const getSortValue = (item, field) => {
+    if (field === "employee") return empFullName(item.employee);
+    return Number(item[field] || 0);
+  };
+
+  const sortedItems = sortField
+    ? [...items].sort((a, b) => {
+        const aVal = getSortValue(a, sortField);
+        const bVal = getSortValue(b, sortField);
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }
+        return sortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : items;
+
   return (
     <div className={styles.tableContainer}>
       <table className={styles.table}>
@@ -609,26 +582,55 @@ const PayoutsTable = ({
               />
             </th>
             <th className={styles.numCol}>#</th>
-            <th style={{ textAlign: "left" }}>{t("employee")}</th>
-            <th>{t("salaryBalance")}</th>
-            <th>{t("accrued")}</th>
-            <th>{t("debtBalance")}</th>
-            <th>{t("advances")}</th>
+            <th style={{ textAlign: "left" }} onClick={() => handleSort("employee")}>
+              <span className={styles.headerContent}>
+                {t("employee")}
+                <SortArrow active={sortField === "employee"} order={sortOrder} />
+              </span>
+            </th>
+            <th onClick={() => handleSort("salary_balance")}>
+              <span className={styles.headerContent}>
+                {t("salaryBalance")}
+                <SortArrow active={sortField === "salary_balance"} order={sortOrder} />
+              </span>
+            </th>
+            <th onClick={() => handleSort("accrued")}>
+              <span className={styles.headerContent}>
+                {t("accrued")}
+                <SortArrow active={sortField === "accrued"} order={sortOrder} />
+              </span>
+            </th>
+            <th onClick={() => handleSort("debt_balance")}>
+              <span className={styles.headerContent}>
+                {t("debtBalance")}
+                <SortArrow active={sortField === "debt_balance"} order={sortOrder} />
+              </span>
+            </th>
             <th>{t("penalties")}</th>
-            <th className={styles.netCol}>{t("net")}</th>
-            <th>{t("paidAmount")}</th>
+            <th className={styles.netCol} onClick={() => handleSort("net")}>
+              <span className={styles.headerContent}>
+                {t("net")}
+                <SortArrow active={sortField === "net"} order={sortOrder} />
+              </span>
+            </th>
+            <th onClick={() => handleSort("paid_amount")}>
+              <span className={styles.headerContent}>
+                {t("paidAmount")}
+                <SortArrow active={sortField === "paid_amount"} order={sortOrder} />
+              </span>
+            </th>
             <th>{t("status")}</th>
           </tr>
         </thead>
         <tbody>
           {items.length === 0 ? (
             <tr>
-              <td colSpan={11} className={styles.noData}>
+              <td colSpan={10} className={styles.noData}>
                 {t("noData")}
               </td>
             </tr>
           ) : (
-            items.map((item, idx) => {
+            sortedItems.map((item, idx) => {
               const emp = item.employee;
               const isPaid = item.payout_status === "paid";
               const isSelected = selectedIds.includes(item.id);
@@ -636,11 +638,10 @@ const PayoutsTable = ({
               const salaryBal = Number(item.salary_balance || 0);
               const debtBal = Number(item.debt_balance || 0);
               const debtDed = Number(item.debt_deduction || 0);
-              const advanceAmt = Number(item.advance_total || 0);
               const paidAmt = Number(item.paid_amount || 0);
               const net = Number(item.net || 0);
-              const totalDue = net + salaryBal;
-              const remaining = Math.max(0, totalDue - advanceAmt - paidAmt);
+              const totalDue = net - debtDed;
+              const remaining = Math.max(0, totalDue - paidAmt);
 
               const isPayActive =
                 activePopover?.itemId === item.id &&
@@ -670,18 +671,17 @@ const PayoutsTable = ({
 
                   <td className={styles.numColTd}>{idx + 1}</td>
 
-                  {/* Сотрудник */}
                   <td>
-                    <div className={styles.empCell}>
-                      <span
-                        className={styles.empName}
-                      >{`${getFullName(emp)} (${emp.id})`}</span>
-                      <span className={styles.empSub}>
-                        {[emp.branch?.name, emp.department?.name]
-                          .filter(Boolean)
-                          .join(" / ")}
-                      </span>
-                    </div>
+                    <EmployeeCell
+                      photo={emp?.photo}
+                      lastName={emp?.last_name}
+                      firstName={emp?.first_name}
+                      middleName={emp?.middle_name}
+                      id={emp?.id}
+                      branch={emp?.branch?.name}
+                      department={emp?.department?.name}
+                      active={emp?.status}
+                    />
                   </td>
 
                   {/* Остаток зарплаты */}
@@ -718,11 +718,6 @@ const PayoutsTable = ({
                     )}
                   </td>
 
-                  {/* Авансы */}
-                  <td className={`${styles.numCell} ${advanceAmt > 0 ? styles.advanceVal : ""}`}>
-                    {advanceAmt > 0 ? fmt(advanceAmt) : "—"}
-                  </td>
-
                   {/* Штрафы */}
                   <td className={styles.numCell}>—</td>
 
@@ -741,7 +736,7 @@ const PayoutsTable = ({
                     {isPaid ? (
                       <div className={styles.actionsCellInner}>
                         <span className={styles.paidBadge}>
-                          <IconCheck /> {t("paid")}
+                          {Icons.check} {t("paid")}
                         </span>
                         <button
                           className={`${styles.payItemBtn} ${isPayActive ? styles.payItemBtnActive : ""}`}
@@ -755,7 +750,7 @@ const PayoutsTable = ({
                           onClick={() => onRevertItem(item.id)}
                           title={t("markUnpaid")}
                         >
-                          <IconUndo />
+                          {Icons.undo}
                         </button>
                       </div>
                     ) : (
@@ -769,7 +764,7 @@ const PayoutsTable = ({
                           </>
                         ) : (
                           <>
-                            <IconCheck /> {t("markPaid")}
+                            {Icons.check} {t("markPaid")}
                           </>
                         )}
                       </button>
@@ -782,7 +777,6 @@ const PayoutsTable = ({
         </tbody>
       </table>
 
-      {/* ── Popovers ─────────────────────────────────────────────────────────── */}
       {activePopover && activeItem && (
         <div style={getPopoverStyle(activePopover.rect)}>
           {activePopover.type === "payment" && (
@@ -800,7 +794,8 @@ const PayoutsTable = ({
               const debtDed = Number(activeItem.debt_deduction || 0);
               const maxDeduct = Math.min(
                 debtBal,
-                Number(activeItem.accrued || 0) + Number(activeItem.salary_balance || 0),
+                Number(activeItem.accrued || 0) +
+                  Number(activeItem.salary_balance || 0),
               );
               const rows = [
                 {

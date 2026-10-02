@@ -1,0 +1,190 @@
+// Шторка мультивыбора (Telegram-версия Производства).
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin-bottom: 8px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: var(--third-color, #1455fe);
+    background: var(--card-bg);
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.searchIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-hover);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.12s ease;
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.rowOn {
+  background: rgba(20, 85, 254, 0.08);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--tg-separator);
+  border-radius: 8px;
+  color: #fff;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.checkOn {
+  border-color: var(--third-color, #1455fe);
+  background: var(--third-color, #1455fe);
+}
+
+.rowText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.rowSub {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  margin: 0;
+  padding: 28px 0;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.more {
+  margin-top: 6px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.applyCount {
+  min-width: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.25);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}

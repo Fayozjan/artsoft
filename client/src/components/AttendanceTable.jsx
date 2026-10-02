@@ -1,13 +1,19 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useVirtualizer } from "@tanstack/react-virtual";
 
 import SortArrow from "./SortArrow";
 import DownloadButton from "./DownloadButton";
 import AttendanceTableByEmployee from "./AttendanceTableByEmployee";
 import Portal from "./Portal";
 import { Switcher } from "./Switcher";
+import { Icons } from "../icons/icons";
 
 import styles from "./AttendanceTable.module.scss";
+import { formatLateMinutesToHours } from "../helpers/time";
+import { downloadAttendanceModeSheet } from "../utils/DocGenerator";
+import { prepareAttendanceData as prepareData } from "../utils/prepareAttendanceData";
+import AttendanceDisplayFilter from "./AttendanceDisplayFilter";
 
 const STATUS_FILTERS = [
   {
@@ -50,6 +56,14 @@ const STATUS_FILTERS = [
     activeBg: "#7c3aed",
     border: "#c4b5fd",
   },
+  {
+    key: "onTimeOff",
+    labelKey: "onCompanyTimeOff",
+    color: "#0d9488",
+    bg: "#f0fdfa",
+    activeBg: "#0d9488",
+    border: "#5eead4",
+  },
 ];
 
 const AttendanceTable = ({ rowData = [], viewMode }) => {
@@ -59,117 +73,27 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
   const [search, setSearch] = useState("");
   const [openBranches, setOpenBranches] = useState({});
   const [modalData, setModalData] = useState(null);
-  const [displayMode, setDisplayMode] = useState("byEmployees");
-  const [activeFilters, setActiveFilters] = useState(new Set());
-  const viewTypes = ["byEmployees", "byDepartments"];
+  const [displayMode, setDisplayMode] = useState(
+    () => (viewMode === "branch" ? "byEmployees" : "byBranch"),
+  );
+  const [activeFilter, setActiveFilter] = useState(null);
+  const emptyTableFilter = () => ({ branches: [], departments: [], employees: [], positions: [] });
+  const [tableFilter, setTableFilter] = useState(emptyTableFilter);
+  const viewTypes =
+    viewMode === "branch"
+      ? ["byEmployees", "byDepartments"]
+      : ["byBranch", "byDepartments", "byEmployees"];
 
-  // Переключение фильтра: если уже активен — снять, иначе добавить
+
+  // Переключение фильтра: если уже активен — снять, иначе выбрать только его (single-select)
   const toggleFilter = (key) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
+    setActiveFilter((prev) => (prev === key ? null : key));
   };
 
-  const prepareAttendanceData = (data) => {
-    if (!data || !data.employees) return [];
-
-    const presentIds = new Set(data.present.map((e) => e.employeeId));
-    const absentIds = new Set(data.absent.map((e) => e.employeeId));
-    const insideIds = new Set(data.inside.map((e) => e.employeeId));
-    const leftIds = new Set(data.left.map((e) => e.employeeId));
-    const lateIds = new Set(data.late.map((e) => e.employeeId));
-
-    const presentMap = new Map(
-      data.present.map((e) => [e.employeeId, e.firstEntry]),
-    );
-    const leftMap = new Map(data.left.map((e) => [e.employeeId, e.lastExit]));
-    const lateMap = new Map(
-      data.late.map((e) => [e.employeeId, e.lateMinutes]),
-    );
-
-    const branchesMap = {};
-
-    data.employees.forEach((emp) => {
-      const branchName = emp.branchName || t("noBranch");
-      const departmentName = emp.departmentName || t("noDepartment");
-
-      if (!branchesMap[branchName]) {
-        branchesMap[branchName] = {
-          name: branchName,
-          totalEmployees: 0,
-          present: 0,
-          absent: 0,
-          inside: 0,
-          left: 0,
-          late: 0,
-          employees: [],
-          departments: {},
-        };
-      }
-
-      const branch = branchesMap[branchName];
-      branch.totalEmployees += 1;
-      if (presentIds.has(emp.id)) branch.present += 1;
-      if (absentIds.has(emp.id)) branch.absent += 1;
-      if (insideIds.has(emp.id)) branch.inside += 1;
-      if (leftIds.has(emp.id)) branch.left += 1;
-      if (lateIds.has(emp.id)) branch.late += 1;
-
-      const employeeRecord = {
-        employeeId: emp.id,
-        employeeFullName: emp.employeeFullName,
-        employeeNumber: emp.employeeNumber,
-        employeePhoto: emp.employeePhoto,
-        branchName: emp.branchName,
-        departmentName: emp.departmentName,
-        positionName: emp.positionName,
-        present: presentIds.has(emp.id),
-        absent: absentIds.has(emp.id),
-        inside: insideIds.has(emp.id),
-        left: leftIds.has(emp.id),
-        late: lateIds.has(emp.id),
-        firstEntry: presentMap.get(emp.id) || null,
-        lastExit: leftMap.get(emp.id) || null,
-        lateMinutes: lateMap.get(emp.id) || 0,
-      };
-      branch.employees.push(employeeRecord);
-
-      if (!branch.departments[departmentName]) {
-        branch.departments[departmentName] = {
-          name: departmentName,
-          totalEmployees: 0,
-          present: 0,
-          absent: 0,
-          inside: 0,
-          left: 0,
-          late: 0,
-          employees: [],
-        };
-      }
-
-      const dept = branch.departments[departmentName];
-      dept.totalEmployees += 1;
-      if (presentIds.has(emp.id)) dept.present += 1;
-      if (absentIds.has(emp.id)) dept.absent += 1;
-      if (insideIds.has(emp.id)) dept.inside += 1;
-      if (leftIds.has(emp.id)) dept.left += 1;
-      if (lateIds.has(emp.id)) dept.late += 1;
-      dept.employees.push(employeeRecord);
-    });
-
-    return Object.values(branchesMap).map((branch) => ({
-      ...branch,
-      departments: Object.values(branch.departments),
-    }));
-  };
-
-  const data = useMemo(() => prepareAttendanceData(rowData), [rowData]);
+  const data = useMemo(
+    () => prepareData(rowData, { noBranch: t("noBranch"), noDepartment: t("noDepartment") }),
+    [rowData],
+  );
 
   const allEmployees = useMemo(
     () => data.flatMap((branch) => branch.employees),
@@ -177,45 +101,62 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
   );
 
   const allDepartments = useMemo(
-    () => data.flatMap((branch) => branch.departments),
+    () =>
+      data.flatMap((branch) =>
+        branch.departments.map((dept) => ({ ...dept, branchName: branch.name })),
+      ),
     [data],
   );
 
   // Применяем фильтры по статусу к массиву сотрудников
   const applyStatusFilter = (employees) => {
-    if (activeFilters.size === 0) return employees;
-    return employees.filter((emp) =>
-      [...activeFilters].some((key) => emp[key] === true),
-    );
+    if (!activeFilter) return employees;
+    return employees.filter((emp) => emp[activeFilter] === true);
   };
 
   const filteredEmployees = useMemo(() => {
     let result = allEmployees;
+    if (tableFilter.branches.length) result = result.filter((e) => tableFilter.branches.includes(e.branchName));
+    if (tableFilter.departments.length) result = result.filter((e) => tableFilter.departments.includes(e.departmentName));
+    if (tableFilter.employees.length) result = result.filter((e) => tableFilter.employees.includes(e.employeeId));
+    if (tableFilter.positions.length) result = result.filter((e) => tableFilter.positions.includes(e.positionName));
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter(
         (emp) =>
           emp.employeeFullName?.toLowerCase().includes(q) ||
           emp.departmentName?.toLowerCase().includes(q) ||
-          emp.positionName?.toLowerCase().includes(q),
+          emp.positionName?.toLowerCase().includes(q) ||
+          emp.branchName?.toLowerCase().includes(q),
       );
     }
     return applyStatusFilter(result);
-  }, [allEmployees, search, activeFilters]);
+  }, [allEmployees, search, activeFilter, tableFilter]);
 
   const filteredDepartments = useMemo(() => {
-    if (!search.trim()) return allDepartments;
-    const q = search.toLowerCase();
-    return allDepartments.filter((dept) =>
-      dept.name?.toLowerCase().includes(q),
-    );
-  }, [allDepartments, search]);
+    let result = allDepartments;
+    if (tableFilter.branches.length) result = result.filter((d) => tableFilter.branches.includes(d.branchName));
+    if (tableFilter.departments.length) result = result.filter((d) => tableFilter.departments.includes(d.name));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (dept) =>
+          dept.name?.toLowerCase().includes(q) ||
+          dept.branchName?.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [allDepartments, search, tableFilter]);
 
   const filteredBranches = useMemo(() => {
-    if (!search.trim()) return data;
-    const q = search.toLowerCase();
-    return data.filter((branch) => branch.name?.toLowerCase().includes(q));
-  }, [data, search]);
+    let result = data;
+    if (tableFilter.branches.length) result = result.filter((b) => tableFilter.branches.includes(b.name));
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter((branch) => branch.name?.toLowerCase().includes(q));
+    }
+    return result;
+  }, [data, search, tableFilter]);
 
   const getSortedData = (arr) =>
     [...arr].sort((a, b) => {
@@ -249,6 +190,14 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     [filteredBranches, sortField, sortOrder],
   );
 
+  const tableContainerRef = useRef(null);
+  const rowVirtualizer = useVirtualizer({
+    count: displayMode === "byEmployees" ? sortedEmployees.length : 0,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 50,
+    overscan: 8,
+  });
+
   const handleSort = (field) => {
     if (sortField === field) {
       setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
@@ -275,6 +224,15 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     }
   }, [data]);
 
+  useEffect(() => {
+    if (displayMode === "byEmployees") {
+      setSortField("employeeFullName");
+    } else {
+      setSortField("name");
+    }
+    setSortOrder("asc");
+  }, [displayMode]);
+
   // ─── Подсчёт для бейджей на кнопках ──────────────────────────────
   const statusCounts = useMemo(() => {
     const counts = {};
@@ -284,26 +242,70 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     return counts;
   }, [allEmployees]);
 
+  // ─── Фиксированные ширины колонок для виртуального скролла ──────
+  // Порядок: №, [филиал], отдел, ФИО, должность, пришел, опоздал, на месте, ушел
+  const renderColgroup = () => {
+    if (displayMode !== "byEmployees") return null;
+    if (viewMode === "branch") {
+      return (
+        <colgroup>
+          <col style={{ width: "4.55%" }} />   {/* № */}
+          <col style={{ width: "14.77%" }} />  {/* отдел */}
+          <col style={{ width: "25%" }} />     {/* ФИО */}
+          <col style={{ width: "14.77%" }} />  {/* должность */}
+          <col style={{ width: "9.66%" }} />   {/* пришел */}
+          <col style={{ width: "13.64%" }} />  {/* турникет */}
+          <col style={{ width: "7.95%" }} />   {/* опоздал */}
+          <col style={{ width: "9.66%" }} />   {/* ушел */}
+        </colgroup>
+      );
+    }
+    return (
+      <colgroup>
+        <col style={{ width: "4.17%" }} />   {/* № */}
+        <col style={{ width: "12.5%" }} />   {/* филиал */}
+        <col style={{ width: "12.5%" }} />   {/* отдел */}
+        <col style={{ width: "20.83%" }} />  {/* ФИО */}
+        <col style={{ width: "12.5%" }} />   {/* должность */}
+        <col style={{ width: "8.85%" }} />   {/* пришел */}
+        <col style={{ width: "12.5%" }} />   {/* турникет */}
+        <col style={{ width: "7.29%" }} />   {/* опоздал */}
+        <col style={{ width: "8.85%" }} />   {/* ушел */}
+      </colgroup>
+    );
+  };
+
   // ─── Заголовки таблицы ────────────────────────────────────────────
   const renderThead = () => {
-    if (viewMode === "branch" && displayMode === "byEmployees") {
+    if (displayMode === "byEmployees") {
       return (
         <tr>
           <th>№</th>
-          <th onClick={() => handleSort("employeeFullName")}>
-            <span className={styles.headerContent}>
-              {t("fullName")}
-              <SortArrow
-                active={sortField === "employeeFullName"}
-                order={sortOrder}
-              />
-            </span>
-          </th>
+          {viewMode !== "branch" && (
+            <th onClick={() => handleSort("branchName")}>
+              <span className={styles.headerContent}>
+                {t("branch")}
+                <SortArrow
+                  active={sortField === "branchName"}
+                  order={sortOrder}
+                />
+              </span>
+            </th>
+          )}
           <th onClick={() => handleSort("departmentName")}>
             <span className={styles.headerContent}>
               {t("department")}
               <SortArrow
                 active={sortField === "departmentName"}
+                order={sortOrder}
+              />
+            </span>
+          </th>
+          <th onClick={() => handleSort("employeeFullName")}>
+            <span className={styles.headerContent}>
+              {t("fullName")}
+              <SortArrow
+                active={sortField === "employeeFullName"}
                 order={sortOrder}
               />
             </span>
@@ -317,21 +319,46 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
               />
             </span>
           </th>
-          <th>{t("checkedInSingular")}</th>
-          <th>{t("notCheckedInSingular")}</th>
-          <th>{t("lateSingular")}</th>
-          <th>{t("onSite")}</th>
-          <th>{t("checkedOutSingular")}</th>
-          <th>{t("firstEntry")}</th>
-          <th>{t("lastExit")}</th>
+          <th onClick={() => handleSort("firstEntry")}>
+            <span className={styles.headerContent}>
+              {t("checkedInSingular")}
+              <SortArrow active={sortField === "firstEntry"} order={sortOrder} />
+            </span>
+          </th>
+          <th onClick={() => handleSort("firstEntryDoor")}>
+            <span className={styles.headerContent}>
+              {t("turnstile")}
+              <SortArrow active={sortField === "firstEntryDoor"} order={sortOrder} />
+            </span>
+          </th>
+          <th onClick={() => handleSort("lateMinutes")}>
+            <span className={styles.headerContent}>
+              {t("lateTimeHhMm")}
+              <SortArrow active={sortField === "lateMinutes"} order={sortOrder} />
+            </span>
+          </th>
+          <th onClick={() => handleSort("lastExit")}>
+            <span className={styles.headerContent}>
+              {t("checkedOutSingular")}
+              <SortArrow active={sortField === "lastExit"} order={sortOrder} />
+            </span>
+          </th>
         </tr>
       );
     }
 
-    if (viewMode === "branch" && displayMode === "byDepartments") {
+    if (displayMode === "byDepartments") {
       return (
         <tr>
           <th>№</th>
+          {viewMode !== "branch" && (
+            <th onClick={() => handleSort("branchName")}>
+              <span className={styles.headerContent}>
+                {t("branch")}
+                <SortArrow active={sortField === "branchName"} order={sortOrder} />
+              </span>
+            </th>
+          )}
           <th onClick={() => handleSort("name")}>
             <span className={styles.headerContent}>
               {t("department")}
@@ -381,7 +408,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
       );
     }
 
-    // Дефолт — viewMode !== "branch"
+    // byBranch — дефолт
     return (
       <tr>
         <th>№</th>
@@ -433,7 +460,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
             <SortArrow active={sortField === "left"} order={sortOrder} />
           </span>
         </th>
-        <th>{t("showByDept")}</th>
+        {viewMode !== "branch" && <th>{t("showByDept")}</th>}
       </tr>
     );
   };
@@ -448,7 +475,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
       );
     }
 
-    if (viewMode === "branch" && displayMode === "byEmployees") {
+    if (displayMode === "byEmployees") {
       if (!sortedEmployees.length) {
         return (
           <tr>
@@ -456,34 +483,65 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           </tr>
         );
       }
-      return sortedEmployees.map((emp, index) => (
-        <tr key={emp.employeeId}>
-          <td>{index + 1}</td>
-          <td>
-            <div className={styles.employee}>
-              {emp.employeeFullName}
-              {emp.employeePhoto && (
-                <img
-                  src={`/api/employees/image/${emp.employeePhoto}`}
-                  alt="employee"
-                />
-              )}
-            </div>
-          </td>
-          <td>{emp.departmentName}</td>
-          <td>{emp.positionName || "—"}</td>
-          <td>{emp.present ? "✓" : "—"}</td>
-          <td>{emp.absent ? "✓" : "—"}</td>
-          <td>{emp.late ? `${emp.lateMinutes} мин` : "—"}</td>
-          <td>{emp.inside ? "✓" : "—"}</td>
-          <td>{emp.left ? "✓" : "—"}</td>
-          <td>{emp.firstEntry || "—"}</td>
-          <td>{emp.lastExit || "—"}</td>
-        </tr>
-      ));
+      const virtualRows = rowVirtualizer.getVirtualItems();
+      const totalSize = rowVirtualizer.getTotalSize();
+      const paddingTop = virtualRows.length > 0 ? virtualRows[0].start : 0;
+      const paddingBottom =
+        virtualRows.length > 0 ? totalSize - virtualRows[virtualRows.length - 1].end : 0;
+      return (
+        <>
+          {paddingTop > 0 && (
+            <tr>
+              <td colSpan={9} style={{ height: paddingTop, padding: 0, border: 0 }} />
+            </tr>
+          )}
+          {virtualRows.map((virtualRow) => {
+            const emp = sortedEmployees[virtualRow.index];
+            return (
+              <tr key={emp.employeeId} style={{ height: 50 }}>
+                <td>{virtualRow.index + 1}</td>
+                {viewMode !== "branch" && <td>{emp.branchName || "—"}</td>}
+                <td>{emp.departmentName}</td>
+                <td>
+                  <div className={styles.employee}>
+                    {emp.employeeFullName}
+                    {emp.employeePhoto && (
+                      <img
+                        src={`/api/employees/image/${emp.employeePhoto}`}
+                        alt="employee"
+                      />
+                    )}
+                  </div>
+                </td>
+                <td>{emp.positionName || "—"}</td>
+                <td>{emp.firstEntry || ""}</td>
+                <td>
+                  {emp.firstEntryDoor ? (
+                    emp.firstEntryDoor
+                  ) : emp.timeOffInfo ? (
+                    <span>
+                      {t("excusedLeave")}
+                      {emp.timeOffInfo.reason ? ` (${emp.timeOffInfo.reason})` : ""}
+                    </span>
+                  ) : (
+                    ""
+                  )}
+                </td>
+                <td>{emp.late ? formatLateMinutesToHours(emp.lateMinutes) : ""}</td>
+                <td>{emp.lastExit || ""}</td>
+              </tr>
+            );
+          })}
+          {paddingBottom > 0 && (
+            <tr>
+              <td colSpan={9} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+            </tr>
+          )}
+        </>
+      );
     }
 
-    if (viewMode === "branch" && displayMode === "byDepartments") {
+    if (displayMode === "byDepartments") {
       if (!sortedDepartments.length) {
         return (
           <tr>
@@ -492,8 +550,9 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
         );
       }
       return sortedDepartments.map((dept, index) => (
-        <tr key={dept.name} onClick={() => setModalData(dept.employees)}>
+        <tr key={`${dept.branchName}-${dept.name}`} onClick={() => setModalData(dept.employees)}>
           <td>{index + 1}</td>
+          {viewMode !== "branch" && <td>{dept.branchName || "—"}</td>}
           <td>{dept.name}</td>
           <td>{dept.totalEmployees}</td>
           <td>{dept.present}</td>
@@ -505,16 +564,15 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
       ));
     }
 
-    // Дефолт — фильтрация по филиалу
-    const sorted = sortedBranches;
-    if (!sorted.length) {
+    // byBranch — дефолт
+    if (!sortedBranches.length) {
       return (
         <tr>
           <td colSpan="11">{t("noData")}</td>
         </tr>
       );
     }
-    return sorted.map((branch, index) => (
+    return sortedBranches.map((branch, index) => (
       <Fragment key={branch.name}>
         <tr onClick={() => setModalData(branch.employees)}>
           <td>{index + 1}</td>
@@ -525,35 +583,22 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
           <td>{branch.late}</td>
           <td>{branch.inside}</td>
           <td>{branch.left}</td>
-          <td
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleBranch(branch.name);
-            }}
-            className={styles.toggleCell}
-          >
-            <button
-              className={`${styles.toggleBtn} ${openBranches[branch.name] ? styles.toggleBtnOpen : ""}`}
+          {viewMode !== "branch" && (
+            <td
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleBranch(branch.name);
+              }}
+              className={styles.toggleCell}
             >
-              <span>{openBranches[branch.name] ? t("hide") : t("show")}</span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                className={styles.toggleIcon}
+              <button
+                className={`${styles.toggleBtn} ${openBranches[branch.name] ? styles.toggleBtnOpen : ""}`}
               >
-                <path
-                  fill="none"
-                  stroke="currentColor"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2.5"
-                  d="m6 9l6 6l6-6"
-                />
-              </svg>
-            </button>
-          </td>
+                <span>{openBranches[branch.name] ? t("hide") : t("show")}</span>
+                <span className={styles.toggleIcon}>{Icons.chevronDown}</span>
+              </button>
+            </td>
+          )}
         </tr>
 
         {openBranches[branch.name] &&
@@ -571,7 +616,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
               <td>{dept.late}</td>
               <td>{dept.inside}</td>
               <td>{dept.left}</td>
-              <td></td>
+              {viewMode !== "branch" && <td></td>}
             </tr>
           ))}
       </Fragment>
@@ -582,17 +627,7 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
     <div className={styles.wrapper}>
       <div className={styles.header}>
         <div className={styles.searchInput}>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="19"
-            viewBox="0 0 24 24"
-          >
-            <path
-              fill="#000000"
-              d="M15.096 5.904a6.5 6.5 0 1 0-9.192 9.192a6.5 6.5 0 0 0 9.192-9.192ZM4.49 4.49a8.5 8.5 0 0 1 12.686 11.272l5.345 5.345l-1.414 1.414l-5.345-5.345A8.501 8.501 0 0 1 4.49 4.49Z"
-            />
-          </svg>
+          {Icons.search}
           <input
             type="text"
             placeholder={t("search")}
@@ -600,31 +635,15 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
             onChange={(e) => setSearch(e.target.value)}
           />
           {search && (
-            <svg
-              className={styles.clearBtn}
-              onClick={() => setSearch("")}
-              xmlns="http://www.w3.org/2000/svg"
-              width="19"
-              height="18"
-              viewBox="0 0 24 24"
-            >
-              <path
-                fill="none"
-                stroke="#000000"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <span className={styles.clearBtn} onClick={() => setSearch("")} style={{ display: "flex", cursor: "pointer" }}>{Icons.clear}</span>
           )}
         </div>
 
         {/* Кнопки-фильтры по статусу — показываем только в режиме byEmployees */}
-        {viewMode === "branch" && displayMode === "byEmployees" && (
+        {displayMode === "byEmployees" && (
           <div className={styles.statusFilters}>
             {STATUS_FILTERS.map((f) => {
-              const isActive = activeFilters.has(f.key);
+              const isActive = activeFilter === f.key;
               return (
                 <button
                   key={f.key}
@@ -645,67 +664,55 @@ const AttendanceTable = ({ rowData = [], viewMode }) => {
                 </button>
               );
             })}
-
-            {activeFilters.size > 0 && (
-              <button
-                className={styles.clearFiltersBtn}
-                onClick={() => setActiveFilters(new Set())}
-                title={t("resetAllFilters")}
-              >
-                {t("reset")}
-              </button>
-            )}
           </div>
         )}
 
-        <div style={{ display: "flex", gap: "10px" }}>
-          {viewMode === "branch" && (
-            <Switcher
-              items={viewTypes}
-              activeItem={displayMode}
-              onSelect={(id) => {
-                setDisplayMode(id);
-                setActiveFilters(new Set()); // сбрасываем фильтры при смене режима
-              }}
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {data.length > 0 && (
+            <AttendanceDisplayFilter
+              data={data}
+              displayMode={displayMode}
+              filter={tableFilter}
+              onApply={setTableFilter}
             />
           )}
 
+          <Switcher
+            items={viewTypes}
+            activeItem={displayMode}
+            onSelect={(id) => {
+              setDisplayMode(id);
+              setActiveFilter(null);
+              setTableFilter(emptyTableFilter());
+            }}
+          />
+
           {data.length > 0 && (
-            <DownloadButton text={t("save")} onClick={() => {}} />
+            <DownloadButton
+              text={t("save")}
+              onClick={() => {
+                const rows =
+                  displayMode === "byBranch"
+                    ? sortedBranches
+                    : displayMode === "byDepartments"
+                      ? sortedDepartments
+                      : [...sortedEmployees].sort(
+                          (a, b) =>
+                            (a.positionSortOrder ?? 0) - (b.positionSortOrder ?? 0) ||
+                            (a.departmentName || "").localeCompare(b.departmentName || "", "ru", { sensitivity: "base" }),
+                        );
+                downloadAttendanceModeSheet(rows, displayMode, new Date().toISOString().slice(0, 10));
+              }}
+            />
           )}
         </div>
       </div>
 
-      {/* Активные фильтры — информационная строка */}
-      {activeFilters.size > 0 && (
-        <div className={styles.activeFiltersBar}>
-          <span className={styles.activeFiltersLabel}>{t("filterActive")}</span>
-          {[...activeFilters].map((key) => {
-            const f = STATUS_FILTERS.find((f) => f.key === key);
-            return (
-              <span
-                key={key}
-                className={styles.activeFilterTag}
-                style={{ "--filter-color": f.color, "--filter-bg": f.bg }}
-              >
-                {t(f.labelKey)}
-                <button
-                  className={styles.removeTagBtn}
-                  onClick={() => toggleFilter(key)}
-                >
-                  ×
-                </button>
-              </span>
-            );
-          })}
-          <span className={styles.filteredCount}>
-            {t("shown")} {sortedEmployees.length} {t("employees")}
-          </span>
-        </div>
-      )}
-
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
+      <div className={styles.tableContainer} ref={tableContainerRef}>
+        <table
+          className={`${styles.table} ${displayMode === "byEmployees" ? styles.tableFixed : ""}`}
+        >
+          {renderColgroup()}
           <thead>{renderThead()}</thead>
           <tbody>{renderTbody()}</tbody>
         </table>

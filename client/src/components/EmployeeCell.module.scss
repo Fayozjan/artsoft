@@ -1,0 +1,97 @@
+.empCell {
+  padding-left: 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  min-width: 160px;
+}
+
+.empAvatar {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  &.inactive {
+    border-color: #ef4444;
+  }
+}
+
+.empPhoto {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+
+.empInitials {
+  width: 100%;
+  height: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  border-radius: 50%;
+  user-select: none;
+
+  &.inactiveInitials {
+    background: #fca5a5;
+    color: #7f1d1d;
+  }
+}
+
+.empInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.empName {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.empId {
+  font-weight: 400;
+  color: var(--placeholder-color);
+  font-size: 11px;
+}
+
+.empSub {
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+// Компактный вариант для плотных таблиц: аватар меньше,
+// длинные «филиал / отдел / должность» обрезаются многоточием
+.compact {
+  min-width: 0;
+  gap: 7px;
+
+  .empInfo {
+    min-width: 0;
+  }
+
+  .empAvatar {
+    width: 32px;
+    height: 32px;
+  }
+
+  .empName,
+  .empSub {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

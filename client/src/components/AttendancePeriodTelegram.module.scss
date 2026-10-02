@@ -1,0 +1,283 @@
+// Посещаемость в Telegram — период по дням.
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 12px 0;
+}
+
+.day {
+  overflow: hidden;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+}
+
+.dayHead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 12px 12px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.14s ease;
+
+  &:active {
+    background: var(--select-hover-color);
+  }
+}
+
+// Плашка даты: день недели и число
+.badge {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  width: 46px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(20, 85, 254, 0.12);
+  color: var(--third-color, #1455fe);
+
+  small {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  b {
+    font-size: 19px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.4px;
+  }
+}
+
+.dayOff {
+  .badge {
+    background: var(--tg-surface);
+    color: var(--text-secondary);
+  }
+
+  .dayTitle {
+    color: var(--text-secondary);
+  }
+}
+
+.dayMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.dayTitle {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daySub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.dayRate {
+  flex-shrink: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  font-variant-numeric: tabular-nums;
+}
+
+.dayChevron,
+.rowChevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s ease;
+  }
+}
+
+.dayChevronOpen svg,
+.rowChevronOpen svg {
+  transform: rotate(180deg);
+}
+
+// ── Полоса и счётчики ────────────────────────────────────────────────────────
+
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--tg-bar-track);
+}
+
+.barSegment {
+  flex-basis: 0;
+  min-width: 3px;
+  border-radius: 999px;
+  background: rgb(var(--tone));
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 8px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+// ── Разбивка дня ─────────────────────────────────────────────────────────────
+
+.dayBody {
+  padding: 4px 0 6px;
+  border-top: 0.5px solid var(--tg-separator);
+  background: var(--tg-surface);
+}
+
+.dayEmpty {
+  margin: 0;
+  padding: 14px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.row {
+  cursor: pointer;
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.rowNested {
+  padding-left: 30px;
+}
+
+.rowMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.rowName {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowNumbers {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+
+// ── Пустое состояние ─────────────────────────────────────────────────────────
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}

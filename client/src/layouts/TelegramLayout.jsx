@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useOutlet, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -6,9 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useAuthCheck } from "../hooks/useAuthCheck";
 import { useAuthStore } from "../stores/authStore";
 
-import { getUserMenu } from "../api";
-
-import Loading from "../components/Loading";
+import Loading from "../components/LoadingTelegram";
 
 import BottomNavTelegram from "../components/BottomNavTelegram";
 import {
@@ -22,7 +20,6 @@ export default function TelegramLayout() {
   const { getUserSettings } = useAuthStore();
   const location = useLocation();
   const outlet = useOutlet();
-  const [menuData, setMenuData] = useState([]);
   const { theme: storedTheme } = getUserSettings();
   const { loading, isAuth } = useAuthCheck();
   const { userSettings } = useAuthStore();
@@ -35,16 +32,14 @@ export default function TelegramLayout() {
     }
   }, [language, i18n]);
 
+  // платформа Telegram (android / ios / tdesktop ...) — для CSS-фолбэков под слабые WebView
   useEffect(() => {
-    const fetchUserMenu = async () => {
-      try {
-        const res = await getUserMenu();
-        setMenuData(res);
-      } catch (error) {
-        console.error("Ошибка получения меню:", error);
-      }
+    const html = document.documentElement;
+    const platform = window.Telegram?.WebApp?.platform;
+    if (platform) html.dataset.tgPlatform = platform;
+    return () => {
+      delete html.dataset.tgPlatform;
     };
-    fetchUserMenu();
   }, []);
 
   useEffect(() => {
@@ -74,11 +69,12 @@ export default function TelegramLayout() {
           exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
           className={styles.page}
         >
-          {outlet}
+          {/* страницы — lazy-чанки: нижнее меню остаётся на месте, пока страница грузится */}
+          <Suspense fallback={<Loading />}>{outlet}</Suspense>
         </motion.main>
       </AnimatePresence>
       <ScreenStackRenderer />
-      <BottomNavTelegram menuData={menuData} />
+      <BottomNavTelegram />
     </ScreenStackProvider>
   );
 }

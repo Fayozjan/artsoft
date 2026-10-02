@@ -1,0 +1,111 @@
+// Табель в Telegram — страница (использует общий каркас AttendancePageTelegram).
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// ── Сегменты статуса в шторке фильтров ───────────────────────────────────────
+
+.segmentedRow {
+  display: flex;
+  gap: 6px;
+}
+
+.segmentedBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 40px;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.14s ease,
+    border-color 0.14s ease;
+}
+
+.segmentedBtnActive {
+  border-color: var(--third-color, #1455fe);
+  background: rgba(20, 85, 254, 0.14);
+  color: var(--third-color, #1455fe);
+}
+
+// ── Шторка скачивания ─────────────────────────────────────────────────────────
+
+.downloadList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.downloadItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 16px;
+  background: var(--card-bg);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    background-color 0.14s ease;
+
+  &:active:not(:disabled) {
+    transform: scale(0.985);
+    background: var(--tg-hover);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.downloadIcon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  background: rgba(20, 85, 254, 0.12);
+  color: var(--third-color, #1455fe);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.downloadText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: left;
+
+  b {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+
+  small {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+}

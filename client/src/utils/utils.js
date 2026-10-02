@@ -1,3 +1,5 @@
+import i18n from "../i18n";
+
 // Вспомогательная функция для форматирования даты
 export const formatDate = (dateString) => {
   if (!dateString) return "";
@@ -84,21 +86,21 @@ export function getExpiryBadge(date) {
   if (diff < 0) {
     return {
       status: "expired",
-      text: `, Просрочен ${Math.abs(diff)} дн.`,
+      text: i18n.t("expiryExpired", { days: Math.abs(diff) }),
     };
   }
 
   if (diff === 0) {
     return {
       status: "today",
-      text: ", Истекает сегодня",
+      text: i18n.t("expiryToday"),
     };
   }
 
   if (diff <= 30) {
     return {
       status: "soon",
-      text: `, Ост. ${diff} дн.`,
+      text: i18n.t("expirySoon", { days: diff }),
     };
   }
 

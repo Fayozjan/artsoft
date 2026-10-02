@@ -18,6 +18,7 @@ export const Switcher = ({ items = [], activeItem, onSelect }) => {
   return (
     <div className={styles.switcher} ref={ref}>
       <button
+        type="button"
         className={styles.switcherCurrent}
         onClick={() => setExpanded((p) => !p)}
       >
@@ -32,6 +33,7 @@ export const Switcher = ({ items = [], activeItem, onSelect }) => {
             return (
               <li key={item}>
                 <button
+                  type="button"
                   className={`${styles.switcherItem} ${isActive ? styles.active : ""}`}
                   onClick={() => {
                     onSelect(item);

@@ -1,0 +1,172 @@
+.state {
+  padding: 8px 0;
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+}
+
+.chain {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+// Вложенность: предыдущие стикеры выше и левее, дочерние — глубже
+.node {
+  --indent: 20px;
+
+  margin-left: calc(var(--depth, 0) * var(--indent));
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--card-bg);
+}
+
+.nodeSelected {
+  border-left-color: var(--third-color);
+  box-shadow: 0 0 0 1px var(--third-color);
+}
+
+.nodeHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.relation {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+
+.code {
+  font-size: var(--font-small);
+  font-variant-numeric: tabular-nums;
+  user-select: all;
+}
+
+.operation {
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  margin-top: 4px;
+}
+
+.chip {
+  display: inline-flex;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  line-height: 18px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+
+  span {
+    color: var(--text-secondary);
+  }
+}
+
+.workers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.worker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workerNums {
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+// Журнал: вертикальная линия с точкой у каждой записи
+.events {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--border-color);
+}
+
+.event {
+  --dot: var(--text-secondary);
+
+  position: relative;
+  padding: 0 0 8px 8px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    left: -20px;
+    top: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--dot);
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.created {
+  --dot: #6b7280;
+}
+
+.accepted {
+  --dot: #10b981;
+}
+
+.returned {
+  --dot: #f59e0b;
+}
+
+.advanced {
+  --dot: #3b82f6;
+}
+
+.child_deleted {
+  --dot: #ef4444;
+}
+
+.rate_changed {
+  --dot: #8b5cf6;
+}
+
+.eventHead {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.eventTitle {
+  font-weight: 700;
+  font-size: var(--font-small);
+}
+
+.eventMeta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}

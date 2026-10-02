@@ -1,4 +1,4 @@
-.overlay {
+﻿.overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
 
 .add_user {
   width: 80%;
-  background: white;
+  background: var(--card-bg);
   padding: 10px;
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
@@ -88,7 +88,7 @@
     display: block;
     font-size: 14px;
     margin-bottom: 5px;
-    color: #666;
+    color: var(--text-secondary);
   }
 
   .form_group input[type="text"],
@@ -96,10 +96,10 @@
   input[type="date"],
   select {
     font-weight: 500;
-    color: black;
+    color: var(--text-color);
     width: 100%;
     padding: 10px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 14px;
     box-sizing: border-box;
@@ -115,7 +115,7 @@
     justify-content: start;
     gap: 5px;
     padding: 0px 7px 0px 7px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     box-sizing: border-box;
 
@@ -157,7 +157,7 @@
   .cancel {
     border: 2px solid rgba(162, 161, 168, 0.2);
     margin-right: 10px;
-    background-color: #ffffff;
+    background-color: var(--card-bg);
     color: #16151c;
   }
 
@@ -186,7 +186,7 @@
     padding: 40px;
     border-radius: 10px;
 
-    background-color: white;
+    background-color: var(--card-bg);
     text-align: center;
     font-size: 24px;
     font-weight: 600;

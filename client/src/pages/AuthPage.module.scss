@@ -1,4 +1,4 @@
-.authPage {
+﻿.authPage {
   width: 100%;
   min-height: 100dvh;
   display: flex;
@@ -9,6 +9,10 @@
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+
+  :global(html.dark) & {
+    background-image: url("/3_darker.jpg");
+  }
 
   padding: env(safe-area-inset-top) env(safe-area-inset-right)
     env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -31,16 +35,58 @@
     }
   }
 
-  .lang_switcher {
+  .top_right {
     position: absolute;
     top: 15px;
     right: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 10;
+  }
+
+  .theme_toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: #e9eef3;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #6c757d;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+
+    &:hover {
+      color: #333333;
+    }
+
+    :global(html.dark) & {
+      background-color: #2d2d2d;
+      color: #9e9e9e;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+
+      &:hover {
+        color: #d4d4d4;
+      }
+    }
+  }
+
+  .lang_switcher {
+    position: static;
     display: flex;
     background-color: #e9eef3;
     border-radius: 8px;
     padding: 4px;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-    z-index: 10;
+
+    :global(html.dark) & {
+      background-color: #2d2d2d;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
 
     button {
       all: unset;
@@ -58,11 +104,19 @@
       &:hover {
         color: #333333;
       }
+
+      :global(html.dark) & {
+        color: #9e9e9e;
+
+        &:hover {
+          color: #d4d4d4;
+        }
+      }
     }
 
     .active {
       color: var(--third-color);
-      background-color: #ffffff;
+      background-color: var(--card-bg);
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
       font-weight: 700;
     }
@@ -71,11 +125,17 @@
   .login_card {
     margin: 0 auto;
     padding: 25px;
-    width: 380px;
+    box-sizing: border-box;
+    width: 430px;
     max-width: 90vw;
     background-color: var(--card-bg);
     border-radius: 20px;
-    box-shadow: 0 10px 30px var(--shadow-dark);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+    :global(html.dark) & {
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid #3a3a3a;
+    }
 
     display: flex;
     flex-direction: column;
@@ -108,7 +168,7 @@
       .input_group {
         position: relative;
         width: 100%;
-        border: 1px solid #e0e0e0;
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         transition: border-color 0.2s;
 
@@ -117,19 +177,32 @@
         }
 
         .input_field {
+          display: block;
+          box-sizing: border-box;
           width: 100%;
+          min-width: 0;
           padding: 12px 15px;
+          margin: 0;
           border: none;
+          border-radius: 8px;
           background: transparent;
+          font-family: inherit;
           font-size: 16px;
           font-weight: 500;
           color: var(--text-color);
           outline: none;
+          -webkit-appearance: none;
+          appearance: none;
 
           &::placeholder {
             font-weight: 400;
             color: var(--placeholder-color);
           }
+        }
+
+        // место под кнопку show/hide, чтобы текст не заезжал под неё
+        .input_field_password {
+          padding-right: 70px;
         }
 
         .toggle_password {
@@ -144,6 +217,7 @@
           cursor: pointer;
           color: var(--placeholder-color);
           padding: 5px;
+          user-select: none;
         }
       }
 

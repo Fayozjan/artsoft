@@ -1,0 +1,112 @@
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
+import styles from "./MultiSelect.module.scss";
+
+// formField — рамка как у обычных полей формы (по умолчанию бледная, для фильтров).
+const MultiSelectOperationTypes = ({ options = [], selected = [], onChange, formField = false }) => {
+  const { t } = useTranslation();
+  const [search, setSearch] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  const safeSelected = Array.isArray(selected) ? selected : [];
+
+  const filteredOptions = options.filter((option) =>
+    option.name.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const handleSelect = useCallback(
+    (option) => {
+      const isSelected = safeSelected.includes(option.id);
+      const newSelected = isSelected
+        ? safeSelected.filter((item) => item !== option.id)
+        : [...safeSelected, option.id];
+      onChange(newSelected);
+    },
+    [safeSelected, onChange],
+  );
+
+  const handleSelectAll = useCallback(() => {
+    if (safeSelected.length === options.length) {
+      onChange([]);
+    } else {
+      const allIds = options.map((option) => option.id);
+      onChange(allIds);
+    }
+  }, [safeSelected, options, onChange]);
+
+  const sortedFilteredOptions = [
+    { id: "select_all", name: t("selectAll") },
+    ...filteredOptions.sort((a, b) => {
+      const isASelected = safeSelected.includes(a.id);
+      const isBSelected = safeSelected.includes(b.id);
+      return isASelected === isBSelected ? 0 : isASelected ? -1 : 1;
+    }),
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside, true);
+    return () => {
+      document.removeEventListener("click", handleClickOutside, true);
+    };
+  }, []);
+
+  return (
+    <div ref={containerRef} className={`${styles.container} ${formField ? styles.formField : ""}`}>
+      <div className={styles.inputWrapper}>
+        <input
+          type="text"
+          placeholder={t("searchByOperationType")}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onFocus={() => setIsOpen(true)}
+          className={`${styles.searchInput} ${safeSelected.length ? styles.searchInputActive : ""}`}
+        />
+        {safeSelected.length > 0 && (
+          <span className={styles.countBadge}>{safeSelected.length}</span>
+        )}
+      </div>
+
+      {isOpen && (
+        <div className={styles.options}>
+          {sortedFilteredOptions.map((option) => {
+            const isChecked =
+              option.id === "select_all"
+                ? safeSelected.length === options.length
+                : safeSelected.includes(option.id);
+            return (
+              <div
+                key={option.id}
+                onClick={() =>
+                  option.id === "select_all"
+                    ? handleSelectAll()
+                    : handleSelect(option)
+                }
+                className={`${styles.option} ${isChecked ? styles.optionSelected : ""}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  readOnly
+                  className={styles.checkbox}
+                />
+                {option.name}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MultiSelectOperationTypes;

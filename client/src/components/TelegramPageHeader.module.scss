@@ -5,7 +5,7 @@
   padding-top: calc(env(safe-area-inset-top) + 12px);
 
   .title {
-    color: #fff;
+    color: var(--text-color);
     font-size: 16px;
     font-weight: 600;
   }

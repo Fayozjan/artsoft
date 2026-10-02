@@ -9,22 +9,46 @@ import {
   getActivePositions,
 } from "../api";
 
-import Loading from "../components/Loading";
+import Loading from "../components/LoadingTelegram";
 import { useOpenEditEmployee } from "../hooks/useOpenEditEmployee";
+import { useOpenAddEmployee } from "../hooks/useOpenAddEmployee";
+import {
+  IconSearch,
+  IconClose,
+  IconFilter,
+  IconChevronRight,
+  IconUsers,
+  IconPlus,
+} from "../components/tg/tgIcons";
 
 import { useScreenStack } from "../context/ScreenStackContext";
-
-import { Icons } from "../icons/icons";
 import { useAuthStore } from "../stores/authStore";
 
 import styles from "./EmployeesPageTelegram.module.scss";
 
 const PAGE_SIZE = 50;
 
+const AVATAR_GRADIENTS = [
+  ["#6366f1", "#8b5cf6"],
+  ["#0ea5e9", "#2563eb"],
+  ["#10b981", "#059669"],
+  ["#f59e0b", "#ef4444"],
+  ["#ec4899", "#db2777"],
+  ["#14b8a6", "#0ea5e9"],
+];
+
+const getAvatarGradient = (seed) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash += seed.charCodeAt(i);
+  const [from, to] = AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+  return `linear-gradient(135deg, ${from}, ${to})`;
+};
+
 const EmployeePageTelegram = ({ routePath }) => {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [data, setData] = useState([]);
+  const [total, setTotal] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
@@ -33,7 +57,7 @@ const EmployeePageTelegram = ({ routePath }) => {
   const { pushScreen, popScreen } = useScreenStack();
   const { showAlert } = useAlertStore();
   const { t } = useTranslation();
-  const { canEdit } = usePermissionsTelegram(routePath);
+  const { canAdd, canEdit } = usePermissionsTelegram(routePath);
   const { activeBranchId } = useAuthStore((s) => s.userSettings) || {};
   const scrollRef = useRef(null);
   const listRef = useRef(null);
@@ -52,11 +76,11 @@ const EmployeePageTelegram = ({ routePath }) => {
   const [formData, setFormData] = useState(initialFormData);
   const formDataRef = useRef(initialFormData);
 
+  // Статус переключается быстрыми чипами, в счётчик фильтров он не входит.
   const countActiveFilters = (fd) => {
     let count = 0;
     if (fd.department_id) count++;
     if (fd.position_id) count++;
-    if (fd.status !== "") count++;
     return count;
   };
 
@@ -83,6 +107,7 @@ const EmployeePageTelegram = ({ routePath }) => {
         await EmployeeService.getAll(params);
       const list = employees || [];
       setData((prev) => (page === 1 ? list : [...prev, ...list]));
+      if (page === 1) setTotal(pagination?.totalItems ?? list.length);
       currentPageRef.current = page;
       hasMoreRef.current = page < (pagination?.totalPages || 1);
     } catch (err) {
@@ -106,6 +131,13 @@ const EmployeePageTelegram = ({ routePath }) => {
     } catch (err) {
       console.error("Ошибка загрузки мета:", err.message);
     }
+  };
+
+  const applyFilters = (next) => {
+    setFormData(next);
+    formDataRef.current = next;
+    setActiveFiltersCount(countActiveFilters(next));
+    fetchEmployees(1, next);
   };
 
   useEffect(() => {
@@ -162,10 +194,7 @@ const EmployeePageTelegram = ({ routePath }) => {
         formData={formData}
         initialFormData={initialFormData}
         onApply={(newFilters) => {
-          setFormData(newFilters);
-          formDataRef.current = newFilters;
-          setActiveFiltersCount(countActiveFilters(newFilters));
-          fetchEmployees(1, newFilters);
+          applyFilters(newFilters);
           popScreen();
         }}
         onClose={popScreen}
@@ -175,113 +204,120 @@ const EmployeePageTelegram = ({ routePath }) => {
   };
 
   const openEdit = useOpenEditEmployee(() => fetchEmployees(1));
+  const openAdd = useOpenAddEmployee(() => fetchEmployees(1));
 
   usePullToRefresh(() => fetchEmployees(1), scrollRef, loading);
+
+  const statusOptions = [
+    { value: "", label: t("all") || "Все" },
+    { value: "true", label: t("active") || "Работает" },
+    { value: "false", label: t("terminated") || "Уволен" },
+  ];
 
   return (
     <div className={styles.page}>
       <div className={styles.header} />
       <div className={styles.main} id="scroll-container" ref={scrollRef}>
-        <div className={styles.searchFilterRow}>
-          <div className={styles.searchBox}>
-            <span className={styles.searchIcon}>{Icons.search}</span>
-            <input
-              type="text"
-              placeholder={t("search") || "Поиск..."}
-              value={searchQuery}
-              onChange={handleSearchChange}
-            />
-            {searchQuery.length > 0 && (
-              <button className={styles.clearBtn} onClick={handleSearchClear}>
-                {Icons.clear}
-              </button>
-            )}
-          </div>
-
-          <button
-            className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
-            onClick={openFilter}
-          >
-            {Icons.filter ?? (
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
-              </svg>
-            )}
-            {activeFiltersCount > 0 && <span className={styles.filterBadge} />}
-          </button>
+        <div className={styles.hero}>
+          <h1 className={styles.heroTitle}>{t("employees")}</h1>
+          {total > 0 && <span className={styles.heroCount}>{total}</span>}
         </div>
 
-        {activeFiltersCount > 0 && (
-          <div className={styles.activeFiltersBar}>
-            {formData.department_id && (
-              <span className={styles.activeFilterTag}>
-                {departments.find(
-                  (d) => String(d.id) === String(formData.department_id),
-                )?.name || t("department")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, department_id: null };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEmployees(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
+        <div className={styles.toolbar}>
+          <div className={styles.searchFilterRow}>
+            <div className={styles.searchBox}>
+              <span className={styles.searchIcon}>
+                <IconSearch />
               </span>
-            )}
-            {formData.position_id && (
-              <span className={styles.activeFilterTag}>
-                {positions.find(
-                  (p) => String(p.id) === String(formData.position_id),
-                )?.name || t("position")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, position_id: null };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEmployees(1, next);
-                  }}
-                >
-                  {Icons.clear}
+              <input
+                type="text"
+                placeholder={t("search") || "Поиск..."}
+                value={searchQuery}
+                onChange={handleSearchChange}
+              />
+              {searchQuery.length > 0 && (
+                <button className={styles.clearBtn} onClick={handleSearchClear}>
+                  <IconClose />
                 </button>
-              </span>
-            )}
-            {formData.status !== "" && (
-              <span className={styles.activeFilterTag}>
-                {formData.status === "true" ? t("active") : t("terminated")}
-                <button
-                  onClick={() => {
-                    const next = { ...formData, status: "" };
-                    setFormData(next);
-                    formDataRef.current = next;
-                    setActiveFiltersCount(countActiveFilters(next));
-                    fetchEmployees(1, next);
-                  }}
-                >
-                  {Icons.clear}
-                </button>
-              </span>
-            )}
+              )}
+            </div>
+
+            <button
+              className={`${styles.filterBtn} ${activeFiltersCount > 0 ? styles.filterBtnActive : ""}`}
+              onClick={openFilter}
+            >
+              <IconFilter />
+              {activeFiltersCount > 0 && (
+                <span className={styles.filterBadge}>{activeFiltersCount}</span>
+              )}
+            </button>
           </div>
-        )}
+
+          <div className={styles.segment}>
+            {statusOptions.map(({ value, label }) => (
+              <button
+                key={value}
+                className={`${styles.segmentBtn} ${formData.status === value ? styles.segmentBtnActive : ""}`}
+                onClick={() => {
+                  if (formData.status !== value) {
+                    applyFilters({ ...formData, status: value });
+                  }
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {activeFiltersCount > 0 && (
+            <div className={styles.activeFiltersBar}>
+              {formData.department_id && (
+                <span className={styles.activeFilterTag}>
+                  {departments.find(
+                    (d) => String(d.id) === String(formData.department_id),
+                  )?.name || t("department")}
+                  <button
+                    onClick={() =>
+                      applyFilters({ ...formData, department_id: null })
+                    }
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+              {formData.position_id && (
+                <span className={styles.activeFilterTag}>
+                  {positions.find(
+                    (p) => String(p.id) === String(formData.position_id),
+                  )?.name || t("position")}
+                  <button
+                    onClick={() =>
+                      applyFilters({ ...formData, position_id: null })
+                    }
+                  >
+                    <IconClose />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className={styles.cardList} ref={listRef}>
           {!loading && data.length === 0 && (
-            <p className={styles.empty}>{t("noData")}</p>
+            <div className={styles.empty}>
+              <span className={styles.emptyIcon}>
+                <IconUsers />
+              </span>
+              <p>{t("noData")}</p>
+            </div>
           )}
           {data.map((emp, idx) => (
             <EmployeeCard
               key={emp.user_id || idx}
               innerRef={idx === data.length - 5 ? sentinelRef : null}
               employee={emp}
+              index={idx}
               canEdit={canEdit}
               onTap={() => openEdit(emp.id)}
               t={t}
@@ -296,6 +332,17 @@ const EmployeePageTelegram = ({ routePath }) => {
           )}
         </div>
       </div>
+
+      {canAdd && (
+        <button
+          type="button"
+          className={styles.fab}
+          onClick={openAdd}
+          aria-label={t("addEmployee")}
+        >
+          <IconPlus />
+        </button>
+      )}
 
       {loading && <Loading />}
     </div>
@@ -366,35 +413,19 @@ const FilterScreen = ({
             ))}
           </select>
         </div>
-        <div className={styles.filterSection}>
-          <label className={styles.fieldLabel}>{t("status") || "Статус"}</label>
-          <div className={styles.directionGroup}>
-            {[
-              { value: "", label: t("all") || "Все" },
-              { value: "true", label: t("active") || "Работает" },
-              { value: "false", label: t("terminated") || "Уволен" },
-            ].map(({ value, label }) => (
-              <label key={value} className={styles.dirLabel}>
-                <input
-                  type="checkbox"
-                  checked={localForm.status === value}
-                  onChange={() =>
-                    setLocalForm((prev) => ({ ...prev, status: value }))
-                  }
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </div>
       </div>
-      <button
-        className={styles.resetBtn}
-        onClick={() => setLocalForm(initialFormData)}
-      >
-        {t("clearAll") || "Сбросить"}
-      </button>
       <div className={styles.filterFooter}>
+        <button
+          className={styles.resetBtn}
+          onClick={() =>
+            setLocalForm((prev) => ({
+              ...initialFormData,
+              status: prev.status,
+            }))
+          }
+        >
+          {t("clearAll") || "Сбросить"}
+        </button>
         <button className={styles.applyBtn} onClick={() => onApply(localForm)}>
           {t("apply") || "Применить"}
         </button>
@@ -404,39 +435,74 @@ const FilterScreen = ({
 };
 
 // ── Employee Card ──────────────────────────────────────────────────────────────
-const EmployeeCard = ({ employee, canEdit, onTap, t, innerRef }) => {
+const EmployeeCard = ({ employee, index, canEdit, onTap, t, innerRef }) => {
   const fullName =
     [employee.last_name, employee.first_name].filter(Boolean).join(" ") ||
     t("unknown");
+  const initials =
+    [employee.last_name, employee.first_name]
+      .filter(Boolean)
+      .map((part) => part.charAt(0))
+      .join("")
+      .toUpperCase() || fullName.charAt(0).toUpperCase();
+  const isActive = Boolean(employee.status);
 
   return (
     <div
-      className={`${styles.card} ${canEdit ? styles.cardTappable : ""}`}
+      className={`${styles.card} ${canEdit ? styles.cardTappable : ""} ${isActive ? "" : styles.cardInactive}`}
+      style={{ "--i": index % 8 }}
       ref={innerRef}
       onClick={() => canEdit && onTap()}
     >
-      <div
-        className={`${styles.cardAvatar} ${employee.status ? styles.cardAvatarActive : styles.cardAvatarInactive}`}
-      >
-        {employee.photo ? (
-          <img
-            key={employee.id}
-            src={`/api/employees/image/${employee.photo}?t=${new Date(employee.updated_at).getTime()}`}
-            alt={fullName}
-            loading="lazy"
-          />
-        ) : (
-          <span className={styles.avatarFallback}>
-            {fullName.charAt(0).toUpperCase()}
-          </span>
+      <div className={styles.cardAvatarWrap}>
+        <div
+          className={styles.cardAvatar}
+          style={
+            employee.photo
+              ? undefined
+              : { background: getAvatarGradient(fullName) }
+          }
+        >
+          {employee.photo ? (
+            <img
+              key={employee.id}
+              src={`/api/employees/image/${employee.photo}?t=${new Date(employee.updated_at).getTime()}`}
+              alt={fullName}
+              loading="lazy"
+            />
+          ) : (
+            <span className={styles.avatarFallback}>{initials}</span>
+          )}
+        </div>
+        <span
+          className={`${styles.statusDot} ${isActive ? styles.statusDotActive : styles.statusDotInactive}`}
+        />
+      </div>
+
+      <div className={styles.cardBody}>
+        <p className={styles.cardName}>{fullName}</p>
+        <p className={styles.cardSub}>{employee.position?.name || "—"}</p>
+        {(employee.department?.name || !isActive) && (
+          <div className={styles.cardChips}>
+            {employee.department?.name && (
+              <span className={styles.chip}>{employee.department.name}</span>
+            )}
+            {!isActive && (
+              <span className={`${styles.chip} ${styles.chipRed}`}>
+                {t("terminated")}
+              </span>
+            )}
+          </div>
         )}
       </div>
-      <div className={styles.cardBody}>
-        <p className={styles.cardName}>
-          {fullName} {employee.id}
-        </p>
-        <p className={styles.cardSub}>{employee.position?.name || "—"}</p>
-        <p className={styles.cardMeta}>{employee.department?.name || ""}</p>
+
+      <div className={styles.cardAside}>
+        <span className={styles.cardId}>#{employee.id}</span>
+        {canEdit && (
+          <span className={styles.cardChevron}>
+            <IconChevronRight />
+          </span>
+        )}
       </div>
     </div>
   );

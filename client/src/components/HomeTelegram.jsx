@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { t as i18t } from "i18next";
+import { useAuthStore } from "../stores/authStore";
 import styles from "./HomeTelegram.module.scss";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -182,9 +183,27 @@ const formatDuration = (minutes) => {
   return `${h} ${i18t("hoursShort")} ${m} ${i18t("minutesShort")}`;
 };
 
+// ─── Greeting ─────────────────────────────────────────────────────────────────
+const getGreetingKey = (hour) => {
+  if (hour >= 5 && hour < 12) return "greetingMorning";
+  if (hour >= 12 && hour < 18) return "greetingAfternoon";
+  return "greetingEvening";
+};
+
+const Greeting = () => {
+  const { t } = useTranslation();
+  const firstName = useAuthStore((s) => s.user?.first_name);
+
+  return (
+    <div className={styles.greeting}>
+      {t(getGreetingKey(new Date().getHours()))}
+      {firstName ? `, ${firstName}` : ""}!
+    </div>
+  );
+};
+
 // ─── Time badges per panel type ───────────────────────────────────────────────
 const renderTimeBadges = (emp, panelKey) => {
-  console.log("emp", emp);
   if (panelKey === "late") {
     return (
       <div className={styles.panelTimeBadges}>
@@ -349,6 +368,8 @@ const EmployeeListPanel = ({ title, employees, panelKey, onClose }) => {
                       <img
                         src={`/api/employees/image/${photo}`}
                         alt={name}
+                        loading="lazy"
+                        decoding="async"
                         className={styles.panelAvatarImg}
                       />
                     ) : (
@@ -374,39 +395,146 @@ const EmployeeListPanel = ({ title, employees, panelKey, onClose }) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // EMPLOYEE PAGE
 // ═══════════════════════════════════════════════════════════════════════════════
+const svgIcon = (children) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {children}
+  </svg>
+);
+
+const EmployeeIcons = {
+  logIn: svgIcon(
+    <>
+      <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+      <polyline points="10 17 15 12 10 7" />
+      <line x1="15" y1="12" x2="3" y2="12" />
+    </>,
+  ),
+  logOut: svgIcon(
+    <>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </>,
+  ),
+  alarm: svgIcon(
+    <>
+      <circle cx="12" cy="13" r="8" />
+      <polyline points="12 9 12 13 14.5 14.5" />
+      <path d="M5 3 2 6M22 6l-3-3" />
+    </>,
+  ),
+  userX: svgIcon(
+    <>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <line x1="17" y1="8" x2="22" y2="13" />
+      <line x1="22" y1="8" x2="17" y2="13" />
+    </>,
+  ),
+  zap: svgIcon(<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />),
+  pause: svgIcon(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <line x1="10" y1="9" x2="10" y2="15" />
+      <line x1="14" y1="9" x2="14" y2="15" />
+    </>,
+  ),
+  flag: svgIcon(
+    <>
+      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+      <line x1="4" y1="22" x2="4" y2="15" />
+    </>,
+  ),
+};
+
+// статус смены → цветовая схема бейджей темы (--tg-badge-<tone>-*)
+const SHIFT_TONES = {
+  present: "green",
+  inside: "green",
+  late: "amber",
+  absent: "red",
+  left: "purple",
+  leftEarly: "pink",
+};
+
+const toneStyle = (tone = "gray") => ({
+  "--eh-color": `var(--tg-badge-${tone}-color)`,
+  "--eh-bg": `var(--tg-badge-${tone}-bg)`,
+  "--eh-border": `var(--tg-badge-${tone}-border)`,
+});
+
+// Кнопка «Начать работу» / «Завершить работу»; workPunch = { direction, onClick } или
+// null, когда логину это не разрешено (Настройки логина → Настройки телеграм приложения)
+const WorkPunchButton = ({ workPunch }) => {
+  const { t } = useTranslation();
+  if (!workPunch) return null;
+
+  const isExit = workPunch.direction === "exit";
+  return (
+    <button
+      type="button"
+      className={`${styles.punchBtn} ${isExit ? styles.punchBtnExit : ""}`}
+      onClick={workPunch.onClick}
+    >
+      <span className={styles.punchBtnIcon}>
+        {isExit ? EmployeeIcons.logOut : EmployeeIcons.logIn}
+      </span>
+      {isExit ? t("finishWork") : t("startWork")}
+    </button>
+  );
+};
+
+const percentOf = (value, total) =>
+  total > 0 ? Math.min(100, Math.round((value / total) * 100)) : 0;
+
+// сервер отдаёт "00:00" когда отклонения нет
+const hasTime = (v) => !!v && v !== "00:00";
+
+const ProgressRing = ({ percent }) => {
+  const r = 34;
+  const circumference = 2 * Math.PI * r;
+  return (
+    <div className={styles.ehRing}>
+      <svg viewBox="0 0 80 80" className={styles.ehRingSvg}>
+        <circle className={styles.ehRingTrack} cx="40" cy="40" r={r} />
+        <circle
+          className={styles.ehRingFill}
+          cx="40"
+          cy="40"
+          r={r}
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - percent / 100)}
+        />
+      </svg>
+      <span className={styles.ehRingPct}>{percent}%</span>
+    </div>
+  );
+};
+
 export const EmployeeHomePage = ({
   employee,
   shift,
   monthStats,
   onMonthChange,
+  workPunch,
 }) => {
   const { t } = useTranslation();
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth());
   const [year, setYear] = useState(today.getFullYear());
 
-  const prevMonth = () => {
-    let m = month - 1,
-      y = year;
-    if (m < 0) {
-      m = 11;
-      y--;
-    }
-    setMonth(m);
-    setYear(y);
-    onMonthChange?.({ month: m + 1, year: y });
-  };
-
-  const nextMonth = () => {
-    let m = month + 1,
-      y = year;
-    if (m > 11) {
-      m = 0;
-      y++;
-    }
-    setMonth(m);
-    setYear(y);
-    onMonthChange?.({ month: m + 1, year: y });
+  const changeMonth = (delta) => {
+    const next = new Date(year, month + delta, 1);
+    setMonth(next.getMonth());
+    setYear(next.getFullYear());
+    onMonthChange?.({ month: next.getMonth() + 1, year: next.getFullYear() });
   };
 
   const isCurrentMonth =
@@ -424,56 +552,164 @@ export const EmployeeHomePage = ({
     label: "—",
     cls: styles.badgeGray,
   };
+  const tone = SHIFT_TONES[shift?.status] || "gray";
+  // нет сессии за сегодня (нет ни графика, ни отметок) — нижнюю часть смены не показываем
+  const hasShift = !!(
+    shift?.checkIn ||
+    shift?.checkOut ||
+    shift?.workDuration ||
+    shift?.scheduledIn ||
+    shift?.scheduledOut
+  );
+  const hhmm = (v) => (v ? String(v).slice(0, 5) : "—");
+
+  const timesLabel = (count, minutes) => ({
+    value: `${count} ${t("times")}`,
+    sub: minutes > 0 ? formatDuration(minutes) : null,
+  });
+
+  const monthTiles = monthStats
+    ? [
+        {
+          key: "late",
+          tone: "red",
+          icon: EmployeeIcons.alarm,
+          label: t("lateAtWork"),
+          active: monthStats.lateCount > 0,
+          ...timesLabel(monthStats.lateCount, monthStats.lateTotalMinutes),
+        },
+        {
+          key: "absent",
+          tone: "gray",
+          icon: EmployeeIcons.userX,
+          label: t("absences"),
+          active: monthStats.absentDays > 0,
+          value: `${monthStats.absentDays} ${t("daysAbbr")}`,
+        },
+        {
+          key: "early",
+          tone: "amber",
+          icon: EmployeeIcons.logOut,
+          label: t("leftEarly"),
+          active: monthStats.earlyLeave > 0,
+          ...timesLabel(monthStats.earlyLeave, monthStats.earlyLeaveMinutes),
+        },
+        {
+          key: "lateLeave",
+          tone: "green",
+          icon: EmployeeIcons.zap,
+          label: t("leftLate"),
+          active: monthStats.lateLeaveCount > 0,
+          ...timesLabel(monthStats.lateLeaveCount, monthStats.lateLeaveMinutes),
+        },
+        monthStats.breakReturnLateCount > 0 && {
+          key: "breakLate",
+          tone: "red",
+          icon: EmployeeIcons.pause,
+          label: t("lateAfterBreak"),
+          active: true,
+          ...timesLabel(
+            monthStats.breakReturnLateCount,
+            monthStats.breakReturnLateMinutes,
+          ),
+        },
+        monthStats.pastNoExitCount > 0 && {
+          key: "noExit",
+          tone: "purple",
+          icon: EmployeeIcons.flag,
+          label: t("noExit"),
+          active: true,
+          value: `${monthStats.pastNoExitCount} ${t("daysAbbr")}`,
+        },
+      ].filter(Boolean)
+    : [];
+
+  const shiftAlerts = [
+    hasTime(shift?.late) && {
+      key: "late",
+      cls: styles.badgeRed,
+      label: t("lateCol"),
+      value: shift.late,
+    },
+    hasTime(shift?.breakReturnLate) && {
+      key: "breakLate",
+      cls: styles.badgeAmber,
+      label: t("lateAfterBreak"),
+      value: shift.breakReturnLate,
+    },
+    hasTime(shift?.lateLeave) && {
+      key: "overtime",
+      cls: styles.badgePurple,
+      label: t("overtime"),
+      value: shift.lateLeave,
+    },
+  ].filter(Boolean);
 
   return (
     <div className={styles.page}>
       <div className={styles.header} />
 
-      {/* ── 1. Employee card ── */}
-      <div className={styles.card}>
-        <div className={styles.empHead}>
-          <div className={styles.avatar}>
+      {/* ── 1. Employee hero ── */}
+      <section
+        className={`${styles.ehCard} ${styles.ehHero}`}
+        style={toneStyle(tone)}
+      >
+        <div className={styles.ehHeroTop}>
+          <div className={styles.ehAvatar}>
             {employee?.photo ? (
               <img
                 src={`/api/employees/image/${employee.photo}`}
                 alt={employee.name}
-                className={styles.avatarImage}
+                className={styles.ehAvatarImg}
               />
             ) : (
               getInitials(employee?.name)
             )}
           </div>
-          <div className={styles.empInfo}>
-            <div className={styles.empName}>
-              {employee?.name || "—"} {employee?.id || ""}
-            </div>
-            <div className={styles.empPosition}>
-              {employee?.position || "—"}
+          <div className={styles.ehIdentity}>
+            <div className={styles.ehName}>{employee?.name || "—"}</div>
+            <div className={styles.ehPosition}>
+              <span className={styles.ehPositionText}>
+                {employee?.position || "—"}
+              </span>
+              {employee?.id ? (
+                <span className={styles.ehId}>#{employee.id}</span>
+              ) : null}
             </div>
           </div>
         </div>
 
-        <div className={styles.divider} />
+        <div className={styles.ehChips}>
+          <span className={styles.ehChip} title={t("department")}>
+            {HomeIcons.layers}
+            <span className={styles.ehChipText}>
+              {employee?.department || "—"}
+            </span>
+          </span>
+          <span className={styles.ehChip} title={t("branch")}>
+            {HomeIcons.building}
+            <span className={styles.ehChipText}>{employee?.branch || "—"}</span>
+          </span>
+          <span className={styles.ehChip} title={t("scheduleLabel")}>
+            {HomeIcons.clock}
+            <span className={styles.ehChipText}>
+              {employee?.schedule || "—"}
+            </span>
+          </span>
+        </div>
+      </section>
 
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>{t("department")}</span>
-          <span className={styles.rowValue}>{employee?.department || "—"}</span>
-        </div>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>{t("branch")}</span>
-          <span className={styles.rowValue}>{employee?.branch || "—"}</span>
-        </div>
-        <div className={styles.row}>
-          <span className={styles.rowLabel}>{t("scheduleLabel")}</span>
-          <span className={styles.rowValue}>{employee?.schedule || "—"}</span>
-        </div>
-      </div>
+      <WorkPunchButton workPunch={workPunch} />
 
       {/* ── 2. Current shift ── */}
-      <div className={styles.card}>
-        <div className={styles.cardHeaderRow}>
-          <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.clock} {t("currentShift")}
+      <section
+        className={styles.ehCard}
+        style={{ ...toneStyle(tone), "--eh-delay": "70ms" }}
+      >
+        <div className={styles.ehCardHead}>
+          <div className={styles.ehCardTitle}>
+            {HomeIcons.clock}
+            {t("currentShift")}
           </div>
           {shift?.status && (
             <span className={`${styles.badge} ${shiftStatus.cls}`}>
@@ -485,75 +721,79 @@ export const EmployeeHomePage = ({
           )}
         </div>
 
-        <div className={styles.shiftMainRow}>
-          {shift?.workDuration && (
-            <div className={styles.bigTime}>
-              {shift.workDuration}
-              <div className={styles.bigTimeSub}>{t("workDurationToday")}</div>
-            </div>
-          )}
-          <div className={styles.checkInOutRow}>
-            <div className={styles.checkCol}>
-              <span className={styles.checkColLabel}>{t("checkIn")}</span>
-              <span className={styles.rowValue}>{shift?.checkIn || "—"}</span>
-              <span className={styles.checkColSched}>
-                {shift?.scheduledIn || "—"}
+        {hasShift && (
+          <>
+            <div className={styles.ehDuration}>
+              <span className={styles.ehDurationValue}>
+                {shift?.workDuration || "—"}
+              </span>
+              <span className={styles.ehDurationLabel}>
+                {t("workDurationToday")}
               </span>
             </div>
-            <div className={styles.checkCol}>
-              <span className={styles.checkColLabel}>{t("checkOut")}</span>
-              <span className={styles.rowValue}>{shift?.checkOut || "—"}</span>
-              <span className={styles.checkColSched}>
-                {shift?.scheduledOut || "—"}
-              </span>
+
+            <div className={styles.ehPunches}>
+              <div className={styles.ehPunch} style={toneStyle("green")}>
+                <span className={styles.ehPunchIcon}>
+                  {EmployeeIcons.logIn}
+                </span>
+                <span className={styles.ehPunchLabel}>{t("checkIn")}</span>
+                <span className={styles.ehPunchTime}>
+                  {shift?.checkIn || "—"}
+                </span>
+                <span className={styles.ehPunchSched}>
+                  {t("scheduleLabel")} {hhmm(shift?.scheduledIn)}
+                </span>
+              </div>
+              <div className={styles.ehPunch} style={toneStyle("purple")}>
+                <span className={styles.ehPunchIcon}>
+                  {EmployeeIcons.logOut}
+                </span>
+                <span className={styles.ehPunchLabel}>{t("checkOut")}</span>
+                <span className={styles.ehPunchTime}>
+                  {shift?.checkOut || "—"}
+                </span>
+                <span className={styles.ehPunchSched}>
+                  {t("scheduleLabel")} {hhmm(shift?.scheduledOut)}
+                </span>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className={styles.divider} />
-
-        {shift?.late && (
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>{t("lateCol")}</span>
-            <span className={`${styles.badge} ${styles.badgeRed}`}>
-              +{shift.late}
-            </span>
-          </div>
+            {shiftAlerts.length > 0 && (
+              <div className={styles.ehAlerts}>
+                {shiftAlerts.map(({ key, cls, label, value }) => (
+                  <span key={key} className={`${styles.badge} ${cls}`}>
+                    {label} +{value}
+                  </span>
+                ))}
+              </div>
+            )}
+          </>
         )}
-        {shift?.breakReturnLate && (
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>{t("lateAfterBreak")}</span>
-            <span className={`${styles.badge} ${styles.badgeAmber}`}>
-              +{shift.breakReturnLate}
-            </span>
-          </div>
-        )}
-        {shift?.lateLeave && (
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>{t("overtime")}</span>
-            <span className={`${styles.badge} ${styles.badgePurple}`}>
-              +{shift.lateLeave}
-            </span>
-          </div>
-        )}
-      </div>
+      </section>
 
       {/* ── 3. Month stats ── */}
-      <div className={styles.card}>
-        <div className={styles.cardHeaderRow}>
-          <div className={styles.sectionLabel} style={{ marginBottom: 0 }}>
-            {HomeIcons.calendar} {t("forMonth")}
+      <section className={styles.ehCard} style={{ "--eh-delay": "140ms" }}>
+        <div className={styles.ehCardHead}>
+          <div className={styles.ehCardTitle}>
+            {HomeIcons.calendar}
+            {t("forMonth")}
           </div>
-          <div className={styles.monthNav}>
-            <button className={styles.monthBtn} onClick={prevMonth}>
+          <div className={styles.ehNav}>
+            <button
+              type="button"
+              className={styles.ehNavBtn}
+              onClick={() => changeMonth(-1)}
+            >
               {HomeIcons.chevronLeft}
             </button>
-            <span className={styles.monthLabel}>
+            <span className={styles.ehNavLabel}>
               {getMonthsShort()[month]} {year}
             </span>
             <button
-              className={styles.monthBtn}
-              onClick={nextMonth}
+              type="button"
+              className={styles.ehNavBtn}
+              onClick={() => changeMonth(1)}
               disabled={isCurrentMonth}
             >
               {HomeIcons.chevronRight}
@@ -561,97 +801,73 @@ export const EmployeeHomePage = ({
           </div>
         </div>
 
-        <div className={styles.divider} />
+        <div className={styles.ehMonthTop}>
+          <ProgressRing
+            percent={percentOf(monthStats?.workedDays, monthStats?.totalDays)}
+          />
+          <div className={styles.ehMonthMeta}>
+            <div className={styles.ehMeta}>
+              <span className={styles.ehMetaLabel}>{t("workedDaysMonth")}</span>
+              <span className={styles.ehMetaValue}>
+                {monthStats ? (
+                  <>
+                    {monthStats.workedDays}
+                    <small>
+                      {" "}
+                      / {monthStats.totalDays} {t("daysAbbr")}
+                    </small>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </span>
+            </div>
+            <div className={styles.ehMeta}>
+              <span className={styles.ehMetaLabel}>{t("totalHoursMonth")}</span>
+              <span className={styles.ehMetaValue}>
+                {monthStats ? (
+                  <>
+                    {formatDuration(monthStats.totalMinutes)}
+                    <small> / {formatDuration(monthStats.scheduledMinutes)}</small>
+                  </>
+                ) : (
+                  "—"
+                )}
+              </span>
+              <div className={styles.ehBar}>
+                <div
+                  className={styles.ehBarFill}
+                  style={{
+                    width: `${percentOf(monthStats?.totalMinutes, monthStats?.scheduledMinutes)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <MonthStatRow
-          color="#22c55e"
-          label={t("workedDaysMonth")}
-          value={
-            monthStats
-              ? `${monthStats.workedDays} / ${monthStats.totalDays} ${t("daysAbbr")}`
-              : "—"
-          }
-        />
-        <MonthStatRow
-          color="#3b82f6"
-          label={t("totalHoursMonth")}
-          value={
-            monthStats
-              ? `${formatDuration(monthStats.totalMinutes)} / ${formatDuration(monthStats.scheduledMinutes)}`
-              : "—"
-          }
-        />
-        <MonthStatRow
-          color="#ef4444"
-          label={t("lateAtWork")}
-          value={
-            monthStats
-              ? `${monthStats.lateCount} ${t("times")}${monthStats.lateTotalMinutes > 0 ? ` (${formatDuration(monthStats.lateTotalMinutes)})` : ""}`
-              : "—"
-          }
-          valueColor={monthStats?.lateCount > 0 ? "#ef4444" : undefined}
-        />
-        {monthStats?.breakReturnLateCount > 0 && (
-          <MonthStatRow
-            color="#f87171"
-            label={t("lateAfterBreak")}
-            value={`${monthStats.breakReturnLateCount} ${t("times")}${monthStats.breakReturnLateMinutes > 0 ? ` (${formatDuration(monthStats.breakReturnLateMinutes)})` : ""}`}
-            valueColor="#f87171"
-          />
+        {monthTiles.length > 0 && (
+          <div className={styles.ehStatGrid}>
+            {monthTiles.map(({ key, tone: tileTone, icon, label, value, sub, active }) => (
+              <div key={key} className={styles.ehStat} style={toneStyle(tileTone)}>
+                <span className={styles.ehStatIcon}>{icon}</span>
+                <div className={styles.ehStatBody}>
+                  <span
+                    className={`${styles.ehStatValue} ${active ? styles.ehStatValueActive : ""}`}
+                  >
+                    {value}
+                  </span>
+                  <span className={styles.ehStatLabel}>{label}</span>
+                  {sub && <span className={styles.ehStatSub}>{sub}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-        <MonthStatRow
-          color="#64748b"
-          label={t("absences")}
-          value={monthStats ? `${monthStats.absentDays} ${t("daysAbbr")}` : "—"}
-          valueColor={monthStats?.absentDays > 0 ? "#64748b" : undefined}
-        />
-        <MonthStatRow
-          color="#f59e0b"
-          label={t("leftEarly")}
-          value={
-            monthStats
-              ? `${monthStats.earlyLeave} ${t("times")}${monthStats.earlyLeaveMinutes > 0 ? ` (${formatDuration(monthStats.earlyLeaveMinutes)})` : ""}`
-              : "—"
-          }
-          valueColor={monthStats?.earlyLeave > 0 ? "#f59e0b" : undefined}
-        />
-        <MonthStatRow
-          color="#10b981"
-          label={t("leftLate")}
-          value={
-            monthStats
-              ? `${monthStats.lateLeaveCount} ${t("times")}${monthStats.lateLeaveMinutes > 0 ? ` (${formatDuration(monthStats.lateLeaveMinutes)})` : ""}`
-              : "—"
-          }
-          valueColor={monthStats?.lateLeaveCount > 0 ? "#10b981" : undefined}
-        />
-        {monthStats?.pastNoExitCount > 0 && (
-          <MonthStatRow
-            color="#a855f7"
-            label={t("noExit")}
-            value={`${monthStats.pastNoExitCount} ${t("daysAbbr")}`}
-            valueColor="#a855f7"
-          />
-        )}
-      </div>
+      </section>
     </div>
   );
 };
-
-const MonthStatRow = ({ color, label, value, valueColor }) => (
-  <div className={styles.statRow}>
-    <div className={styles.statRowLeft}>
-      <span className={styles.statDot} style={{ background: color }} />
-      <span className={styles.rowLabel}>{label}</span>
-    </div>
-    <span
-      className={styles.rowValue}
-      style={valueColor ? { color: valueColor } : {}}
-    >
-      {value}
-    </span>
-  </div>
-);
 
 // ─── Branch selector ──────────────────────────────────────────────────────────
 const BranchSelector = ({ branches, selectedBranchId, onBranchChange }) => {
@@ -683,6 +899,7 @@ export const AdminHomePage = ({
   selectedBranchId,
   onBranchChange,
   loading,
+  workPunch,
 }) => {
   const { t } = useTranslation();
   const [openPanel, setOpenPanel] = useState(null);
@@ -700,6 +917,10 @@ export const AdminHomePage = ({
   return (
     <div className={styles.page}>
       <div className={styles.header} />
+
+      <Greeting />
+
+      <WorkPunchButton workPunch={workPunch} />
 
       {/* branch selector (branch mode only, when multiple branches) */}
       {branches?.length > 1 && (
@@ -888,7 +1109,7 @@ export const AdminHomePage = ({
 // ═══════════════════════════════════════════════════════════════════════════════
 // ALL BRANCHES PAGE — absolute mode
 // ═══════════════════════════════════════════════════════════════════════════════
-export const AllBranchesPage = ({ allBranchesData, loading }) => {
+export const AllBranchesPage = ({ allBranchesData, loading, workPunch }) => {
   const { t } = useTranslation();
   const [detailIdx, setDetailIdx] = useState(null);
 
@@ -927,6 +1148,7 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
         departments={item.departments}
         employeeLists={item.employeeLists}
         loading={false}
+        workPunch={workPunch}
       />
     );
   }
@@ -954,6 +1176,10 @@ export const AllBranchesPage = ({ allBranchesData, loading }) => {
   return (
     <div className={styles.page}>
       <div className={styles.header} />
+
+      <Greeting />
+
+      <WorkPunchButton workPunch={workPunch} />
 
       {/* ── Summary card ── */}
       <div className={styles.card}>
@@ -1165,11 +1391,16 @@ const HomeTelegram = ({
   selectedBranchId,
   onBranchChange,
   allBranchesData,
+  workPunch,
 }) => {
   if (role === "admin") {
     if (viewMode === "absolute") {
       return (
-        <AllBranchesPage allBranchesData={allBranchesData} loading={loading} />
+        <AllBranchesPage
+          allBranchesData={allBranchesData}
+          loading={loading}
+          workPunch={workPunch}
+        />
       );
     }
     return (
@@ -1182,6 +1413,7 @@ const HomeTelegram = ({
         selectedBranchId={selectedBranchId}
         onBranchChange={onBranchChange}
         loading={loading}
+        workPunch={workPunch}
       />
     );
   }
@@ -1192,6 +1424,7 @@ const HomeTelegram = ({
       shift={shift}
       monthStats={monthStats}
       onMonthChange={onMonthChange}
+      workPunch={workPunch}
     />
   );
 };

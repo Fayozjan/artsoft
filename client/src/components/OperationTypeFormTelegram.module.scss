@@ -1,0 +1,655 @@
+// Экран типа операции в Telegram (Производство → Тип операции).
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+$accent: var(--third-color, #1455fe);
+
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+// Стекло под системной шапкой Telegram — контент не «просвечивает» под часами.
+.topGlass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(#{$safe-top} + 12px) 12px calc(100px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ── Шапка ────────────────────────────────────────────────────────────────────
+
+.hero {
+  --tint: #1455fe;
+
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 16px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 24px;
+  // Запасной фон — на случай, если webview не знает color-mix (иначе пропал бы весь background).
+  background: var(--card-bg);
+  background:
+    radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--tint) 24%, transparent), transparent 64%),
+    var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 12px 28px -14px rgba(0, 0, 0, 0.18);
+}
+
+.heroTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.eyebrow {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.backChip {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+  height: 36px;
+  padding: 0 14px 0 8px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: $accent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.statusPill {
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.statusOn {
+  background: var(--tg-badge-green-bg);
+  color: var(--tg-badge-green-color);
+}
+
+.statusOff {
+  background: var(--tg-badge-gray-bg);
+  color: var(--tg-badge-gray-color);
+}
+
+.heroTitle {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.6px;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.heroSub {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+
+  b {
+    font-weight: 600;
+    color: var(--text-color);
+  }
+}
+
+// ── Секции ───────────────────────────────────────────────────────────────────
+
+.card {
+  flex-shrink: 0;
+  padding: 16px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 34px;
+  margin-bottom: 14px;
+}
+
+.cardIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: rgba(20, 85, 254, 0.12);
+  color: $accent;
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-color);
+}
+
+.sectionHint {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.addPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 14px 0 11px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(20, 85, 254, 0.12);
+  color: $accent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// ── Сегменты (единица измерения, сложность) ──────────────────────────────────
+
+.segment {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+
+  button {
+    --seg-color: #1455fe;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 0;
+    height: 42px;
+    padding: 0 6px;
+    border: none;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
+}
+
+.segmentOn {
+  background: var(--card-bg) !important;
+  color: var(--seg-color) !important;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 0 0 1.5px color-mix(in srgb, var(--seg-color) 40%, transparent);
+}
+
+.segmentDot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--seg-color);
+}
+
+// ── Переключатели ────────────────────────────────────────────────────────────
+
+.switchList {
+  display: flex;
+  flex-direction: column;
+
+  > * + * {
+    border-top: 0.5px solid var(--tg-separator);
+  }
+}
+
+.switchRow {
+  padding: 12px 0;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  &:last-child {
+    padding-bottom: 0;
+  }
+}
+
+.switchMain {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.switchText {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.switchLabel {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-color);
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--tg-separator);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s ease;
+
+  span {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+.switchOn {
+  background: #34c759;
+
+  span {
+    transform: translateX(20px);
+  }
+}
+
+.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+// «?» рядом с подписью: по тапу раскрывает подсказку.
+.helpBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.helpBtnOn {
+  background: rgba(20, 85, 254, 0.14);
+  color: $accent;
+}
+
+.hint {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+// ── Связи и выбор из списка ──────────────────────────────────────────────────
+
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pickWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  .hint {
+    margin: 0;
+  }
+}
+
+.pickLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 2px;
+}
+
+.pickLabel {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 7px 10px 7px 14px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.12s ease,
+    transform 0.12s ease;
+
+  > svg {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+  }
+
+  &:active:not(:disabled) {
+    background: var(--tg-hover);
+    transform: scale(0.99);
+  }
+}
+
+.pickValue {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pickEmpty {
+  font-size: 15px;
+  color: var(--placeholder-color);
+  opacity: 0.7;
+}
+
+.pickAll {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tg-badge-green-color);
+
+  svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+.pickCount {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-color);
+
+  b {
+    margin-left: 2px;
+    font-weight: 800;
+    color: $accent;
+  }
+}
+
+.chip {
+  max-width: 100%;
+  padding: 4px 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(20, 85, 254, 0.12);
+  color: $accent;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chipMore {
+  background: var(--tg-hover);
+  color: var(--text-secondary);
+}
+
+// ── Команды ──────────────────────────────────────────────────────────────────
+
+.teams {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+}
+
+.teamAvatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  color: #fff;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.teamInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.teamName {
+  font-size: 15px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.teamCount {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.teamsEmpty {
+  padding: 18px 12px;
+  border: 1.5px dashed var(--tg-separator);
+  border-radius: 14px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 11px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+.iconBtnDanger {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+}
+
+// ── Закреплённый низ ─────────────────────────────────────────────────────────
+
+.actionBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: flex;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 10px 12px calc(10px + #{$safe-bottom});
+  border-top: 0.5px solid var(--tg-separator);
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch span {
+    transition: none;
+  }
+}

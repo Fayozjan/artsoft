@@ -1,4 +1,4 @@
-.tableContainer {
+﻿.tableContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -11,7 +11,7 @@
     thead {
       position: sticky;
       top: 0;
-      background: white;
+      background: var(--card-bg);
       z-index: 10;
     }
 
@@ -24,7 +24,7 @@
 
     th {
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -99,7 +99,7 @@
 .card {
   min-height: 240px;
   position: relative;
-  background: #fff;
+  background: var(--card-bg);
   border: 1px solid rgba(162, 161, 168, 0.25);
   border-radius: 10px;
   overflow: hidden;
@@ -173,7 +173,7 @@
   display: inline-flex;
   align-items: center;
   align-self: center;
-  background: #fff;
+  background: var(--card-bg);
   border: 2px solid #222;
   border-radius: 6px;
   padding: 0 8px;
@@ -192,7 +192,7 @@
 .plateRegion {
   font-size: 14px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-color);
   text-align: center;
   padding-right: 2px;
   line-height: 1;
@@ -209,7 +209,7 @@
 .plateNumber {
   font-size: 14px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--text-color);
   line-height: 1;
 }
 
@@ -237,7 +237,7 @@
 }
 .flagWhite {
   height: 2px;
-  background: #fff;
+  background: var(--card-bg);
 }
 .flagGreen {
   flex: 1;
@@ -278,7 +278,7 @@
 }
 
 .cardDetailValue {
-  color: #1a1a1a;
+  color: var(--text-color);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;

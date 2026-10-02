@@ -1,0 +1,292 @@
+﻿.staffingPage {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+  box-sizing: border-box;
+
+  .main {
+    padding: 2px;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 0;
+
+    .statsGridWrap {
+      display: grid;
+      grid-template-rows: 1fr;
+      flex-shrink: 0;
+      opacity: 1;
+      transition:
+        grid-template-rows 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.28s ease;
+    }
+
+    .statsGridWrapHidden {
+      grid-template-rows: 0fr;
+      opacity: 0;
+    }
+
+    .statsGridInner {
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    .statsGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 7px;
+      padding: 6px 5px 3px;
+    }
+
+    .statWidget {
+      position: relative;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      transition:
+        box-shadow 0.18s,
+        transform 0.18s;
+
+      &:hover {
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+      }
+
+      &[style*="cursor: pointer"]:hover {
+        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+        border-color: #f59e0b60;
+      }
+    }
+
+    .statWidgetInner {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .statWidgetIcon {
+      width: 32px;
+      height: 32px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .statWidgetContent {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .statWidgetLabel {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .statWidgetValue {
+      font-size: 18px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.2;
+    }
+
+    .statWidgetProgressTrack {
+      height: 3px;
+      background: var(--bg-light);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .statWidgetProgressFill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .mainHeader {
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .filterWrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .searchInput {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 200px;
+        width: 250px;
+        border-radius: 4px;
+        border: 1px solid rgba(162, 161, 168, 0.4);
+        height: 32px;
+        padding: 0 10px;
+        font-weight: 600;
+        box-sizing: border-box;
+        transition: all 0.2s ease;
+
+        input {
+          width: 100%;
+          height: 90%;
+          font-size: var(--font-small);
+        }
+
+        svg {
+          cursor: pointer;
+
+          &:hover {
+            transform: scale(1.1);
+          }
+        }
+
+        &:hover,
+        &:focus-within {
+          border: 1px solid var(--third-color);
+        }
+
+        .clearBtn {
+          position: absolute;
+          top: 5px;
+          right: 1px;
+          cursor: pointer;
+        }
+      }
+
+      .chipFilter {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        height: 32px;
+        padding: 0 12px;
+        border-radius: 16px;
+        border: 1.5px solid var(--chip-color, #6366f1);
+        background: transparent;
+        color: var(--chip-color, #6366f1);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, color 0.15s;
+        white-space: nowrap;
+
+        &:hover {
+          background: color-mix(in srgb, var(--chip-color, #6366f1) 10%, transparent);
+        }
+
+        &.chipActive {
+          background: var(--chip-color, #6366f1);
+          color: #fff;
+        }
+      }
+
+      .buttonsWrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+
+        .refreshBtn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 32px;
+          padding: 0 10px;
+          font-size: var(--font-small);
+          font-weight: 600;
+          border-radius: 4px;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          cursor: pointer;
+          background-color: var(--card-bg);
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+
+          &:hover {
+            border: 1px solid var(--third-color);
+          }
+        }
+      }
+    }
+
+    .tableContainer {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-small);
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+      }
+
+      th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+
+      .headerContent {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      th,
+      td {
+        padding: 6px 8px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: center;
+      }
+
+      .activeBadge {
+        display: inline-block;
+        background: #dcfce7;
+        color: #16a34a;
+        border-radius: 4px;
+        padding: 2px 7px;
+        font-size: 11px;
+        font-weight: 600;
+        margin-left: 6px;
+      }
+
+      .actionCell {
+        display: flex;
+        gap: 6px;
+        justify-content: center;
+        align-items: center;
+      }
+    }
+  }
+}

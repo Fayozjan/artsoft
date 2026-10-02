@@ -1,6 +1,6 @@
-.container {
+﻿.container {
   padding: 10px 5px;
-  background-color: white;
+  background-color: var(--card-bg);
 }
 
 .header {
@@ -9,13 +9,13 @@
   align-items: center;
   padding-bottom: 10px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--border-subtle);
 
   .title {
     margin: 0;
     font-size: 15px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-color);
   }
 
   .headerActions {
@@ -25,10 +25,10 @@
 
     svg {
       cursor: pointer;
-      color: #94a3b8;
+      color: var(--placeholder-color);
       transition: all 0.2s;
       &:hover {
-        color: #000;
+        color: var(--text-color);
         transform: scale(1.1);
       }
     }
@@ -53,8 +53,8 @@
 // ---- Add / Edit Form ----
 .addForm,
 .editForm {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-light);
+  border: 1px solid var(--border-subtle);
   border-radius: 10px;
   padding: 14px;
   margin-bottom: 16px;
@@ -68,7 +68,7 @@
 
   label {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
@@ -100,7 +100,7 @@
 
   label {
     font-size: 12px;
-    color: #64748b;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 
@@ -162,15 +162,15 @@
 
 .cancelBtn {
   padding: 5px 16px;
-  background: white;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   &:hover {
-    background: #f8fafc;
+    background: var(--bg-light);
   }
 }
 
@@ -189,7 +189,7 @@
   text-align: center;
   padding: 4px 6px;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-secondary);
   font-weight: 600;
 
   .date_sep {
@@ -197,7 +197,7 @@
     opacity: 0.5;
   }
   .date_end {
-    color: #94a3b8;
+    color: var(--placeholder-color);
   }
 }
 
@@ -233,11 +233,11 @@
 
   .card {
     position: relative;
-    background: #fff;
+    background: var(--card-bg);
     border-radius: 10px;
     padding: 10px 12px;
     margin-bottom: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-subtle);
     transition: all 0.3s ease;
 
     &:hover {
@@ -279,7 +279,7 @@
   padding: 4px;
   border-radius: 4px;
   transition: all 0.2s;
-  color: #94a3b8;
+  color: var(--placeholder-color);
 }
 
 .editIconBtn:hover {
@@ -296,10 +296,10 @@
   p {
     margin: 3px 0;
     font-size: 12px;
-    color: #475569;
+    color: var(--text-secondary);
 
     span {
-      color: #94a3b8;
+      color: var(--placeholder-color);
       font-weight: 500;
       margin-right: 4px;
     }
@@ -352,11 +352,11 @@
     }
 
     .cancelBtn {
-      background: white;
-      color: #64748b;
-      border: 1px solid #e2e8f0;
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
       &:hover {
-        background: #f8fafc;
+        background: var(--bg-light);
       }
     }
   }
@@ -365,7 +365,7 @@
 .empty {
   text-align: center;
   padding: 30px;
-  color: #94a3b8;
+  color: var(--placeholder-color);
   font-style: italic;
   font-size: 13px;
 }

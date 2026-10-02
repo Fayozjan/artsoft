@@ -42,3 +42,11 @@ export const editBranchById = async (id, data) => {
     success: res.data.success,
   };
 };
+
+export const deleteBranchById = async (id) => {
+  const res = await api.delete(`/branches/${id}`);
+  return {
+    data: res.data.data,
+    success: res.data.success,
+  };
+};

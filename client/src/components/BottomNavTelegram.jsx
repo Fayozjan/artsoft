@@ -1,104 +1,30 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Icons } from "../icons/icons";
-
-import { useOpenAddEmployee } from "../hooks/useOpenAddEmployee";
-import { useOpenAddFacePassTelegram } from "../hooks/useOpenAddFacePassTelegram";
 
 import styles from "./BottomNavTelegram.module.scss";
 
 const MENU_ITEMS = [
   { name: "home", path: "/tg/home", icon: "homeTelegram" },
-  { name: "finance", path: "/tg/finance", icon: "finance" },
   { name: "tasks", path: "/tg/tasks", icon: "tasks" },
-  { name: "more", path: "/tg/more", icon: "more" },
+  { name: "menu", path: "/tg/menu", icon: "more" },
+  // у иконки settings нет внутренних отступов viewBox — без compact выглядит крупнее остальных
+  { name: "settings", path: "/tg/settings", icon: "settings", compact: true },
 ];
 
-const FAB_ACTIONS = [
-  {
-    id: "add-employee",
-    menuName: "employees",
-    labelKey: "add_employee",
-    defaultLabel: "Сотрудник",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
-    color: "#5b8af5",
-  },
-  {
-    id: "add-face-pass-telegram",
-    menuName: "face-passes",
-    labelKey: "add-face-pass-telegram",
-    defaultLabel: "Проход",
-    icon: (
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M9 3H5a2 2 0 0 0-2 2v4" />
-        <path d="M15 3h4a2 2 0 0 1 2 2v4" />
-        <path d="M9 21H5a2 2 0 0 1-2-2v-4" />
-        <path d="M15 21h4a2 2 0 0 0 2-2v-4" />
-        <circle cx="12" cy="12" r="3" />
-      </svg>
-    ),
-    color: "#56c98a",
-  },
-];
-
-function getCanAddFromMenu(menuData, menuName) {
-  const findItem = (items) => {
-    for (const item of items) {
-      if (item.name === menuName) return item;
-      if (item.children?.length) {
-        const found = findItem(item.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  };
-  const item = findItem(menuData);
-  return !!item?.permissions?.add;
-}
-
-export default function BottomNavTelegram({ menuData }) {
+export default function BottomNavTelegram() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t } = useTranslation();
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [fabOpen, setFabOpen] = useState(false);
   const navRef = useRef(null);
   const pillRef = useRef(null);
   const itemRefs = useRef([]);
 
-  const openAddEmployee = useOpenAddEmployee();
-  const openAddFacePass = useOpenAddFacePassTelegram();
-
-  const visibleFabActions = FAB_ACTIONS.filter((action) =>
-    getCanAddFromMenu(menuData, action.menuName),
+  const activeIndex = MENU_ITEMS.findIndex((item) =>
+    location.pathname.startsWith(item.path),
   );
-  const showFab = visibleFabActions.length > 0;
-
-  const middleIndex = Math.ceil(MENU_ITEMS.length / 2);
-  const leftItems = MENU_ITEMS.slice(0, middleIndex);
-  const rightItems = MENU_ITEMS.slice(middleIndex);
-
-  const isActive = (item) => location.pathname.startsWith(item.path);
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -110,45 +36,57 @@ export default function BottomNavTelegram({ menuData }) {
     return () => tg.offEvent("viewportChanged", handleViewport);
   }, []);
 
-  useEffect(() => {
-    setFabOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!fabOpen) return;
-    const handleClick = (e) => {
-      if (navRef.current && !navRef.current.contains(e.target))
-        setFabOpen(false);
-    };
-    document.addEventListener("pointerdown", handleClick);
-    return () => document.removeEventListener("pointerdown", handleClick);
-  }, [fabOpen]);
-
-  useEffect(() => {
-    const activeIndex = MENU_ITEMS.findIndex(isActive);
-    if (activeIndex === -1) return;
+  // Ставит подсветку под активную кнопку. Первый раз — без анимации.
+  const placePill = (animate) => {
+    const pill = pillRef.current;
     const btn = itemRefs.current[activeIndex];
-    const pill = pillRef.current;
-    if (!btn || !pill) return;
-    pill.style.left = `${btn.offsetLeft}px`;
-    pill.style.width = `${btn.offsetWidth}px`;
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const pill = pillRef.current;
     if (!pill) return;
-    const timer = setTimeout(() => {
-      pill.style.transition = "all 0.4s cubic-bezier(0.25, 1, 0.5, 1.15)";
-    }, 50);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const handleNavClick = (item) => {
-    if (fabOpen) {
-      setFabOpen(false);
+    if (!btn) {
+      pill.style.opacity = "0";
       return;
     }
-    if (isActive(item)) {
+    if (!animate) pill.style.transition = "none";
+    pill.style.opacity = "1";
+    pill.style.width = `${btn.offsetWidth}px`;
+    pill.style.height = `${btn.offsetHeight}px`;
+    pill.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+    if (!animate) {
+      void pill.offsetWidth;
+      pill.style.transition = "";
+    }
+  };
+
+  useLayoutEffect(() => {
+    const pill = pillRef.current;
+    if (!pill) return;
+    placePill(pill.dataset.placed === "1");
+    pill.dataset.placed = "1";
+  }, [activeIndex, isKeyboardOpen]);
+
+  // Публикуем высоту меню (с учётом safe-area) для страниц с плавающими элементами
+  // и пересчитываем подсветку при смене размера / ориентации.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const root = document.documentElement;
+    let first = true;
+    const observer = new ResizeObserver(() => {
+      root.style.setProperty("--tg-nav-height", `${nav.offsetHeight}px`);
+      if (first) {
+        first = false;
+        return;
+      }
+      placePill(false);
+    });
+    observer.observe(nav);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--tg-nav-height");
+    };
+  }, [isKeyboardOpen, activeIndex]);
+
+  const handleNavClick = (item, active) => {
+    if (active) {
       const container = document.getElementById("scroll-container");
       container
         ? container.scrollTo({ top: 0, behavior: "smooth" })
@@ -158,71 +96,33 @@ export default function BottomNavTelegram({ menuData }) {
     }
   };
 
-  const handleFabAction = (actionId) => {
-    setFabOpen(false);
-    if (actionId === "add-employee") openAddEmployee();
-    else if (actionId === "add-face-pass-telegram") openAddFacePass();
-  };
-
-  if (isKeyboardOpen) return null;
-
-  const renderNavItem = (item, index) => {
-    const Icon = Icons[item.icon] || Icons.default;
-    const active = isActive(item);
-    return (
-      <button
-        key={item.path}
-        ref={(el) => (itemRefs.current[index] = el)}
-        className={`${styles.navItem} ${active ? styles.active : ""}`}
-        onClick={() => handleNavClick(item)}
-      >
-        <span className={styles.icon}>{Icon}</span>
-        <span className={styles.label}>{t(item.name)}</span>
-      </button>
-    );
-  };
+  // «Меню» открывается как экран с системной «Назад» — нижний таб-бар не нужен.
+  if (isKeyboardOpen || location.pathname.startsWith("/tg/menu")) return null;
 
   return (
-    <>
-      <div
-        className={`${styles.backdrop} ${fabOpen ? styles.backdropVisible : ""}`}
-        onPointerDown={() => setFabOpen(false)}
-      />
-
-      <nav className={styles.bottomNav} ref={navRef}>
-        <div
-          className={`${styles.fabMenu} ${fabOpen ? styles.fabMenuOpen : ""}`}
-        >
-          {visibleFabActions.map((action, i) => (
-            <button
-              key={action.id}
-              className={styles.fabMenuItem}
-              style={{ "--item-index": i, "--item-color": action.color }}
-              onClick={() => handleFabAction(action.id)}
-            >
-              <span className={styles.fabMenuIcon}>{action.icon}</span>
-              <span className={styles.fabMenuLabel}>
-                {t(action.labelKey, action.defaultLabel)}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {leftItems.map((item, i) => renderNavItem(item, i))}
-
-        {showFab && (
+    <nav ref={navRef} className={styles.bottomNav}>
+      <span ref={pillRef} className={styles.pill} aria-hidden="true" />
+      {MENU_ITEMS.map((item, index) => {
+        const Icon = Icons[item.icon] || Icons.default;
+        const active = index === activeIndex;
+        return (
           <button
-            className={`${styles.fab} ${fabOpen ? styles.fabActive : ""}`}
-            onClick={() => setFabOpen((v) => !v)}
-            aria-label="Добавить"
-            aria-expanded={fabOpen}
+            key={item.path}
+            type="button"
+            ref={(el) => (itemRefs.current[index] = el)}
+            className={`${styles.navItem} ${active ? styles.active : ""}`}
+            aria-current={active ? "page" : undefined}
+            onClick={() => handleNavClick(item, active)}
           >
-            <span className={styles.fabIcon}>{Icons.plus}</span>
+            <span
+              className={`${styles.icon} ${item.compact ? styles.iconCompact : ""}`}
+            >
+              {Icon}
+            </span>
+            <span className={styles.label}>{t(item.name)}</span>
           </button>
-        )}
-
-        {rightItems.map((item, i) => renderNavItem(item, i + leftItems.length))}
-      </nav>
-    </>
+        );
+      })}
+    </nav>
   );
 }

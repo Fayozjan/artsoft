@@ -79,6 +79,12 @@ const VARIANTS = {
     hoverColor: "#dc2626",
     activeBg: "#fee2e2",
   },
+  unlock: {
+    color: "#b45309",
+    hoverBg: "#fffbeb",
+    hoverColor: "#d97706",
+    activeBg: "#fef3c7",
+  },
 };
 
 // ─── ActionButton ───────────────────────────────────────────────────────
@@ -136,9 +142,10 @@ export const ActionCell = ({
   onDownload,
   onEdit,
   onDelete,
+  extra, // доп. кнопки страницы, рисуются первыми
 }) => {
   const { t } = useTranslation();
-  if (!canEdit && !canDelete) return null;
+  if (!canEdit && !canDelete && !extra) return null;
 
   return (
     <td style={{ textAlign: "center", verticalAlign: "middle" }}>
@@ -150,6 +157,8 @@ export const ActionCell = ({
           gap: 0,
         }}
       >
+        {extra}
+
         {onDownload && (
           <ActionButton
             onClick={() => onDownload(item)}

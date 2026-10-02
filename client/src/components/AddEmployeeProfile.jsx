@@ -87,6 +87,7 @@ const AddEmployeeProfile = ({ userId, setUserId, setActiveTab }) => {
 
   const handleChangeImage = (e) => {
     setImagePreview(null);
+    setFile(null);
     setFormData((prevData) => ({ ...prevData, photo: "" }));
   };
 

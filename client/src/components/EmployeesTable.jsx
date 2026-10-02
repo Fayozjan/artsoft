@@ -1,9 +1,12 @@
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { formatDate, getBirthdayInfo, getExpiryBadge } from "../utils/utils";
 
 import Badge from "../components/Badge";
 import { ActionCell } from "./ActionButtons";
+import EmployeeCell from "./EmployeeCell";
+import SortArrow from "./SortArrow";
 
 import styles from "./EmployeesTable.module.scss";
 
@@ -15,90 +18,201 @@ const EmployeesTable = ({
   canDelete,
   handleEditClick,
   handleDeleteClick,
+  selectedIds,
+  onToggleSelect,
+  onToggleAll,
+  onRowClick,
+  onScroll,
 }) => {
   const { t } = useTranslation();
+  const headerCheckRef = useRef(null);
+  const selectable = !!selectedIds;
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  // Клик по строке открывает карточку сотрудника, но не перехватывает
+  // чекбокс, кнопки действий и превью фото.
+  // В режиме выделения строка вместо карточки переключает выбор.
+  const handleRowClick = (e, id) => {
+    if (e.target.closest("button, input, a, img")) return;
+    if (selectable) {
+      onToggleSelect(id);
+      return;
+    }
+    if (!onRowClick) return;
+    onRowClick(id);
+  };
+
+  const allSelected =
+    selectable && data?.length > 0 && data.every((it) => selectedIds.includes(it.id));
+  const someSelected =
+    selectable && data?.some((it) => selectedIds.includes(it.id));
+
+  useEffect(() => {
+    if (headerCheckRef.current)
+      headerCheckRef.current.indeterminate = someSelected && !allSelected;
+  }, [someSelected, allSelected]);
+
+  const fullName = (item) =>
+    [item.last_name, item.first_name, item.middle_name].filter(Boolean).join(" ");
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const getSortValue = (item, field) => {
+    switch (field) {
+      case "employee":
+        return fullName(item);
+      case "position":
+        return item.position?.name || "";
+      case "workSchedule":
+        return item.workSchedule?.name || "";
+      default:
+        return item[field];
+    }
+  };
+
+  const sortedData = sortField
+    ? [...(data || [])].sort((a, b) => {
+        const aVal = getSortValue(a, sortField);
+        const bVal = getSortValue(b, sortField);
+
+        if (aVal === null || aVal === undefined) return 1;
+        if (bVal === null || bVal === undefined) return -1;
+
+        if (sortField === "date_of_birth" || sortField === "passport_expiry_date") {
+          return sortOrder === "asc"
+            ? new Date(aVal) - new Date(bVal)
+            : new Date(bVal) - new Date(aVal);
+        }
+
+        if (typeof aVal === "boolean" && typeof bVal === "boolean") {
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        return sortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : data;
 
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} onScroll={onScroll}>
       <table className={styles.table}>
         <thead>
           <tr>
+            {selectable && (
+              <th className={styles.checkCol}>
+                <input
+                  ref={headerCheckRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={onToggleAll}
+                />
+              </th>
+            )}
             <th>
               <span className={styles.headerContent}>№</span>
             </th>
-            <th className={styles.table_name_header}>
-              <span className={styles.headerContent}>{t("employee")}</span>
+            <th className={styles.table_name_header} onClick={() => handleSort("employee")}>
+              <span className={styles.headerContent}>
+                {t("employee")}
+                <SortArrow active={sortField === "employee"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("dateOfBirth")}</span>
+            <th onClick={() => handleSort("date_of_birth")}>
+              <span className={styles.headerContent}>
+                {t("dateOfBirth")}
+                <SortArrow active={sortField === "date_of_birth"} order={sortOrder} />
+              </span>
             </th>
-            <th>
+            <th onClick={() => handleSort("employee_number")}>
               <span className={styles.headerContent}>
                 {t("employeeNumber")}
+                <SortArrow active={sortField === "employee_number"} order={sortOrder} />
               </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("position")}</span>
+            <th onClick={() => handleSort("position")}>
+              <span className={styles.headerContent}>
+                {t("position")}
+                <SortArrow active={sortField === "position"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("pinfl")}</span>
+            <th onClick={() => handleSort("pinfl")}>
+              <span className={styles.headerContent}>
+                {t("pinfl")}
+                <SortArrow active={sortField === "pinfl"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("passport")}</span>
+            <th onClick={() => handleSort("passport")}>
+              <span className={styles.headerContent}>
+                {t("passport")}
+                <SortArrow active={sortField === "passport"} order={sortOrder} />
+              </span>
             </th>
-            <th>
+            <th onClick={() => handleSort("passport_expiry_date")}>
               <span className={styles.headerContent}>
                 {t("passportExpiry")}
+                <SortArrow active={sortField === "passport_expiry_date"} order={sortOrder} />
               </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("workSchedule")}</span>
+            <th onClick={() => handleSort("workSchedule")}>
+              <span className={styles.headerContent}>
+                {t("workSchedule")}
+                <SortArrow active={sortField === "workSchedule"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("status")}</span>
+            <th onClick={() => handleSort("status")}>
+              <span className={styles.headerContent}>
+                {t("status")}
+                <SortArrow active={sortField === "status"} order={sortOrder} />
+              </span>
             </th>
             <th>{(canEdit || canDelete) && t("action")}</th>
           </tr>
         </thead>
         <tbody>
           {data?.length > 0 ? (
-            data.map((item, i) => (
-              <tr key={item.id}>
+            sortedData.map((item, i) => (
+              <tr
+                key={item.id}
+                className={[
+                  onRowClick || selectable ? styles.clickableRow : "",
+                  selectable && selectedIds.includes(item.id)
+                    ? styles.selectedRow
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={(e) => handleRowClick(e, item.id)}
+              >
+                {selectable && (
+                  <td className={styles.checkCol}>
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.includes(item.id)}
+                      onChange={() => onToggleSelect(item.id)}
+                    />
+                  </td>
+                )}
                 <td>{(currentPage - 1) * pageSize + i + 1}</td>
                 <td>
-                  <div className={styles.empCell}>
-                    {item.photo ? (
-                      <img
-                        src={`/api/employees/image/${item.photo}`}
-                        alt="employee"
-                        className={
-                          item.status ? styles.active : styles.terminated
-                        }
-                      />
-                    ) : (
-                      <div
-                        className={`${styles.avatar} ${item.status ? styles.active : styles.terminated}`}
-                      >
-                        {[item.last_name, item.first_name]
-                          .filter(Boolean)
-                          .map((n) => n[0].toUpperCase())
-                          .join("")}
-                      </div>
-                    )}
-                    <div className={styles.empInfo}>
-                      <span className={styles.empName}>
-                        {[item.last_name, item.first_name, item.middle_name]
-                          .filter(Boolean)
-                          .join(" ")}{" "}
-                        ({item.id})
-                      </span>
-                      <span className={styles.empSub}>
-                        {[item.branch?.name, item.department?.name]
-                          .filter(Boolean)
-                          .join(" / ")}
-                      </span>
-                    </div>
-                  </div>
+                  <EmployeeCell
+                    photo={item.photo}
+                    lastName={item.last_name}
+                    firstName={item.first_name}
+                    middleName={item.middle_name}
+                    id={item.id}
+                    branch={item.branch?.name}
+                    department={item.department?.name}
+                    active={item.status}
+                  />
                 </td>
                 <td>
                   {item.date_of_birth &&
@@ -155,7 +269,7 @@ const EmployeesTable = ({
             ))
           ) : (
             <tr>
-              <td colSpan="11">{t("noData")}</td>
+              <td colSpan={selectable ? 12 : 11}>{t("noData")}</td>
             </tr>
           )}
         </tbody>

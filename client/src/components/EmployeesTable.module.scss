@@ -17,7 +17,7 @@
   thead {
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--card-bg);
     z-index: 10;
   }
 
@@ -30,7 +30,7 @@
 
   th {
     font-weight: 600;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -49,56 +49,15 @@
     gap: 8px;
   }
 
-  .empCell {
-    padding-left: 8px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 10px;
-    text-align: left;
-    min-width: 150px;
+  .checkCol {
+    width: 36px;
+    text-align: center !important;
 
-    img,
-    .avatar {
-      flex-shrink: 0;
-      width: 35px;
-      min-width: 30px;
-      height: 35px;
-      border-radius: 50%;
-      box-sizing: border-box;
+    input[type="checkbox"] {
+      cursor: pointer;
+      width: 14px;
+      height: 14px;
     }
-
-    img {
-      object-fit: cover;
-    }
-
-    .avatar {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background: #e2e8f0;
-      color: #475569;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      user-select: none;
-    }
-  }
-
-  .empInfo {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .empName {
-    font-weight: 600;
-    color: #1e293b;
-  }
-
-  .empSub {
-    font-size: 11px;
-    color: #94a3b8;
   }
 
   .actions svg {
@@ -143,4 +102,19 @@
     border: 1px solid rgba(245, 158, 11, 0.25);
     font-size: 12px;
   }
+}
+
+/* Строка-ссылка на карточку сотрудника */
+.clickableRow {
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: var(--select-hover-color);
+  }
+}
+
+/* Строка, выбранная в режиме выделения */
+.selectedRow {
+  background-color: rgba(99, 102, 241, 0.08);
 }

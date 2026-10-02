@@ -1,0 +1,716 @@
+// Типы операций в Telegram (Производство → Тип операции) — список.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+$accent: var(--third-color, #1455fe);
+
+.page {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.scroll {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(96px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// Схема связей открывается своим экраном поверх: отступ под системную шапку Telegram.
+.routeScreen {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  padding-top: $safe-top;
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+// ── Заголовок ────────────────────────────────────────────────────────────────
+
+// Шапка и заголовок — как на странице «Отделы».
+.header {
+  padding: calc(#{$safe-top} + 8px) 16px 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+// ── Поиск, фильтр, вкладки статусов ──────────────────────────────────────────
+
+.sticky {
+  position: sticky;
+  top: $safe-top;
+  z-index: 30;
+  padding: 6px 12px 10px;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+
+.searchRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.searchBox {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.searchIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.roundBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.93);
+  }
+}
+
+.roundBtnActive {
+  background: rgba(20, 85, 254, 0.14);
+  color: $accent;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tab {
+  --tab-rgb: 20, 85, 254;
+
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 36px;
+  padding: 0 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.tab_on {
+  --tab-rgb: 22, 163, 74;
+}
+
+.tab_off {
+  --tab-rgb: 107, 114, 128;
+}
+
+.tabActive {
+  border-color: rgba(var(--tab-rgb), 0.45);
+  background: rgba(var(--tab-rgb), 0.14);
+  color: rgb(var(--tab-rgb));
+}
+
+// ── Карточки ─────────────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 12px 0;
+}
+
+.card {
+  --accent: #94a3b8;
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  padding: 12px 10px 12px 18px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 18px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  outline: none;
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
+}
+
+.cardClickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--select-hover-color);
+  }
+}
+
+// Выключенный тип: приглушён, но читается.
+.cardOff {
+  opacity: 0.6;
+}
+
+.cardAccent {
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 4px 4px 0;
+  background: var(--accent);
+}
+
+.cardMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.3px;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.price {
+  display: flex;
+  flex-shrink: 0;
+  align-items: baseline;
+  gap: 4px;
+  white-space: nowrap;
+
+  b {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    font-variant-numeric: tabular-nums;
+    color: $accent;
+  }
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.tagBlue {
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+}
+
+.tagPurple {
+  background: var(--tg-badge-purple-bg);
+  color: var(--tg-badge-purple-color);
+}
+
+.tagAmber {
+  background: var(--tg-badge-amber-bg);
+  color: var(--tg-badge-amber-color);
+}
+
+.tagPink {
+  background: var(--tg-badge-pink-bg);
+  color: var(--tg-badge-pink-color);
+}
+
+.tagGray {
+  background: var(--tg-badge-gray-bg);
+  color: var(--tg-badge-gray-color);
+}
+
+.meter {
+  --meter-color: #94a3b8;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px 3px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--meter-color) 14%, transparent);
+  color: var(--meter-color);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.meterBars {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+
+  i {
+    display: block;
+    width: 4px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.25;
+
+    &:nth-child(1) {
+      height: 6px;
+    }
+
+    &:nth-child(2) {
+      height: 9px;
+    }
+
+    &:nth-child(3) {
+      height: 12px;
+    }
+  }
+
+  .meterOn {
+    opacity: 1;
+  }
+}
+
+.flow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-secondary);
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-top: 2px;
+    color: $accent;
+  }
+
+  span {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    min-width: 0;
+    overflow: hidden;
+  }
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+
+  span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.cardChevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  opacity: 0.6;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ── Фильтры в шторке ─────────────────────────────────────────────────────────
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip {
+  --chip-color: #1455fe;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  i {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--chip-color);
+  }
+}
+
+.chipActive {
+  border-color: color-mix(in srgb, var(--chip-color) 45%, transparent);
+  background: color-mix(in srgb, var(--chip-color) 14%, transparent);
+  color: var(--chip-color);
+}
+
+// ── Скелетон, пустое состояние, догрузка ─────────────────────────────────────
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 18px;
+  background: var(--card-bg);
+}
+
+.skLine {
+  display: block;
+  height: 13px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.emptyBtn {
+  flex: 0 0 auto;
+  min-width: 160px;
+  margin-top: 4px;
+}
+
+.moreLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 0 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $accent;
+    opacity: 0.3;
+    animation: dotPulse 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+// ── Кнопка «Добавить» ────────────────────────────────────────────────────────
+
+.fab {
+  position: absolute;
+  right: 16px;
+  bottom: calc(20px + #{$safe-bottom});
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  box-shadow:
+    0 10px 24px rgba(20, 85, 254, 0.4),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  color: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.14s ease;
+
+  svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  &:active {
+    transform: scale(0.92);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skLine,
+  .moreLoader span {
+    animation: none;
+  }
+}

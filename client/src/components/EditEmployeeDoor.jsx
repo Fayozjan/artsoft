@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAlertStore } from "../stores/alertStore";
 
 import Button from "./Button";
+import { Icons } from "../icons/icons";
 
 import styles from "./EditEmployeeDoor.module.scss";
 
@@ -153,20 +154,7 @@ const EditEmployeeDoor = ({ id }) => {
           ) : (
             <div className={styles.uploadContainer}>
               <label htmlFor="photo-upload" className={styles.uploadLabel}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className={styles.uploadIcon}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <span className={styles.uploadIcon}>{Icons.uploadPlus}</span>
                 <span>{t("uploadPhoto")}</span>
               </label>
               <input

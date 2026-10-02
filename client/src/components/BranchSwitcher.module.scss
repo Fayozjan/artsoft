@@ -2,7 +2,7 @@
   position: relative;
   width: 195px;
   padding: 4px 8px;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .branchCurrent {
@@ -12,19 +12,19 @@
   gap: 6px;
   padding: 6px 8px;
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-light);
   cursor: pointer;
   transition: background 0.1s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--table-header);
   }
 }
 
 .branchLabel {
   font-size: 10px;
-  color: #9ca3af;
+  color: var(--placeholder-color);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   flex-shrink: 0;
@@ -33,7 +33,7 @@
 .branchName {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--text-color);
   flex: 1;
   text-align: left;
   overflow: hidden;
@@ -45,7 +45,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
+  color: var(--placeholder-color);
   transition: transform 0.2s;
 
   svg {
@@ -61,9 +61,9 @@
   width: 95%;
   margin: 2px 2px;
   padding: 4px 0;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
-  background: #fff;
+  background: var(--card-bg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   z-index: 1000;
 }
@@ -77,13 +77,13 @@
   border: none;
   background: none;
   font-size: 13px;
-  color: #374151;
+  color: var(--text-color);
   cursor: pointer;
   transition: background 0.1s;
   text-align: left;
 
   &:hover {
-    background: #f9fafb;
+    background: var(--bg-light);
   }
 
   &.branchActive {
@@ -99,7 +99,7 @@
   display: flex;
   justify-content: center;
   padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border-subtle);
 
   &:hover .branchMiniPopup {
     opacity: 1;
@@ -129,8 +129,8 @@
   position: absolute;
   left: calc(100% + 8px);
   top: 4px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   padding: 4px;
@@ -155,19 +155,43 @@
   border: none;
   background: none;
   font-size: 13px;
-  color: #374151;
+  color: var(--text-color);
   border-radius: 6px;
   cursor: pointer;
   text-align: left;
   transition: background 0.1s;
 
   &:hover {
-    background: #f3f4f6;
+    background: var(--bg-light);
   }
 
   &.branchActive {
     color: #2563eb;
     font-weight: 600;
     background: #eff6ff;
+  }
+}
+
+// ─── Компактный режим (горизонтальная панель сверху) ──────────────────────────
+
+.branchSwitcher.compact {
+  width: auto;
+  max-width: 170px;
+  padding: 0;
+  border-bottom: none;
+
+  .branchCurrent {
+    padding: 3px 8px;
+    border-radius: 6px;
+  }
+
+  .branchName {
+    font-size: 12px;
+  }
+
+  .branchList {
+    width: max-content;
+    min-width: 100%;
+    margin: 4px 0 0;
   }
 }

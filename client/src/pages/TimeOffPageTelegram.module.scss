@@ -1,0 +1,815 @@
+// Страница «Заявки на отсутствие» в Telegram: сводка-фильтр по типу, поиск,
+// фильтры и карточки заявок. Каркас — как у «Логинов» / «Сотрудников».
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+$accent: var(--third-color, #1455fe);
+
+.page {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.main {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ── Шапка ────────────────────────────────────────────────────────────────────
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(#{$safe-top} + 8px) 16px 8px;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.heroCount {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Плитки-типы: сводка и переключатель типа в одном ──────────────────────────
+
+.tiles {
+  display: flex;
+  gap: 6px;
+  padding: 0 12px 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tile {
+  // --tone: r, g, b — цвет плитки
+  --tone: 99, 102, 241;
+
+  flex: 1 1 0;
+  min-width: 84px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+.toneIndigo {
+  --tone: 99, 102, 241;
+}
+
+.toneAmber {
+  --tone: 217, 119, 6;
+}
+
+.toneBlue {
+  --tone: 37, 99, 235;
+}
+
+.tonePurple {
+  --tone: 124, 58, 237;
+}
+
+.tileActive {
+  border-color: rgba(var(--tone), 0.55);
+  background: linear-gradient(
+      160deg,
+      rgba(var(--tone), 0.14) 0%,
+      rgba(var(--tone), 0.04) 100%
+    ),
+    var(--card-bg);
+}
+
+.tileIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  background: rgba(var(--tone), 0.14);
+  color: rgb(var(--tone));
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.tileText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tileValue {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tileLabel {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-secondary);
+}
+
+// ── Поиск + фильтр ───────────────────────────────────────────────────────────
+
+.toolbar {
+  position: sticky;
+  top: $safe-top;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px 10px;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+}
+
+.searchBox {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.searchIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-hover);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.filterBtn {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 0.5px solid var(--tg-separator);
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    background 0.15s,
+    color 0.15s;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.94);
+  }
+}
+
+.filterBtnActive {
+  color: $accent;
+  border-color: rgba(20, 85, 254, 0.35);
+  background: rgba(20, 85, 254, 0.1);
+}
+
+.filterBadge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 2px solid var(--tg-bg);
+  background: $accent;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+// ── Список заявок ──────────────────────────────────────────────────────────────
+
+.cardList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 6px 12px calc(96px + #{$safe-bottom});
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--tg-separator);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  contain: layout style;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: cardIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 24ms);
+  }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cardTappable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.trashBtn {
+  color: var(--tg-badge-red-color);
+  background: var(--tg-badge-red-bg);
+}
+
+.dateRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipPaid {
+  background: var(--tg-badge-green-bg);
+  color: var(--tg-badge-green-color);
+}
+
+.chipUnpaid {
+  background: var(--tg-badge-gray-bg);
+  color: var(--tg-badge-gray-color);
+}
+
+.chipHour {
+  background: var(--tg-badge-amber-bg);
+  color: var(--tg-badge-amber-color);
+}
+
+.chipDayOff {
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+}
+
+.chipVacation {
+  background: var(--tg-badge-purple-bg);
+  color: var(--tg-badge-purple-color);
+}
+
+.reason {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+// ── Пустое состояние и загрузка ────────────────────────────────────────────────
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 48px;
+  color: var(--text-secondary);
+
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 22px;
+  background: var(--tg-surface);
+
+  svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--card-bg);
+  border: 0.5px solid var(--tg-separator);
+}
+
+.skRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.skAvatar {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.skLines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skLine {
+  display: block;
+  height: 11px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.bottomLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 0 4px;
+}
+
+.bottomLoaderDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: $accent;
+  opacity: 0.3;
+  animation: dotPulse 1.2s ease-in-out infinite;
+
+  &:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+// ── Кнопка добавления ──────────────────────────────────────────────────────────
+
+.fab {
+  position: absolute;
+  right: 16px;
+  bottom: calc(20px + #{$safe-bottom});
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(20, 85, 254, 0.4);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    opacity 0.15s ease;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  &:active {
+    transform: scale(0.93);
+    opacity: 0.9;
+  }
+}
+
+// ── Экран фильтров (пуш-скрин) ──────────────────────────────────────────────────
+
+.filterPage {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.filterHeader {
+  padding: calc(#{$safe-top} + 8px) 16px 2px;
+}
+
+.filterTitle {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.filterBody {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterRow {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fieldLabel {
+  padding-left: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.select,
+.dateInput {
+  width: 100%;
+  height: 48px;
+  padding: 0 40px 0 14px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  border: 0.5px solid var(--tg-separator);
+  background-color: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+
+  &:focus {
+    border-color: $accent;
+    box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.14);
+  }
+}
+
+.select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.dateInput {
+  padding-right: 14px;
+}
+
+.filterFooter {
+  flex-shrink: 0;
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  padding-bottom: calc(
+    env(safe-area-inset-bottom) + var(--tg-safe-area-inset-bottom, 0px) + 50px
+  );
+}
+
+.resetBtn,
+.applyBtn {
+  height: 50px;
+  border: none;
+  border-radius: 14px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.15s,
+    opacity 0.15s;
+
+  &:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+}
+
+.resetBtn {
+  flex: 1;
+  background: var(--tg-surface);
+  color: var(--text-color);
+}
+
+.applyBtn {
+  flex: 2;
+  background: $accent;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(20, 85, 254, 0.28);
+}

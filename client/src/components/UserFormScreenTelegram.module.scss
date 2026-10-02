@@ -1,0 +1,42 @@
+// Экран формы логина в Telegram: сплошной фон и прокрутка. Вид самой формы —
+// модификатор `.mobile` в AddUser.module.scss.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+
+.screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.scroll {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  // нижний отступ даёт закреплённая панель «Сохранить» в самой форме
+  box-sizing: border-box;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

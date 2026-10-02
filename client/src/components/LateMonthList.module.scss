@@ -1,4 +1,4 @@
-.tableContainer {
+﻿.tableContainer {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
@@ -11,7 +11,7 @@
     thead {
       position: sticky;
       top: 0;
-      background: white;
+      background: var(--card-bg);
       z-index: 10;
     }
 
@@ -24,7 +24,7 @@
 
     th {
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;

@@ -1,0 +1,405 @@
+.detail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .header {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    border-bottom: 1px solid var(--border-color);
+
+    .backBtn {
+      display: flex;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 6px;
+      height: 32px;
+      padding: 0 12px;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      cursor: pointer;
+      font-size: var(--font-small);
+
+      svg {
+        width: 15px;
+        height: 15px;
+      }
+
+      &:hover {
+        border-color: var(--third-color);
+        color: var(--third-color);
+      }
+    }
+
+    .headerSettings {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
+      flex-shrink: 0;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      border: 1px solid rgba(162, 161, 168, 0.4);
+      border-radius: 4px;
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+
+      svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      &:hover {
+        color: var(--third-color);
+        border-color: var(--third-color);
+      }
+
+      // Кнопка обновления стоит перед шестерёнкой — auto-отступ только у первой из них.
+      + .headerSettings {
+        margin-left: -8px;
+      }
+
+      // Идёт обновление: кнопка подсвечена акцентом, иконка крутится.
+      &.spinning {
+        color: var(--third-color);
+        border-color: var(--third-color);
+        background: var(--bg-light);
+        cursor: progress;
+
+        svg {
+          animation: headerSettingsSpin 0.7s linear infinite;
+        }
+      }
+    }
+
+    .headerText {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    // Реквизиты партии — компактная строка справа в шапке вместо отдельных карточек.
+    .headerMeta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 28px;
+      margin-left: auto;
+      min-width: 0;
+    }
+
+    // Количество открытой позиции — справа в шапке, шестерёнка встаёт сразу за ним.
+    .headerStat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-left: auto;
+      padding: 5px 14px;
+      border-radius: 6px;
+      background: var(--bg-light);
+      min-width: 80px;
+
+      + .headerSettings {
+        margin-left: 0;
+      }
+    }
+
+    .headerStatValue {
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .headerStatLabel {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      color: var(--text-secondary);
+    }
+
+    .metaChip {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+      max-width: 260px;
+    }
+
+    // Комментарий может быть длинным — переносим строки, а не обрезаем.
+    .metaChipWrap {
+      max-width: 380px;
+
+      .metaValue {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+    }
+
+    .headerEyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-secondary);
+    }
+
+    .headerTitleRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: calc(var(--font-small) + 6px);
+      font-weight: 700;
+    }
+  }
+
+  .body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 16px 16px;
+    transition: opacity 0.15s ease;
+  }
+
+  // Обновление данных: содержимое приглушено и не кликается, пока идёт загрузка.
+  .bodyRefreshing {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .section {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle, var(--border-color));
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .sectionTitle {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-color);
+  }
+
+  // Количество позиций — круглая плашка в акцентном цвете рядом с заголовком.
+  .itemsCount {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 9px;
+    border: 1px solid color-mix(in srgb, var(--third-color, #1455fe) 22%, transparent);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--third-color, #1455fe) 10%, transparent);
+    color: var(--third-color, #1455fe);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .itemsEmpty {
+    padding: 24px 0;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: var(--font-small);
+  }
+
+  .statusBadge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .metaLabel {
+    display: block;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+  }
+
+  .metaValue {
+    display: block;
+    font-size: var(--font-small);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .footer {
+    padding: 12px 16px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  // Кнопки действий — единый вид, как у «Добавить и напечатать стикер»: крупная кнопка
+  // со скруглением и кружком-иконкой. Варианты: actionPrimary (синяя), actionLight
+  // (светлая с синим кружком), actionDanger (красная). actionBack — стрелка слева и
+  // сдвиг назад на hover, actionCompact — уменьшенная (для кнопки в шапке секции).
+  .actionBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 18px 0 24px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: filter 0.15s ease, opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease;
+
+    .actionIcon {
+      display: inline-flex;
+      flex-shrink: 0;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+
+      svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+        transition: transform 0.2s ease;
+      }
+    }
+
+    // Иконки-линии (стрелка, галочка) — без заливки.
+    .actionIconStroke svg {
+      fill: none;
+      stroke-width: 2.6;
+    }
+
+    &:hover:not(:disabled) .actionIcon svg {
+      transform: scale(1.15);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  // Кнопка в шапке секции «Позиции» прижата вправо.
+  .sectionAction {
+    margin-left: auto;
+  }
+
+  .actionBack {
+    padding: 0 24px 0 18px;
+
+    &:hover:not(:disabled) .actionIcon svg {
+      transform: translateX(-3px);
+    }
+  }
+
+  .actionCompact {
+    height: 42px;
+    padding: 0 14px 0 20px;
+    font-size: 15px;
+
+    .actionIcon {
+      width: 24px;
+      height: 24px;
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .actionPrimary {
+    background: var(--third-color, #1455fe);
+    color: var(--button-text, #fff);
+    box-shadow: 0 4px 14px rgba(20, 85, 254, 0.28);
+
+    .actionIcon {
+      background: var(--button-text, #fff);
+      color: var(--third-color, #1455fe);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+    }
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.08);
+    }
+  }
+
+  .actionLight {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+
+    .actionIcon {
+      background: var(--third-color, #1455fe);
+      color: var(--button-text, #fff);
+      box-shadow: 0 2px 6px rgba(20, 85, 254, 0.28);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--third-color, #1455fe);
+      color: var(--third-color, #1455fe);
+    }
+  }
+
+  .actionDanger {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+
+    .actionIcon {
+      background: #dc2626;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.28);
+    }
+
+    &:hover:not(:disabled) {
+      background: #fee2e2;
+      border-color: #f87171;
+    }
+  }
+}
+
+@keyframes headerSettingsSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

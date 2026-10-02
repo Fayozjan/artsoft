@@ -1,0 +1,215 @@
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  font-size: var(--font-small);
+
+  // Поиск с иконкой слева и крестиком справа.
+  .searchBox {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+
+    > svg {
+      position: absolute;
+      left: 10px;
+      width: 16px;
+      height: 16px;
+      color: var(--placeholder-color);
+      pointer-events: none;
+    }
+
+    input {
+      width: 100%;
+      height: 34px;
+      padding: 0 32px 0 32px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-sizing: border-box;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-size: var(--font-small);
+      font-weight: 500;
+      transition: border-color 0.15s, box-shadow 0.15s;
+
+      &:focus {
+        outline: none;
+        border-color: var(--third-color);
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+      }
+    }
+
+    .searchClear {
+      position: absolute;
+      right: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+
+      svg {
+        width: 13px;
+        height: 13px;
+      }
+
+      &:hover {
+        background: var(--table-header);
+        color: var(--text-color);
+      }
+    }
+  }
+
+  // "Выбрать все" слева, переключатель "Все / Выбранные" справа.
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex-shrink: 0;
+
+    .selectAll {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--text-color);
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+
+      input {
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        padding: 0;
+        accent-color: var(--third-color);
+        cursor: pointer;
+      }
+    }
+
+    .segmented {
+      display: flex;
+      gap: 4px;
+      padding: 3px;
+      background: var(--bg-light);
+      border: 1px solid rgba(162, 161, 168, 0.35);
+      border-radius: 8px;
+
+      button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 26px;
+        padding: 0 10px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 12px;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        transition: color 0.2s, background 0.2s, box-shadow 0.2s;
+
+        b {
+          min-width: 18px;
+          padding: 1px 6px;
+          border-radius: 9px;
+          background: rgba(162, 161, 168, 0.25);
+          color: var(--text-color);
+          font-size: 11px;
+          line-height: 1.4;
+        }
+
+        &.active {
+          background: var(--card-bg);
+          color: var(--third-color);
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+
+          b {
+            background: var(--third-color);
+            color: #fff;
+          }
+        }
+
+        &:hover:not(.active) {
+          color: var(--text-color);
+        }
+      }
+    }
+  }
+
+  // Сам список занимает всё оставшееся место блока и скроллится внутри.
+  .list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+
+    .row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px 6px 10px;
+      border-bottom: 1px solid var(--border-subtle, var(--border-color));
+      border-left: 3px solid transparent;
+      cursor: pointer;
+      transition: background 0.12s;
+
+      &:last-of-type {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: var(--bg-light);
+      }
+
+      input {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        margin: 0;
+        padding: 0;
+        accent-color: var(--third-color);
+        pointer-events: none;
+      }
+
+      // Имя и подпись обрезаются многоточием, а не растягивают строку.
+      > div {
+        flex: 1;
+        min-width: 0;
+        padding-left: 0;
+      }
+
+      &.rowChecked {
+        background: var(--table-header);
+        border-left-color: var(--third-color);
+      }
+    }
+
+    .empty,
+    .more {
+      padding: 14px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    .more {
+      border-top: 1px dashed var(--border-subtle, var(--border-color));
+    }
+  }
+}

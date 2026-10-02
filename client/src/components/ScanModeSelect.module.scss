@@ -1,0 +1,153 @@
+.modeSelect {
+  position: relative;
+  // Ширина по самой длинной подписи режима (см. .triggerText).
+  flex: 0 0 auto;
+}
+
+// Высота — как у поля скана рядом (40px), шрифт крупнее прежнего переключателя.
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: var(--third-color, #1455fe);
+  }
+}
+
+// Режим объединения включён — селект подсвечен, чтобы было видно, что сканы копятся, а не принимаются.
+.triggerAccent {
+  border-color: var(--third-color, #1455fe);
+  background: rgba(20, 85, 254, 0.1);
+  color: var(--third-color, #1455fe);
+}
+
+.triggerOpen {
+  border-color: var(--third-color, #1455fe);
+  box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.15);
+}
+
+// Грид с одной ячейкой: подписи всех режимов накладываются друг на друга, ширину
+// задаёт самая длинная; невыбранные скрыты (.triggerGhost).
+.triggerText {
+  display: grid;
+  min-width: 0;
+
+  > span {
+    grid-area: 1 / 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.triggerGhost {
+  visibility: hidden;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+}
+
+.triggerAccent .chevron {
+  color: inherit;
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.dropdown {
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, var(--border-color));
+  border-radius: 12px;
+  background: var(--card-bg);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-light);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.itemName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.itemActive,
+.itemActive:hover:not(:disabled) {
+  background: rgba(20, 85, 254, 0.1);
+  color: var(--third-color, #1455fe);
+}
+
+// ── Телефон (Telegram): крупнее, под палец ───────────────────────────────────
+@media (max-width: 640px) {
+  .trigger {
+    height: 48px;
+    border-width: 1.5px;
+    border-radius: 14px;
+  }
+
+  .dropdown {
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  }
+
+  .item {
+    min-height: 50px;
+    border-radius: 12px;
+  }
+}

@@ -1,3 +1,48 @@
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+
+import i18n from "../i18n";
+
+dayjs.extend(isoWeek);
+
+// ISO-неделя текущей даты в формате input[type=week]: "2026-W23"
+export function getCurrentIsoWeek() {
+  const d = dayjs();
+  return `${d.isoWeekYear()}-W${String(d.isoWeek()).padStart(2, "0")}`;
+}
+
+// "2026-W23" => { monday, sunday } (dayjs)
+export function getIsoWeekRange(weekStr) {
+  const [yearStr, weekPart] = weekStr.split("-W");
+  const isoYear = Number(yearStr);
+  const weekNum = Number(weekPart);
+
+  // 4 января всегда входит в 1-ю неделю ISO 8601
+  const week1Monday = dayjs(`${isoYear}-01-04`).startOf("isoWeek");
+  const monday = week1Monday.add((weekNum - 1) * 7, "day");
+  const sunday = monday.add(6, "day");
+
+  return { monday, sunday };
+}
+
+// Месяц, к которому относится неделя — по четвергу (правило ISO 8601)
+export function getIsoWeekMonth(weekStr) {
+  const { monday } = getIsoWeekRange(weekStr);
+  return monday.add(3, "day").format("YYYY-MM");
+}
+
+// Дни месяца monthStr, покрытые неделей weekStr — неделя,
+// пересекающая границу месяца, обрезается по границе
+export function getIsoWeekDaysInMonth(weekStr, monthStr) {
+  const { monday } = getIsoWeekRange(weekStr);
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const d = monday.add(i, "day");
+    if (d.format("YYYY-MM") === monthStr) days.push(d.date());
+  }
+  return days;
+}
+
 // 2026-02-16T05:00:00.000Z => 16.02.2026, 10:00
 export function formatIsoToLocalDateTime(isoString, options = {}) {
   if (!isoString) return "";
@@ -67,7 +112,7 @@ export function formatUtcStringToDate(utcString) {
 export function formatHoursMinutes(totalMinutes) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
-  return `${hours}ч ${minutes}м`;
+  return i18n.t("hoursMinutesFormat", { hours, minutes });
 }
 
 export const formatMinutesToHours = (totalMinutes) => {

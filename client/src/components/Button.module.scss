@@ -47,6 +47,36 @@
     width: 18px;
     height: 18px;
     color: var(--text-color);
-    fill: white;
+    fill: var(--button-text);
+  }
+
+  // Своя иконка (проп icon): stroke-иконки рисуются через currentColor, а
+  // color у svg выше — цвет текста страницы, на синей кнопке он не читается.
+  .icon {
+    display: flex;
+
+    svg {
+      color: var(--button-text);
+    }
+  }
+
+  // variant="light": белый фон вместо синего — вторичная кнопка рядом с основной.
+  &.light {
+    background: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+
+    &:hover {
+      border-color: var(--third-color);
+    }
+
+    svg {
+      fill: var(--text-color);
+    }
+
+    .icon svg {
+      color: var(--text-color);
+      fill: none;
+    }
   }
 }

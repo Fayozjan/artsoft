@@ -2,11 +2,66 @@ import { useEffect, useRef, useState } from "react";
 
 import styles from "./AtWorkTable.module.scss";
 import { useTranslation } from "react-i18next";
+import { Icons } from "../icons/icons";
+import SortArrow from "./SortArrow";
+
+const fullName = (info, id) =>
+  [info.surname, info.name, info.patronymic, id].filter(Boolean).join(" ");
 
 const AtWorkTable = ({ data, onClose }) => {
   const { t } = useTranslation();
   const modalRef = useRef(null);
   const [btnSwitch, setBtnSwich] = useState("arrived");
+  const [arrivedSortField, setArrivedSortField] = useState(null);
+  const [arrivedSortOrder, setArrivedSortOrder] = useState("asc");
+  const [absentSortField, setAbsentSortField] = useState(null);
+  const [absentSortOrder, setAbsentSortOrder] = useState("asc");
+
+  const toggleSort = (field, current, setField, setOrder) => {
+    if (current === field) {
+      setOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setField(field);
+      setOrder("asc");
+    }
+  };
+
+  const handleArrivedSort = (field) =>
+    toggleSort(field, arrivedSortField, setArrivedSortField, setArrivedSortOrder);
+  const handleAbsentSort = (field) =>
+    toggleSort(field, absentSortField, setAbsentSortField, setAbsentSortOrder);
+
+  const getArrivedValue = (item, field) => {
+    if (field === "fullName") return fullName(item.employeeInfo, item.employeeId);
+    if (field === "department") return item.employeeInfo.department_name || "";
+    if (field === "position") return item.employeeInfo.position_name || "";
+    return item[field];
+  };
+
+  const sortedArrived = arrivedSortField
+    ? [...(data?.arrived || [])].sort((a, b) => {
+        const aVal = getArrivedValue(a, arrivedSortField);
+        const bVal = getArrivedValue(b, arrivedSortField);
+        return arrivedSortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : data?.arrived || [];
+
+  const getAbsentValue = (item, field) => {
+    if (field === "fullName") return fullName(item, item.user_id);
+    return item[field] || "";
+  };
+
+  const sortedAbsent = absentSortField
+    ? [...(data?.absent || [])].sort((a, b) => {
+        const aVal = getAbsentValue(a, absentSortField);
+        const bVal = getAbsentValue(b, absentSortField);
+        return absentSortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : data?.absent || [];
 
   // Закрытие по нажатию клавиши ESC
   useEffect(() => {
@@ -36,36 +91,7 @@ const AtWorkTable = ({ data, onClose }) => {
   return (
     <div className={styles.overlay}>
       <div className={styles.table_body} ref={modalRef}>
-        <svg
-          className={styles.closeButton}
-          onClick={onClose}
-          viewBox="0 0 256 256"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <rect fill="none" height="256" width="256" />
-          <line
-            fill="none"
-            stroke="#000"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="24"
-            x1="200"
-            x2="56"
-            y1="56"
-            y2="200"
-          />
-          <line
-            fill="none"
-            stroke="#000"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="24"
-            x1="200"
-            x2="56"
-            y1="200"
-            y2="56"
-          />
-        </svg>
+        <span className={styles.closeButton} onClick={onClose} style={{ display: "flex", cursor: "pointer" }}>{Icons.clear}</span>
         <h1>{t("presentAbsentList")}</h1>
         <div className={styles.buttons}>
           <button
@@ -88,16 +114,41 @@ const AtWorkTable = ({ data, onClose }) => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th className={styles.table_name_header}>{t("fullName")}</th>
-                  <th>{t("department")}</th>
-                  <th>{t("position")}</th>
+                  <th className={styles.table_name_header} onClick={() => handleArrivedSort("fullName")}>
+                    <span className={styles.headerContent}>
+                      {t("fullName")}
+                      <SortArrow active={arrivedSortField === "fullName"} order={arrivedSortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleArrivedSort("department")}>
+                    <span className={styles.headerContent}>
+                      {t("department")}
+                      <SortArrow active={arrivedSortField === "department"} order={arrivedSortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleArrivedSort("position")}>
+                    <span className={styles.headerContent}>
+                      {t("position")}
+                      <SortArrow active={arrivedSortField === "position"} order={arrivedSortOrder} />
+                    </span>
+                  </th>
                   <th>{t("photo")}</th>
-                  <th>{t("entry")}</th>
-                  <th>{t("atWorkplace")}</th>
+                  <th onClick={() => handleArrivedSort("firstEntry")}>
+                    <span className={styles.headerContent}>
+                      {t("entry")}
+                      <SortArrow active={arrivedSortField === "firstEntry"} order={arrivedSortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleArrivedSort("lastEvent")}>
+                    <span className={styles.headerContent}>
+                      {t("atWorkplace")}
+                      <SortArrow active={arrivedSortField === "lastEvent"} order={arrivedSortOrder} />
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                {data?.arrived?.map((item, i) => (
+                {sortedArrived.map((item, i) => (
                   <tr key={item.employeeId}>
                     <td>{i + 1}</td>
                     <td>
@@ -130,14 +181,29 @@ const AtWorkTable = ({ data, onClose }) => {
               <thead>
                 <tr>
                   <th>№</th>
-                  <th className={styles.table_name_header}>{t("fullName")}</th>
-                  <th>{t("department")}</th>
-                  <th>{t("position")}</th>
+                  <th className={styles.table_name_header} onClick={() => handleAbsentSort("fullName")}>
+                    <span className={styles.headerContent}>
+                      {t("fullName")}
+                      <SortArrow active={absentSortField === "fullName"} order={absentSortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleAbsentSort("department_name")}>
+                    <span className={styles.headerContent}>
+                      {t("department")}
+                      <SortArrow active={absentSortField === "department_name"} order={absentSortOrder} />
+                    </span>
+                  </th>
+                  <th onClick={() => handleAbsentSort("position_name")}>
+                    <span className={styles.headerContent}>
+                      {t("position")}
+                      <SortArrow active={absentSortField === "position_name"} order={absentSortOrder} />
+                    </span>
+                  </th>
                   <th>{t("photo")}</th>
                 </tr>
               </thead>
               <tbody>
-                {data?.absent?.map((item, i) => (
+                {sortedAbsent.map((item, i) => (
                   <tr key={item.user_id}>
                     <td>{i + 1}</td>
                     <td>

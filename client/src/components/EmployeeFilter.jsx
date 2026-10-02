@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import EmployeeFilterForm from "./EmployeeFilterForm";
+import { Icons } from "../icons/icons";
 
 import styles from "./EmployeeFilterForm.module.scss";
 
@@ -178,6 +179,12 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
     { value: "female", label: t("female"), color: "#db2777" },
   ];
 
+  const workScheduleOptions = [
+    { value: "", label: t("all"), color: "#6b7280" },
+    { value: "true", label: t("assigned"), color: "#16a34a" },
+    { value: "false", label: t("notAssigned"), color: "#dc2626" },
+  ];
+
   const initialFormData = {
     branch_id: "",
     department_id: "",
@@ -185,6 +192,7 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
     position_id: "",
     gender: "",
     status: "",
+    has_work_schedule: "",
   };
 
   const activeCount = Object.entries(formData).filter(
@@ -233,21 +241,7 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
         className={`${styles.toggleBtn} + ${activeCount ? styles.active : ""}`}
         onClick={toggleOpen}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="200"
-          height="200"
-          viewBox="0 0 32 32"
-        >
-          <path
-            fill="none"
-            stroke="#000000"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M2 5s4-2 14-2s14 2 14 2L19 18v9l-6 3V18L2 5Z"
-          />
-        </svg>
+        {Icons.filter}
         {activeCount > 0 && <span className={styles.badge}>{activeCount}</span>}
       </div>
 
@@ -258,6 +252,16 @@ const EmployeeFilter = ({ formData, viewMode, setFormData, onSubmit, t }) => {
               filters={["branch", "department", "employee", "position"]}
               formData={formData}
               setFormData={setFormData}
+            />
+
+            <SegmentedGroup
+              label={t("workSchedule")}
+              options={workScheduleOptions}
+              value={formData.has_work_schedule ?? ""}
+              onChange={(val) =>
+                setFormData((prev) => ({ ...prev, has_work_schedule: val }))
+              }
+              isStatus
             />
 
             <SegmentedGroup

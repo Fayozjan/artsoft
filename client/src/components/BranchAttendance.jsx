@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import AttendanceTable from "./AttendanceTable";
+import SortArrow from "./SortArrow";
 import styles from "./AttendanceTable.module.scss";
 import { useTranslation } from "react-i18next";
 
@@ -36,12 +37,12 @@ const calculateStats = (employees) => {
   };
 };
 
-const groupDataWithStats = (employees) => {
+const groupDataWithStats = (employees, t) => {
   const branches = {};
 
   employees.forEach((emp) => {
-    const bName = emp.branchName || {t("unknown")};
-    const dName = emp.departmentName || {t("noDepartment")};
+    const bName = emp.branchName || t("unknown");
+    const dName = emp.departmentName || t("noDepartment");
 
     if (!branches[bName]) {
       branches[bName] = { name: bName, rawEmployees: [], departments: {} };
@@ -75,9 +76,46 @@ const BranchAttendance = ({ data = [] }) => {
   const { t } = useTranslation();
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [modal, setModal] = useState({ isOpen: false, data: [], title: "" });
+  const [branchSortField, setBranchSortField] = useState(null);
+  const [branchSortOrder, setBranchSortOrder] = useState("asc");
+  const [deptSortField, setDeptSortField] = useState(null);
+  const [deptSortOrder, setDeptSortOrder] = useState("asc");
 
   // Группируем и считаем статистику
-  const reportData = useMemo(() => groupDataWithStats(data), [data]);
+  const reportData = useMemo(() => groupDataWithStats(data, t), [data, t]);
+
+  const sortRows = (rows, field, order) => {
+    if (!field) return rows;
+    return [...rows].sort((a, b) => {
+      const aVal = a[field];
+      const bVal = b[field];
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return order === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return order === "asc"
+        ? String(aVal).localeCompare(String(bVal))
+        : String(bVal).localeCompare(String(aVal));
+    });
+  };
+
+  const toggleSort = (field, current, setField, setOrder) => {
+    if (current === field) {
+      setOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setField(field);
+      setOrder("asc");
+    }
+  };
+
+  const handleBranchSort = (field) =>
+    toggleSort(field, branchSortField, setBranchSortField, setBranchSortOrder);
+  const handleDeptSort = (field) =>
+    toggleSort(field, deptSortField, setDeptSortField, setDeptSortOrder);
+
+  const sortedBranches = sortRows(reportData, branchSortField, branchSortOrder);
+  const sortedDepartments = selectedBranch
+    ? sortRows(selectedBranch.departments, deptSortField, deptSortOrder)
+    : [];
 
   const handleBranchClick = (branch) => {
     setSelectedBranch(selectedBranch?.name === branch.name ? null : branch);
@@ -97,13 +135,24 @@ const BranchAttendance = ({ data = [] }) => {
           <thead>
             <tr>
               {attendanceStatsColumns.map((col) => (
-                <th key={col.key}>{t(col.titleKey)}</th>
+                <th
+                  key={col.key}
+                  onClick={() => col.sortable && handleBranchSort(col.key)}
+                  style={{ cursor: col.sortable ? "pointer" : "default" }}
+                >
+                  <span className={styles.headerContent}>
+                    {t(col.titleKey)}
+                    {col.sortable && (
+                      <SortArrow active={branchSortField === col.key} order={branchSortOrder} />
+                    )}
+                  </span>
+                </th>
               ))}
               <th>{t("listView")}</th>
             </tr>
           </thead>
           <tbody>
-            {reportData.map((branch) => (
+            {sortedBranches.map((branch) => (
               <tr
                 key={branch.name}
                 onClick={() => handleBranchClick(branch)}
@@ -142,13 +191,24 @@ const BranchAttendance = ({ data = [] }) => {
             <thead>
               <tr>
                 {attendanceStatsColumns.map((col) => (
-                  <th key={col.key}>{t(col.titleKey)}</th>
+                  <th
+                    key={col.key}
+                    onClick={() => col.sortable && handleDeptSort(col.key)}
+                    style={{ cursor: col.sortable ? "pointer" : "default" }}
+                  >
+                    <span className={styles.headerContent}>
+                      {t(col.titleKey)}
+                      {col.sortable && (
+                        <SortArrow active={deptSortField === col.key} order={deptSortOrder} />
+                      )}
+                    </span>
+                  </th>
                 ))}
                 <th>{t("listView")}</th>
               </tr>
             </thead>
             <tbody>
-              {selectedBranch.departments.map((dept) => (
+              {sortedDepartments.map((dept) => (
                 <tr key={dept.name}>
                   {attendanceStatsColumns.map((col) => (
                     <td key={col.key}>{dept[col.key]}</td>

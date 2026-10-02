@@ -1,10 +1,10 @@
 .wrapper {
   padding: 2px;
-  background-color: white;
+  background-color: var(--card-bg);
   display: flex;
   flex-direction: column;
   border-radius: 4px;
-  height: 100%;
+  flex: 1;
   min-height: 0;
 
   h4 {
@@ -159,7 +159,7 @@
       border-radius: 20px;
       border: 1.5px dashed rgba(162, 161, 168, 0.5);
       background: transparent;
-      color: #6b7280;
+      color: var(--text-secondary);
       font-size: var(--font-small);
       font-weight: 500;
       cursor: pointer;
@@ -192,7 +192,7 @@
         font-weight: 500;
         border-radius: 4px;
         border: 1px solid rgba(162, 161, 168, 0.4);
-        background-color: white;
+        background-color: var(--card-bg);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -214,7 +214,7 @@
         margin: 4px 0 0 0;
         padding: 4px 0;
         list-style: none;
-        background-color: white;
+        background-color: var(--card-bg);
         border: 1px solid rgba(162, 161, 168, 0.4);
         border-radius: 4px;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
@@ -228,7 +228,7 @@
           transition: background 0.2s;
 
           &:hover {
-            background-color: #f0f0f0;
+            background-color: var(--table-header);
           }
 
           svg {
@@ -248,7 +248,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  background: #f8f9fc;
+  background: var(--bg-light);
   border-bottom: 1px solid var(--border-color);
   flex-wrap: wrap;
   font-size: var(--font-small);
@@ -266,7 +266,7 @@
   }
 
   .activeFiltersLabel {
-    color: #6b7280;
+    color: var(--text-secondary);
     font-weight: 500;
     margin-right: 2px;
   }
@@ -308,7 +308,7 @@
 
   .filteredCount {
     margin-left: auto;
-    color: #6b7280;
+    color: var(--text-secondary);
     font-weight: 500;
   }
 }
@@ -319,6 +319,27 @@
   min-height: 0;
   overflow-y: auto;
 
+  .tableFixed {
+    table-layout: fixed;
+
+    td {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .employee {
+      overflow: hidden;
+
+      span,
+      div {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
   .table {
     width: 100%;
     border-collapse: collapse;
@@ -327,7 +348,7 @@
     thead {
       position: sticky;
       top: 0;
-      background: white;
+      background: var(--card-bg);
       z-index: 10;
       cursor: pointer;
     }
@@ -357,7 +378,7 @@
 
     th {
       font-weight: 600;
-      color: #475569;
+      color: var(--text-secondary);
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.03em;
@@ -379,11 +400,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-height: 46px;
 
       img {
-        min-width: 45px;
-        width: 45px;
-        height: 45px;
+        min-width: 32px;
+        width: 32px;
+        height: 32px;
         border-radius: 50%;
         margin-left: 10px;
         object-fit: cover;
@@ -392,7 +414,7 @@
     }
 
     .departmentRow {
-      background-color: #f9f9f982;
+      background-color: var(--bg-light);
 
       :first-child {
         padding-left: 18px;
@@ -409,8 +431,8 @@
       gap: 6px;
       padding: 4px 12px;
       border-radius: 8px;
-      border: 1.5px solid #e0e4f0;
-      background: #f8f9fc;
+      border: 1.5px solid var(--border-subtle);
+      background: var(--bg-light);
       color: #4f6ef7;
       font-size: var(--font-small);
       font-weight: 600;

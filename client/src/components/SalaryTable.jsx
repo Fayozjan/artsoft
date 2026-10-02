@@ -1,6 +1,9 @@
 import { useTranslation } from "react-i18next";
 
+import { useState } from "react";
 import Badge from "./Badge";
+import EmployeeCell from "./EmployeeCell";
+import SortArrow from "./SortArrow";
 import styles from "./SalaryTable.module.scss";
 
 const SALARY_TYPE_COLORS = {
@@ -41,8 +44,55 @@ const SalaryTable = ({
   pageSize = 50,
   onOpenHistory,
   onOpenAdd,
+  onScroll,
 }) => {
   const { t } = useTranslation();
+  const [sortField, setSortField] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const getSortValue = (item, field) => {
+    const salary = item.employeeSalaryHistory?.[0];
+    switch (field) {
+      case "employee":
+        return [item.last_name, item.first_name, item.middle_name]
+          .filter(Boolean)
+          .join(" ");
+      case "position":
+        return item.position?.name || "";
+      case "salaryType":
+        return salary?.salary_type || "";
+      case "amount":
+        return Number(salary?.amount || 0);
+      case "salaryPeriod":
+        return salary?.date_from || "";
+      default:
+        return item[field];
+    }
+  };
+
+  const sortedData = sortField
+    ? [...data].sort((a, b) => {
+        const aVal = getSortValue(a, sortField);
+        const bVal = getSortValue(b, sortField);
+
+        if (typeof aVal === "number" && typeof bVal === "number") {
+          return sortOrder === "asc" ? aVal - bVal : bVal - aVal;
+        }
+
+        return sortOrder === "asc"
+          ? String(aVal).localeCompare(String(bVal))
+          : String(bVal).localeCompare(String(aVal));
+      })
+    : data;
 
   const handleRowClick = (item) => {
     const salary = item.employeeSalaryHistory?.[0];
@@ -54,41 +104,55 @@ const SalaryTable = ({
   };
 
   return (
-    <div className={styles.tableContainer}>
+    <div className={styles.tableContainer} onScroll={onScroll}>
       <table className={styles.table}>
         <thead>
           <tr>
             <th>
               <span className={styles.headerContent}>№</span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("employee")}</span>
-            </th>
-            <th>
+            <th onClick={() => handleSort("employee")}>
               <span className={styles.headerContent}>
-                {t("employeeNumber")}
+                {t("employee")}
+                <SortArrow active={sortField === "employee"} order={sortOrder} />
               </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("branch")}</span>
+            <th onClick={() => handleSort("employee_number")}>
+              <span className={styles.headerContent}>
+                {t("employeeNumber")}
+                <SortArrow active={sortField === "employee_number"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("department")}</span>
+
+            <th onClick={() => handleSort("position")}>
+              <span className={styles.headerContent}>
+                {t("position")}
+                <SortArrow active={sortField === "position"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("position")}</span>
+            <th onClick={() => handleSort("salaryType")}>
+              <span className={styles.headerContent}>
+                {t("salaryType")}
+                <SortArrow active={sortField === "salaryType"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("salaryType")}</span>
+            <th onClick={() => handleSort("amount")}>
+              <span className={styles.headerContent}>
+                {t("amount")}
+                <SortArrow active={sortField === "amount"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("amount")}</span>
+            <th onClick={() => handleSort("salaryPeriod")}>
+              <span className={styles.headerContent}>
+                {t("salaryPeriod")}
+                <SortArrow active={sortField === "salaryPeriod"} order={sortOrder} />
+              </span>
             </th>
-            <th>
-              <span className={styles.headerContent}>{t("salaryPeriod")}</span>
-            </th>
-            <th>
-              <span className={styles.headerContent}>{t("status")}</span>
+            <th onClick={() => handleSort("status")}>
+              <span className={styles.headerContent}>
+                {t("status")}
+                <SortArrow active={sortField === "status"} order={sortOrder} />
+              </span>
             </th>
             <th>
               <span className={styles.headerContent}>{t("action")}</span>
@@ -97,7 +161,7 @@ const SalaryTable = ({
         </thead>
         <tbody>
           {data.length > 0 ? (
-            data.map((item, i) => {
+            sortedData.map((item, i) => {
               const salary = item.employeeSalaryHistory?.[0];
               return (
                 <tr
@@ -107,27 +171,18 @@ const SalaryTable = ({
                 >
                   <td>{(currentPage - 1) * pageSize + i + 1}</td>
                   <td>
-                    <div className={styles.employeeCell}>
-                      {item.photo && (
-                        <img
-                          src={`/api/employees/image/${item.photo}`}
-                          alt=""
-                          className={
-                            item.status ? styles.active : styles.terminated
-                          }
-                        />
-                      )}
-                      <span>
-                        {[item.last_name, item.first_name, item.middle_name]
-                          .filter(Boolean)
-                          .join(" ")}{" "}
-                        {`(${item.id})`}
-                      </span>
-                    </div>
+                    <EmployeeCell
+                      photo={item.photo}
+                      lastName={item.last_name}
+                      firstName={item.first_name}
+                      middleName={item.middle_name}
+                      id={item.id}
+                      branch={item.branch?.name}
+                      department={item.department?.name}
+                      active={item.status}
+                    />
                   </td>
                   <td>{item.employee_number || "—"}</td>
-                  <td>{item.branch?.name || "—"}</td>
-                  <td>{item.department?.name || "—"}</td>
                   <td>{item.position?.name || "—"}</td>
                   <td>
                     {salary ? (

@@ -1,0 +1,1048 @@
+// Отчёт по производству в Telegram.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+
+$accent: var(--third-color, #1455fe);
+
+.page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+// ── Шапка и вкладки ──────────────────────────────────────────────────────────
+
+.head {
+  flex-shrink: 0;
+  padding: calc(#{$safe-top} + 10px) 14px 4px;
+}
+
+.title {
+  margin: 0 0 10px 2px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+  color: var(--text-color);
+}
+
+.tabsScroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.tabPill {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 999px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.tabPillActive {
+  border-color: color-mix(in srgb, $accent 45%, transparent);
+  background: color-mix(in srgb, $accent 14%, transparent);
+  color: $accent;
+}
+
+// ── Поиск и фильтр ───────────────────────────────────────────────────────────
+
+.stickyBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px 6px;
+}
+
+.searchBox {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 44px;
+  padding: 0 8px 0 12px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-within {
+    border-color: $accent;
+    box-shadow: 0 0 0 4px rgba(20, 85, 254, 0.12);
+  }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 16px;
+    -webkit-appearance: none;
+    appearance: none;
+
+    &::placeholder {
+      color: var(--placeholder-color);
+      opacity: 0.7;
+    }
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+}
+
+.searchIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 19px;
+    height: 19px;
+  }
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.roundBtn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 14px;
+  background: var(--card-bg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  color: var(--text-secondary);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:active {
+    transform: scale(0.93);
+  }
+}
+
+.roundBtnActive {
+  background: rgba(20, 85, 254, 0.14);
+  color: $accent;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+// Пояснение, по какой дате отсчитывается период на текущей вкладке.
+.hint {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 16px 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// ── Панели вкладок ───────────────────────────────────────────────────────────
+
+.panes {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.pane {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(24px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.paneHidden {
+  display: none;
+}
+
+// ── KPI-полоса итогов ────────────────────────────────────────────────────────
+
+.kpiStrip {
+  display: flex;
+  gap: 8px;
+  padding: 2px 12px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.kpiChip {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: 2px;
+  min-width: 86px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+
+  span {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  b {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    color: var(--text-color);
+  }
+}
+
+.kpiGood {
+  color: var(--tg-badge-green-color, #16a34a) !important;
+}
+
+.kpiBad {
+  color: #dc2626 !important;
+}
+
+.kpiWarn {
+  color: #d97706 !important;
+}
+
+.kpiAccent {
+  color: $accent !important;
+}
+
+// ── Карточки ─────────────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px 12px 0;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.14s ease,
+    background-color 0.14s ease;
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--select-hover-color);
+  }
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cardTitleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cardTitleMain {
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitle {
+  margin: 0;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.cardSubtitle {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.cardChevron {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  opacity: 0.55;
+
+  svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tg-separator);
+}
+
+.footerStat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.amount {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  font-variant-numeric: tabular-nums;
+  color: $accent;
+}
+
+// ── Плитки показателей ───────────────────────────────────────────────────────
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(78px, 1fr));
+  gap: 8px;
+}
+
+.tile {
+  --tone: 100, 116, 139;
+
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(var(--tone), 0.12);
+
+  span {
+    overflow: hidden;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  b {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.2px;
+    overflow-wrap: anywhere;
+    color: rgb(var(--tone));
+  }
+}
+
+.tileGood {
+  --tone: 22, 163, 74;
+}
+
+.tileBad {
+  --tone: 220, 38, 38;
+}
+
+.tileWarn {
+  --tone: 217, 119, 6;
+}
+
+.tileInfo {
+  --tone: 124, 58, 237;
+}
+
+.tileMuted {
+  background: var(--tg-surface);
+
+  b {
+    color: var(--text-secondary);
+  }
+}
+
+// ── Полоса прогресса ─────────────────────────────────────────────────────────
+
+.progressWrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.progressTrack {
+  position: relative;
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  transition: width 0.3s ease;
+}
+
+.progressLabel {
+  flex-shrink: 0;
+  min-width: 34px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Мониторинг ───────────────────────────────────────────────────────────────
+
+.monitoringCard {
+  cursor: default;
+
+  &:active {
+    transform: none;
+    background: var(--card-bg);
+  }
+}
+
+.monitoringCard[role="button"] {
+  cursor: pointer;
+
+  &:active {
+    transform: scale(0.985);
+    background: var(--select-hover-color);
+  }
+}
+
+.monitoringTotal {
+  border-color: color-mix(in srgb, $accent 45%, transparent);
+}
+
+.toneArrived {
+  --tone: 79, 70, 229;
+}
+
+.tonePending {
+  --tone: 180, 83, 9;
+}
+
+.toneDone {
+  --tone: 4, 120, 87;
+}
+
+// ── Стикеры: код, статус, исполнители, деньги ────────────────────────────────
+
+.codeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 5px 9px 5px 11px;
+  border: none;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+.prevInfo {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  b {
+    color: var(--text-color);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.workers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moreWorkers {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.moneyRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--tg-separator);
+}
+
+.money {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  span {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  b {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-color);
+  }
+}
+
+.moneyTotal b {
+  color: $accent;
+}
+
+.editRateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(20, 85, 254, 0.12);
+  color: $accent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  &:active {
+    background: rgba(20, 85, 254, 0.22);
+  }
+}
+
+.cardDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--text-secondary);
+
+  svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+// ── Шторка деталей: дерево заказа ────────────────────────────────────────────
+
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+.treeGroup {
+  border-radius: 14px;
+  background: var(--tg-surface);
+  overflow: hidden;
+}
+
+.treeRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.treeChevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+.treeMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.treeTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.treeSub {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.treeRight {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  b {
+    color: var(--text-color);
+    font-weight: 700;
+  }
+}
+
+.treeChildren {
+  padding: 0 8px 8px 14px;
+  border-top: 1px solid var(--tg-separator);
+}
+
+.treeMeta {
+  padding: 8px 4px 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.treeEmpty {
+  margin: 0;
+  padding: 8px 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+// Сотрудник внутри операции (дерево заказа): без фото — ФИО сверху, кол-во/сумма
+// снизу, чтобы помещалось по ширине узкой вложенной шторки.
+.opEmployeeRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: var(--tg-surface);
+}
+
+.opEmployeeName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.opEmployeeStats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-size: 13.5px;
+    color: $accent;
+  }
+}
+
+// ── Плоские списки деталей (сотрудник / операция / мониторинг) ──────────────
+
+.sectionTitle {
+  margin: 14px 2px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+
+  &:first-child {
+    margin-top: 2px;
+  }
+}
+
+.flatList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.flatRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+}
+
+.flatMain {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+
+  b {
+    font-size: 13.5px;
+    color: var(--text-color);
+  }
+
+  span {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+}
+
+.flatStats {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+
+  b {
+    font-size: 13.5px;
+    color: $accent;
+  }
+}
+
+.muted {
+  color: var(--text-secondary);
+}
+
+.negative {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+// ── Поле выбора в шторке фильтров ────────────────────────────────────────────
+
+.selectWrap {
+  position: relative;
+  display: block;
+
+  select {
+    width: 100%;
+    padding-right: 34px;
+  }
+}
+
+.selectChevron {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+  color: var(--text-secondary);
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ── Скелетон, пустое состояние, догрузка ─────────────────────────────────────
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  margin: 2px 12px 0;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+}
+
+.skLine {
+  display: block;
+  height: 13px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px 24px;
+  text-align: center;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: var(--text-secondary);
+  }
+}
+
+.emptyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+
+  svg {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+.moreLoader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 0 4px;
+
+  span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: $accent;
+    opacity: 0.3;
+    animation: dotPulse 1.2s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes dotPulse {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skLine,
+  .moreLoader span {
+    animation: none;
+  }
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Icons } from "../icons/icons";
 import styles from "./SelectWithSearch.module.scss";
 
 function SelectWithSearch({
@@ -90,19 +91,9 @@ function SelectWithSearch({
       />
 
       {value && (
-        <svg
-          className={styles.clearBtn}
-          onClick={resetSelection}
-          width="200"
-          height="200"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 16 16"
-        >
-          <path
-            fill="#000000"
-            d="m4.818 4.111l-.707.707a.5.5 0 0 0 0 .707L6.586 8L4.11 10.475a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L8 9.414l2.475 2.475a.5.5 0 0 0 .707 0l.707-.707a.5.5 0 0 0 0-.707L9.414 8l2.475-2.475a.5.5 0 0 0 0-.707l-.707-.707a.5.5 0 0 0-.707 0L8 6.586L5.525 4.11a.5.5 0 0 0-.707 0"
-          />
-        </svg>
+        <span className={styles.clearBtn} onClick={resetSelection} style={{ display: "flex", cursor: "pointer" }}>
+          {Icons.clear}
+        </span>
       )}
 
       {showOptions && (

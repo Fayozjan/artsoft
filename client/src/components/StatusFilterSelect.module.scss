@@ -1,0 +1,165 @@
+// Селект статуса для Telegram: кнопка + нижняя шторка со списком.
+// --tone / --tone-bg (цвет и его полупрозрачная заливка) приходят инлайном из компонента.
+
+.trigger {
+  --tone: var(--third-color, #1455fe);
+  --tone-bg: var(--tg-surface);
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 44px;
+  padding: 0 10px 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+// Выбран конкретный статус — кнопка окрашена его цветом.
+.triggerTone {
+  border-color: var(--tone-bg);
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+.triggerText {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dot {
+  display: block;
+  flex-shrink: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--tone);
+}
+
+.count {
+  flex-shrink: 0;
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.16);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.chevron {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.triggerTone .chevron {
+  color: inherit;
+}
+
+// ── Шторка со списком ────────────────────────────────────────────────────────
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+}
+
+.option {
+  --tone: var(--third-color, #1455fe);
+  --tone-bg: rgba(20, 85, 254, 0.12);
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 14px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background: var(--tg-surface);
+  color: var(--text-color);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.12s ease;
+
+  &:active {
+    transform: scale(0.985);
+  }
+}
+
+.optionActive {
+  border-color: var(--tone);
+  background: var(--tone-bg);
+  color: var(--tone);
+}
+
+.optionDot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 12px;
+
+  .dot {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.optionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.optionCheck {
+  display: flex;
+  flex-shrink: 0;
+  width: 20px;
+  color: var(--tone);
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trigger,
+  .option {
+    transition: none;
+  }
+}

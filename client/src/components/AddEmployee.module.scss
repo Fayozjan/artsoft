@@ -1,4 +1,4 @@
-.addEmployee {
+﻿.addEmployee {
   position: relative;
   padding-bottom: 8px;
 
@@ -7,12 +7,63 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid #ddd;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color);
 
+    // Не переносим и не сжимаем: переполнение шапки замеряет AddEmployee.jsx и сворачивает кнопку в значок
     h2 {
       margin: 0;
       padding: 0;
+      flex-shrink: 0;
+      white-space: nowrap;
       font-size: calc(var(--font-small) + 2px);
+    }
+  }
+
+  .headerActions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
+    margin-left: auto;
+  }
+
+  // Режим повторного приёма: сотрудник уже есть, создаётся только приказ
+  .rehireBanner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 8px 8px 0;
+    padding: 8px 12px;
+    border: 1px solid var(--third-color, #2f80ed);
+    border-radius: 8px;
+    background: rgba(47, 128, 237, 0.08);
+    font-size: var(--font-small);
+    font-weight: 600;
+
+    button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+
+      svg {
+        width: 14px;
+        height: 14px;
+        fill: currentColor;
+      }
+
+      &:hover {
+        background: rgba(128, 128, 128, 0.2);
+      }
     }
   }
 
@@ -24,7 +75,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-
     img {
       width: 150px;
       height: 150px;
@@ -35,7 +85,6 @@
       &.active {
         border: 2px solid #28a745;
         box-shadow: 0 0 15px 2px rgba(40, 167, 69, 0.5);
-
         animation: activePulse 3s infinite ease-in-out;
       }
 
@@ -47,20 +96,45 @@
     }
 
     &:hover img {
-      opacity: 0.9;
+      opacity: 0.65;
     }
 
-    &:hover svg {
+    &:hover .deleteBtn {
       opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
     }
 
-    svg {
+    .deleteBtn {
       position: absolute;
-      width: 28px;
-      height: 28px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.75);
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(220, 53, 69, 0.88);
+      border: 2px solid rgba(255, 255, 255, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       opacity: 0;
-      transition: 0.25s ease;
+      transition: opacity 0.22s ease, transform 0.22s ease, background 0.15s ease;
       cursor: pointer;
+
+      svg {
+        width: 20px;
+        height: 20px;
+        fill: #ffffff;
+      }
+
+      &:hover {
+        background: rgba(185, 28, 40, 1);
+        transform: translate(-50%, -50%) scale(1.1);
+      }
+
+      &:active {
+        transform: translate(-50%, -50%) scale(0.95);
+      }
     }
   }
 
@@ -73,8 +147,24 @@
     align-items: center;
     justify-content: center;
     border-radius: 20%;
-    border: 2px dashed #ccc;
+    border: 2px dashed var(--border-color);
     box-sizing: border-box;
+    transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:hover {
+      border-color: var(--text-color);
+      background: rgba(128, 128, 128, 0.06);
+      transform: scale(1.04);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+
+      label svg {
+        animation: iconBounce 0.5s ease forwards;
+      }
+
+      label span {
+        color: var(--text-color);
+      }
+    }
 
     label {
       display: flex;
@@ -87,11 +177,13 @@
         width: 35px;
         height: 35px;
         margin-bottom: 10px;
+        transition: color 0.2s ease;
       }
 
       span {
         font-weight: 500;
         font-size: var(--font-small);
+        transition: color 0.2s ease;
       }
     }
 
@@ -133,13 +225,20 @@
     gap: 12px;
     align-items: center;
 
+    // метрики SelectWithSearch под остальные поля формы
+    --sws-margin-top: 0px;
+    --sws-height: 30px;
+    --sws-radius: 5px;
+    --sws-padding-left: 8px;
+    --sws-padding-right: 52px;
+
     > div {
       flex: 1;
     }
   }
 
   h4 {
-    border-top: 1px solid #c5c5c5;
+    border-top: 1px solid var(--border-color);
     text-align: center;
     margin: 10px;
     padding-top: 10px;
@@ -150,7 +249,7 @@
     display: block;
     font-size: var(--font-small);
     margin-bottom: 2px;
-    color: #666;
+    color: var(--text-secondary);
   }
 
   input,
@@ -159,10 +258,88 @@
     width: 100%;
     height: 30px;
     padding: 5px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: var(--font-small);
     box-sizing: border-box;
+  }
+
+  .historyBtnCol {
+    flex: 0 0 44px !important;
+  }
+
+  .historyBtn {
+    width: 100%;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    background-color: transparent;
+    border-radius: 5px;
+    font-weight: 500;
+    font-size: var(--font-small);
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease-in-out;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      fill: var(--svg-color);
+    }
+
+    span {
+      white-space: nowrap;
+    }
+
+    &:hover {
+      border-color: var(--text-color);
+      background: rgba(128, 128, 128, 0.08);
+    }
+  }
+
+  .syncDoorBtn {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 0 12px;
+    height: 30px;
+    box-sizing: border-box;
+    background-color: transparent;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: var(--font-small);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+    color: var(--third-color, #2f80ed);
+    border: 1.5px solid var(--third-color, #2f80ed);
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    &:hover:not(:disabled) {
+      background-color: var(--third-color, #2f80ed);
+      color: #ffffff;
+    }
+
+    &:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
   }
 
   .orderBtnWrapper {
@@ -171,7 +348,10 @@
     margin: 5px 10px;
 
     .btn {
-      min-width: 160px;
+      // всегда половина ряда: и пара Перевод / Уволить, и одиночная Нанять.
+      // 5px — половина gap, чтобы две кнопки уложились ровно в ширину
+      flex: 0 1 calc(50% - 5px);
+      min-width: 0;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -184,17 +364,23 @@
       cursor: pointer;
       transition: all 0.2s ease-in-out;
       outline: none;
-      border: 1.5px solid black;
+      border: 1.5px solid var(--text-color);
 
       svg {
-        fill: #000000;
+        fill: var(--svg-color);
+      }
+
+      &:disabled {
+        opacity: 0.55;
+        cursor: progress;
+        pointer-events: none;
       }
     }
 
     .showAllEmploymentBtn {
       &:hover {
         border: 1.5px solid #555;
-        background-color: #555;
+        background-color: var(--text-secondary);
         color: #ffffff;
 
         svg {
@@ -316,9 +502,17 @@
       border: 2px solid #e74c3c;
       padding: 10px 50px;
       border-radius: 8px;
-      background-color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(255, 255, 255, 0.85);
       box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
       white-space: nowrap;
     }
   }
+}
+
+@keyframes iconBounce {
+  0%   { transform: translateY(0); }
+  30%  { transform: translateY(-7px); }
+  55%  { transform: translateY(-2px); }
+  75%  { transform: translateY(-5px); }
+  100% { transform: translateY(0); }
 }

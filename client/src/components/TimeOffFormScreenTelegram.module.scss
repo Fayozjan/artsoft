@@ -1,0 +1,444 @@
+// Экран добавления / правки заявки на отсутствие в Telegram: карточки по темам
+// (тип, сотрудники, период, причина), «Сохранить» — в шапке справа.
+// Общие поля и кнопки — из tg/TgUi.module.scss, карточный каркас — как у формы сотрудника.
+
+$safe-top: calc(
+  var(--tg-safe-area-inset-top, 0px) + var(--tg-content-safe-area-inset-top, 0px)
+);
+$safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px));
+$accent: var(--third-color, #1455fe);
+
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: var(--tg-bg);
+  color: var(--text-color);
+}
+
+.topGlass {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: $safe-top;
+  z-index: 30;
+  pointer-events: none;
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  transform: translateZ(0);
+}
+
+.scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 12px 0 calc(28px + #{$safe-bottom});
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+// ── Шапка ────────────────────────────────────────────────────────────────────
+
+.head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(#{$safe-top} + 8px) 12px 10px 16px;
+  border-bottom: 0.5px solid var(--tg-separator);
+  background: var(--tg-bg);
+  background: color-mix(in srgb, var(--tg-bg) 94%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+}
+
+.title {
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.4px;
+}
+
+.saveBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2f6bff 0%, #1455fe 100%);
+  color: #fff;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(20, 85, 254, 0.3);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    opacity 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    box-shadow: none;
+  }
+}
+
+// ── Карточки ─────────────────────────────────────────────────────────────────
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 14px;
+  border: 0.5px solid var(--tg-separator);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 8px 20px -14px rgba(0, 0, 0, 0.18);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardIcon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.toneBlue {
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+}
+
+.toneGreen {
+  background: var(--tg-badge-green-bg);
+  color: var(--tg-badge-green-color);
+}
+
+.toneAmber {
+  background: var(--tg-badge-amber-bg);
+  color: var(--tg-badge-amber-color);
+}
+
+.tonePurple {
+  background: var(--tg-badge-purple-bg);
+  color: var(--tg-badge-purple-color);
+}
+
+.cardTitle {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.total {
+  min-width: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 26px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+// ── Тип заявки ───────────────────────────────────────────────────────────────
+
+.typeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.typeBtn {
+  // --tone: r, g, b — цвет типа
+  --tone: 100, 116, 139;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
+
+  &:active {
+    transform: scale(0.96);
+  }
+}
+
+.typeAmber {
+  --tone: 217, 119, 6;
+}
+
+.typeBlue {
+  --tone: 37, 99, 235;
+}
+
+.typePurple {
+  --tone: 124, 58, 237;
+}
+
+.typeBtnOn {
+  border-color: rgba(var(--tone), 0.5);
+  background: linear-gradient(
+      160deg,
+      rgba(var(--tone), 0.16) 0%,
+      rgba(var(--tone), 0.05) 100%
+    ),
+    var(--card-bg);
+  color: rgb(var(--tone));
+}
+
+.typeIcon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// ── Сотрудники ───────────────────────────────────────────────────────────────
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  height: 34px;
+  padding: 0 6px 0 12px;
+  border-radius: 12px;
+  background: var(--tg-badge-blue-bg);
+  color: var(--tg-badge-blue-color);
+  font-size: 13px;
+  font-weight: 600;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  button {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.15);
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 11px;
+      height: 11px;
+    }
+
+    &:active {
+      opacity: 0.6;
+    }
+  }
+}
+
+.addBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 48px;
+  border: 1.5px dashed var(--tg-separator);
+  border-radius: 12px;
+  background: transparent;
+  color: $accent;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:active {
+    background: var(--tg-hover);
+  }
+}
+
+// ── Переключатель «за счёт компании» ──────────────────────────────────────────
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.switchText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+
+  b {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--tg-bar-track);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 27px;
+    height: 27px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.28);
+    transition: transform 0.2s ease;
+  }
+
+  &:checked {
+    background: #34c759;
+  }
+
+  &:checked::after {
+    transform: translateX(20px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .switch,
+  .switch::after {
+    transition: none;
+  }
+}
+
+// ── Скелетон ─────────────────────────────────────────────────────────────────
+
+.skLine {
+  display: block;
+  height: 12px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--tg-surface) 25%,
+    var(--tg-hover) 50%,
+    var(--tg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

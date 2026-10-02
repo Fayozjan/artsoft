@@ -6,81 +6,8 @@ import Loading from "./Loading";
 import styles from "./EmployeeWorkSchedulesHistory.module.scss";
 import { EmployeeService, workScheduleHistoryApi } from "../api";
 import { t } from "i18next";
-
-const getDayNames = () => [
-  t("dayMon"),
-  t("dayTue"),
-  t("dayWed"),
-  t("dayThu"),
-  t("dayFri"),
-  t("daySat"),
-  t("daySun"),
-];
-
-const formatWorkScheduleTime = (schedule) => {
-  if (!schedule) return "—";
-  const dayNames = getDayNames();
-
-  switch (schedule.type) {
-    case "fixed": {
-      if (!schedule.work_days?.length) return "—";
-
-      const activeDays = schedule.work_days.filter((d) => d.start && d.end);
-
-      if (!activeDays.length) return "—";
-
-      const groups = {};
-
-      activeDays.forEach((day) => {
-        const key = `${day.start}-${day.end}`;
-        if (!groups[key]) groups[key] = [];
-        groups[key].push(day.day);
-      });
-
-      const result = Object.entries(groups).map(([time, days], i) => {
-        const [start, end] = time.split("-");
-
-        const sortedDays = days.sort((a, b) => a - b);
-
-        const isSequential =
-          sortedDays[sortedDays.length - 1] - sortedDays[0] + 1 ===
-          sortedDays.length;
-
-        const daysLabel = isSequential
-          ? `${dayNames[sortedDays[0] - 1]}–${
-              dayNames[sortedDays[sortedDays.length - 1] - 1]
-            }`
-          : sortedDays.map((d) => dayNames[d - 1]).join(", ");
-
-        return (
-          <span key={i}>
-            {daysLabel}: {start} – {end}
-          </span>
-        );
-      });
-
-      return result;
-    }
-
-    case "shift": {
-      const shifts = schedule.shifts
-        ?.filter((s) => s.start && s.end)
-        .map((s) => (
-          <div key={s.shift_number}>
-            {s.shift_number} {t("shift2Label")}: {s.start} – {s.end}
-          </div>
-        ));
-
-      return shifts?.length ? shifts : "—";
-    }
-
-    case "flexible":
-      return t("flexibleSchedule");
-
-    default:
-      return "—";
-  }
-};
+import { Icons } from "../icons/icons";
+import { formatWorkScheduleTime } from "../utils/workSchedule";
 
 const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
   const [loading, setLoading] = useState(false);
@@ -128,18 +55,7 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <svg
-          onClick={handleClose}
-          xmlns="http://www.w3.org/2000/svg"
-          width="18"
-          height="18"
-          viewBox="0 0 304 384"
-        >
-          <path
-            fill="currentColor"
-            d="M299 73L179 192l120 119l-30 30l-120-119L30 341L0 311l119-119L0 73l30-30l119 119L269 43z"
-          />
-        </svg>
+        <span onClick={handleClose} style={{ cursor: "pointer", display: "flex" }}>{Icons.clear}</span>
       </div>
 
       <div className={styles.timelineWrapper}>
@@ -204,12 +120,7 @@ const EmployeeWorkSchedulesHistory = ({ employeeId, handleClose }) => {
                         onClick={() => setDeletingId(item.id)}
                         title={t("deleteBtn")}
                       >
-                        <svg width="14" height="16" viewBox="0 0 14 18">
-                          <path
-                            d="M1,16 C1,17.1 1.9,18 3,18 L11,18 C12.1,18 13,17.1 13,16 L13,4 L1,4 L1,16 L1,16 Z M14,1 L10.5,1 L9.5,0 L4.5,0 L3.5,1 L0,1 L0,3 L14,3 L14,1 L14,1 Z"
-                            fill="currentColor"
-                          />
-                        </svg>
+                        {Icons.delete}
                       </button>
                     </div>
                     <div className={styles.card_body}>

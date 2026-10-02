@@ -1,0 +1,369 @@
+.searchableSelect {
+  margin-top: var(--sws-margin-top, 4px);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  position: relative;
+
+  .control {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  // поле-триггер: выглядит как обычный инпут формы
+  .trigger {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    height: var(--sws-height, 35px);
+    padding: 0 var(--sws-padding-right, 52px) 0 var(--sws-padding-left, 10px);
+    margin: 0;
+    font-family: inherit;
+    font-size: var(--sws-font-size, var(--font-small));
+    font-weight: 500;
+    text-align: left;
+    color: var(--text-color);
+    background: var(--input-bg, var(--card-bg));
+    border: 1px solid var(--border-color);
+    border-radius: var(--sws-radius, 4px);
+    box-sizing: border-box;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:hover:not(:disabled) {
+      border-color: var(--third-color);
+    }
+
+    &:focus-visible {
+      outline: none;
+      border-color: var(--third-color);
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.14);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  .triggerValue,
+  .triggerPlaceholder {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .triggerPlaceholder {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
+
+  // скрытый инпут только ради нативной проверки required
+  .validationInput {
+    position: absolute;
+    left: 12px;
+    bottom: 0;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.open {
+    .trigger {
+      border-color: var(--third-color);
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.14);
+    }
+
+    .chevron {
+      transform: rotate(180deg);
+      color: var(--third-color);
+    }
+  }
+
+  &.disabled .chevron {
+    opacity: 0.5;
+  }
+
+  .actions {
+    position: absolute;
+    top: 0;
+    right: 8px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    pointer-events: none;
+  }
+
+  .clearBtn {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      color 0.15s ease,
+      background 0.15s ease;
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+
+    &:hover {
+      color: var(--badge-color-disabled);
+      background: var(--select-hover-color);
+    }
+  }
+
+  .chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    color: var(--text-secondary);
+    transition: transform 0.18s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+// панель позиционируется fixed от триггера — селекторы верхнего уровня
+.panel {
+  position: fixed;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  background: var(--card-bg);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+  z-index: 999999;
+  animation: searchableSelectIn 0.14s ease-out;
+}
+
+// видимая строка поиска внутри выпадающего списка
+.searchBox {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-light, var(--table-header));
+
+  .searchIcon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--third-color);
+
+    svg {
+      width: 15px;
+      height: 15px;
+    }
+  }
+
+  input.searchInput[type="text"] {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    height: 30px;
+    padding: 0 8px;
+    margin: 0;
+    font-family: inherit;
+    font-size: var(--font-small);
+    font-weight: 500;
+    color: var(--text-color);
+    background: var(--input-bg, var(--card-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    box-sizing: border-box;
+
+    &::placeholder {
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--third-color);
+      box-shadow: 0 0 0 2px rgba(20, 85, 254, 0.14);
+    }
+  }
+}
+
+.searchClear {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    color: var(--badge-color-disabled);
+    background: var(--select-hover-color);
+  }
+}
+
+.optionsList {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+  margin: 0;
+  box-sizing: border-box;
+  list-style: none;
+  font-size: var(--font-small);
+  font-weight: 500;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--scroll-color);
+    border-radius: 3px;
+  }
+
+  li {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    mark {
+      background: rgba(20, 85, 254, 0.16);
+      color: var(--third-color);
+      border-radius: 3px;
+      padding: 0 1px;
+    }
+  }
+
+  li.active {
+    background: var(--select-hover-color);
+  }
+
+  li.selected {
+    color: var(--third-color);
+
+    mark {
+      background: rgba(20, 85, 254, 0.22);
+    }
+  }
+
+  .optionMain {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .optionName {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .optionCategory {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: calc(var(--font-small) - 2px);
+    font-weight: 400;
+    color: var(--text-secondary);
+  }
+
+  .optionDescription {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: calc(var(--font-small) - 2px);
+    font-weight: 400;
+    font-style: italic;
+    color: var(--text-secondary);
+  }
+
+  .check {
+    flex-shrink: 0;
+    color: var(--third-color);
+    font-size: 13px;
+  }
+
+  .no_matches {
+    flex: 1;
+    justify-content: center;
+    color: var(--text-secondary);
+    font-weight: 400;
+    cursor: default;
+    background: transparent;
+  }
+}
+
+.moreHint {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-top: 1px solid var(--border-color);
+  font-size: calc(var(--font-small) - 2px);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+@keyframes searchableSelectIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

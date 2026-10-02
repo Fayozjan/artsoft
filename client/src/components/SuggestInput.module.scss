@@ -1,0 +1,63 @@
+.wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  // position/top/left/width/z-index задаются инлайном (fixed positioning)
+}
+
+.list {
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 3px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover,
+  &.active {
+    background: #faf5ff;
+    color: #6d28d9;
+  }
+
+  b {
+    font-weight: 700;
+    color: #7c3aed;
+  }
+}
+
+.itemText {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  color: var(--placeholder-color);
+  display: flex;
+  align-items: center;
+}
+
+.hint {
+  padding: 5px 9px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--placeholder-color);
+}

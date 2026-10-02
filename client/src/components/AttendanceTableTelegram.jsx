@@ -1,175 +1,262 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+import TgSheet from "./tg/TgSheet";
+import {
+  IconLogIn,
+  IconLogOut,
+  IconClock,
+  IconSun,
+  IconDoor,
+  IconHash,
+  IconMapPin,
+  IconBuilding,
+  IconBriefcase,
+  IconUsers,
+} from "./tg/tgIcons";
+import {
+  STATUS_META,
+  primaryStatus,
+  toneStyle,
+  initialOf,
+  formatMinutes,
+} from "../utils/attendanceTelegram";
 
 import styles from "./AttendanceTableTelegram.module.scss";
 
-const STATUS_KEYS = ["present", "absent", "late", "inside", "left"];
+const PAGE_SIZE = 40;
 
-const STATUS_META = {
-  present: { color: "#16a34a", bg: "#f0fdf4", labelKey: "checkedInSingular" },
-  absent: { color: "#dc2626", bg: "#fef2f2", labelKey: "notCheckedInSingular" },
-  late: { color: "#d97706", bg: "#fffbeb", labelKey: "lateSingular" },
-  inside: { color: "#2563eb", bg: "#eff6ff", labelKey: "onSite" },
-  left: { color: "#7c3aed", bg: "#f5f3ff", labelKey: "checkedOutSingular" },
-};
-
-// ── Employee card ─────────────────────────────────────────────────────────────
-const EmployeeCard = ({ emp }) => {
-  const { t } = useTranslation();
-  const fullName = emp.employeeFullName || "—";
-  const initials = fullName.charAt(0).toUpperCase();
-  const activeStatuses = STATUS_KEYS.filter((k) => emp[k] === true);
+const Avatar = ({ emp, className }) => {
+  const [failed, setFailed] = useState(false);
+  const showPhoto = emp.employeePhoto && !failed;
 
   return (
-    <div className={styles.card}>
-      <div className={styles.cardAvatar}>
-        {emp.employeePhoto ? (
-          <img
-            src={`/api/employees/image/${emp.employeePhoto}`}
-            alt={fullName}
-            loading="lazy"
-          />
-        ) : (
-          <span className={styles.avatarFallback}>{initials}</span>
-        )}
-      </div>
-
-      <div className={styles.cardBody}>
-        <div className={styles.cardInfoRow}>
-          <div className={styles.cardDetails}>
-            <p className={styles.cardName}>{fullName}</p>
-            <p className={styles.cardSub}>{emp.positionName || "—"}</p>
-            <p className={styles.cardMeta}>{emp.departmentName || ""}</p>
-          </div>
-
-          <div className={styles.cardTime}>
-            {emp.firstEntry && (
-              <div className={styles.timeBlock}>
-                <span className={styles.timeLabel}>{t("entryTime")}</span>
-                <span className={styles.timeValue}>{emp.firstEntry}</span>
-              </div>
-            )}
-            {emp.lastExit && (
-              <div className={styles.timeBlock}>
-                <span className={styles.timeLabel}>{t("exit")}</span>
-                <span className={styles.timeValue}>{emp.lastExit}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {activeStatuses.length > 0 && (
-          <div className={styles.statusBadges}>
-            {activeStatuses.map((k) => {
-              const m = STATUS_META[k];
-              return (
-                <span
-                  key={k}
-                  className={styles.statusBadge}
-                  style={{ "--badge-color": m.color, "--badge-bg": m.bg }}
-                >
-                  {t(m.labelKey)}
-                  {k === "late" && emp.lateMinutes
-                    ? ` ${emp.lateMinutes} ${t("minutesShort")}`
-                    : ""}
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+    <span className={className}>
+      {showPhoto ? (
+        <img
+          src={`/api/employees/image/${emp.employeePhoto}`}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span className={styles.initial}>{initialOf(emp.employeeFullName)}</span>
+      )}
+    </span>
   );
 };
 
-// ── Main component ────────────────────────────────────────────────────────────
-const AttendanceTableTelegram = ({
-  rowData = {},
-  search = "",
-  activeStatusFilters = new Set(),
-  onScroll,
-}) => {
-  const { t } = useTranslation();
-  const listRef = useRef(null);
+// Причина отгула: «за счёт компании» — отдельный статус, остальное — «отлучка»
+const timeOffText = (info, t) => info?.reason || t("excusedLeave");
 
-  const employees = useMemo(() => {
-    if (!rowData?.employees) return [];
-
-    const presentIds = new Set(rowData.present?.map((e) => e.employeeId));
-    const absentIds = new Set(rowData.absent?.map((e) => e.employeeId));
-    const insideIds = new Set(rowData.inside?.map((e) => e.employeeId));
-    const leftIds = new Set(rowData.left?.map((e) => e.employeeId));
-    const lateIds = new Set(rowData.late?.map((e) => e.employeeId));
-
-    const presentMap = new Map(
-      rowData.present?.map((e) => [e.employeeId, e.firstEntry]),
-    );
-    const leftMap = new Map(
-      rowData.left?.map((e) => [e.employeeId, e.lastExit]),
-    );
-    const lateMap = new Map(
-      rowData.late?.map((e) => [e.employeeId, e.lateMinutes]),
-    );
-
-    return rowData.employees.map((emp) => ({
-      ...emp,
-      employeeId: emp.id,
-      present: presentIds.has(emp.id),
-      absent: absentIds.has(emp.id),
-      inside: insideIds.has(emp.id),
-      left: leftIds.has(emp.id),
-      late: lateIds.has(emp.id),
-      firstEntry: presentMap.get(emp.id) || null,
-      lastExit: leftMap.get(emp.id) || null,
-      lateMinutes: lateMap.get(emp.id) || 0,
-    }));
-  }, [rowData]);
-
-  // Filter by search query + active status chips
-  const filteredEmployees = useMemo(() => {
-    let result = employees;
-
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (emp) =>
-          emp.employeeFullName?.toLowerCase().includes(q) ||
-          emp.departmentName?.toLowerCase().includes(q) ||
-          emp.positionName?.toLowerCase().includes(q) ||
-          String(emp.employeeId).includes(q),
-      );
-    }
-
-    if (activeStatusFilters.size > 0) {
-      result = result.filter((emp) =>
-        [...activeStatusFilters].some((key) => emp[key] === true),
-      );
-    }
-
-    return result;
-  }, [employees, search, activeStatusFilters]);
-
-  // Pipe scroll events up to parent (for hide/show bar)
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el || !onScroll) return;
-    const handler = () => onScroll(el.scrollTop);
-    el.addEventListener("scroll", handler, { passive: true });
-    return () => el.removeEventListener("scroll", handler);
-  }, [onScroll]);
+const EmployeeCard = ({ emp, isToday, onOpen, t }) => {
+  const status = primaryStatus(emp, isToday);
 
   return (
-    <div className={styles.wrapper}>
-      <div className={styles.cardList} ref={listRef}>
-        {filteredEmployees.length > 0 ? (
-          filteredEmployees.map((emp) => (
-            <EmployeeCard key={emp.employeeId} emp={emp} />
-          ))
-        ) : (
-          <p className={styles.empty}>{t("noData")}</p>
-        )}
+    <button
+      type="button"
+      className={styles.card}
+      style={toneStyle(STATUS_META[status].tone)}
+      onClick={() => onOpen(emp)}
+    >
+      <Avatar emp={emp} className={styles.avatar} />
+
+      <span className={styles.main}>
+        <span className={styles.name}>{emp.employeeFullName || "—"}</span>
+        <span className={styles.sub}>
+          {[emp.positionName, emp.departmentName].filter(Boolean).join(" · ") || "—"}
+        </span>
+
+        <span className={styles.chips}>
+          {emp.firstEntry && (
+            <span className={`${styles.chip} ${styles.chipIn}`}>
+              <IconLogIn />
+              {emp.firstEntry}
+            </span>
+          )}
+          {emp.lastExit && (
+            <span className={`${styles.chip} ${styles.chipOut}`}>
+              <IconLogOut />
+              {emp.lastExit}
+            </span>
+          )}
+          {emp.late && (
+            <span
+              className={`${styles.chip} ${styles.chipTone}`}
+              style={toneStyle("amber")}
+            >
+              <IconClock />+{formatMinutes(emp.lateMinutes, t)}
+            </span>
+          )}
+          {emp.timeOffInfo && (
+            <span
+              className={`${styles.chip} ${styles.chipTone}`}
+              style={toneStyle("teal")}
+            >
+              <IconSun />
+              {timeOffText(emp.timeOffInfo, t)}
+            </span>
+          )}
+        </span>
+      </span>
+
+      <span className={styles.pill}>{t(STATUS_META[status].singularKey)}</span>
+    </button>
+  );
+};
+
+const InfoRow = ({ icon, label, value }) =>
+  value ? (
+    <li className={styles.infoRow}>
+      <span className={styles.infoIcon}>{icon}</span>
+      <span className={styles.infoLabel}>{label}</span>
+      <span className={styles.infoValue}>{value}</span>
+    </li>
+  ) : null;
+
+const EmployeeSheet = ({ emp, extra, isToday, isOpen, onClose, t }) => {
+  const status = emp ? primaryStatus(emp, isToday) : "present";
+  const hasVisit = emp && (emp.present || emp.firstEntry || emp.lastExit);
+
+  return (
+    <TgSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title={emp?.employeeFullName || ""}
+      subtitle={emp?.positionName || undefined}
+    >
+      {emp && (
+        <div className={styles.sheet} style={toneStyle(STATUS_META[status].tone)}>
+          <div className={styles.sheetTop}>
+            <Avatar emp={emp} className={styles.sheetAvatar} />
+            <div className={styles.sheetStatus}>
+              <span className={styles.pill}>{t(STATUS_META[status].singularKey)}</span>
+              {emp.late && (
+                <span className={styles.sheetLate}>
+                  {t("attendanceTg.lateBy", { time: formatMinutes(emp.lateMinutes, t) })}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {hasVisit && (
+            <div className={styles.times}>
+              <div className={styles.timeCell}>
+                <span className={styles.timeLabel}>{t("entryTime")}</span>
+                <b>{emp.firstEntry || "—"}</b>
+              </div>
+              <div className={styles.timeCell}>
+                <span className={styles.timeLabel}>{t("exit")}</span>
+                <b>{emp.lastExit || "—"}</b>
+              </div>
+              <div className={styles.timeCell}>
+                <span className={styles.timeLabel}>{t("attendanceTg.worked")}</span>
+                <b>{extra?.workDuration || "—"}</b>
+              </div>
+            </div>
+          )}
+
+          {emp.timeOffInfo && (
+            <div className={styles.timeOff} style={toneStyle("teal")}>
+              <IconSun />
+              <span>{timeOffText(emp.timeOffInfo, t)}</span>
+            </div>
+          )}
+
+          <ul className={styles.info}>
+            <InfoRow icon={<IconDoor />} label={t("turnstile")} value={emp.firstEntryDoor} />
+            <InfoRow
+              icon={<IconClock />}
+              label={t("scheduledTime")}
+              value={extra?.scheduledStart}
+            />
+            <InfoRow icon={<IconHash />} label={t("tabNumber")} value={emp.employeeNumber} />
+            <InfoRow icon={<IconMapPin />} label={t("branch")} value={emp.branchName} />
+            <InfoRow icon={<IconBuilding />} label={t("department")} value={emp.departmentName} />
+            <InfoRow icon={<IconBriefcase />} label={t("position")} value={emp.positionName} />
+          </ul>
+        </div>
+      )}
+    </TgSheet>
+  );
+};
+
+// Список сотрудников карточками: подгружается порциями по мере прокрутки,
+// тап по карточке открывает шторку с подробностями дня.
+const AttendanceTableTelegram = ({
+  employees = [],
+  extras,
+  isToday = true,
+  scrollRootRef,
+}) => {
+  const { t } = useTranslation();
+
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [shown, setShown] = useState(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const sentinelRef = useRef(null);
+
+  useEffect(() => {
+    setVisible(PAGE_SIZE);
+  }, [employees]);
+
+  const hasMore = visible < employees.length;
+
+  useEffect(() => {
+    const node = sentinelRef.current;
+    if (!node || !hasMore) return undefined;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setVisible((prev) => prev + PAGE_SIZE);
+      },
+      { root: scrollRootRef?.current || null, rootMargin: "400px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, visible, scrollRootRef]);
+
+  const openEmployee = (emp) => {
+    setShown(emp);
+    setSheetOpen(true);
+  };
+
+  if (employees.length === 0) {
+    return (
+      <div className={styles.empty}>
+        <span className={styles.emptyIcon}>
+          <IconUsers />
+        </span>
+        <p>{t("noData")}</p>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <>
+      <div className={styles.list}>
+        {employees.slice(0, visible).map((emp) => (
+          <EmployeeCard
+            key={emp.employeeId}
+            emp={emp}
+            isToday={isToday}
+            onOpen={openEmployee}
+            t={t}
+          />
+        ))}
+
+        {hasMore && <span ref={sentinelRef} className={styles.sentinel} />}
+      </div>
+
+      <EmployeeSheet
+        emp={shown}
+        extra={shown ? extras?.get(shown.employeeId) : null}
+        isToday={isToday}
+        isOpen={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        t={t}
+      />
+    </>
   );
 };
 

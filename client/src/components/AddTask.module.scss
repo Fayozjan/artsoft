@@ -1,0 +1,177 @@
+.form {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    label {
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      font-size: var(--font-small);
+      background: var(--input-bg);
+      color: var(--text-color);
+      box-sizing: border-box;
+
+      &:focus {
+        outline: none;
+        border-color: var(--third-color);
+      }
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  }
+
+  .fileList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .fileItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: var(--bg-light);
+    border-radius: 6px;
+    font-size: var(--font-small);
+
+    .fileName {
+      flex: 1;
+      color: var(--text-color);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .fileSize {
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    .fileDelete {
+      display: flex;
+      align-items: center;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      padding: 2px;
+      border-radius: 3px;
+
+      &:hover {
+        color: #ef4444;
+      }
+
+      svg {
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .uploadBtn {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 6px;
+    font-size: var(--font-small);
+    color: var(--text-secondary);
+    cursor: pointer;
+    background: transparent;
+    font-weight: 400;
+    transition: border-color 0.15s, color 0.15s;
+
+    &:hover {
+      border-color: var(--third-color);
+      color: var(--third-color);
+    }
+
+    input {
+      display: none;
+    }
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .assigneeTypeRow {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: var(--font-small);
+      color: var(--text-color);
+      cursor: pointer;
+      padding: 4px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      transition: border-color 0.15s, background 0.15s;
+
+      &:has(input:checked) {
+        border-color: var(--third-color);
+        background: rgba(99, 102, 241, 0.08);
+      }
+
+      input {
+        width: auto;
+        margin: 0;
+        border: none;
+        padding: 0;
+        accent-color: var(--third-color);
+      }
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .btnCancel {
+    height: 32px;
+    padding: 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-color);
+    font-size: var(--font-small);
+    cursor: pointer;
+
+    &:hover {
+      border-color: var(--third-color);
+    }
+  }
+}

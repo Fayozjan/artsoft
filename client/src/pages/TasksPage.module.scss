@@ -1,0 +1,244 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+
+  .main {
+    padding: 2px;
+    background-color: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    border-radius: 4px;
+    height: 100%;
+    min-height: 0;
+
+    .mainHeader {
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+
+      .filterWrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .viewToggle {
+        position: relative;
+        display: flex;
+        gap: 2px;
+        padding: 2px;
+        background: var(--bg-light);
+        border: 1px solid rgba(162, 161, 168, 0.35);
+        border-radius: 8px;
+
+        .viewToggleSlider {
+          position: absolute;
+          top: 2px;
+          left: 2px;
+          width: calc(50% - 2px);
+          height: calc(100% - 4px);
+          background: var(--card-bg);
+          border-radius: 6px;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+          transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+          pointer-events: none;
+        }
+
+        button {
+          position: relative;
+          z-index: 1;
+          flex: 1;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 0 12px;
+          height: 28px;
+          background: transparent;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          color: var(--text-secondary);
+          font-size: 12px;
+          font-weight: 500;
+          font-family: inherit;
+          white-space: nowrap;
+          transition: color 0.2s;
+
+          svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+            transition: transform 0.15s;
+          }
+
+          &.active {
+            color: var(--third-color);
+          }
+
+          &:hover:not(.active) {
+            color: var(--text-color);
+          }
+
+          &:active svg {
+            transform: scale(0.88);
+          }
+        }
+      }
+
+      .buttonsWrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .refreshBtn {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 32px;
+          padding: 0 10px;
+          font-size: var(--font-small);
+          font-weight: 600;
+          border-radius: 4px;
+          border: 1px solid rgba(162, 161, 168, 0.4);
+          cursor: pointer;
+          background-color: var(--card-bg);
+
+          svg {
+            width: 18px;
+            height: 18px;
+          }
+
+          &:hover {
+            border-color: var(--third-color);
+          }
+        }
+      }
+    }
+
+    .tableContainer {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-small);
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: var(--card-bg);
+        z-index: 10;
+      }
+
+      th {
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border-color);
+        text-align: left;
+      }
+
+      .headerContent {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      td {
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+      }
+
+      td.noData {
+        text-align: center;
+        padding: 32px;
+        color: var(--placeholder-color);
+        border-bottom: none;
+        cursor: default;
+      }
+
+      tbody tr {
+        cursor: pointer;
+        transition: background 0.12s;
+
+        &:hover {
+          background: var(--bg-light);
+        }
+      }
+    }
+  }
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.priorityBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.deadlineOverdue {
+  color: #ef4444;
+  font-weight: 600;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+
+  .iconBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: border-color 0.15s, color 0.15s;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      border-color: var(--third-color);
+      color: var(--third-color);
+    }
+
+    &.danger:hover {
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+  }
+}

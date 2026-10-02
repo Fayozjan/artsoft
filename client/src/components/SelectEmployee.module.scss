@@ -2,20 +2,49 @@
   position: relative;
   cursor: pointer;
 
+  // block: иначе под полем остаётся строчный зазор и список «отрывается» от него
+  input {
+    display: block;
+  }
+
+  // Сброс выбора: круглая кнопка по центру поля
   .clearBtn {
     position: absolute;
-    right: 5px;
-    top: 2px;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
     margin: 0;
     padding: 0;
     border: none;
+    border-radius: 50%;
+    background: var(--border-subtle);
+    color: var(--text-secondary);
     cursor: pointer;
-    font-size: 18px;
-    color: #999;
-    transition: all 0.1s;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    svg {
+      width: 12px;
+      height: 12px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.6;
+      stroke-linecap: round;
+    }
 
     &:hover {
-      color: #535353;
+      background: var(--border-color);
+      color: var(--text-color);
+    }
+
+    &:active {
+      background: var(--border-color);
     }
   }
 
@@ -27,12 +56,13 @@
     margin: 0;
     font-weight: 500;
     font-size: var(--font-small);
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     box-sizing: border-box;
     list-style: none;
     position: absolute;
-    top: 31px;
+    // сразу под полем, какой бы высоты оно ни было
+    top: calc(100% + 1px);
     overflow-y: auto;
     z-index: 10;
 
@@ -42,6 +72,26 @@
 
       &:hover {
         background-color: var(--select-hover-color);
+      }
+    }
+  }
+}
+
+// Узкий экран (Telegram): список крупнее, пункты удобно нажимать
+@media (max-width: 600px) {
+  .selectWithSearch .optionsList {
+    top: calc(100% + 4px);
+    max-height: 260px;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+    font-size: 15px;
+
+    li {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+
+      &:last-child {
+        border-bottom: none;
       }
     }
   }

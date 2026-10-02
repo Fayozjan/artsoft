@@ -43,13 +43,12 @@
     background: var(--card-bg);
     color: var(--text-color);
     width: 100%;
-    max-width: 250px;
     max-height: 200px;
     padding: 0;
     margin: 0;
     font-weight: 500;
     font-size: var(--font-small);
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 4px;
     box-sizing: border-box;
     list-style: none;

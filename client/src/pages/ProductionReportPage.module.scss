@@ -1,0 +1,650 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-radius: 8px;
+  width: 100%;
+  height: 100vh;
+  min-height: 0;
+}
+
+.main {
+  padding: 2px;
+  background-color: var(--card-bg);
+  display: flex;
+  flex-direction: column;
+  border-radius: 4px;
+  height: 100%;
+  min-height: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 5px;
+}
+
+.tab {
+  height: 30px;
+  padding: 0 14px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 4px 4px 0 0;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+.tabActive {
+  color: var(--third-color);
+  border-color: var(--border-color);
+  border-bottom-color: transparent;
+  background: var(--card-bg);
+}
+
+.mainHeader {
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+// Фильтры прижаты к левому краю; выравнивание по нижнему краю — у поиска нет
+// подписи сверху, у остальных полей есть
+.filterWrapper {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: flex-start;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+  }
+
+  input,
+  select {
+    height: 32px;
+    padding: 0 6px;
+    font-size: var(--font-small);
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    box-sizing: border-box;
+  }
+}
+
+.buttonsWrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.refreshBtn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  max-width: 180px;
+  height: 32px;
+  padding: 0 10px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(162, 161, 168, 0.4);
+  cursor: pointer;
+  box-sizing: border-box;
+  background-color: var(--card-bg);
+
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    border: 1px solid var(--third-color);
+  }
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(162, 161, 168, 0.4);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) {
+    border-color: var(--third-color);
+  }
+
+  &:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+}
+
+// Пояснение, по какой дате отсчитывается период на текущей вкладке
+.hint {
+  padding: 0 7px 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.tableContainer {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+
+  thead {
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+    z-index: 10;
+  }
+
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .headerContent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .hintIcon {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    cursor: help;
+
+    &:hover {
+      color: var(--third-color);
+    }
+  }
+
+  th,
+  td {
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tbody tr:hover {
+    background: var(--bg-light);
+  }
+
+  tfoot td {
+    font-weight: 700;
+    border-top: 2px solid var(--border-color);
+    background: var(--bg-light);
+  }
+}
+
+.clickRow {
+  cursor: pointer;
+}
+
+.expandCol {
+  width: 28px;
+  color: var(--text-secondary);
+
+  svg {
+    vertical-align: middle;
+  }
+}
+
+.nameCell {
+  text-align: left !important;
+  font-weight: 500;
+}
+
+.employeeCol {
+  text-align: left !important;
+  min-width: 240px;
+}
+
+.batchCol,
+.operationCol {
+  text-align: left !important;
+  min-width: 200px;
+}
+
+// Мониторинг: операция — карточка с тремя ячейками (пришло / в процессе / завершено).
+// Сетка занимает всю ширину; карточки, которым не хватило места, переносятся на новую строку
+.monitoringGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.monitoringCard {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+
+// «Итого» — последняя карточка, выделена границей
+.monitoringTotal {
+  border-color: var(--text-secondary);
+}
+
+.monitoringCardTitle {
+  padding: 6px 8px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
+  background: var(--bg-light);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.monitoringTotal .monitoringCardTitle {
+  font-weight: 700;
+}
+
+.monitoringCells {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.monitoringCell {
+  padding: 6px 4px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  & + & {
+    border-left: 1px solid var(--border-color);
+  }
+}
+
+.monitoringLabel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.monitoringValue {
+  margin-top: 2px;
+  font-size: var(--font-small);
+}
+
+// Цвет ячейки по показателю: пришло — индиго, в процессе — янтарь, завершено — зелёный
+// (последние два — как бейджи статуса стикера). Фон полупрозрачный — годится и для тёмной темы
+.toneArrived {
+  background: rgba(99, 102, 241, 0.1);
+
+  .monitoringValue {
+    color: #4f46e5;
+    font-weight: 600;
+  }
+}
+
+.tonePending {
+  background: rgba(245, 158, 11, 0.13);
+
+  .monitoringValue {
+    color: #b45309;
+    font-weight: 600;
+  }
+}
+
+.toneDone {
+  background: rgba(16, 185, 129, 0.13);
+
+  .monitoringValue {
+    color: #047857;
+    font-weight: 700;
+  }
+}
+
+// Разбивка карточки операции по партиям/заказам: строка на партию, цифры под теми же
+// тремя колонками; длинный список прокручивается внутри карточки
+.monitoringBatches {
+  max-height: 220px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-color);
+}
+
+.monitoringBatch {
+  & + & {
+    border-top: 1px dashed var(--border-color);
+  }
+
+  .monitoringCell {
+    padding-top: 2px;
+    padding-bottom: 6px;
+  }
+}
+
+.monitoringBatchHead {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px 0;
+  font-size: var(--font-small);
+  overflow-wrap: anywhere;
+}
+
+.batchNumber {
+  font-weight: 700;
+}
+
+.batchMeta {
+  margin-top: 1px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.amountCell {
+  font-weight: 700;
+  color: #10b981;
+}
+
+.negativeCell {
+  color: #ef4444;
+}
+
+.mutedCell {
+  color: var(--text-secondary);
+}
+
+// Итоговая строка «По стикерам» — счётчики по статусам, а не колонки
+.summaryCell {
+  text-align: left !important;
+}
+
+// Выбор стикеров для правки цены (вкладка «По стикерам»)
+.checkCol {
+  width: 32px;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+  }
+}
+
+.selectedRow {
+  background-color: rgba(99, 102, 241, 0.08);
+}
+
+.rateCell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.editRateBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--third-color);
+    border-color: var(--third-color);
+  }
+}
+
+// Панель массовых действий над выбранными стикерами — как у таблицы сотрудников
+.bulkBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 5px 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--third-color);
+  border-radius: 6px;
+  background-color: var(--bg-light);
+}
+
+.bulkCount {
+  font-size: var(--font-small);
+  color: var(--text-secondary);
+  white-space: nowrap;
+
+  b {
+    color: var(--text-color);
+  }
+}
+
+.bulkActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1;
+  gap: 8px;
+}
+
+.bulkAction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: var(--font-small);
+  font-weight: 600;
+  border-radius: 4px;
+  border: 1px solid rgba(162, 161, 168, 0.4);
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+
+  &:hover {
+    border-color: var(--third-color);
+  }
+}
+
+.bulkClear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-small);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-color);
+  }
+}
+
+// Основной сотрудник стикера и число остальных, принявших вместе с ним
+.workersCell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.moreWorkers {
+  padding: 0 6px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+}
+
+.progress {
+  position: relative;
+  min-width: 90px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+
+  span {
+    position: relative;
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 16px;
+  }
+}
+
+.progressBar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #10b98133;
+}
+
+// Дерево заказа: партия → операция → сотрудник
+.treeToggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--text-secondary);
+  }
+}
+
+.treeBatch td {
+  font-weight: 700;
+}
+
+.treeItem td {
+  font-weight: 600;
+}
+
+.treeItem td:first-child {
+  padding-left: 24px;
+}
+
+.treeOperation td {
+  font-weight: 500;
+}
+
+.treeOperation td:first-child {
+  padding-left: 48px;
+}
+
+.treeEmployee td:first-child {
+  padding-left: 72px;
+}
+
+// Раскрывающаяся строка: разбивка партии/сотрудника
+.detailRow > td {
+  padding: 8px 10px 12px 34px !important;
+  background: var(--bg-light);
+  text-align: left !important;
+}
+
+.detailWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.detailBlock {
+  flex: 1 1 380px;
+  min-width: 0;
+}
+
+.detailTitle {
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+
+.detailTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-small);
+  background: var(--card-bg);
+
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  th,
+  td {
+    padding: 3px 6px;
+    border-bottom: 1px solid var(--border-color);
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
+
+  // Вложенная таблица под строкой операции (сотрудники операции)
+  td.nestedCell {
+    padding: 4px 0 8px 24px;
+    background: var(--bg-light);
+  }
+}

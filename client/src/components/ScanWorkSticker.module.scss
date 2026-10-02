@@ -1,0 +1,1891 @@
+// Блок приёма работы. Панель широкая: сверху компактная строка скана, ниже —
+// пустое состояние с шагами, либо карточка стикера + форма приёма / распределение
+// в две колонки. Форма приёма стилизована под панель распределения
+// (WorkStickerRoutePanel.module.scss): те же крупные поля и кнопка.
+
+.scan {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 16px 16px;
+  // Пустое состояние (.hero) тянется до низа панели — .scan занимает всю её высоту.
+  min-height: 100%;
+  box-sizing: border-box;
+
+  .req {
+    color: #dc2626;
+  }
+
+  // ── Компактная строка: режим, сотрудник, скан ──────────────────────────────
+  .topBar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-subtle, var(--border-color));
+    border-radius: 12px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  // Обёртки нужны только телефону (выбор режима уезжает вверх при прокрутке, поле
+  // скана остаётся закреплённым); на широком экране — прозрачны, всё в одной строке.
+  .topSelectors,
+  .scanRow {
+    display: contents;
+  }
+
+  .topEmployee {
+    flex: 1 1 300px;
+    max-width: 420px;
+    min-width: 240px;
+  }
+
+  // Есть камера: рядом с выбором сотрудника — кнопка скана его стикера.
+  .topEmployeeWithCamera {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topEmployeeSelect {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .topEmployeeCamera {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--third-color, #1455fe);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--third-color, #1455fe);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  // Высота и рамка — как у выбора режима и сотрудника рядом (40px, 2px).
+  .topTeamSelect {
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px;
+    padding: 0 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover,
+    &:focus {
+      border-color: var(--third-color, #1455fe);
+    }
+  }
+
+  .scanBox {
+    position: relative;
+    display: flex;
+    flex: 2 1 260px;
+    align-items: center;
+    height: 40px;
+    padding: 0 8px 0 40px;
+    border: 2px dashed var(--third-color, #1455fe);
+    border-radius: 10px;
+    background: var(--input-bg);
+    box-sizing: border-box;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:focus-within {
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.15);
+    }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      padding: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text-color);
+      font-family: inherit;
+      font-size: calc(var(--font-small) + 2px);
+      font-weight: 600;
+
+      &::placeholder {
+        font-weight: 400;
+        color: var(--placeholder-color, var(--text-secondary));
+      }
+
+      &:disabled {
+        opacity: 1;
+      }
+    }
+  }
+
+  // Стикер открыт: рамка сплошная, поле показывает код.
+  .scanBoxLocked {
+    border-style: solid;
+    background: rgba(20, 85, 254, 0.06);
+  }
+
+  // Скан закрыт, пока не выбран сотрудник (Telegram): поле приглушено, рамка без акцента.
+  .scanBoxBlocked {
+    border-color: var(--border-color);
+    background: var(--tg-surface, var(--input-bg));
+    opacity: 0.6;
+  }
+
+  // Без значка слева (Telegram): отступ под значок не нужен. Селектор из двух классов —
+  // чтобы перебить padding телефонного .scanBox ниже.
+  .scanBox.scanBoxNoIcon {
+    padding-left: 16px;
+  }
+
+  .scanIcon {
+    position: absolute;
+    left: 10px;
+    display: flex;
+    color: var(--third-color, #1455fe);
+    pointer-events: none;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .scanClear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+    }
+  }
+
+  // ── Пустое состояние: ждём скан ────────────────────────────────────────────
+  .hero {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 44px 20px 36px;
+    border: 2px dashed rgba(20, 85, 254, 0.25);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(20, 85, 254, 0.05), transparent 70%);
+    text-align: center;
+
+    h2 {
+      margin: 0;
+      padding: 0;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    p {
+      max-width: 420px;
+      margin: 0;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+    }
+  }
+
+  // Значок скана с расходящимся кольцом — намёк "жду штрихкод".
+  .heroIcon {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 84px;
+    height: 84px;
+    margin-bottom: 6px;
+    border-radius: 50%;
+    background: rgba(20, 85, 254, 0.1);
+    color: var(--third-color, #1455fe);
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border: 2px solid var(--third-color, #1455fe);
+      border-radius: 50%;
+      opacity: 0;
+      animation: heroPulse 2.4s ease-out infinite;
+    }
+
+    svg {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  // ── Режим объединения: список отсканированных + выбор след. операции ───────
+  .mergePanel {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 12px;
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-color);
+    }
+
+    p {
+      margin: 0;
+      font-size: var(--font-small);
+      color: var(--text-secondary);
+    }
+  }
+
+  // Заголовок слева, подсказка справа по границе — на одном уровне (на одной базовой
+  // линии). Не влезают вместе — подсказка переносится под заголовок.
+  .mergeHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px 16px;
+
+    p {
+      text-align: right;
+    }
+  }
+
+  // Карточки групп и результатов — по две в строке (minmax(0, …) не даёт длинным
+  // кодам стикеров растянуть колонку). На узком экране — одна колонка.
+  .mergeGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 12px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  // Одна группа объединения (операция+партия+размер) — своя карточка, чтобы
+  // несколько партий в бакете не путались между собой.
+  .mergeGroup {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border-subtle, var(--border-color));
+    border-radius: 14px;
+    background: var(--bg-light);
+  }
+
+  .mergeGroupHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding-bottom: 12px;
+    margin-bottom: 2px;
+    border-bottom: 1px dashed var(--border-subtle, var(--border-color));
+  }
+
+  // Подпись «Последняя операция» над названием — мелко, серым.
+  .mergeGroupOpBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .mergeGroupOpLabel {
+    font-size: var(--font-small);
+    line-height: 1.2;
+    color: var(--text-secondary);
+  }
+
+  .mergeGroupOp {
+    font-size: calc(var(--font-small) + 8px);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-color);
+  }
+
+  .mergeGroupBatch {
+    margin-left: auto;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle, var(--border-color));
+    font-size: calc(var(--font-small) + 4px);
+    color: var(--text-secondary);
+
+    b {
+      font-weight: 700;
+      color: var(--text-color);
+    }
+  }
+
+  // На ПК обёртка прозрачна — размер и количество стоят в общей строке шапки; телефон
+  // делает из неё вторую строку (см. блок «Телефон»).
+  .mergeGroupMeta {
+    display: contents;
+  }
+
+  .mergeGroupSize {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(20, 85, 254, 0.08);
+    border: 1px solid rgba(20, 85, 254, 0.25);
+    font-size: calc(var(--font-small) + 4px);
+    font-weight: 700;
+    color: var(--third-color, #1455fe);
+  }
+
+  // Стикеров много — плитки в несколько колонок, сколько влезает по ширине карточки.
+  // Сколько стикеров объединяется — зелёная плашка в шапке группы, в тон количеству.
+  .mergeGroupCount {
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(22, 163, 74, 0.08);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+    font-size: calc(var(--font-small) + 4px);
+    color: var(--text-secondary);
+
+    b {
+      font-weight: 700;
+      color: #16a34a;
+    }
+  }
+
+  // Кнопка «Показать (N)» / «Скрыть» над длинным списком стикеров группы.
+  .mergeListToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--third-color, #1455fe);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-color: var(--third-color, #1455fe);
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  .mergeListToggleOpen svg {
+    transform: rotate(180deg);
+  }
+
+  .mergeList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    // Телефон (Telegram): плитки по ширине содержимого — сколько влезло в строку, столько
+    // и стоят, остаток строки делят поровну.
+    &.mergeListCompact {
+      display: flex;
+      flex-wrap: wrap;
+
+      li {
+        flex: 1 1 auto;
+
+        .stickerCode {
+          flex: 0 1 auto;
+        }
+      }
+    }
+
+    // Убрать стикер из списка нельзя — кнопки справа нет, отступ с обеих сторон одинаковый.
+    li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 6px 10px;
+      border: 1px solid var(--border-subtle, var(--border-color));
+      border-radius: 8px;
+      background: var(--card-bg);
+
+      .stickerCode {
+        flex: 1;
+        min-width: 0;
+        overflow-wrap: anywhere;
+        font-size: calc(var(--font-small) + 2px);
+      }
+
+      b {
+        flex-shrink: 0;
+        color: #16a34a;
+      }
+    }
+  }
+
+  // Низ карточки группы: подсказка слева и кнопка справа — всегда в одной строке.
+  // Карточки идут по две в ряд, места мало: подсказка мельче и переносится по словам
+  // в узкую колонку, кнопка сжимается по тексту (routeStyles.footer иначе роняет её вниз).
+  .mergeFooter {
+    flex-wrap: nowrap;
+    gap: 10px;
+
+    > span {
+      flex: 1 1 110px;
+      min-width: 110px;
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    > button {
+      flex: 0 1 auto;
+      min-width: 0;
+      padding: 0 18px;
+      font-size: 15px;
+      line-height: 1.2;
+      text-align: center;
+    }
+  }
+
+  // Итог группы — число в шапке «Следующая операция» (SectionHead), крупнее обычного.
+  // Селектор глубже .sectionQty b из WorkStickerRoutePanel — перебивает его размер.
+  .mergeQty {
+    b {
+      font-size: 34px;
+    }
+
+    span {
+      font-size: calc(var(--font-small) + 1px);
+    }
+  }
+
+  // ── Стикер объединён с другими / сам собран объединением — карточка приёма ──
+  .mergedBanner {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    padding: 14px 16px;
+    border: 1px solid rgba(20, 85, 254, 0.25);
+    border-radius: 10px;
+    background: rgba(20, 85, 254, 0.06);
+    font-size: calc(var(--font-small) + 1px);
+  }
+
+  .mergedBannerHead {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+
+    b {
+      font-size: calc(var(--font-small) + 3px);
+      color: var(--text-color);
+    }
+  }
+
+  .mergedDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--third-color, #1455fe);
+    flex-shrink: 0;
+  }
+
+  .mergedBannerRow {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    color: var(--text-secondary);
+
+    b {
+      color: var(--text-color);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      text-align: right;
+    }
+  }
+
+  .mergedBannerSources {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+    padding-top: 6px;
+    border-top: 1px dashed rgba(20, 85, 254, 0.2);
+    color: var(--text-secondary);
+  }
+
+  .mergedBannerChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mergedChip {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid rgba(20, 85, 254, 0.25);
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: var(--font-small);
+    overflow-wrap: anywhere;
+  }
+
+  // Отменить объединение — удаляет результат мерджа, источники расцепляются сами (FK).
+  .cancelMergeBtn {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    margin-top: 2px;
+    padding: 0 12px 0 10px;
+    border: 1px solid rgba(20, 85, 254, 0.35);
+    border-radius: 999px;
+    background: rgba(20, 85, 254, 0.1);
+    color: var(--third-color, #1455fe);
+    font-family: inherit;
+    font-size: var(--font-small);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover:not(:disabled) {
+      background: rgba(20, 85, 254, 0.18);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  // ── Стикер: карточка слева, форма / распределение справа ───────────────────
+  .workGrid {
+    display: grid;
+    grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+
+    @media (max-width: 1250px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  // Раздавать нечего — карточка одна, без пустой колонки.
+  .workGridSingle {
+    grid-template-columns: minmax(0, 480px);
+  }
+
+  .infoCard {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-subtle, var(--border-color));
+    border-radius: 12px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  .infoHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .stickerCode {
+    font-size: calc(var(--font-small) + 4px);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .statusBadge {
+    --badge-rgb: 245, 158, 11;
+
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(var(--badge-rgb), 0.14);
+    color: rgb(var(--badge-rgb));
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .statusDone {
+    --badge-rgb: 22, 163, 74;
+  }
+
+  // Тип операции крупно под номером стикера — с одного взгляда понятно, какую
+  // работу принимают/раздают.
+  .operationName {
+    font-size: calc(var(--font-small) + 8px);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+  }
+
+  .infoList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 8px 0 0;
+    border-top: 1px dashed var(--border-subtle, var(--border-color));
+
+    div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    dt {
+      flex-shrink: 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+      font-size: calc(var(--font-small) + 2px);
+      font-weight: 600;
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  // Позиция стикера (цвет / размер / материал / дизайн) — одной строкой ячеек в самом
+  // низу карточки (Telegram, compact): подпись мелко сверху, значение под ней. Колонки
+  // поровну, в один ряд при любом их числе; длинное значение переносится в своей ячейке.
+  .infoParts {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 6px;
+    margin: 0;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      min-width: 0;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: var(--tg-surface);
+    }
+
+    dt {
+      max-width: 100%;
+      overflow: hidden;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-overflow: ellipsis;
+      text-transform: uppercase;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      min-width: 0;
+      font-size: 14px;
+      font-weight: 600;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  // ── Форма приёма ────────────────────────────────────────────────────────────
+  // Тот же вид, что у панели "Распределение работы" (WorkStickerRoutePanel):
+  // серая подложка, крупные поля с 2px рамкой, большая кнопка внизу.
+  .acceptForm {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin: 0;
+    padding: 14px;
+    border: 1px solid var(--border-subtle, var(--border-color));
+    border-radius: 12px;
+    background: var(--bg-light);
+
+    input.invalid {
+      border-color: #dc2626;
+    }
+  }
+
+  // Шапка формы: слева переключатель «Сотрудник / Командная работа», справа количество —
+  // на одном уровне. Не помещаются — переключатель и количество переносятся друг под друга.
+  .formHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+
+  // Количество на стикере — то, что нужно целиком разложить по трём полям.
+  // margin-left: auto — справа, даже когда переключателя нет.
+  .formTotal {
+    margin-left: auto;
+    font-size: 14px;
+    color: var(--text-secondary);
+
+    b {
+      margin-left: 6px;
+      font-size: 20px;
+      color: var(--text-color);
+    }
+  }
+
+  // Подпись над полем — как у полей распределения (не капслоком, 13px).
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .fieldLabelRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .fieldLabel {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  // Крупное числовое поле (цена) и обычное однострочное (комментарий) — рамка и
+  // размеры те же, что у .bigInput / .textInput панели распределения.
+  .bigInput,
+  .textInput {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0 14px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-family: inherit;
+
+    &:focus {
+      outline: none;
+      border-color: var(--third-color, #1455fe);
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.18);
+    }
+  }
+
+  .bigInput {
+    height: 44px;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .textInput {
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  // Выполнено / брак / на исправление — три равные колонки; у каждого свой цвет,
+  // тот же, что у полоски ниже и у плашек итога.
+  .splitGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+
+    @media (max-width: 720px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  // Операция разрешает «Не выполнено» — четвёртое поле, колонок четыре.
+  .splitGridFour {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+
+    @media (max-width: 1100px) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    @media (max-width: 720px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  // Три крупных поля как .bigInput распределения: 48px, шрифт 20px, 2px рамка,
+  // фокус — цветом поля (зелёный / красный / янтарный).
+  .splitField {
+    --tone: #16a34a;
+    --tone-rgb: 22, 163, 74;
+
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      height: 44px;
+      padding: 0 14px;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--input-bg);
+      color: var(--text-color);
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 700;
+
+      &:focus {
+        outline: none;
+        border-color: var(--tone);
+        box-shadow: 0 0 0 3px rgba(var(--tone-rgb), 0.18);
+      }
+    }
+
+    input.invalid,
+    input.invalid:focus {
+      border-color: #dc2626;
+      box-shadow: none;
+    }
+  }
+
+  // "Выполнено" считается само: поле только показывает результат — без рамки
+  // ввода, залито тоном, курсор не мигает.
+  .splitField input.autoInput {
+    border-color: rgba(var(--tone-rgb), 0.35);
+    background: rgba(var(--tone-rgb), 0.1);
+    color: var(--tone);
+    cursor: default;
+    caret-color: transparent;
+    user-select: none;
+    // Не получает фокус кликом — фокусная подсветка ввода ему не нужна.
+    pointer-events: none;
+  }
+
+  .toneBad {
+    --tone: #dc2626;
+    --tone-rgb: 220, 38, 38;
+  }
+
+  .toneWarn {
+    --tone: #d97706;
+    --tone-rgb: 217, 119, 6;
+  }
+
+  .toneInfo {
+    --tone: #7c3aed;
+    --tone-rgb: 124, 58, 237;
+  }
+
+  .splitDot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--tone);
+  }
+
+  // Ошибка разложения (брак и исправление больше количества стикера) — красным,
+  // и кнопка "Принять" неактивна. Пока всё верно, строки нет.
+  .splitStatus {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #dc2626;
+  }
+
+  // ── Сотрудники приёма: основной и, если работу делили, другие с долей ───────
+  .workers {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .workerRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  // Строки сотрудников: обычно одна колонка. Когда сотрудников много (большая
+  // команда) — две колонки, список вдвое короче; на узкой ширине снова одна.
+  .workerList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .workerListCompact {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+
+    @media (max-width: 900px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    // В половине ширины поле доли и кнопка "убрать" уже.
+    // Отступы уже (10px * 2 + рамка 2px * 2).
+    .workerQty {
+      width: calc(var(--qty-ch, 4) * 1ch + 24px);
+      padding: 0 10px;
+      font-size: 15px;
+    }
+
+    .workerRemove {
+      flex: 0 0 32px;
+      width: 32px;
+    }
+  }
+
+  // Строка команды: команда, "Добавить сотрудника" и "Команды" (когда включена командная работа).
+  .modeRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+  }
+
+  // Сотрудник / Командная работа — тот же сегментированный переключатель, что
+  // и режим приёма наверху, для единого визуального языка. Крупный, как плитки
+  // распределения — это главный выбор формы, должен бросаться в глаза. Стоит в .formHead.
+  .teamToggle {
+    flex: 0 1 360px;
+    min-width: 260px;
+
+    button {
+      height: 42px;
+      font-size: 15px;
+    }
+  }
+
+  .workerSelect {
+    flex: 1;
+    min-width: 0;
+  }
+
+  // Основной сотрудник в режиме "сначала сотрудник" — выбран вверху, здесь только показан.
+  .workerFixed {
+    display: flex;
+    align-items: center;
+    height: 44px;
+    padding: 0 14px;
+    border: 2px solid var(--border-subtle, var(--border-color));
+    border-radius: 10px;
+    background: var(--card-bg);
+    font-size: 15px;
+    font-weight: 600;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  // Ширина — по значению: --qty-ch (число символов) задаёт JSX, добавляются
+  // горизонтальные отступы и рамка (14px * 2 + 2px * 2).
+  .workerQty {
+    flex: 0 0 auto;
+    width: calc(var(--qty-ch, 4) * 1ch + 32px);
+    box-sizing: border-box;
+  }
+
+  input.workerQtyInput {
+    font-family: inherit;
+    text-align: right;
+
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+    }
+  }
+
+  // Доля основного считается сама: выполнено минус доли остальных.
+  .workerAuto {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    height: 44px;
+    padding: 0 14px;
+    border: 2px solid rgba(22, 163, 74, 0.35);
+    border-radius: 10px;
+    background: rgba(22, 163, 74, 0.1);
+    color: #16a34a;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .workerRemove {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
+
+    &:hover {
+      background: rgba(220, 38, 38, 0.1);
+      color: #dc2626;
+    }
+  }
+
+  // Команда (селект) и "Добавить сотрудника" — всегда одной строкой, вплотную друг к
+  // другу: не хватает места — вся пара уходит под переключатель, а не разъезжается.
+  .workerActions {
+    display: flex;
+    flex: 1 1 420px;
+    align-items: center;
+    // Прижаты к левому краю формы — под переключателем «Сотрудник / Командная работа».
+    justify-content: flex-start;
+    gap: 10px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .addWorkerBtn {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    align-self: flex-start;
+    white-space: nowrap;
+    gap: 8px;
+    height: 42px;
+    padding: 0 18px;
+    border: 2px dashed var(--third-color, #1455fe);
+    border-radius: 10px;
+    background: rgba(20, 85, 254, 0.05);
+    color: var(--third-color, #1455fe);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    &:hover {
+      background: rgba(20, 85, 254, 0.12);
+    }
+  }
+
+  // Настройка типа операции (шестерёнка, без подписи) — в правом углу шапки формы, рядом с
+  // количеством. Подпись — только во всплывашке (title).
+  .settingsBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 1.5px solid var(--border-color);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease,
+      background-color 0.15s ease;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      border-color: var(--third-color, #1455fe);
+      background: rgba(20, 85, 254, 0.06);
+      color: var(--third-color, #1455fe);
+    }
+  }
+
+  // Одна команда — плашка без клика (выбрана сама). Несколько команд — селект (TeamSelect).
+  .teamChoice {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:hover {
+      border-color: var(--third-color, #1455fe);
+    }
+  }
+
+  .teamChoiceActive,
+  .teamChoiceActive:hover {
+    border-color: var(--third-color, #1455fe);
+    background: var(--third-color, #1455fe);
+    color: var(--button-text, #fff);
+    box-shadow: 0 3px 10px rgba(20, 85, 254, 0.3);
+  }
+
+  .teamChoiceStatic {
+    cursor: default;
+  }
+
+  // Карточка принятого стикера: несколько сотрудников — списком "имя · доля".
+  .infoList .infoWorkers {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+
+    dd {
+      text-align: left;
+    }
+
+    ul {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: var(--font-small);
+      font-weight: 600;
+    }
+
+    li span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    li b {
+      flex-shrink: 0;
+      color: #16a34a;
+    }
+  }
+
+  // Цена и комментарий — одной строкой под количествами: цена — фиксированная
+  // ширина, комментарий забирает всё остальное. На узкой ширине — друг под другом.
+  .formFooter {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .fieldPrice {
+      flex: 0 0 180px;
+    }
+
+    .fieldGrow {
+      flex: 1 1 240px;
+    }
+  }
+
+  // Кнопка "Вернуть" — отмена приёма, пока стикер не разделён дальше.
+  .returnBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--font-small);
+    color: var(--text-color);
+    box-sizing: border-box;
+    transition:
+      border-color 0.15s ease,
+      color 0.15s ease;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      border-color: #dc2626;
+      color: #dc2626;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
+  // ── Созданные стикеры: печать по операциям ─────────────────────────────────
+  .resultCard {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 12px;
+    padding: 14px;
+    border: 1px solid var(--border-subtle, var(--border-color));
+    border-radius: 12px;
+    background: var(--card-bg);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  }
+
+  // Заголовок слева, кнопка общей печати справа; на узкой панели она уходит под
+  // заголовок. Кнопки крупные, как в панели распределения (см. .resultFooter ниже).
+  .resultHead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .resultTitle b {
+    font-size: calc(var(--font-small) + 3px);
+  }
+
+  // Общая печать — справа в шапке.
+  .resultPrintAll {
+    margin-left: auto;
+  }
+
+  // Низ карточки результата: «Отменить и назад к распределению» — справа, как
+  // «Назад» в подвале панели распределения.
+  .resultFooter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
+  // ── Кнопки в поле скана: «Найти» (набор руками) и камера Telegram ──────────
+  .scanGo,
+  .scanCamera {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  .scanCamera {
+    margin-left: 4px;
+    background: rgba(20, 85, 254, 0.12);
+    color: var(--third-color, #1455fe);
+  }
+
+  .scanGo {
+    margin-left: 4px;
+    background: var(--third-color, #1455fe);
+    color: var(--button-text, #fff);
+
+    svg {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.4;
+    }
+  }
+
+  // ── Телефон (Telegram) ─────────────────────────────────────────────────────
+  // Одна колонка, крупные поля (16px+ — иначе iOS увеличивает страницу при фокусе),
+  // «Принять» — плавающая кнопка внизу экрана.
+  @media (max-width: 640px) {
+    gap: 12px;
+    padding: 4px 12px 24px;
+
+    // Верхняя часть: режим приёма и сотрудник/команда — обычным потоком, при
+    // прокрутке вниз уезжают вверх; поле скана (.scanRow) остаётся у верхнего края.
+    // Без backdrop-filter/стекла: он делает предка containing block'ом для
+    // fixed-выпадашек (список режимов/сотрудников съезжал), а сквозь стекло
+    // просвечивало содержимое — фон сплошной.
+    .topBar {
+      display: contents;
+    }
+
+    .topSelectors {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      padding-top: 8px;
+
+      > * {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+    }
+
+    .scanRow {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+      margin: 0 -12px;
+      padding: 6px 12px 8px;
+      background: var(--tg-bg);
+      box-shadow: 0 1px 0 var(--tg-separator);
+
+      > * {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+      }
+    }
+
+    .topTeamSelect {
+      height: 48px;
+      padding: 0 12px;
+      border: 1.5px solid var(--border-subtle);
+      border-radius: 14px;
+      font-size: 16px;
+    }
+
+    // Высота и рамка — как у выбора сотрудника рядом (.empSelectBar на телефоне).
+    .topEmployeeCamera {
+      width: 48px;
+      height: 48px;
+      border-width: 1.5px;
+      border-radius: 14px;
+    }
+
+    // Значки камеры — того же размера, что значок скана слева в поле (.scanIcon).
+    .topEmployeeCamera svg,
+    .scanCamera svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .scanBox {
+      height: 54px;
+      padding: 0 10px 0 46px;
+      border-width: 2px;
+      border-radius: 16px;
+
+      input {
+        font-size: 17px;
+      }
+    }
+
+    .scanIcon {
+      left: 13px;
+
+      svg {
+        width: 24px;
+        height: 24px;
+      }
+    }
+
+    .scanClear {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+    }
+
+    .hero {
+      padding: 32px 18px 28px;
+      border-radius: 22px;
+
+      h2 {
+        font-size: 20px;
+      }
+
+      p {
+        font-size: 14px;
+      }
+    }
+
+    .heroIcon {
+      width: 76px;
+      height: 76px;
+
+      svg {
+        width: 36px;
+        height: 36px;
+      }
+    }
+
+    .workGrid {
+      gap: 12px;
+    }
+
+    .infoCard,
+    .acceptForm,
+    .resultCard,
+    .mergeGroup {
+      padding: 14px;
+      border-radius: 20px;
+    }
+
+    .stickerCode {
+      font-size: 18px;
+    }
+
+    .operationName {
+      font-size: 20px;
+    }
+
+    .infoList {
+      dt {
+        font-size: 11px;
+      }
+
+      dd {
+        font-size: 15px;
+      }
+    }
+
+    // Выполнено — на всю ширину сверху, остальные поля — по два в ряд.
+    .splitGrid,
+    .splitGridFour {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .splitGrid .splitField:first-child,
+    .splitGridFour .splitField:first-child,
+    .splitGridFour .splitField:last-child:nth-child(even) {
+      grid-column: 1 / -1;
+    }
+
+    .splitField input {
+      height: 52px;
+      border-radius: 14px;
+      font-size: 20px;
+    }
+
+    .bigInput,
+    .textInput {
+      height: 52px;
+      border-radius: 14px;
+      font-size: 16px;
+    }
+
+    .bigInput {
+      font-size: 20px;
+    }
+
+    .formFooter {
+      gap: 10px;
+
+      .fieldPrice {
+        flex: 1 1 110px;
+      }
+
+      .fieldGrow {
+        flex: 2 1 160px;
+      }
+    }
+
+    // Строка «сотрудник + количество (+ убрать)»: чуть мельче обычных крупных полей,
+    // чтобы имя и число помещались в ширину телефона.
+    .workerRow {
+      gap: 8px;
+    }
+
+    .workerFixed,
+    .workerAuto {
+      height: 40px;
+      border-radius: 12px;
+    }
+
+    .workerFixed {
+      padding: 0 10px;
+      font-size: 13px;
+    }
+
+    .workerQty,
+    .workerListCompact .workerQty {
+      width: calc(var(--qty-ch, 4) * 1ch + 22px);
+      padding: 0 9px;
+      font-size: 14px;
+    }
+
+    input.workerQtyInput {
+      font-size: 14px;
+    }
+
+    .workerRemove {
+      flex-basis: 32px;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: var(--tg-surface);
+    }
+
+    .modeRow {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    // Телефон: количество и шестерёнка сверху (шестерёнка справа), под ними переключатель на всю ширину.
+    .formTotal {
+      order: -1;
+      margin-left: 0;
+    }
+
+    .settingsBtn {
+      order: -1;
+      margin-left: auto;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+    }
+
+    .teamToggle {
+      flex: 1 1 100%;
+      min-width: 0;
+
+      button {
+        height: 38px;
+        font-size: 14px;
+      }
+    }
+
+    // Команда (селект) и «добавить сотрудника» — одной строкой: селект тянется, справа
+    // квадратная кнопка только со значком.
+    .workerActions {
+      flex: 0 0 auto;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      align-items: stretch;
+    }
+
+    .teamChoice,
+    .addWorkerBtn {
+      min-height: 40px;
+      border-radius: 12px;
+    }
+
+    .addWorkerBtn {
+      align-self: stretch;
+      justify-content: center;
+    }
+
+    // Значок «сотрудник +» — контурный (штрих), а не залитый как общий .addWorkerBtn svg.
+    .addWorkerIcon {
+      flex: 0 0 40px;
+      width: 40px;
+      padding: 0;
+      border-style: solid;
+      border-width: 1.5px;
+
+      svg {
+        width: 24px;
+        height: 24px;
+        fill: none;
+      }
+    }
+
+    .returnBtn {
+      height: 46px;
+      border-radius: 14px;
+      font-size: 15px;
+    }
+
+    // Шапка группы — грид: сверху операция слева и номер партии в правом углу, снизу
+    // отдельной строкой размер и количество стикеров.
+    .mergeGroupHead {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 10px 12px;
+    }
+
+    .mergeGroupOpBlock {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .mergeListToggle {
+      height: 46px;
+      border-radius: 14px;
+    }
+
+    .mergeGroupBatch {
+      grid-column: 2;
+      grid-row: 1;
+      margin-left: 0;
+    }
+
+    .mergeGroupMeta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      grid-column: 1 / -1;
+      grid-row: 2;
+      gap: 8px 10px;
+    }
+
+    // Подвал на телефоне — колонка (routeStyles.footer): подсказка сверху, кнопка под ней.
+    // В колонке flex-basis работает по высоте: у подсказки прежние 110px раздували её и
+    // сдвигали кнопку вниз, а у кнопки 100% от неопределённой высоты = по содержимому —
+    // высота 52px игнорировалась. Поэтому оба — по содержимому, кнопка задаёт высоту сама.
+    .mergeFooter {
+      flex-wrap: nowrap;
+      gap: 10px;
+
+      > span {
+        flex: 0 0 auto;
+        min-width: 0;
+      }
+
+      > button {
+        flex: 0 0 auto;
+        width: 100%;
+        height: 52px;
+        padding: 0 18px;
+      }
+    }
+
+    .resultPrintAll {
+      margin-left: 0;
+    }
+  }
+}
+
+// ── Кнопка «Принять» ─────────────────────────────────────────────────────────
+// Вне .scan: в Telegram кнопка уходит порталом в закреплённый низ страницы
+// (.dock в WorkAcceptancePageTelegram), где предка .scan уже нет.
+// Большая, как "Раздать дальше" в распределении: синяя с тенью, справа.
+.acceptActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.acceptSubmit {
+  display: inline-flex;
+  flex: 0 1 340px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 200px;
+  height: 46px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 12px;
+  background: var(--third-color, #1455fe);
+  color: var(--button-text, #fff);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(20, 85, 254, 0.28);
+  transition:
+    filter 0.15s ease,
+    opacity 0.15s ease,
+    box-shadow 0.15s ease;
+
+  // Стрелка «дальше» — тот же белый кружок, что на кнопках .submit в
+  // WorkStickerRoutePanel; на hover стрелка чуть сдвигается вперёд.
+  .acceptArrow {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--button-text, #fff);
+    color: var(--third-color, #1455fe);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke-width: 2.6;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.08);
+
+    .acceptArrow svg {
+      transform: translateX(3px);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+@media (max-width: 640px) {
+  // Без док-панели (узкое окно обычной страницы) кнопка липнет к нижнему краю
+  // формы; фон сплошной — данные под ней не просвечивают.
+  .acceptActions {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    padding: 8px 0 0;
+    background: var(--bg-light);
+  }
+
+  .acceptSubmit {
+    flex: 1 1 100%;
+    min-width: 0;
+    height: 56px;
+    border-radius: 16px;
+    font-size: 17px;
+    box-shadow:
+      0 10px 26px rgba(20, 85, 254, 0.42),
+      0 2px 6px rgba(0, 0, 0, 0.16);
+  }
+}
+
+// В док-панели фон и отступы даёт сама панель.
+.acceptActionsDocked {
+  position: static;
+  padding: 0;
+  background: none;
+}
+
+@keyframes heroPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}

@@ -29,6 +29,12 @@ const AuthPageTelegram = () => {
       return;
     }
 
+    // при блокировке за перебор повтор бесполезен — считаем терминальной
+    const terminal =
+      result.errorCode === "NOT_REGISTERED" ||
+      result.errorCode === "DISABLED" ||
+      result.errorCode === "TOO_MANY_ATTEMPTS";
+
     setStatus(
       result.errorCode === "NOT_REGISTERED"
         ? "not_found"
@@ -36,8 +42,13 @@ const AuthPageTelegram = () => {
           ? "disabled"
           : "error",
     );
-    setError(result.message || t("loginErrorTelegram"));
-    authStarted.current = false;
+
+    setError(
+      result.errorCode === "TOO_MANY_ATTEMPTS"
+        ? t("tooManyAttempts", { minutes: result.retryAfterMinutes ?? 15 })
+        : result.message || t("loginErrorTelegram"),
+    );
+    if (!terminal) authStarted.current = false;
   };
 
   useEffect(() => {
@@ -57,12 +68,13 @@ const AuthPageTelegram = () => {
     return (
       <div className={styles.screen}>
         <div className={styles.logoWrap}>
-          <div className={styles.logo}>
-            <span>OB</span>
-          </div>
+          <img src="/logo.png" alt="" className={styles.logo} />
+          <span className={styles.logoText}>OnBase</span>
         </div>
-        <div className={styles.spinnerWrap}>
-          <div className={styles.spinner} />
+        <div className={styles.dots} aria-hidden="true">
+          <i />
+          <i />
+          <i />
         </div>
         <p className={styles.hint}>{t("loggingIn")}</p>
       </div>
@@ -130,10 +142,7 @@ const AuthPageTelegram = () => {
         <p className={styles.text}>{error}</p>
         <button
           className={styles.retryButton}
-          onClick={() => {
-            authStarted.current = false;
-            authenticate();
-          }}
+          onClick={authenticate}
         >
           {t("retry")}
         </button>

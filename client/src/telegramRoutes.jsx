@@ -1,33 +1,61 @@
+import { lazy } from "react";
 import { Route } from "react-router-dom";
 
-import BranchesPage from "./pages/BranchesPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
-import EmployeesPageTelegram from "./pages/EmployeesPageTelegram";
-import FacePassesPageTelegram from "./pages/FacePassesPageTelegram";
-import AttendancePageTelegram from "./pages/AttendancePageTelegram";
-import LateEmployeesPage from "./pages/LateEmployeesPage";
-import TimesheetPage from "./pages/TimesheetPage";
-import WorkSchedulesPage from "./pages/WorkSchedulesPage";
-import TimeOffPage from "./pages/TimeOffPage";
-import HolidaysPage from "./pages/HolidaysPage";
-import PositionsPage from "./pages/PositionsPage";
-import UsersPage from "./pages/UsersPage";
-import TelegramBotsPage from "./pages/TelegramBotsPage";
-import DoorsPage from "./pages/DoorsPage";
-import FaceDevicesPage from "./pages/FaceDevicesPage";
-import VehiclePassesPageTelegram from "./pages/VehiclePassesPageTelegram";
-import GatesPage from "./pages/GatesPage";
-import VehicleCamerasPage from "./pages/VehicleCamerasPage";
-import NotFoundPageTelegram from "./pages/NotFoundPageTelegram";
+const BranchesPageTelegram = lazy(() => import("./pages/BranchesPageTelegram"));
+const DepartmentsPageTelegram = lazy(() => import("./pages/DepartmentsPageTelegram"));
+const EmployeesPageTelegram = lazy(() => import("./pages/EmployeesPageTelegram"));
+const FacePassesPageTelegram = lazy(() => import("./pages/FacePassesPageTelegram"));
+const AttendancePageTelegram = lazy(() => import("./pages/AttendancePageTelegram"));
+const LateEmployeesPageTelegram = lazy(() => import("./pages/LateEmployeesPageTelegram"));
+const TimesheetPageTelegram = lazy(() => import("./pages/TimesheetPageTelegram"));
+const WorkSchedulesPageTelegram = lazy(() => import("./pages/WorkSchedulesPageTelegram"));
+const TimeOffPageTelegram = lazy(() => import("./pages/TimeOffPageTelegram"));
+const ProductionCalendarPage = lazy(() => import("./pages/ProductionCalendarPage"));
+const PositionsPageTelegram = lazy(() => import("./pages/PositionsPageTelegram"));
+const UsersPageTelegram = lazy(() => import("./pages/UsersPageTelegram"));
+const TelegramBotsPage = lazy(() => import("./pages/TelegramBotsPage"));
+const DoorsPage = lazy(() => import("./pages/DoorsPage"));
+const FaceDevicesPage = lazy(() => import("./pages/FaceDevicesPage"));
+const VehiclePassesPageTelegram = lazy(() => import("./pages/VehiclePassesPageTelegram"));
+const GatesPage = lazy(() => import("./pages/GatesPage"));
+const VehicleCamerasPage = lazy(() => import("./pages/VehicleCamerasPage"));
+const NotFoundPageTelegram = lazy(() => import("./pages/NotFoundPageTelegram"));
 import HomePageTelegram from "./pages/HomePageTelegram";
-import MorePageTelegram from "./pages/MorePageTelegram";
+const MenuPageTelegram = lazy(() => import("./pages/MenuPageTelegram"));
+const SettingsPageTelegram = lazy(() => import("./pages/SettingsPageTelegram"));
+const FinancePageTelegram = lazy(() => import("./pages/FinancePageTelegram"));
+const TasksPageTelegram = lazy(() => import("./pages/TasksPageTelegram"));
+const StaffingPage = lazy(() => import("./pages/StaffingPage"));
+const EmploymentOrdersPage = lazy(() => import("./pages/EmploymentOrdersPage"));
+const AssetAssignmentsPageTelegram = lazy(() => import("./pages/AssetAssignmentsPageTelegram"));
+const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"));
+const CronTasksPage = lazy(() => import("./pages/CronTasksPage"));
+const CanteenAllowancesPage = lazy(() => import("./pages/CanteenAllowancesPage"));
+const CanteenDisplayPage = lazy(() => import("./pages/CanteenDisplayPage"));
+const CanteenReportPage = lazy(() => import("./pages/CanteenReportPage"));
+const OperationsPageTelegram = lazy(() => import("./pages/OperationsPageTelegram"));
+const BatchReceiptsPageTelegram = lazy(() => import("./pages/BatchReceiptsPageTelegram"));
+const WorkAcceptancePageTelegram = lazy(() => import("./pages/WorkAcceptancePageTelegram"));
+const ProductionReportPageTelegram = lazy(() => import("./pages/ProductionReportPageTelegram"));
 
 const telegramRoutes = (
   <>
     <Route path="home" element={<HomePageTelegram />} key="home" />,
-    <Route path="more" element={<MorePageTelegram />} key="more" />,
-    <Route path="branches" element={<BranchesPage />} key="branches" />,
-    <Route path="departments" element={<DepartmentsPage />} key="departments" />
+    <Route path="finance" element={<FinancePageTelegram />} key="finance" />,
+    <Route path="menu" element={<MenuPageTelegram />} key="menu" />,
+    <Route
+      path="settings"
+      element={<SettingsPageTelegram />}
+      key="settings"
+    />
+    ,
+    <Route path="tasks" element={<TasksPageTelegram />} key="tasks" />,
+    <Route path="branches" element={<BranchesPageTelegram />} key="branches" />,
+    <Route
+      path="departments"
+      element={<DepartmentsPageTelegram />}
+      key="departments"
+    />
     ,
     <Route
       path="employees"
@@ -49,21 +77,25 @@ const telegramRoutes = (
     ,
     <Route
       path="late-employees"
-      element={<LateEmployeesPage />}
+      element={<LateEmployeesPageTelegram />}
       key="late-employees"
     />
     ,
-    <Route path="timesheet" element={<TimesheetPage />} key="timesheet" />,
+    <Route path="timesheet" element={<TimesheetPageTelegram />} key="timesheet" />,
     <Route
       path="work-schedules"
-      element={<WorkSchedulesPage />}
+      element={<WorkSchedulesPageTelegram />}
       key="work-schedules"
     />
     ,
-    <Route path="time-off" element={<TimeOffPage />} key="time-off" />,
-    <Route path="holidays" element={<HolidaysPage />} key="holidays" />,
-    <Route path="positions" element={<PositionsPage />} key="positions" />,
-    <Route path="users" element={<UsersPage />} key="users" />,
+    <Route path="time-off" element={<TimeOffPageTelegram />} key="time-off" />,
+    <Route
+      path="production-calendar"
+      element={<ProductionCalendarPage />}
+      key="production-calendar"
+    />,
+    <Route path="positions" element={<PositionsPageTelegram />} key="positions" />,
+    <Route path="users" element={<UsersPageTelegram />} key="users" />,
     <Route
       path="telegram-bots"
       element={<TelegramBotsPage />}
@@ -90,6 +122,54 @@ const telegramRoutes = (
       key="vehicle-cameras"
     />
     ,
+    <Route path="staffing" element={<StaffingPage />} key="staffing" />
+    <Route
+      path="employment-orders"
+      element={<EmploymentOrdersPage />}
+      key="employment-orders"
+    />
+    <Route
+      path="asset-assignments"
+      element={<AssetAssignmentsPageTelegram />}
+      key="asset-assignments"
+    />
+    <Route path="audit-logs" element={<AuditLogsPage />} key="audit-logs" />
+    <Route path="cron-tasks" element={<CronTasksPage />} key="cron-tasks" />
+    <Route
+      path="canteen-allowances"
+      element={<CanteenAllowancesPage />}
+      key="canteen-allowances"
+    />
+    <Route
+      path="canteen-display"
+      element={<CanteenDisplayPage />}
+      key="canteen-display"
+    />
+    <Route
+      path="canteen-report"
+      element={<CanteenReportPage />}
+      key="canteen-report"
+    />
+    <Route
+      path="operations"
+      element={<OperationsPageTelegram />}
+      key="operations"
+    />
+    <Route
+      path="batch-receipts"
+      element={<BatchReceiptsPageTelegram />}
+      key="batch-receipts"
+    />
+    <Route
+      path="work-acceptance"
+      element={<WorkAcceptancePageTelegram />}
+      key="work-acceptance"
+    />
+    <Route
+      path="production-report"
+      element={<ProductionReportPageTelegram />}
+      key="production-report"
+    />
     <Route path="*" element={<NotFoundPageTelegram />} />,
   </>
 );

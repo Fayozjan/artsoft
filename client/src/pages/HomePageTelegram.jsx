@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import HomeTelegram from "../components/HomeTelegram";
-import Loading from "../components/Loading";
+import Loading from "../components/LoadingTelegram";
 import { useAuthStore } from "../stores/authStore";
 import { getAttendance, getAttendanceByEmployeeId } from "../api/attendance";
 import { getActiveBranches } from "../api/branches";
+import { useOpenAddFacePassTelegram } from "../hooks/useOpenAddFacePassTelegram";
 
 // ─── Helpers (employee stats) ────────────────────────────────────────────────
 
@@ -24,6 +25,12 @@ const getActiveScheduleHistory = (history = [], refDate = new Date()) => {
         return from <= refDate && (!to || to >= refDate);
       }) || null
   );
+};
+
+// Следующая отметка: последняя за сегодня «вход» → теперь «выход», иначе «вход»
+const getPunchDirection = (todayData) => {
+  const events = todayData?.sessions?.[todayData?.date]?.events || [];
+  return events[events.length - 1]?.direction === "entry" ? "exit" : "entry";
 };
 
 const buildMonthStats = (month, referenceDate) => {
@@ -180,6 +187,24 @@ const HomePageTelegram = () => {
   const viewMode = userSettings?.viewMode || "branch";
   const adminInitialized = useRef(false);
 
+  // ── «Начать работу» / «Завершить работу» ────────────────────────────────────
+  // Кнопка только если админ разрешил это логину и у логина есть сотрудник
+  const canPunch = Boolean(access?.telegram_work_punch && access?.employee_id);
+  const [punchDirection, setPunchDirection] = useState(null);
+  const [punchVersion, setPunchVersion] = useState(0);
+  const onPunchSuccess = useCallback(() => setPunchVersion((v) => v + 1), []);
+  const openPunch = useOpenAddFacePassTelegram(onPunchSuccess);
+
+  // админский экран не грузит данные сотрудника — берём только направление отметки
+  // (у сотрудника оно приходит вместе с основным запросом ниже)
+  useEffect(() => {
+    if (isEmployee || !canPunch) return;
+
+    getAttendanceByEmployeeId(access.employee_id)
+      .then((res) => setPunchDirection(getPunchDirection(res.data.today)))
+      .catch(() => {});
+  }, [isEmployee, canPunch, access?.employee_id, punchVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // init branches list + default selected branch (runs once when access loads)
   useEffect(() => {
     if (isEmployee || !access || adminInitialized.current) return;
@@ -236,9 +261,11 @@ const HomePageTelegram = () => {
   useEffect(() => {
     if (!isEmployee || !access?.employee_id) return;
 
-    getAttendanceByEmployeeId(access.employee_id, { date: todayStr }).then(
+    // без даты сервер берёт «сейчас» по Asia/Tashkent; todayStr — UTC и ночью даёт вчера
+    getAttendanceByEmployeeId(access.employee_id).then(
       (res) => {
         const { employee, today: todayData, month } = res.data;
+        setPunchDirection(getPunchDirection(todayData));
 
         const fullName = [
           employee.last_name,
@@ -290,35 +317,48 @@ const HomePageTelegram = () => {
           checkIn: todaySession?.firstEntry ?? null,
           checkOut: todaySession?.lastExit ?? null,
           workDuration: todaySession?.workDuration ?? null,
-          scheduledIn: todaySession.scheduleStart ?? null,
-          scheduledOut: todaySession.scheduleEnd ?? null,
-          late: todaySession.late ?? null,
-          breakReturnLate: todaySession.breakReturnLate ?? null,
-          lateLeave: todaySession.lateLeave,
+          scheduledIn: todaySession?.scheduleStart ?? null,
+          scheduledOut: todaySession?.scheduleEnd ?? null,
+          late: todaySession?.late ?? null,
+          breakReturnLate: todaySession?.breakReturnLate ?? null,
+          lateLeave: todaySession?.lateLeave ?? null,
         });
 
         setMonthStats(buildMonthStats(month, today));
       },
     );
-  }, [isEmployee, access?.employee_id, todayStr]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isEmployee, access?.employee_id, todayStr, punchVersion]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMonthChange = useCallback(
     ({ month, year }) => {
       if (!access?.employee_id) return;
-      const refDate = new Date(`${year}-${String(month).padStart(2, "0")}-15`);
-      const dateParam = refDate.toISOString().slice(0, 10);
-      getAttendanceByEmployeeId(access.employee_id, { date: dateParam }).then(
-        (res) => {
-          const { month: monthData } = res.data;
-          setMonthStats(buildMonthStats(monthData, refDate));
-        },
-      );
+      const now = new Date();
+      const isCurrentMonth =
+        year === now.getFullYear() && month === now.getMonth() + 1;
+      const refDate = isCurrentMonth
+        ? now
+        : new Date(`${year}-${String(month).padStart(2, "0")}-15`);
+      const dateParam = new Date(`${year}-${String(month).padStart(2, "0")}-15`)
+        .toISOString()
+        .slice(0, 10);
+      // сервер читает дату из query.filters, а не из query.date
+      getAttendanceByEmployeeId(access.employee_id, {
+        filters: { date: dateParam },
+      }).then((res) => {
+        const { month: monthData } = res.data;
+        setMonthStats(buildMonthStats(monthData, refDate));
+      });
     },
     [access?.employee_id],
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (!access) return <Loading />;
+
+  const workPunch =
+    canPunch && punchDirection
+      ? { direction: punchDirection, onClick: openPunch }
+      : null;
 
   if (isEmployee) {
     return (
@@ -328,6 +368,7 @@ const HomePageTelegram = () => {
         shift={shiftData}
         monthStats={monthStats}
         onMonthChange={handleMonthChange}
+        workPunch={workPunch}
       />
     );
   }
@@ -347,6 +388,7 @@ const HomePageTelegram = () => {
       onBranchChange={setSelectedBranchId}
       // absolute mode
       allBranchesData={allBranchesData}
+      workPunch={workPunch}
     />
   );
 };

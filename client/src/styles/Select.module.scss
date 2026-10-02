@@ -4,15 +4,15 @@
 
 .selectBox {
   font-weight: 500;
-  color: black;
+  color: var(--text-color);
   width: 100%;
   padding: 10px;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
   font-size: 14px;
   box-sizing: border-box;
   padding: 10px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-color);
   cursor: pointer;
 }
 
@@ -21,9 +21,9 @@
   top: 100%;
   left: 0;
   right: 0;
-  border: 1px solid #ddd;
+  border: 1px solid var(--border-color);
   border-radius: 5px;
-  background-color: #fff;
+  background-color: var(--card-bg);
   max-height: 150px;
   overflow-y: auto;
   z-index: 1000;
@@ -37,7 +37,7 @@
 }
 
 .item:hover {
-  background-color: #f1f1f1;
+  background-color: var(--select-hover-color);
 }
 
 .selected {

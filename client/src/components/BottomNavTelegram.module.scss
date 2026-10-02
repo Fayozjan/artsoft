@@ -1,58 +1,99 @@
 .bottomNav {
-  width: 100%;
-  height: 45px;
+  // Нижний отступ: home-indicator / жестовая панель (iOS env + Telegram fullscreen vars).
+  // max — чтобы env и tg-переменная, описывающие одно и то же, не суммировались.
+  --nav-safe-bottom: calc(
+    max(env(safe-area-inset-bottom, 0px), var(--tg-safe-area-inset-bottom, 0px)) +
+      var(--tg-content-safe-area-inset-bottom, 0px)
+  );
+  --nav-pad-bottom: max(var(--nav-safe-bottom), 8px);
+  // Боковые отступы: вырез в landscape + центрирование на широких экранах (планшет, desktop)
+  --nav-pad-left: max(
+    8px,
+    env(safe-area-inset-left, 0px),
+    var(--tg-safe-area-inset-left, 0px),
+    calc(50% - 240px)
+  );
+  --nav-pad-right: max(
+    8px,
+    env(safe-area-inset-right, 0px),
+    var(--tg-safe-area-inset-right, 0px),
+    calc(50% - 240px)
+  );
+
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
-  padding: 0 20px 70px;
-  display: grid;
-  grid-template-columns: 1fr 1fr auto 1fr 1fr;
-  justify-items: center;
-  align-items: center;
+  bottom: 0;
   z-index: 100;
-  background: rgba(18, 18, 18, 0.9);
-  backdrop-filter: blur(10px);
   box-sizing: border-box;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 4px;
+  padding-top: 8px;
+  padding-bottom: var(--nav-pad-bottom);
+  padding-left: var(--nav-pad-left);
+  padding-right: var(--nav-pad-right);
+  background: var(--tg-bg-glass);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-top: 0.5px solid var(--tg-separator);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+
+  // Android WebView пересчитывает blur под fixed-слоем на каждом кадре скролла — лаги
+  :global(html[data-tg-platform^="android"]) & {
+    background: var(--tg-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
-// ─── Backdrop ───────────────────────────────────────────────────────────────
+// ─── Active pill (позиционируется из JS) ─────────────────────────────────────
 
-.backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  background: rgba(0, 0, 0, 0);
+.pill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 14px;
+  background: var(--tg-hover);
+  opacity: 0;
   pointer-events: none;
-  transition: background 0.25s ease;
-
-  &.backdropVisible {
-    background: rgba(0, 0, 0, 0.55);
-    pointer-events: all;
-  }
+  will-change: transform, width;
+  transition:
+    transform 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    width 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+    opacity 0.2s ease;
 }
 
 // ─── Nav items ───────────────────────────────────────────────────────────────
 
 .navItem {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
+  min-width: 0;
+  min-height: 48px;
+  padding: 4px 2px;
   background: none;
   border: none;
+  border-radius: 14px;
   outline: none;
   cursor: pointer;
-  color: #8e8e93;
-  padding: 2px;
-  min-width: 0;
-  z-index: 101;
+  color: var(--text-secondary);
   transition: color 0.2s ease;
   -webkit-tap-highlight-color: transparent;
 
   &.active {
-    color: white;
+    color: var(--text-color);
 
     .label {
       font-weight: 700;
@@ -82,140 +123,53 @@
     fill: currentColor;
     transition: fill 0.2s ease;
   }
+
+  &.iconCompact svg {
+    width: 21px;
+    height: 21px;
+  }
 }
 
 .label {
+  max-width: 100%;
   font-size: 11px;
   font-weight: 500;
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 72px;
   transition: font-weight 0.2s;
 }
 
-// ─── FAB button ──────────────────────────────────────────────────────────────
+// ─── Adaptive ────────────────────────────────────────────────────────────────
 
-.fab {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  background: var(--third-color, #4a90e2);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translateY(-16px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-  z-index: 101;
-
-  &:active {
-    transform: translateY(-14px) scale(0.93);
-  }
-
-  .fabIcon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
-
-    svg {
-      width: 26px;
-      height: 26px;
-      fill: white;
-    }
+// узкие экраны (iPhone SE / mini, складные в сложенном виде)
+@media (max-width: 340px) {
+  .label {
+    font-size: 10px;
   }
 }
 
-// ─── FAB popup menu ──────────────────────────────────────────────────────────
-
-.fabMenu {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 50%;
-  transform: translateX(-55%);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  pointer-events: none;
-  z-index: 102;
-}
-
-.fabMenuItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 16px 10px 12px;
-  border: none;
-  border-radius: 14px;
-  background: rgba(30, 30, 32, 0.97);
-  backdrop-filter: blur(14px);
-  color: #fff;
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow:
-    0 4px 20px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-  -webkit-tap-highlight-color: transparent;
-
-  // Hidden / ready state — items start below and invisible
-  opacity: 0;
-  transform: translateY(16px) scale(0.88);
-  transition:
-    opacity 0s,
-    transform 0s;
-
-  // Icon bubble
-  .fabMenuIcon {
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: rgba(var(--item-color-rgb, 91, 138, 245), 0.18);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--item-color, #5b8af5);
-    flex-shrink: 0;
-    transition: background 0.15s ease;
-
-    svg {
-      width: 18px;
-      height: 18px;
-    }
+// landscape на телефоне: низкая высота — компактнее, без подписей
+@media (max-height: 420px) and (orientation: landscape) {
+  .bottomNav {
+    padding-top: 4px;
   }
 
-  .fabMenuLabel {
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+  .navItem {
+    min-height: 40px;
   }
 
-  &:active {
-    background: rgba(45, 45, 48, 0.97);
-
-    .fabMenuIcon {
-      background: rgba(var(--item-color-rgb, 91, 138, 245), 0.28);
-    }
+  .label {
+    display: none;
   }
 }
 
-// Open state — staggered fan-in from bottom
-.fabMenuOpen {
-  pointer-events: all;
-
-  .fabMenuItem {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-
-    // item 0 animates second (top item), item 1 first (bottom item) — natural order
-    @for $i from 0 through 3 {
-      &:nth-child(#{$i + 1}) {
-        transition:
-          opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1) #{(1 - $i) * 0.06s},
-          transform 0.32s cubic-bezier(0.34, 1.35, 0.64, 1) #{(1 - $i) * 0.06s};
-      }
-    }
+@media (prefers-reduced-motion: reduce) {
+  .pill,
+  .icon,
+  .navItem,
+  .label {
+    transition: none;
   }
 }

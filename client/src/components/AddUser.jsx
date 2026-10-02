@@ -13,25 +13,31 @@ import {
 
 import Button from "./Button";
 import SelectEmployee from "./SelectEmployee";
-import PermissionsManager from "./PermissionsManager";
+import UserMenuAccess from "./UserMenuAccess";
 import MultiSelectDepartments from "./MultiSelectDepartments";
 import MultiSelectBranches from "./MultiSelectBranches";
 
+import UserExtraSettings from "./UserExtraSettings";
+import UserTelegramSettings from "./UserTelegramSettings";
+import UserFormSaveBar from "./UserFormSaveBar";
+import { menuTreeToMap } from "../utils/menuPermissions";
+
 import styles from "./AddUser.module.scss";
 
-const STATIC_MENUS = [
-  { key: "home", labelKey: "homeNav" },
-  { key: "finance", labelKey: "financeNav" },
-  { key: "tasks", labelKey: "tasksNav" },
-];
-
-const AddUser = ({ handleClose, onSuccess }) => {
+// mobile — вид формы для Telegram (экран на всю ширину, поля в столбик)
+const AddUser = ({ handleClose, onSuccess, sidePanels, mobile }) => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",
     employee_id: "",
     access_level: "absolute",
     ignore_gps_check: false,
+    settings: { sidebarPosition: "left", startPage: "/home" },
+    production_operation_ids: [],
+    can_edit_sticker: true,
+    production_own_only: false,
+    telegram_work_punch: false,
+    telegram_menu: null,
   });
 
   const { showAlert } = useAlertStore();
@@ -58,12 +64,15 @@ const AddUser = ({ handleClose, onSuccess }) => {
             EmployeeService.getActive(),
             getActiveBranches(),
             getActiveDepartments(),
-            getUserMenu(),
+            getUserMenu({ platform: "web" }),
             getMenus(),
           ]);
 
         setUserMenus(userMenu);
         setAllMenus(allMenus);
+        // Таблица прав показывает права текущего пользователя как стартовые —
+        // сохраняем ровно то, что в ней видно, даже если её не открывали.
+        setFormData((prev) => ({ ...prev, menu: menuTreeToMap(userMenu) }));
 
         setState({
           employees: employeeRes.data || employeeRes,
@@ -139,15 +148,18 @@ const AddUser = ({ handleClose, onSuccess }) => {
   };
 
   return (
-    <form className={styles.addUser} onSubmit={handleSubmit}>
+    <form
+      className={`${styles.addUser} ${mobile ? styles.mobile : ""}`}
+      onSubmit={handleSubmit}
+    >
       <div className={styles.header}>
-        <h2>{t("addPosition")}</h2>
-        <Button text={t("save")} type={"submit"} />
+        <h2>{t("addUser")}</h2>
+        {!mobile && <Button text={t("save")} type={"submit"} />}
       </div>
 
       <div className={styles.row}>
         <div>
-          <label>{t("name")}</label>
+          <label>{t("username")}</label>
           <input
             type="text"
             name="username"
@@ -284,40 +296,32 @@ const AddUser = ({ handleClose, onSuccess }) => {
 
       {formData?.access_level !== "employee" && (
         <>
-          <PermissionsManager
+          <UserMenuAccess
+            panel={sidePanels?.access}
             allMenus={allMenus}
             userMenus={userMenus}
+            menu={formData.menu}
             onChange={(updatedMenu) => handleMenuChange(updatedMenu)}
           />
 
-          <div className={styles.row}>
-            <div>
-              <label>{t("personalMenuMode")}</label>
-              <div className={styles.checkboxGroup}>
-                {STATIC_MENUS.map(({ key, labelKey }) => (
-                  <label key={key} className={styles.checkboxLabel}>
-                    <input
-                      type="checkbox"
-                      checked={formData.personal_menus?.includes(key) || false}
-                      onChange={(e) => {
-                        const current = formData.personal_menus || [];
-                        const updated = e.target.checked
-                          ? [...current, key]
-                          : current.filter((k) => k !== key);
-                        setFormData((prev) => ({
-                          ...prev,
-                          personal_menus: updated,
-                        }));
-                      }}
-                    />
-                    {t(labelKey)}
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
+          <UserExtraSettings
+            panel={sidePanels?.extra}
+            formData={formData}
+            setFormData={setFormData}
+            allMenus={allMenus}
+          />
         </>
       )}
+
+      <UserTelegramSettings
+        panel={sidePanels?.telegram}
+        allMenus={allMenus}
+        formData={formData}
+        setFormData={setFormData}
+        menuSettingsEnabled={formData?.access_level !== "employee"}
+      />
+
+      {mobile && <UserFormSaveBar />}
     </form>
   );
 };

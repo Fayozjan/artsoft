@@ -1,0 +1,181 @@
+// Опоздание в Telegram — дополнения к карточкам сотрудников.
+// Сама карточка и шторка рисуются стилями AttendanceTableTelegram.
+
+// «Плановое» время рядом с фактическим — приглушено
+.planned {
+  color: var(--text-secondary);
+  font-weight: 500;
+  text-decoration: line-through;
+  text-decoration-color: rgba(128, 128, 128, 0.5);
+}
+
+// Фото с турникета в момент прихода
+.shot {
+  position: relative;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--tg-surface);
+
+  img {
+    display: block;
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+  }
+
+  figcaption {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+  }
+}
+
+// Возврат с перерыва за день
+.breakBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(var(--tone), 0.12);
+  color: var(--tone-text);
+
+  > svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.breakText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  span {
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+}
+
+// ── Опоздания по дням ────────────────────────────────────────────────────────
+
+.detailBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detailTitle {
+  padding-left: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.detailList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--tg-surface);
+  list-style: none;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-top: 0.5px solid var(--tg-separator);
+
+  &:first-child {
+    border-top: none;
+  }
+}
+
+.detailDate {
+  display: flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--card-bg);
+
+  small {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  b {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.3px;
+  }
+}
+
+.detailMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detailLine {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+
+  b {
+    font-weight: 700;
+  }
+
+  svg {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+    color: var(--text-secondary);
+  }
+}
+
+.detailPill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(var(--tone), 0.14);
+  color: var(--tone-text);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}

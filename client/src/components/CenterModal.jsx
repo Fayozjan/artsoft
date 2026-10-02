@@ -10,6 +10,7 @@ export default function CenterModal({
   onClose,
   onAccept,
   tag,
+  message,
   acceptText,
   cancelText,
 }) {
@@ -27,12 +28,24 @@ export default function CenterModal({
   }, []);
 
   useEffect(() => {
-    const handleEsc = (e) => {
-      if (e.key === "Escape") onClose();
+    if (!isOpen) return;
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      // Enter = подтвердить. На кнопке внутри модалки Enter уже даёт
+      // нативный click — второй вызов onAccept отправил бы запрос дважды.
+      if (e.key === "Enter" && !e.target?.closest?.("button")) {
+        e.preventDefault();
+        onAccept?.();
+      }
     };
-    if (isOpen) window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isOpen, onClose]);
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [isOpen, onClose, onAccept]);
 
   if (!portalContainer) return null;
 
@@ -41,6 +54,7 @@ export default function CenterModal({
       {isOpen && (
         <motion.div
           className={styles.overlay}
+          data-center-modal-overlay="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -62,11 +76,9 @@ export default function CenterModal({
               </div>
             )}
 
-            {
-              <p className={styles.text}>
-                {t("confirmText")}
-              </p>
-            }
+            <div className={styles.text}>
+              {message ?? t("confirmText")}
+            </div>
 
             <div className={styles.actions}>
               <button className={styles.accept} onClick={onAccept}>

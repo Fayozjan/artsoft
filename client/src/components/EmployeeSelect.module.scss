@@ -1,0 +1,355 @@
+.empSelect {
+  position: relative;
+  width: 100%;
+}
+
+.empSelectTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  background: var(--card-bg);
+  cursor: pointer;
+  font-size: 13px;
+  transition: border-color 0.15s;
+  gap: 6px;
+
+  &:hover,
+  &.empSelectOpen {
+    border-color: #7c3aed;
+  }
+
+  svg { flex-shrink: 0; color: var(--placeholder-color); }
+}
+
+// Крупный вариант (форма приёма работы): рамка, высота и шрифт как у полей
+// панели распределения (WorkStickerRoutePanel). Выпадашка внутри обёртки — тоже крупнее.
+.empSelectLarge {
+  .empSelectTrigger {
+    height: 44px;
+    padding: 0 14px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--input-bg, var(--card-bg));
+    font-size: 15px;
+    font-weight: 600;
+
+    &:hover,
+    &.empSelectOpen {
+      border-color: #7c3aed;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .empSelectSearch {
+    height: 44px;
+    padding: 0 14px;
+    font-size: 15px;
+  }
+
+  .empSelectItem {
+    padding: 10px 14px;
+  }
+
+  .empSelectItemName {
+    font-size: 15px;
+  }
+
+  .empSelectItemSub {
+    font-size: 12px;
+  }
+}
+
+// Поле верхней строки приёма работы: рамка, высота, шрифт, акцент и выпадашка —
+// как у ScanModeSelect, чтобы селекторы в одной строке выглядели одинаково.
+.empSelectBar {
+  .empSelectTrigger {
+    // div, а не button: без этого 2px рамки добавились бы к высоте (44px вместо 40px).
+    box-sizing: border-box;
+    height: 40px;
+    padding: 0 14px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--card-bg);
+    font-size: 15px;
+    font-weight: 600;
+    gap: 10px;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:hover,
+    &.empSelectOpen {
+      border-color: var(--third-color, #1455fe);
+    }
+
+    &.empSelectOpen {
+      box-shadow: 0 0 0 3px rgba(20, 85, 254, 0.15);
+    }
+
+    // Только шеврон: крестик (.empSelectClear) красится сам.
+    > svg {
+      width: 14px;
+      height: 14px;
+      color: var(--text-secondary);
+    }
+  }
+
+  .empSelectValue {
+    font-weight: 600;
+  }
+
+  .empSelectDropdown {
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  }
+
+  .empSelectSearch {
+    height: 40px;
+    padding: 0 14px;
+    font-size: 15px;
+  }
+
+  .empSelectItem {
+    padding: 9px 14px;
+
+    &.empSelectItemActive {
+      background: rgba(20, 85, 254, 0.1);
+    }
+  }
+
+  .empSelectItemName {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .empSelectItemSub {
+    font-size: 12px;
+  }
+}
+
+// Крестик «убрать сотрудника» внутри поля, перед шевроном.
+.empSelectClear {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    color: inherit;
+  }
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+}
+
+.empSelectValue {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-color);
+  font-weight: 500;
+}
+
+.empSelectPlaceholder {
+  color: var(--placeholder-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empSelectDropdown {
+  background: var(--card-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  overflow: hidden;
+  // position/top/left/width/z-index задаются инлайном (fixed positioning)
+}
+
+.empSelectSearch {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+  outline: none;
+  // Цвета темы: иначе в тёмной теме поле поиска остаётся белым.
+  background: var(--card-bg);
+  color: var(--text-color);
+}
+
+.empSelectList {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.empSelectItem {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover { background: var(--bg-light); }
+
+  // Полупрозрачный тон, а не #faf5ff: на тёмной теме светлая подложка съедала светлый текст.
+  &.empSelectItemActive { background: rgba(124, 58, 237, 0.12); }
+}
+
+.empSelectItemName {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.empSelectItemSub {
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+.empSelectHint {
+  padding: 5px 10px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+.empSelectEmpty {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--placeholder-color);
+  font-size: 13px;
+  font-style: italic;
+}
+
+// ── Телефон (Telegram): список — в нижней шторке (TgSheet, портал в body), см.
+// EmployeeSelect.jsx. Поиск закреплён сверху и прокручивается вместе с телом
+// шторки, поэтому у списка нет своего max-height/overflow. ──
+.empSheet {
+  display: flex;
+  flex-direction: column;
+
+  .empSelectList {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .empSelectSearch {
+    height: 44px;
+    padding: 0 14px;
+    border: 1.5px solid var(--border-color);
+    border-radius: 14px;
+    background: var(--input-bg, var(--card-bg));
+    font-size: 16px;
+
+    &:focus {
+      border-color: var(--third-color, #1455fe);
+    }
+  }
+
+  .empSelectItem {
+    gap: 1px;
+    padding: 9px 12px;
+    border-radius: 10px;
+  }
+
+  .empSelectItemName {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .empSelectItemSub {
+    font-size: 11px;
+  }
+
+  .empSelectHint {
+    border-top: none;
+    text-align: center;
+  }
+
+  .empSelectEmpty {
+    padding: 28px 10px;
+    font-size: 15px;
+  }
+}
+
+// Закреплённый поиск: сплошной фон, чтобы строки под ним не просвечивали.
+.empSheetSearch {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -4px -18px 6px;
+  padding: 8px 18px;
+  background: var(--card-bg);
+}
+
+@media (max-width: 640px) {
+  .empSelectLarge .empSelectTrigger {
+    height: 50px;
+    border-radius: 14px;
+  }
+
+  .empSelectTrigger {
+    font-size: 15px;
+  }
+
+  // Как ScanModeSelect на телефоне: выше под палец, мягче углы.
+  .empSelectBar .empSelectTrigger {
+    height: 48px;
+    border-width: 1.5px;
+    border-radius: 14px;
+  }
+
+  // Подпись «Сотрудник *» — цветом текста, как надпись на кнопке режима рядом, а не серой подсказкой.
+  .empSelectBar .empSelectPlaceholder {
+    color: var(--text-color);
+  }
+
+  .empSelectClear {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // Строка «сотрудник + количество»: на 50px / 15px имя обрезалось, количество не влезало.
+  .empSelectLarge.empSelectCompact .empSelectTrigger {
+    height: 40px;
+    padding: 0 9px;
+    border-radius: 12px;
+    font-size: 13px;
+    gap: 4px;
+  }
+}

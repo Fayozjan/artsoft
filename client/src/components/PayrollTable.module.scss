@@ -8,14 +8,14 @@
 
 .table {
   width: 100%;
-  min-width: 1380px;
+  min-width: 1360px;
   border-collapse: collapse;
   font-size: var(--font-small);
 
   thead {
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--card-bg);
     z-index: 10;
   }
 
@@ -29,14 +29,21 @@
 
   th {
     font-weight: 600;
-    color: #475569;
+    color: var(--text-secondary);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.03em;
   }
 
+  .headerContent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+
   tbody tr:hover td {
-    background: #f8fafc;
+    background: var(--bg-light);
   }
 }
 
@@ -59,15 +66,21 @@
 
 .numCol {
   width: 36px;
-  color: #94a3b8;
+  color: var(--placeholder-color);
   font-size: 11px;
   text-align: center;
 }
 
 .numColTd {
-  color: #94a3b8;
+  color: var(--placeholder-color);
   font-size: 11px;
   text-align: center;
+}
+
+.empCol {
+  width: 310px;
+  max-width: 310px;
+  text-align: left !important;
 }
 
 .empCell {
@@ -81,17 +94,17 @@
 
 .empName {
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-color);
 }
 
 .empSub {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--placeholder-color);
 }
 
 .numCell {
   font-variant-numeric: tabular-nums;
-  color: #1e293b;
+  color: var(--text-color);
 }
 
 .zeroVal {
@@ -120,8 +133,8 @@
   }
 
   &.notSet {
-    background: #f1f5f9;
-    color: #94a3b8;
+    background: var(--bg-light);
+    color: var(--placeholder-color);
     font-style: italic;
   }
 }
@@ -134,7 +147,19 @@
   user-select: none;
 
   &:hover {
-    background: #f1f5f9;
+    background: var(--bg-light);
+  }
+
+  // Ячейка кликабельна — на ховере подсвечиваем её контрол
+  &:hover .adjAddBtn {
+    border-color: var(--third-color);
+    border-style: solid;
+    color: var(--third-color);
+    background: rgba(20, 85, 254, 0.08);
+  }
+
+  &:hover .adjEditIcon {
+    opacity: 1;
   }
 
   &.hasDeduction {
@@ -164,19 +189,135 @@
   }
 }
 
-.netCol {
+// ── Корректировка: зона должна читаться как кнопка ───────────────────────────
+
+.adjCol {
+  width: 130px;
+}
+
+.adjAddBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 6px;
+  color: var(--placeholder-color);
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.12s;
+}
+
+.adjPlus {
+  font-size: 14px;
+  line-height: 1;
   font-weight: 700;
 }
 
-.netCell {
+.adjBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.adjBadgeBonus {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+
+  :global(html.dark) & {
+    background: rgba(74, 222, 128, 0.18);
+    color: #4ade80;
+  }
+}
+
+.adjBadgePenalty {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+
+  :global(html.dark) & {
+    background: rgba(248, 113, 113, 0.18);
+    color: #f87171;
+  }
+}
+
+.adjEditIcon {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.4;
+  transition: opacity 0.12s;
+
+  svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+  }
+}
+
+.netCol {
+  width: 115px;
+  font-weight: 700;
+  color: var(--third-color) !important;
+  border-left: 1px solid var(--border-subtle);
+  background: rgba(20, 85, 254, 0.05);
+
+  :global(html.dark) & {
+    color: #7ea2ff !important;
+    background: rgba(126, 162, 255, 0.08);
+  }
+}
+
+.netCell {
+  width: 115px;
+  border-left: 1px solid var(--border-subtle);
+}
+
+// Сумма начисления — главное число строки, поэтому вынесено в бейдж
+.netValue {
+  display: inline-block;
+  min-width: 74px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(20, 85, 254, 0.1);
+  color: var(--third-color);
   font-size: 13px;
-  color: #0f172a;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+
+  :global(html.dark) & {
+    background: rgba(126, 162, 255, 0.16);
+    color: #9fbaff;
+  }
+}
+
+.netValueNegative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+
+  :global(html.dark) & {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+}
+
+.netValueZero {
+  background: transparent;
+  color: var(--placeholder-color);
+
+  :global(html.dark) & {
+    background: transparent;
+    color: var(--placeholder-color);
+  }
 }
 
 .noData {
   text-align: center;
-  color: #94a3b8;
+  color: var(--placeholder-color);
   padding: 60px;
   font-style: italic;
 }
@@ -199,6 +340,12 @@
   color: #16a34a;
   font-size: 11px;
   font-weight: 600;
+
+  svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
 }
 
 .paidBadge {
@@ -232,6 +379,12 @@
   font-family: inherit;
   transition: background 0.12s;
 
+  svg {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+  }
+
   &:hover {
     background: #dcfce7;
   }
@@ -240,14 +393,21 @@
 .revertBtn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   padding: 3px 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
   border-radius: 5px;
-  background: white;
-  color: #94a3b8;
+  background: var(--card-bg);
+  color: var(--placeholder-color);
   cursor: pointer;
   font-family: inherit;
   transition: all 0.12s;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
 
   &:hover {
     border-color: #f59e0b;
@@ -286,7 +446,7 @@
 .flagTime {
   font-variant-numeric: tabular-nums;
   font-size: 12px;
-  color: #475569;
+  color: var(--text-secondary);
   margin-left: 6px;
 }
 
@@ -316,26 +476,233 @@
   }
 }
 
-// ── Popover ────────────────────────────────────────────────────────────────────
+// ── Adjustment modal ──────────────────────────────────────────────────────
 
-.popover {
-  position: absolute;
-  z-index: 1000;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 16px;
-  width: 300px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.25);
+  z-index: 10010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
 }
 
-.popoverTitle {
+.modal {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 380px;
+  max-width: 100%;
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modalHeaderMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modalName {
+  font-size: 15px;
   font-weight: 700;
-  font-size: 13px;
-  color: #1e293b;
+  line-height: 1.25;
+  color: var(--text-color);
+  overflow-wrap: anywhere;
+}
+
+.modalSubtitle {
+  font-size: 12px;
+  color: var(--placeholder-color);
+}
+
+.modalClose {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.12s;
+
+  &:hover {
+    background: var(--bg-light);
+    color: var(--text-color);
+  }
+}
+
+.modalBody {
+  padding: 14px 16px 4px;
+}
+
+// Начислено → на руки с учётом текущей корректировки
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  background: var(--bg-light);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.summaryItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.summaryLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--placeholder-color);
+}
+
+.summaryValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-color);
+  white-space: nowrap;
+}
+
+.summaryValueBonus {
+  color: #16a34a;
+}
+
+.summaryValuePenalty {
+  color: #ef4444;
+}
+
+.summaryArrow {
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--placeholder-color);
+}
+
+.planCell {
+  color: var(--text-secondary);
+}
+
+.planStack {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.planHours {
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+.scheduleCell {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 110px;
+}
+
+.scheduleName {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.scheduleType {
+  font-size: 11px;
+  color: var(--placeholder-color);
+}
+
+.modeSwitch {
+  display: flex;
+  gap: 6px;
   margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #f1f5f9;
+}
+
+.modeBtn {
+  flex: 1;
+  height: 30px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.12s;
+
+  &:hover {
+    border-color: var(--placeholder-color);
+  }
+}
+
+.modeBtnBonusActive {
+  @extend .modeBtn;
+  border-color: #16a34a;
+  background: #f0fdf4;
+  color: #16a34a;
+
+  &:hover {
+    border-color: #16a34a;
+  }
+}
+
+.modeBtnDeductionActive {
+  @extend .modeBtn;
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #ef4444;
+
+  &:hover {
+    border-color: #ef4444;
+  }
+}
+
+.modeBtnDisabled {
+  @extend .modeBtn;
+  opacity: 0.45;
+  cursor: not-allowed;
+
+  &:hover {
+    border-color: var(--border-subtle);
+  }
+}
+
+.modeNote {
+  margin: -6px 0 12px;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--placeholder-color);
+}
+
+.fieldHint {
+  font-size: 11px;
+  color: var(--placeholder-color);
+  line-height: 1.3;
 }
 
 .popoverField {
@@ -348,19 +715,28 @@
 .fieldLabel {
   font-size: 11px;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+}
+
+.fieldError {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ef4444;
+  line-height: 1.3;
 }
 
 .popoverInput {
   width: 100%;
   height: 32px;
   padding: 0 8px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
   font-size: var(--font-small);
   font-family: inherit;
+  background: var(--input-bg);
+  color: var(--text-color);
   box-sizing: border-box;
   transition: border-color 0.15s;
 
@@ -377,7 +753,7 @@
 
 .hint {
   font-size: 11px;
-  color: #94a3b8;
+  color: var(--placeholder-color);
 }
 
 .radioGroup {
@@ -393,7 +769,7 @@
   gap: 8px;
   padding: 6px 8px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
   cursor: pointer;
   font-size: var(--font-small);
   transition: all 0.12s;
@@ -404,8 +780,8 @@
   }
 
   &:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: var(--bg-light);
+    border-color: var(--border-color);
   }
 
   &.radioActive {
@@ -425,24 +801,23 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  margin-top: 12px;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .cancelBtn {
   padding: 5px 14px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  background: white;
-  color: #64748b;
+  background: var(--card-bg);
+  color: var(--text-secondary);
   font-size: var(--font-small);
   font-family: inherit;
   cursor: pointer;
   transition: all 0.12s;
 
   &:hover {
-    background: #f1f5f9;
+    background: var(--bg-light);
   }
 }
 

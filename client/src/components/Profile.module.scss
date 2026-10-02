@@ -1,11 +1,11 @@
 .profileWrapper {
   padding: 10px;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid var(--border-subtle);
   position: relative;
 
   &:hover,
   &.active {
-    background: #f9fafb;
+    background: var(--bg-light);
   }
 
   .profile {
@@ -26,8 +26,8 @@
     bottom: calc(100% + 8px);
     left: 10px;
     right: 8px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--card-bg);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     box-shadow:
       0 8px 30px rgba(0, 0, 0, 0.12),
@@ -85,7 +85,7 @@
   .popupName {
     font-size: var(--font-small);
     font-weight: 600;
-    color: #111827;
+    color: var(--text-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -93,7 +93,7 @@
 
   .popupPosition {
     font-size: calc(var(--font-small) - 1px);
-    color: #6b7280;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -102,7 +102,7 @@
 
   .popupDivider {
     height: 1px;
-    background: #f3f4f6;
+    background: var(--border-subtle);
     margin: 0;
   }
 
@@ -121,17 +121,17 @@
     border-radius: 8px;
     cursor: pointer;
     font-size: 13px;
-    color: #374151;
+    color: var(--text-color);
     text-align: left;
     transition: background 0.1s;
 
     svg {
-      color: #6b7280;
+      color: var(--text-secondary);
       flex-shrink: 0;
     }
 
     &:hover {
-      background: #f3f4f6;
+      background: var(--bg-light);
     }
 
     &.popupItemDanger {
@@ -179,7 +179,7 @@
     .profileName {
       font-size: var(--font-small);
       font-weight: 600;
-      color: #111827;
+      color: var(--text-color);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -187,7 +187,7 @@
 
     .profileRole {
       font-size: calc(var(--font-small) - 1px);
-      color: #9ca3af;
+      color: var(--placeholder-color);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -214,6 +214,60 @@
       left: 10px;
       right: 8px;
       width: 240px;
+    }
+  }
+}
+
+// ─── Профиль в горизонтальной панели ──────────────────────────────────────────
+
+.profileWrapper.inTopBar {
+  flex: 0 0 auto;
+  border-top: none;
+  padding: 2px;
+
+  .profile {
+    gap: 8px;
+  }
+
+  .profileAvatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+
+  // ФИО и должность рядом с аватаркой (показываются, если есть место)
+  .profileInfo {
+    flex: 0 1 auto;
+    max-width: 160px;
+    gap: 0;
+
+    .profileName {
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .profileRole {
+      font-size: 11px;
+      line-height: 1.25;
+    }
+  }
+
+  &:hover,
+  &.active {
+    background: transparent;
+  }
+
+  // Попап раскрывается вниз и прижат к правому краю
+  .popup {
+    top: calc(100% + 8px);
+    bottom: auto;
+    left: auto;
+    right: 0;
+    width: 240px;
+    transform: translateY(-6px) scale(0.98);
+
+    &.popupVisible {
+      transform: translateY(0) scale(1);
     }
   }
 }
