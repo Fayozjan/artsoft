@@ -13,6 +13,8 @@ export const AuthModel = {
         theme: true,
         sidebar: true,
         status: true,
+        access_level: true,
+        employee_id: true,
         employee: {
           select: {
             first_name: true,
@@ -55,6 +57,14 @@ export const AuthModel = {
     return prisma.users.update({
       where: { id: userId },
       data: { language },
+    });
+  },
+
+  updateUserTheme: async (userId, theme) => {
+    const prisma = prismaContext.get();
+    return prisma.users.update({
+      where: { id: userId },
+      data: { theme },
     });
   },
 
@@ -122,7 +132,18 @@ export const AuthModel = {
     const prisma = prismaContext.get();
     return prisma.users.findUnique({
       where: { id: userId },
-      select: { id: true, username: true },
+      select: {
+        id: true,
+        username: true,
+        language: true,
+        theme: true,
+        sidebar: true,
+        access_level: true,
+        employee_id: true,
+        employee: {
+          select: { first_name: true, last_name: true, middle_name: true, photo: true, position: { select: { name: true } } },
+        },
+      },
     });
   },
 };

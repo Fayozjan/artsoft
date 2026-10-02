@@ -42,6 +42,27 @@ export const TimeOffModel = {
     });
   },
 
+  // Табель: без include employee/branch/addedBy — только поля, которые реально
+  // читает generateAttendanceReport.
+  getAllLean: async ({ where }) => {
+    const prisma = prismaContext.get();
+
+    return prisma.time_off.findMany({
+      where,
+      orderBy: { id: "desc" },
+      select: {
+        id: true,
+        employee_id: true,
+        date_from: true,
+        date_to: true,
+        type: true,
+        reason: true,
+        is_company_paid: true,
+        credited_hours: true,
+      },
+    });
+  },
+
   getById: async (id) => {
     const prisma = prismaContext.get();
 

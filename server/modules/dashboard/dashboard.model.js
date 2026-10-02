@@ -1,5 +1,28 @@
 import { prismaContext } from "../../utils/prismaContext.js";
 
+const taskSelect = {
+  id: true,
+  title: true,
+  status: true,
+  priority: true,
+  deadline: true,
+  created_at: true,
+  published_at: true,
+  assignee_employee: {
+    select: {
+      id: true,
+      first_name: true,
+      last_name: true,
+      photo: true,
+      branch: { select: { name: true } },
+      department: { select: { name: true } },
+    },
+  },
+  assignee_department: { select: { id: true, name: true } },
+  assignee_position: { select: { id: true, name: true } },
+  assignee_user: { select: { id: true, username: true } },
+};
+
 export const DashboardModel = {
   // ===== SUMMARY =====
 
@@ -242,16 +265,16 @@ export const DashboardModel = {
     return Object.values(hourMap);
   },
 
-  hiringDynamics: async (months) => {
+  hiringDynamics: async (months, orderWhere = {}) => {
     const prisma = prismaContext.get();
     const results = await Promise.all(
       months.map(async ({ start, end, label }) => {
         const [hired, terminated] = await Promise.all([
           prisma.employment_orders.count({
-            where: { date: { gte: start, lte: end }, type: "hire" },
+            where: { date: { gte: start, lte: end }, type: "hire", ...orderWhere },
           }),
           prisma.employment_orders.count({
-            where: { date: { gte: start, lte: end }, type: "terminate" },
+            where: { date: { gte: start, lte: end }, type: "terminate", ...orderWhere },
           }),
         ]);
         return { month: label, hired, terminated };
@@ -636,31 +659,6 @@ export const DashboardModel = {
     });
   },
 
-  recentAdvances: async (limit = 10, employeeWhere = {}) => {
-    const prisma = prismaContext.get();
-    return prisma.salary_advances.findMany({
-      where: { employee: { status: true, ...employeeWhere } },
-      orderBy: { advance_date: "desc" },
-      take: limit,
-      select: {
-        id: true,
-        amount: true,
-        advance_date: true,
-        note: true,
-        employee: {
-          select: {
-            id: true,
-            first_name: true,
-            last_name: true,
-            middle_name: true,
-            branch: { select: { name: true } },
-            department: { select: { name: true } },
-          },
-        },
-      },
-    });
-  },
-
   salaryByBranch: async (employeeWhere = {}) => {
     const prisma = prismaContext.get();
     const employees = await prisma.employees.findMany({
@@ -711,16 +709,16 @@ export const DashboardModel = {
     return Object.values(map).sort((a, b) => b.total - a.total);
   },
 
-  hiringDynamicsByDay: async (days) => {
+  hiringDynamicsByDay: async (days, orderWhere = {}) => {
     const prisma = prismaContext.get();
     const results = await Promise.all(
       days.map(async ({ start, end, label }) => {
         const [hired, terminated] = await Promise.all([
           prisma.employment_orders.count({
-            where: { date: { gte: start, lte: end }, type: "hire" },
+            where: { date: { gte: start, lte: end }, type: "hire", ...orderWhere },
           }),
           prisma.employment_orders.count({
-            where: { date: { gte: start, lte: end }, type: "terminate" },
+            where: { date: { gte: start, lte: end }, type: "terminate", ...orderWhere },
           }),
         ]);
         return { date: label, hired, terminated };
@@ -748,11 +746,55 @@ export const DashboardModel = {
             first_name: true,
             last_name: true,
             middle_name: true,
+            photo: true,
             branch: { select: { name: true } },
             department: { select: { name: true } },
           },
         },
       },
+    });
+  },
+
+  // ===== TASKS =====
+
+  countTasks: async (where = {}) => {
+    const prisma = prismaContext.get();
+    return prisma.tasks.count({ where });
+  },
+
+  tasksByStatus: async (where = {}) => {
+    const prisma = prismaContext.get();
+    const rows = await prisma.tasks.groupBy({
+      by: ["status"],
+      where,
+      _count: { _all: true },
+    });
+    return rows
+      .map((r) => ({ status: r.status, count: r._count._all }))
+      .sort((a, b) => b.count - a.count);
+  },
+
+  recentTasks: async (limit = 10, where = {}) => {
+    const prisma = prismaContext.get();
+    return prisma.tasks.findMany({
+      where,
+      orderBy: { created_at: "desc" },
+      take: limit,
+      select: taskSelect,
+    });
+  },
+
+  upcomingTaskDeadlines: async (limit = 10, where = {}, from = new Date()) => {
+    const prisma = prismaContext.get();
+    return prisma.tasks.findMany({
+      where: {
+        ...where,
+        deadline: { gte: from },
+        status: { notIn: ["done", "confirmed", "cancelled"] },
+      },
+      orderBy: { deadline: "asc" },
+      take: limit,
+      select: taskSelect,
     });
   },
 };

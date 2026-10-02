@@ -1,6 +1,4 @@
 import fs from "fs";
-import { format } from "date-fns";
-import { ru } from "date-fns/locale";
 import path from "path";
 import { InputFile } from "grammy";
 import { notificationsOutboxModel } from "../modules/notificationsOutbox/notificationsOutbox.model.js";
@@ -21,8 +19,21 @@ function getQueueForChat(chatId) {
   return queuePerChat.get(chatId);
 }
 
-function toTashkentTime(date) {
-  return new Date(new Date(date).getTime() + 5 * 60 * 60 * 1000);
+const _tashkentFmt = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Asia/Tashkent",
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+function formatTashkentDate(date) {
+  const parts = Object.fromEntries(
+    _tashkentFmt.formatToParts(new Date(date)).map((p) => [p.type, p.value]),
+  );
+  return `${parts.day}.${parts.month}.${parts.year} ${parts.hour}:${parts.minute}`;
 }
 
 const parsePlate = (raw = "") => {
@@ -86,16 +97,37 @@ const parsePlate = (raw = "") => {
 // ─── Построение сообщения из payload ─────────────────────────────────────────
 
 function buildFacePassMessage(payload) {
-  const formattedDate = format(
-    toTashkentTime(payload.date),
-    "dd.MM.yyyy HH:mm",
-    {
-      locale: ru,
-    },
-  );
+  const formattedDate = formatTashkentDate(payload.date);
+
+  const lateLines = [];
+  if (payload.direction === "entry" && payload.late_minutes != null) {
+    if (payload.late_minutes > 0) {
+      const h = Math.floor(payload.late_minutes / 60);
+      const m = payload.late_minutes % 60;
+      const lateStr = h > 0 ? `${h} ч ${m} мин` : `${m} мин`;
+      if (payload.late_type === "break_return") {
+        lateLines.push(
+          `🍽️ <b>Опоздание с обеда:</b> ${lateStr} (конец: ${payload.schedule_start})`,
+        );
+      } else {
+        lateLines.push(
+          `⏰ <b>Опоздание:</b> ${lateStr} (начало: ${payload.schedule_start})`,
+        );
+      }
+    } else {
+      if (payload.late_type === "arrival") {
+        lateLines.push(`✅ <b>Вовремя</b> (начало: ${payload.schedule_start})`);
+      } else if (payload.late_type === "break_return") {
+        lateLines.push(
+          `✅ <b>С обеда вовремя</b> (конец: ${payload.schedule_start})`,
+        );
+      }
+    }
+  }
 
   const text = [
     `${payload.direction === "exit" ? "🔴 Выход" : "🟢 Вход"} ${formattedDate}`,
+    ...lateLines,
     `🚪 <b>Дверь:</b> ${payload.door_name || "—"}`,
     "",
     `👤 <b>ФИО:</b> ${payload.full_name || "—"} (${payload.employee_id})`,
@@ -112,13 +144,7 @@ function buildFacePassMessage(payload) {
 }
 
 function buildAnprPassMessage(payload) {
-  const formattedDate = format(
-    toTashkentTime(payload.date),
-    "dd.MM.yyyy HH:mm",
-    {
-      locale: ru,
-    },
-  );
+  const formattedDate = formatTashkentDate(payload.date);
 
   const directionLabel =
     payload.direction === "forward"

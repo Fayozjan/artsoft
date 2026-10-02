@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { FaceDeviceModel } from "../faceDevices/faceDevices.model.js";
 import { UserModel } from "../users/users.model.js";
 import { FacePassesModel } from "./facePasses.model.js";
@@ -9,9 +10,28 @@ import { fileURLToPath } from "url";
 import { notificationsOutboxService } from "../notificationsOutbox/notificationsOutbox.service.js";
 import { telegramBotsService } from "../telegramBots/telegramBots.service.js";
 import { buildFacePassEmployeeAccess } from "./facePasses.helpers.js";
+import { prismaContext } from "../../utils/prismaContext.js";
+import { timeToMinutes, detectBreakReturnLate } from "../../utils/attendanceUtils.js";
+import { extractMac, resolveEventDirection } from "../../utils/utils.js";
+import { CanteenService } from "../canteen/canteen.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function toTashkentDate(value) {
+  if (!value) return null;
+  const dt = DateTime.fromISO(String(value), { zone: "Asia/Tashkent" });
+  return dt.isValid ? dt.toJSDate() : new Date(value);
+}
+
+function getFacePassNumericPriority(record, s) {
+  const emp = record.employee || {};
+  if (String(record.employee_id) === s) return 1;
+  if (String(emp.employee_number || "") === s) return 2;
+  if ((emp.pinfl || "").includes(s)) return 3;
+  if ((emp.passport || "").toLowerCase().includes(s.toLowerCase())) return 4;
+  return 5;
+}
 
 export async function saveUploadedPhoto(
   imageBuffer,
@@ -60,6 +80,99 @@ export async function saveUploadedPhoto(
   return path.join(tenant, String(year), month, fileName).replace(/\\/g, "/");
 }
 
+export async function calcLateForNotification(employeeId, passDate, passDirection) {
+  if (passDirection !== "entry") return null;
+
+  const prisma = prismaContext.get();
+  const toLocalDate = (d) => new Date(new Date(d).getTime() + 5 * 60 * 60 * 1000);
+  const toLocalYMD = (d) => toLocalDate(d).toISOString().slice(0, 10);
+
+  const localDate = toLocalDate(passDate);
+  const ymd = localDate.toISOString().slice(0, 10);
+
+  // --- расписание ---
+  const history = await prisma.employee_schedule_history.findMany({
+    where: { employee_id: employeeId },
+    include: { workSchedule: true },
+    orderBy: { date_from: "asc" },
+  });
+
+  const record = history.find((h) => {
+    const fromYMD = toLocalYMD(h.date_from);
+    const toYMD = h.date_to ? toLocalYMD(h.date_to) : null;
+    return toYMD ? ymd >= fromYMD && ymd <= toYMD : ymd >= fromYMD;
+  });
+
+  const schedule = record?.workSchedule;
+  if (!schedule || schedule.type === "flexible") return null;
+
+  const { type, late_tolerance_minutes, work_days, shifts } = schedule;
+  let scheduleStart = null;
+  let breakStart = null;
+  let breakEnd = null;
+
+  if (type === "fixed" || type === "remote") {
+    const jsDay = localDate.getUTCDay() === 0 ? 7 : localDate.getUTCDay();
+    const workDay = (work_days || []).find((d) => d.day === jsDay);
+    if (!workDay) return null;
+    scheduleStart = workDay.start ?? null;
+    breakStart = workDay.break_start ?? null;
+    breakEnd = workDay.break_end ?? null;
+  } else if (type === "shift") {
+    const shift = (shifts || [])[0];
+    if (!shift) return null;
+    scheduleStart = shift.start ?? null;
+    breakStart = shift.break_start ?? null;
+    breakEnd = shift.break_end ?? null;
+  }
+
+  if (!scheduleStart) return null;
+
+  // --- все события сотрудника за сегодня ---
+  const dayStart = new Date(`${ymd}T00:00:00+05:00`);
+  const dayEnd = new Date(`${ymd}T23:59:59+05:00`);
+
+  const todayPasses = await prisma.face_passes.findMany({
+    where: { employee_id: employeeId, date: { gte: dayStart, lte: dayEnd } },
+    orderBy: { date: "asc" },
+  });
+
+  if (!todayPasses.length) return null;
+
+  const currentPassMs = new Date(passDate).getTime();
+
+  // Первый вход дня?
+  const priorEntries = todayPasses.filter(
+    (p) => p.direction === "entry" && new Date(p.date).getTime() < currentPassMs,
+  );
+  const isFirstEntry = priorEntries.length === 0;
+
+  if (isFirstEntry) {
+    const scheduleStartMins = timeToMinutes(scheduleStart);
+    const entryMins = localDate.getUTCHours() * 60 + localDate.getUTCMinutes();
+    const lateMinutes = Math.max(0, entryMins - scheduleStartMins - (late_tolerance_minutes || 0));
+    return { type: "arrival", lateMinutes, scheduleStart };
+  }
+
+  // Опоздание после перерыва?
+  if (breakStart && breakEnd) {
+    const events = todayPasses.map((p) => ({
+      direction: p.direction,
+      parsedDate: toLocalDate(p.date),
+    }));
+    const breakResult = detectBreakReturnLate(events, breakStart, breakEnd);
+
+    if (breakResult.lateMinutes > 0 && breakResult.actualReturn) {
+      const currentMins = localDate.getUTCHours() * 60 + localDate.getUTCMinutes();
+      if (Math.abs(timeToMinutes(breakResult.actualReturn) - currentMins) <= 1) {
+        return { type: "break_return", lateMinutes: breakResult.lateMinutes, breakEnd };
+      }
+    }
+  }
+
+  return null;
+}
+
 export const FacePassesService = {
   create: async (payload) => {
     const data = {
@@ -75,26 +188,40 @@ export const FacePassesService = {
     return FacePassesModel.create(data);
   },
 
-  createFromDeviceEvent: async (payload, files, tenant) => {
-    const device = await FaceDeviceModel.findByIp(payload.ipAddress);
-    if (!device) throw new Error("Face device не найден в базе данных");
-
+  createFromDeviceEvent: async (payload, files, tenant, deviceId) => {
     const event = payload.AccessControllerEvent;
 
     if (!event) throw new Error("AccessControllerEvent отсутствует в payload");
 
-    let direction = device.direction ?? null;
+    const mac = extractMac(payload);
+    const serial = payload.shortSerialNumber ?? payload.serialNumber ?? null;
+    const device = await FaceDeviceModel.findForEvent({
+      deviceId,
+      mac,
+      serial,
+      ip: payload.ipAddress,
+    });
+
+    // Не throw: на 500 прошивка уходит в бесконечный ретрай и забивает лог
+    // одним событием. Отвечаем 200, событие дотянет cron events_sync.
+    if (!device) {
+      return {
+        success: false,
+        deviceNotFound: true,
+        mac,
+        serial,
+        ip: payload.ipAddress,
+        employeeNoString: event.employeeNoString,
+        serialNo: event.serialNo,
+      };
+    }
+
+    // MAC дописываем разово, при первом опознании — дальше устройство
+    // найдётся по нему, даже если DHCP выдаст другой IP.
+    await FaceDeviceModel.rememberMac(device, mac);
 
     // --- определяем направление ---
-    if (direction === "universal") {
-      if (event.attendanceStatus === "checkIn") {
-        direction = "entry";
-      } else if (event.attendanceStatus === "checkOut") {
-        direction = "exit";
-      } else {
-        direction = null;
-      }
-    }
+    const direction = resolveEventDirection(device, event);
 
     const doorId = device.door_id;
     const faceDeviceId = device.id;
@@ -106,24 +233,47 @@ export const FacePassesService = {
 
       photoPath = await saveUploadedPhoto(
         imageBuffer,
-        event.dateTime,
+        payload.dateTime,
         event.employeeNoString,
         event.serialNo,
         tenant,
       );
-
-      // удаляем временный файл
-      await fs.promises.unlink(tmpFile.path);
+      // временный файл удаляет контроллер (в finally)
     }
 
     if (!event.employeeNoString)
       throw new Error("employeeNoString отсутствует");
 
+    const employeeId = Number(event.employeeNoString);
+    if (
+      !Number.isInteger(employeeId) ||
+      employeeId > 2147483647 ||
+      employeeId < 1
+    ) {
+      console.log(
+        "employeeNoString out of INT4 range, skipping:",
+        event.employeeNoString,
+      );
+      return { success: true, notFound: true };
+    }
+
+    // --- терминал столовой ---
+    // Проход не фиксируем: событие такого устройства означает выдачу порции.
+    if (device.purpose === "canteen") {
+      return CanteenService.registerFromDeviceEvent({
+        employeeId,
+        faceDeviceId,
+        date: payload.dateTime ? new Date(payload.dateTime) : new Date(),
+        identifier: `${event.employeeNoString}-${event.serialNo}`,
+        photo: photoPath,
+      });
+    }
+
     // --- формируем данные ---
     const data = {
-      date: payload.dateTime,
+      date: payload.dateTime ? new Date(payload.dateTime) : new Date(),
       identifier: `${event.employeeNoString}-${event.serialNo}`,
-      employee_id: Number(event.employeeNoString),
+      employee_id: employeeId,
       door_id: doorId,
       face_devices_id: faceDeviceId,
       direction,
@@ -152,6 +302,13 @@ export const FacePassesService = {
 
     // --- уведомления в телеграм ---
     try {
+      const lateInfo = await calcLateForNotification(data.employee_id, newPass.date, direction);
+      if (lateInfo) {
+        newPass._lateMinutes = lateInfo.lateMinutes;
+        newPass._lateType = lateInfo.type;
+        newPass._scheduleStart = lateInfo.scheduleStart ?? lateInfo.breakEnd;
+      }
+
       const employeeSubscribers = await telegramBotsService.getEventAlertBots();
       const chats = employeeSubscribers.get(data.employee_id);
 
@@ -175,6 +332,12 @@ export const FacePassesService = {
   ) => {
     const user = await UserModel.getById(Number(userId));
     if (!user) throw new Error("Пользователь не найден");
+
+    // право «Начать / Завершить работу» выдаёт администратор в карточке логина
+    if (!user.telegram_work_punch)
+      throw new Error(
+        "Отметка начала и завершения работы через телеграм приложение не разрешена",
+      );
 
     // --- определяем door_id по геолокации сотрудника ---
     const employee = await EmployeeModel.getById(user.employee_id);
@@ -303,6 +466,14 @@ export const FacePassesService = {
     // --- уведомления в телеграм ---
     if (newPass) {
       try {
+        if (direction === "entry") {
+          const lateInfo = await calcLateForEntry(data.employee_id, newPass.date);
+          if (lateInfo) {
+            newPass._lateMinutes = lateInfo.lateMinutes;
+            newPass._scheduleStart = lateInfo.scheduleStart;
+          }
+        }
+
         const employeeSubscribers =
           await telegramBotsService.getEventAlertBots();
         const chats = employeeSubscribers.get(data.employee_id);
@@ -343,8 +514,8 @@ export const FacePassesService = {
     // Дата
     if (start_date || end_date) {
       where.date = {};
-      if (start_date) where.date.gte = new Date(start_date);
-      if (end_date) where.date.lte = new Date(end_date);
+      if (start_date) where.date.gte = toTashkentDate(start_date);
+      if (end_date) where.date.lte = toTashkentDate(end_date);
     }
 
     // Фильтры по сотруднику
@@ -354,14 +525,30 @@ export const FacePassesService = {
     if (position_id) employeeWhere.position_id = Number(position_id);
     if (Object.keys(employeeWhere).length) where.employee = employeeWhere;
     if (search) {
-      where.OR = [
-        { employee_id: isNaN(Number(search)) ? undefined : Number(search) },
-        { employee: { first_name: { contains: search, mode: "insensitive" } } },
-        { employee: { last_name: { contains: search, mode: "insensitive" } } },
-        {
-          employee: { middle_name: { contains: search, mode: "insensitive" } },
-        },
-      ];
+      const s = search.toString().trim();
+      const isNumericSearch = /^\d+$/.test(s);
+      const numericValue = isNumericSearch ? Number(s) : NaN;
+      const isValidInt4 =
+        isNumericSearch &&
+        Number.isInteger(numericValue) &&
+        numericValue >= -2147483648 &&
+        numericValue <= 2147483647;
+
+      const orConditions = [];
+      if (isValidInt4) orConditions.push({ employee_id: numericValue });
+      orConditions.push(
+        { employee: { first_name: { contains: s, mode: "insensitive" } } },
+        { employee: { last_name: { contains: s, mode: "insensitive" } } },
+        { employee: { middle_name: { contains: s, mode: "insensitive" } } },
+      );
+      if (isNumericSearch) {
+        orConditions.push(
+          { employee: { employee_number: { contains: s } } },
+          { employee: { pinfl: { contains: s } } },
+          { employee: { passport: { contains: s, mode: "insensitive" } } },
+        );
+      }
+      where.OR = orConditions;
     }
 
     // Остальные фильтры
@@ -379,15 +566,21 @@ export const FacePassesService = {
     const currentPage = Math.max(parseInt(page) || 1, 1);
     const size = Math.max(parseInt(pageSize) || 50, 1);
     const skip = (currentPage - 1) * size;
+    const isNumericSearch = search && /^\d+$/.test(search.toString().trim());
 
     const { records, total } = await FacePassesModel.find({
       where,
-      skip,
-      take: size,
+      skip: isNumericSearch ? 0 : skip,
+      take: isNumericSearch ? 100000 : size,
     });
 
+    if (isNumericSearch && records.length > 0) {
+      const s = search.toString().trim();
+      records.sort((a, b) => getFacePassNumericPriority(a, s) - getFacePassNumericPriority(b, s));
+    }
+
     return {
-      data: records,
+      data: isNumericSearch ? records.slice(skip, skip + size) : records,
       pagination: {
         totalItems: total,
         currentPage,
@@ -421,8 +614,8 @@ export const FacePassesService = {
     // --- Фильтр по дате ---
     if (start_date || end_date) {
       where.date = {};
-      if (start_date) where.date.gte = new Date(start_date);
-      if (end_date) where.date.lte = new Date(end_date);
+      if (start_date) where.date.gte = toTashkentDate(start_date);
+      if (end_date) where.date.lte = toTashkentDate(end_date);
     }
 
     // --- Фильтры по сотруднику (branch, dep, position) ---
@@ -524,12 +717,68 @@ export const FacePassesService = {
     return grouped;
   },
 
+  // Табель: employeeIds уже отфильтрованы/авторизованы на уровне EmployeeService.getAll,
+  // поэтому здесь без повторного join'а к employees — employeesById/historyByEmployee
+  // передаёт вызывающая сторона (уже загружены один раз для страницы).
+  getAllLean: async ({ employeeIds, startDate, endDate, employeesById, historyByEmployee }) => {
+    if (!employeeIds?.length) return [];
+
+    const where = { employee_id: { in: employeeIds.map(Number) } };
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) where.date.gte = toTashkentDate(startDate);
+      if (endDate) where.date.lte = toTashkentDate(endDate);
+    }
+
+    const records = await FacePassesModel.findForTimesheet({ where });
+
+    const grouped = new Map();
+    for (const item of records) {
+      const id = item.employee_id;
+
+      if (!grouped.has(id)) {
+        const emp = employeesById.get(id) || {};
+
+        grouped.set(id, {
+          employeeId: id,
+          employeeNumber: emp.employee_number,
+          employeeFullName:
+            [emp.last_name, emp.first_name, emp.middle_name]
+              .filter(Boolean)
+              .join(" ") + ` (${id})`,
+          employeePhoto: emp.photo,
+          branchName: emp.branch?.name || null,
+          departmentName: emp.department?.name || null,
+          positionName: emp.position?.name || null,
+          pinfl: emp.pinfl || null,
+          workScheduleName: emp.workSchedule?.name || null,
+          workSchedule: historyByEmployee.get(id) || [],
+          events: [],
+        });
+      }
+
+      grouped.get(id).events.push({
+        id: item.id,
+        date: item.date,
+        identifier: item.identifier,
+        direction: item.direction,
+        doorName: item.door?.name || null,
+        photo: item.photo || null,
+      });
+    }
+
+    return Array.from(grouped.values());
+  },
+
   getById: async (id) => {
     return FacePassesModel.getById(Number(id));
   },
 
   updateById: async (id, data) => {
-    return FacePassesModel.updateById(Number(id), data);
+    const payload = {};
+    if (data.date) payload.date = new Date(data.date);
+
+    return FacePassesModel.updateById(Number(id), payload);
   },
 
   deleteById: async (id) => {

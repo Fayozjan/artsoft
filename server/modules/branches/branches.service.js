@@ -1,6 +1,7 @@
 import { UserModel } from "../users/users.model.js";
 import { buildBranchAccess } from "./branches.helpers.js";
 import { BranchModel } from "./branches.model.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 export const BranchService = {
   create: async (data, userId) => {
@@ -23,6 +24,10 @@ export const BranchService = {
       inn: data.inn || null,
       mfo: data.mfo || null,
       status: data.status ?? true,
+      sort_order:
+        data.sort_order !== undefined && data.sort_order !== ""
+          ? parseInt(data.sort_order, 10)
+          : 0,
       addedBy: { connect: { id: Number(userId) } },
     };
 
@@ -30,7 +35,9 @@ export const BranchService = {
       branchData.director = { connect: { id: Number(data.director_id) } };
     }
 
-    return BranchModel.create(branchData);
+    const result = await BranchModel.create(branchData);
+    await createAuditLog({ userId, action: "create", entity: "branches", recordId: result.id, newData: result });
+    return result;
   },
 
   listActive: async ({ userId }) => {
@@ -46,6 +53,7 @@ export const BranchService = {
         name: b.name,
         address: b.address,
         status: b.status,
+        sort_order: b.sort_order,
         departments: b.departments,
         activeEmployeesCount: b._count.employees,
       })),
@@ -81,6 +89,7 @@ export const BranchService = {
       bank_account: b.bank_account,
       inn: b.inn,
       mfo: b.mfo,
+      sort_order: b.sort_order,
       addedBy: b.addedBy?.employee
         ? `${b.addedBy.employee.last_name || ""} ${b.addedBy.employee.first_name || ""}`.trim()
         : "",
@@ -106,7 +115,7 @@ export const BranchService = {
 
   getById: async (id) => BranchModel.findById(parseInt(id, 10)),
 
-  update: async (id, data) => {
+  update: async (id, data, userId) => {
     const branchId = parseInt(id, 10);
     if (isNaN(branchId)) throw new Error("Invalid branch ID");
     if (!data.name || data.name.trim() === "")
@@ -119,6 +128,8 @@ export const BranchService = {
       throw error;
     }
 
+    const old = await BranchModel.findById(branchId);
+
     const updateData = {
       name: data.name,
       region: data.region || null,
@@ -128,6 +139,10 @@ export const BranchService = {
       inn: data.inn || null,
       mfo: data.mfo || null,
       status: data.status ?? true,
+      sort_order:
+        data.sort_order !== undefined && data.sort_order !== ""
+          ? parseInt(data.sort_order, 10)
+          : 0,
     };
 
     if (data.director_id && data.director_id.trim() !== "") {
@@ -136,10 +151,18 @@ export const BranchService = {
       updateData.director = { disconnect: true };
     }
 
-    return BranchModel.update(branchId, updateData);
+    const result = await BranchModel.update(branchId, updateData);
+    await createAuditLog({ userId, action: "update", entity: "branches", recordId: branchId, oldData: old, newData: result });
+    return result;
   },
 
-  remove: async (id) => BranchModel.delete(parseInt(id, 10)),
+  remove: async (id, userId) => {
+    const branchId = parseInt(id, 10);
+    const old = await BranchModel.findById(branchId);
+    const result = await BranchModel.delete(branchId);
+    await createAuditLog({ userId, action: "delete", entity: "branches", recordId: branchId, oldData: old });
+    return result;
+  },
 
   isInUse: async (branchId) =>
     BranchModel.isBranchInUse(parseInt(branchId, 10)),

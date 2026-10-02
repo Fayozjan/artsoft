@@ -9,9 +9,11 @@ router.use(tenantMiddleware);
 router.use(authMiddleware);
 
 router.get("/", EmploymentOrdersController.getAll);
+router.get("/stats", EmploymentOrdersController.getStats);
 router.get("/employee/:id", EmploymentOrdersController.getByEmployeeId);
 router.get("/:id", EmploymentOrdersController.getById);
 router.post("/", EmploymentOrdersController.create);
+router.post("/bulk", EmploymentOrdersController.bulkCreate);
 router.put("/:id", EmploymentOrdersController.update);
 router.delete("/:id", EmploymentOrdersController.delete);
 

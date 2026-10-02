@@ -3,6 +3,7 @@ import { authMiddleware } from "../../middlewares/authMiddleware.js";
 import {
   getTimesheet,
   getTimesheetByEmployees,
+  recalculateTimesheet,
 } from "./timesheet.controller.js";
 import { tenantMiddleware } from "../../middlewares/tenantMiddleware.js";
 
@@ -13,5 +14,6 @@ router.use(authMiddleware);
 
 router.get("/", getTimesheet);
 router.post("/by-employees", getTimesheetByEmployees);
+router.post("/recalculate", recalculateTimesheet);
 
 export default router;

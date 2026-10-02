@@ -22,6 +22,37 @@ export function getDateRange(mode, date) {
   return { startDate, endDate };
 }
 
+/** Произвольный период: с начала дня date_from по конец дня date_to */
+export function getPeriodRange(dateFrom, dateTo) {
+  const from = DateTime.fromISO(String(dateFrom), { zone: "Asia/Tashkent" });
+  const to = DateTime.fromISO(String(dateTo), { zone: "Asia/Tashkent" });
+
+  if (!from.isValid || !to.isValid) throw new Error("Invalid date");
+  if (to < from) throw new Error("date_to раньше date_from");
+
+  return {
+    startDate: from.startOf("day").toJSDate(),
+    endDate: to.endOf("day").toJSDate(),
+  };
+}
+
+/** Список "yyyy-MM", которые пересекает период — для сумм штрафов из payroll */
+export function getMonthsInRange(dateFrom, dateTo) {
+  const from = DateTime.fromISO(String(dateFrom), { zone: "Asia/Tashkent" });
+  const to = DateTime.fromISO(String(dateTo), { zone: "Asia/Tashkent" });
+
+  if (!from.isValid || !to.isValid) throw new Error("Invalid date");
+
+  const months = [];
+  let cursor = from.startOf("month");
+  const last = to.startOf("month");
+  while (cursor <= last) {
+    months.push(cursor.toFormat("yyyy-MM"));
+    cursor = cursor.plus({ months: 1 });
+  }
+  return months;
+}
+
 export function getMonthRangeFromDate(date) {
   const dt =
     typeof date === "string"
@@ -34,6 +65,22 @@ export function getMonthRangeFromDate(date) {
     monthStartDate: dt.startOf("month").toJSDate(),
     monthEndDate: dt.endOf("month").toJSDate(),
   };
+}
+
+/**
+ * "YYYY-MM" в таймзоне Ташкента. Ключи сессий строятся в UTC+5, поэтому брать
+ * месяц через Date#getMonth() нельзя: на сервере в UTC начало месяца
+ * (2026-08-01T00:00+05 = 2026-07-31T19:00Z) отдаст предыдущий месяц.
+ */
+export function getYearMonth(date) {
+  const dt =
+    typeof date === "string"
+      ? DateTime.fromISO(date, { zone: "Asia/Tashkent" })
+      : DateTime.fromJSDate(date, { zone: "Asia/Tashkent" });
+
+  if (!dt.isValid) throw new Error("Invalid date");
+
+  return dt.toFormat("yyyy-MM");
 }
 
 const parseHHMM = (str) => {
@@ -125,7 +172,28 @@ export const findLateEmployeesByDay = (data, targetDate, includeLunchLate = fals
   return lateEmployees;
 };
 
-export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunchLate = false) => {
+// range = { from: "YYYY-MM-DD", to: "YYYY-MM-DD" } — режим «за период»: сессии
+// могут выходить за границы выборки на стыке суток, поэтому отсекаем по ключу дня
+const isOutOfRange = (dayKey, range) =>
+  range && (dayKey < range.from || dayKey > range.to);
+
+// totalWorkedDays из отчёта считается по всем сессиям сотрудника (в режиме
+// «за период» отчёт не режется по месяцу), поэтому для периода отработанные
+// дни пересчитываем по сессиям внутри выбранного диапазона
+const countAttendedDaysInRange = (sessions, range) =>
+  Object.entries(sessions || {}).filter(
+    ([dayKey, s]) =>
+      !isOutOfRange(dayKey, range) &&
+      (s?.hadAttendance || (s?.workDuration && s.workDuration !== "00:00")),
+  ).length;
+
+export const findLateEmployeesByMonth = (
+  data,
+  _calendar,
+  _timeOffs,
+  includeLunchLate = false,
+  range = null,
+) => {
   const grouped = {};
 
   data.forEach((employee) => {
@@ -139,11 +207,15 @@ export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunc
       positionName,
       workScheduleName,
       sessions,
+      totalScheduledDays,
+      totalWorkedDays,
     } = employee;
 
     if (!sessions) return;
 
     Object.entries(sessions).forEach(([dayKey, session]) => {
+      if (isOutOfRange(dayKey, range)) return;
+
       const {
         firstEntry,
         events,
@@ -180,6 +252,13 @@ export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunc
           departmentName,
           positionName,
           workScheduleName,
+          // Плановые дни по графику и дни с отметкой — знаменатель для опозданий
+          monthlyWorkDays: totalScheduledDays || 0,
+          monthlyAttendedDays: range
+            ? countAttendedDaysInRange(sessions, range)
+            : totalWorkedDays || 0,
+          // Фото с последнего опоздания — запасной аватар, если нет фото в анкете
+          lastLatePhoto: null,
           monthlyArrivalLateCount: 0,
           monthlyLunchLateCount: 0,
           monthlyLateMinutes: 0,
@@ -189,6 +268,8 @@ export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunc
       }
 
       const target = grouped[employeeId];
+      // Дни идут по возрастанию — последнее присвоение = самое свежее фото
+      if (firstEntryEvent?.photo) target.lastLatePhoto = firstEntryEvent.photo;
       if (lateMinutes > 0) target.monthlyArrivalLateCount += 1;
       if (breakReturnLateMinutes > 0) target.monthlyLunchLateCount += 1;
       target.monthlyLateMinutes += lateMinutes;
@@ -220,7 +301,13 @@ export const findLateEmployeesByMonth = (data, _holidays, _timeOffs, includeLunc
   return Object.values(grouped);
 };
 
-export const findLateByBranchAndDay = (data, _holidays, _timeOffs, includeLunchLate = false) => {
+export const findLateByBranchAndDay = (
+  data,
+  _calendar,
+  _timeOffs,
+  includeLunchLate = false,
+  range = null,
+) => {
   const branchData = {};
 
   data.forEach((employee) => {
@@ -239,6 +326,8 @@ export const findLateByBranchAndDay = (data, _holidays, _timeOffs, includeLunchL
     if (!sessions) return;
 
     Object.entries(sessions).forEach(([dayKey, session]) => {
+      if (isOutOfRange(dayKey, range)) return;
+
       const {
         firstEntry,
         events,

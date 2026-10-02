@@ -1,3 +1,8 @@
+import {
+  buildCalendarContext,
+  emptyCalendarContext,
+} from "./productionCalendar.utils.js";
+
 export function processEvents() {}
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
@@ -25,9 +30,16 @@ function formatTime(date) {
     .join(":");
 }
 
-function timeToMinutes(timeStr) {
+export function timeToMinutes(timeStr) {
   const [h, m] = timeStr.split(":").map(Number);
   return h * 60 + m;
+}
+
+/** Пересечение [aStart, aEnd] и [bStart, bEnd] (минуты) → { start, end } или null */
+function intersectMinutes(aStart, aEnd, bStart, bEnd) {
+  const start = Math.max(aStart, bStart);
+  const end = Math.min(aEnd, bEnd);
+  return end > start ? { start, end } : null;
 }
 
 function dateToYMD(date) {
@@ -91,7 +103,7 @@ function getScheduledSecondsForDate(date, workSchedule) {
 
   const startMins = timeToMinutes(shift.start);
   const endMins = timeToMinutes(shift.end);
-  const breakMins = shift.break_minutes || 0;
+  const breakMins = resolveBreakMinutes(shift);
   const durationMins =
     endMins > startMins ? endMins - startMins : endMins + 24 * 60 - startMins;
 
@@ -100,7 +112,7 @@ function getScheduledSecondsForDate(date, workSchedule) {
 
 /**
  * Вычисляет количество минут перерыва по break_start/break_end.
- * Если они не заданы — возвращает fallback (break_minutes).
+ * Если они не заданы — перерыв не учитывается (legacy break_minutes игнорируется).
  */
 function resolveBreakMinutes(shift) {
   if (shift?.break_start && shift?.break_end) {
@@ -109,7 +121,7 @@ function resolveBreakMinutes(shift) {
       timeToMinutes(shift.break_end) - timeToMinutes(shift.break_start),
     );
   }
-  return shift?.break_minutes || 0;
+  return 0;
 }
 
 /**
@@ -150,7 +162,7 @@ export function calcBreakOverlap(
  * Пример A (баг): выход 11:46, возврат 13:38 → опоздание 38 мин.
  * Пример B (не обед): выход 14:00, возврат 15:00 → 0 мин (exit ≥ breakEnd).
  */
-function detectBreakReturnLate(events, breakStart, breakEnd) {
+export function detectBreakReturnLate(events, breakStart, breakEnd) {
   if (!breakStart || !breakEnd) return { lateMinutes: 0, actualReturn: null };
 
   const breakStartMins = timeToMinutes(breakStart);
@@ -279,12 +291,38 @@ function calculateWorkDuration(events, MAX_GAP) {
 }
 
 /**
- * Считает количество рабочих дней по графику в диапазоне [fromDate, toDate].
- * Используется для вычисления плановых дней на сервере.
+ * Приводит аргумент к контексту производственного календаря.
+ * Принимает либо готовый контекст (buildCalendarContext), либо сырой массив
+ * переопределений production_calendar, либо ничего.
  */
-export function countScheduledDays(fromDate, toDate, workSchedule) {
-  if (!workSchedule?.length) return 0;
+function toCalendarContext(calendar) {
+  if (!calendar) return emptyCalendarContext();
+  if (calendar.nonWorkingDays instanceof Set) return calendar;
+  if (Array.isArray(calendar)) return buildCalendarContext(calendar);
+  return emptyCalendarContext();
+}
 
+/**
+ * Плановые секунды дня: база — график сотрудника, календарь только правит.
+ *   holiday/weekend → 0 (нерабочий день для всех)
+ *   short           → минус short_minutes (не ниже нуля)
+ */
+function getCalendarAdjustedSeconds(date, workSchedule, calendar) {
+  const key = dateToYMD(date);
+
+  if (calendar.nonWorkingDays.has(key)) return 0;
+
+  const seconds = getScheduledSecondsForDate(date, workSchedule);
+  if (seconds === 0) return 0;
+
+  const cut = calendar.shortMinutes.get(key);
+  if (cut) return Math.max(0, seconds - cut * 60);
+
+  return seconds;
+}
+
+/** Итерирует дни диапазона [fromDate, toDate] в координатах UTC+5 */
+function forEachDayUTC5(fromDate, toDate, fn) {
   const from = toUTCPlus5(new Date(fromDate));
   const to = toUTCPlus5(new Date(toDate));
 
@@ -296,52 +334,88 @@ export function countScheduledDays(fromDate, toDate, workSchedule) {
     Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()),
   );
 
-  let count = 0;
-  for (
-    let d = new Date(fromDay);
-    d <= toDay;
-    d.setUTCDate(d.getUTCDate() + 1)
-  ) {
+  for (let d = new Date(fromDay); d <= toDay; d.setUTCDate(d.getUTCDate() + 1)) {
     // Сдвигаем на +5ч чтобы getUTCDay() вернул правильный день недели в UTC+5
-    const dateUTC5 = toUTCPlus5(d);
-    if (getScheduledSecondsForDate(dateUTC5, workSchedule) > 0) count++;
+    fn(toUTCPlus5(d));
   }
+}
+
+/**
+ * Считает количество рабочих дней по графику в диапазоне [fromDate, toDate].
+ * Используется для вычисления плановых дней на сервере.
+ * calendar — контекст производственного календаря: праздники и выходные
+ * не считаются плановыми, даже если по графику это рабочий день.
+ */
+export function countScheduledDays(fromDate, toDate, workSchedule, calendar) {
+  if (!workSchedule?.length) return 0;
+
+  const ctx = toCalendarContext(calendar);
+  let count = 0;
+
+  forEachDayUTC5(fromDate, toDate, (dateUTC5) => {
+    if (getCalendarAdjustedSeconds(dateUTC5, workSchedule, ctx) > 0) count++;
+  });
+
   return count;
 }
 
 /**
  * Считает суммарные плановые минуты работы по графику в диапазоне [fromDate, toDate].
  * Используется для вычисления нормы часов за месяц.
+ * calendar — контекст производственного календаря: нерабочие дни в норму
+ * не входят, сокращённые входят за вычетом short_minutes.
  */
-export function countScheduledMinutes(fromDate, toDate, workSchedule) {
+/**
+ * Список дней "yyyy-MM-dd" в диапазоне [fromDate, toDate], которые рабочие
+ * по графику сотрудника (с учётом производственного календаря).
+ */
+export function getScheduledDayKeys(fromDate, toDate, workSchedule, calendar) {
+  if (!workSchedule?.length) return [];
+
+  const ctx = toCalendarContext(calendar);
+  const keys = [];
+
+  forEachDayUTC5(fromDate, toDate, (dateUTC5) => {
+    if (getCalendarAdjustedSeconds(dateUTC5, workSchedule, ctx) > 0) {
+      keys.push(dateToYMD(dateUTC5));
+    }
+  });
+
+  return keys;
+}
+
+export function countScheduledMinutes(
+  fromDate,
+  toDate,
+  workSchedule,
+  calendar,
+) {
   if (!workSchedule?.length) return 0;
 
-  const from = toUTCPlus5(new Date(fromDate));
-  const to = toUTCPlus5(new Date(toDate));
-
-  const fromDay = new Date(
-    Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()),
-  );
-  const toDay = new Date(
-    Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()),
-  );
-
+  const ctx = toCalendarContext(calendar);
   let totalSeconds = 0;
-  for (
-    let d = new Date(fromDay);
-    d <= toDay;
-    d.setUTCDate(d.getUTCDate() + 1)
-  ) {
-    const dateUTC5 = toUTCPlus5(d);
-    totalSeconds += getScheduledSecondsForDate(dateUTC5, workSchedule);
-  }
+
+  forEachDayUTC5(fromDate, toDate, (dateUTC5) => {
+    totalSeconds += getCalendarAdjustedSeconds(dateUTC5, workSchedule, ctx);
+  });
+
   return Math.round(totalSeconds / 60);
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 
-export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
+export function generateAttendanceReport(
+  attendanceData,
+  timeOffs,
+  yearMonth,
+  statsDays,
+  calendar,
+) {
   const MAX_GAP = 15 * 60; // 15 минут
+  const statsDaySet = statsDays?.length ? new Set(statsDays) : null;
+  // Производственный календарь: нерабочие дни вычитаются из плановых дней/часов,
+  // сокращённые уменьшают норму месяца
+  const calendarCtx = toCalendarContext(calendar);
 
   // Индексируем отгулы по employee_id
   const timeOffsByEmployee = {};
@@ -485,8 +559,10 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
         const dayTimeOffs = getTimeOffsForDate(date);
 
-        // hour-тип: только часы в пределах рабочего окна по графику
-        let permittedLateMinutes = 0;
+        // hour-тип: интервалы отлучки в пределах рабочего окна по графику
+        // (минуты на шкале смены). Опоздание уменьшается только на ту часть,
+        // что попала между началом смены и приходом — см. расчёт late ниже
+        const permittedIntervals = [];
         let companyPaidHourSeconds = 0;
         dayTimeOffs
           .filter((to) => to.type === "hour")
@@ -496,10 +572,8 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
             let schedWinStart = null;
             let schedWinEnd = null;
-            let hasScheduleType = false;
 
             if (scheduleType === "fixed" || scheduleType === "remote") {
-              hasScheduleType = true;
               const jsDay = date.getDay() === 0 ? 7 : date.getDay();
               const workDay = scheduleForDay?.work_days?.find(
                 (d) => d.day === jsDay,
@@ -509,7 +583,6 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
                 schedWinEnd = timeToMinutes(workDay.end);
               }
             } else if (scheduleType === "shift") {
-              hasScheduleType = true;
               const shift = determineShiftForEvent(
                 fromTime,
                 scheduleForDay?.shifts || [],
@@ -517,30 +590,29 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
               if (shift?.start && shift?.end) {
                 schedWinStart = timeToMinutes(shift.start);
                 schedWinEnd = timeToMinutes(shift.end);
+                // Ночная смена: конец на следующем дне, приводим к единой шкале
+                if (schedWinEnd < schedWinStart) schedWinEnd += 24 * 60;
               }
             }
 
-            let effectiveMinutes;
-            if (!hasScheduleType) {
-              // Нет графика — используем сырую длительность
-              effectiveMinutes = Math.round((toTime - fromTime) / 60000);
-            } else if (schedWinStart !== null && schedWinEnd !== null) {
-              // Пересечение [timeOff.from, timeOff.to] ∩ [schedStart, schedEnd]
-              const fromMins =
-                fromTime.getUTCHours() * 60 + fromTime.getUTCMinutes();
-              const toMins =
-                toTime.getUTCHours() * 60 + toTime.getUTCMinutes();
-              effectiveMinutes = Math.max(
-                0,
-                Math.min(toMins, schedWinEnd) -
-                  Math.max(fromMins, schedWinStart),
-              );
-            } else {
-              // График есть, но нет рабочего окна (нерабочий день) → 0
-              effectiveMinutes = 0;
-            }
+            // Нет графика или нерабочий день — опоздания нет, снимать нечего
+            if (schedWinStart === null || schedWinEnd === null) return;
 
-            permittedLateMinutes += effectiveMinutes;
+            // [timeOff.from, timeOff.to] ∩ [schedStart, schedEnd]
+            const fromMins =
+              fromTime.getUTCHours() * 60 + fromTime.getUTCMinutes();
+            const toMins = toTime.getUTCHours() * 60 + toTime.getUTCMinutes();
+            // Сначала тот же день (ближе к началу смены); +сутки — только
+            // "хвост" ночной смены после полуночи
+            const interval =
+              intersectMinutes(fromMins, toMins, schedWinStart, schedWinEnd) ||
+              intersectMinutes(
+                fromMins + 24 * 60,
+                toMins + 24 * 60,
+                schedWinStart,
+                schedWinEnd,
+              );
+            if (interval) permittedIntervals.push(interval);
           });
 
         const dayOffRecord = dayTimeOffs.find(
@@ -586,16 +658,6 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             breakStart = determinedShift.break_start || null;
             breakEnd = determinedShift.break_end || null;
             breakMinutes = resolveBreakMinutes(determinedShift);
-          }
-        }
-
-        // Lunch anchor fallback: schedules that only have break_minutes (no explicit
-        // break_start/break_end) get the standard 12:00–13:00 window as anchor.
-        // Applied only for day shifts (schedule start strictly before 12:00).
-        if (!breakStart && !breakEnd && breakMinutes > 0 && scheduleStart) {
-          if (timeToMinutes(scheduleStart) < 720) {
-            breakStart = "12:00";
-            breakEnd = "13:00";
           }
         }
 
@@ -652,7 +714,7 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
         // Вычитаем только реальное пересечение сессии с окном перерыва.
         // Если break_start/break_end заданы — считаем точное перекрытие [entry, exit] ∩ [break_start, break_end].
-        // Иначе — откатываемся к полному break_minutes (старое поведение).
+        // Иначе перерыв не учитывается вовсе (breakMinutes = 0 из resolveBreakMinutes).
         let effectiveBreakMins = breakMinutes;
         if (breakStart && breakEnd && firstEntryTime && lastExitTime) {
           const workStartMins =
@@ -698,7 +760,21 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
           const entryMins =
             result.firstEntryEvent.parsedDate.getUTCHours() * 60 +
             result.firstEntryEvent.parsedDate.getUTCMinutes();
-          const rawDiff = Math.max(0, entryMins - timeToMinutes(scheduleStart));
+          const startMins = timeToMinutes(scheduleStart);
+          const rawDiff = Math.max(0, entryMins - startMins);
+          // Отлучка снимает только время между началом смены и приходом
+          const permittedLateMinutes = permittedIntervals.reduce(
+            (sum, iv) => {
+              const overlap = intersectMinutes(
+                iv.start,
+                iv.end,
+                startMins,
+                entryMins,
+              );
+              return sum + (overlap ? overlap.end - overlap.start : 0);
+            },
+            0,
+          );
           late = minutesToLateString(
             Math.max(0, rawDiff - permittedLateMinutes - lateTolerance),
           );
@@ -738,6 +814,7 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
 
         sessionsMap[dayKey] = {
           firstEntry: formatTime(firstEntryTime),
+          firstEntryDoor: result.firstEntryEvent?.doorName || null,
           lastExit: formatTime(lastExitTime),
           workDuration: formatDurationFromSeconds(netSeconds),
           breakMinutes,
@@ -767,6 +844,113 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
             : null,
           paidHourMinutes: Math.round(companyPaidHourSeconds / 60),
         };
+      });
+
+    // ── Шаг 3.5: company-paid "hour" отгул, покрывающий начало смены, при 0 событий за день ──
+    employeeTimeOffs
+      .filter((to) => to.type === "hour" && to.is_company_paid)
+      .forEach((to) => {
+        const fromDate = toUTCPlus5(to.date_from);
+        const toDate = toUTCPlus5(to.date_to);
+
+        for (
+          let d = new Date(fromDate);
+          d <= toDate;
+          d.setUTCDate(d.getUTCDate() + 1)
+        ) {
+          const currentDate = new Date(d);
+          const dayKey = dateToYMD(currentDate);
+
+          if (sessionsMap[dayKey]) continue; // день уже обработан в Шаге 3 (были события)
+
+          const scheduledSecs = getScheduledSecondsForDate(
+            currentDate,
+            data.workSchedule,
+          );
+          if (scheduledSecs === 0) continue; // нерабочий день по графику
+
+          const scheduleForDay = getScheduleForDate(
+            currentDate,
+            data.workSchedule,
+          );
+          const scheduleType = scheduleForDay?.type || null;
+          let scheduleStart = null;
+          let scheduleEnd = null;
+
+          if (scheduleType === "fixed" || scheduleType === "remote") {
+            const jsDay =
+              currentDate.getDay() === 0 ? 7 : currentDate.getDay();
+            const workDay = scheduleForDay?.work_days?.find(
+              (wd) => wd.day === jsDay,
+            );
+            if (!workDay) continue;
+            scheduleStart = workDay.start;
+            scheduleEnd = workDay.end;
+          } else if (scheduleType === "shift") {
+            const shift = determineShiftForEvent(
+              fromDate,
+              scheduleForDay?.shifts || [],
+            );
+            if (!shift) continue;
+            scheduleStart = shift.start;
+            scheduleEnd = shift.end;
+          }
+
+          if (!scheduleStart) continue;
+
+          const fromMins =
+            fromDate.getUTCHours() * 60 + fromDate.getUTCMinutes();
+          const toMins = toDate.getUTCHours() * 60 + toDate.getUTCMinutes();
+          const scheduleStartMins = timeToMinutes(scheduleStart);
+          const scheduleEndMins = scheduleEnd
+            ? timeToMinutes(scheduleEnd)
+            : toMins;
+
+          // Отлучка должна пересекаться с рабочим окном (не обязательно покрывать сам старт смены)
+          const overlapsShift =
+            fromMins < scheduleEndMins && toMins > scheduleStartMins;
+          if (!overlapsShift) continue;
+
+          // Если отлучка начинается позже начала графика — сессия начинается со времени отлучки
+          const effectiveFirstEntry =
+            fromMins > scheduleStartMins
+              ? minutesToLateString(fromMins)
+              : scheduleStart;
+
+          // Оплачиваемое время = пересечение отлучки с рабочим окном графика
+          const paidHourSeconds =
+            Math.max(
+              0,
+              Math.min(toMins, scheduleEndMins) -
+                Math.max(fromMins, scheduleStartMins),
+            ) * 60;
+
+          sessionsMap[dayKey] = {
+            firstEntry: effectiveFirstEntry,
+            firstEntryDoor: null,
+            lastExit: null,
+            workDuration: formatDurationFromSeconds(paidHourSeconds),
+            breakMinutes: 0,
+            shiftType: scheduleType,
+            scheduleStart,
+            scheduleEnd,
+            determinedShift: null,
+            late: null,
+            earlyLeave: null,
+            lateLeave: null,
+            events: [],
+            hadAttendance: true,
+            timeOff: {
+              id: to.id,
+              type: to.type,
+              reason: to.reason,
+              isCompanyPaid: to.is_company_paid,
+              date_from: to.date_from,
+              date_to: to.date_to,
+            },
+            paidHourMinutes: Math.round(paidHourSeconds / 60),
+          };
+        }
       });
 
     // ── Шаг 4: плановые часы за оплачиваемые vacation/day_off ─────────────────
@@ -845,6 +1029,52 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
         }
       });
 
+    // ── Шаг 3.6: отгул НЕ за счёт компании — только информационная пометка ────
+    // (не меняет статус присутствия, просто прикрепляет причину/тип для отображения в "Пришел")
+    employeeTimeOffs
+      .filter((to) => !to.is_company_paid)
+      .forEach((to) => {
+        const fromDate = toUTCPlus5(to.date_from);
+        const toDate = toUTCPlus5(to.date_to);
+
+        for (
+          let d = new Date(fromDate);
+          d <= toDate;
+          d.setUTCDate(d.getUTCDate() + 1)
+        ) {
+          const currentDate = new Date(d);
+          const dayKey = dateToYMD(currentDate);
+
+          if (sessionsMap[dayKey]) continue; // день уже обработан (были события/другой отгул)
+
+          sessionsMap[dayKey] = {
+            firstEntry: null,
+            firstEntryDoor: null,
+            lastExit: null,
+            workDuration: "00:00",
+            breakMinutes: 0,
+            shiftType: null,
+            scheduleStart: null,
+            scheduleEnd: null,
+            determinedShift: null,
+            late: null,
+            earlyLeave: null,
+            lateLeave: null,
+            events: [],
+            hadAttendance: false,
+            timeOff: {
+              id: to.id,
+              type: to.type,
+              reason: to.reason,
+              isCompanyPaid: to.is_company_paid,
+              date_from: to.date_from,
+              date_to: to.date_to,
+            },
+            paidHourMinutes: 0,
+          };
+        }
+      });
+
     // ── Шаг 5: фильтрация по месяцу ───────────────────────────────────────────
     const finalSessions = yearMonth
       ? Object.fromEntries(
@@ -855,12 +1085,22 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
       : sessionsMap;
 
     // ── Шаг 6: итоговая статистика ────────────────────────────────────────────
+    // statsDaySet сужает статистику до конкретных дней месяца (например, недели
+    // при viewMode=week) — сама сетка sessions при этом остаётся за весь месяц
+    const statsSessions = statsDaySet
+      ? Object.fromEntries(
+          Object.entries(finalSessions).filter(([key]) =>
+            statsDaySet.has(Number(key.split("-")[2])),
+          ),
+        )
+      : finalSessions;
+
     let totalLateCount = 0;
     let totalLateSeconds = 0;
     let totalWorkedSeconds = 0;
     let totalOvertimeSeconds = 0;
 
-    Object.values(finalSessions).forEach((s) => {
+    Object.values(statsSessions).forEach((s) => {
       const [h, m] = s.workDuration.split(":").map(Number);
       totalWorkedSeconds += h * 3600 + m * 60;
 
@@ -874,33 +1114,43 @@ export function generateAttendanceReport(attendanceData, timeOffs, yearMonth) {
       totalOvertimeSeconds += overtimeMinutes * 60;
     });
 
-    const totalWorkedDays = Object.values(finalSessions).filter(
+    const totalWorkedDays = Object.values(statsSessions).filter(
       (s) => s.hadAttendance || s.workDuration !== "00:00",
     ).length;
 
-    // Плановые минуты и дни за месяц по графику
+    // Плановые минуты и дни по графику — за месяц целиком, либо за конкретные
+    // дни (statsDaySet), если статистика сужена до недели
     let totalScheduledMinutes = 0;
     let totalScheduledDays = 0;
     if (yearMonth && hasWorkSchedule) {
       const [yr, mo] = yearMonth.split("-").map(Number);
-      const fromDate = new Date(Date.UTC(yr, mo - 1, 1));
-      const toDate = new Date(Date.UTC(yr, mo, 0));
+      let fromDate, toDate;
+      if (statsDaySet) {
+        const days = [...statsDaySet];
+        fromDate = new Date(Date.UTC(yr, mo - 1, Math.min(...days)));
+        toDate = new Date(Date.UTC(yr, mo - 1, Math.max(...days), 23, 59, 59));
+      } else {
+        fromDate = new Date(Date.UTC(yr, mo - 1, 1));
+        toDate = new Date(Date.UTC(yr, mo, 0));
+      }
       totalScheduledMinutes = countScheduledMinutes(
         fromDate,
         toDate,
         data.workSchedule,
+        calendarCtx,
       );
       totalScheduledDays = countScheduledDays(
         fromDate,
         toDate,
         data.workSchedule,
+        calendarCtx,
       );
     }
 
     // Оплачиваемые отгулы
     let totalPaidTimeOffDays = 0;
     let totalPaidTimeOffMinutes = 0;
-    Object.values(finalSessions).forEach((s) => {
+    Object.values(statsSessions).forEach((s) => {
       if (!s.timeOff?.isCompanyPaid) return;
       totalPaidTimeOffDays++;
       if (s.timeOff.type === "hour") {

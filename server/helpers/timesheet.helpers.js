@@ -14,13 +14,13 @@ export function filterSessionsByMonth(data, month) {
 }
 
 // Форматирование результата для Telegram-бота
-export function formatResultForTelegram(data, holidays = []) {
+export function formatResultForTelegram(data, nonWorkingDays = []) {
   return data.map((employee) => {
     const sessions = employee.sessions || [];
 
     const workedDays = sessions.filter((s) => s.status === "worked").length;
     const missedDays = sessions.filter((s) => s.status === "absent").length;
-    const holidayDays = holidays.length;
+    const holidayDays = nonWorkingDays.length;
 
     return {
       employee: {

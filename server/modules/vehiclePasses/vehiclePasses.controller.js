@@ -42,7 +42,7 @@ export const VehiclePassesController = {
     try {
       const { id } = req.params;
 
-      const updated = await VehiclePassesService.updateById(id, req.body);
+      const updated = await VehiclePassesService.updateById(id, req.body, req.user?.id);
 
       res.json({ success: true, data: updated });
     } catch (err) {
@@ -55,7 +55,7 @@ export const VehiclePassesController = {
     try {
       const { id } = req.params;
 
-      const deleted = await VehiclePassesService.deleteById(id);
+      const deleted = await VehiclePassesService.deleteById(id, req.user?.id);
 
       res.json({ success: true, data: deleted });
     } catch (err) {

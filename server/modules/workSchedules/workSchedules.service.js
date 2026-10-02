@@ -1,9 +1,10 @@
 import { prismaContext } from "../../utils/prismaContext.js";
 import { mapShifts, mapWorkDays } from "./workSchedules.helpers.js";
 import { workScheduleModel } from "./workSchedules.model.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 export const workScheduleService = {
-  create: async (data, tx = null) => {
+  create: async (data, tx = null, userId = null) => {
     const prisma = tx || prismaContext.get();
 
     const preparedData = {
@@ -38,7 +39,9 @@ export const workScheduleService = {
       preparedData.weekly_days = null;
     }
 
-    return workScheduleModel.create(preparedData, prisma);
+    const result = await workScheduleModel.create(preparedData, prisma);
+    await createAuditLog({ userId, action: "create", entity: "work_schedules", recordId: result.id, newData: result });
+    return result;
   },
 
   getAll: async ({ page = 1, pageSize = 50, filters } = {}, tx = null) => {
@@ -102,7 +105,7 @@ export const workScheduleService = {
     return schedule;
   },
 
-  updateById: async (id, data, tx = null) => {
+  updateById: async (id, data, tx = null, userId = null) => {
     const prisma = tx || prismaContext.get();
 
     const preparedData = {
@@ -136,12 +139,18 @@ export const workScheduleService = {
       preparedData.weekly_days = null;
     }
 
-    return workScheduleModel.updateById(id, preparedData, prisma);
+    const old = await workScheduleModel.findById(id, prisma);
+    const result = await workScheduleModel.updateById(id, preparedData, prisma);
+    await createAuditLog({ userId, action: "update", entity: "work_schedules", recordId: id, oldData: old, newData: result });
+    return result;
   },
 
-  deleteById: async (id, tx = null) => {
+  deleteById: async (id, tx = null, userId = null) => {
     if (!id) throw new Error("ID не передан");
     const prisma = tx || prismaContext.get();
-    return workScheduleModel.deleteById(id, prisma);
+    const old = await workScheduleModel.findById(id, prisma);
+    const result = await workScheduleModel.deleteById(id, prisma);
+    await createAuditLog({ userId, action: "delete", entity: "work_schedules", recordId: id, oldData: old });
+    return result;
   },
 };

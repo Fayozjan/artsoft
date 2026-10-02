@@ -13,5 +13,6 @@ router.get("/summary", DashboardController.summary);
 router.get("/analytics", DashboardController.analytics);
 router.get("/feeds", DashboardController.feeds);
 router.get("/finance", DashboardController.finance);
+router.get("/tasks", DashboardController.tasks);
 
 export default router;

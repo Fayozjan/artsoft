@@ -27,3 +27,17 @@ export function buildEmployeeAccess(user) {
   }
   return { id: -1 };
 }
+
+// Свой профиль доступен всегда; чужой — только из зоны доступа логина
+// (те же правила, что у списка сотрудников: buildEmployeeAccess)
+export function canAccessEmployee(user, employee) {
+  if (user.employee_id && Number(user.employee_id) === Number(employee.id)) {
+    return true;
+  }
+
+  return Object.entries(buildEmployeeAccess(user)).every(([field, cond]) =>
+    Array.isArray(cond?.in)
+      ? cond.in.includes(employee[field])
+      : employee[field] === cond,
+  );
+}

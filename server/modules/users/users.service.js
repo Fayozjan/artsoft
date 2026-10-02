@@ -1,6 +1,62 @@
 import bcrypt from "bcryptjs";
 import { UserModel } from "./users.model.js";
 import { MenuModel } from "../menus/menus.model.js";
+import { createAuditLog } from "../../utils/auditLog.js";
+import { LoginLockout } from "../../services/loginLockout.js";
+import {
+  normalizeTelegramId,
+  assertTelegramIdFree,
+  syncTelegramLink,
+} from "../../utils/telegramTenantLink.js";
+
+const omitPassword = (u) => u ? (({ password, ...rest }) => rest)(u) : null;
+
+const SIDEBAR_POSITIONS = ["left", "top", "hidden"];
+
+// Администратор задаёт логину только интерфейсные настройки (расположение меню и
+// страницу после входа); остальные ключи settings принадлежат самому пользователю.
+const mergeInterfaceSettings = (current, incoming) => {
+  const next = { ...(current || {}) };
+  if (!incoming || typeof incoming !== "object") return next;
+
+  if (SIDEBAR_POSITIONS.includes(incoming.sidebarPosition)) {
+    next.sidebarPosition = incoming.sidebarPosition;
+  }
+  if (typeof incoming.startPage === "string" && incoming.startPage.startsWith("/")) {
+    next.startPage = incoming.startPage;
+  }
+  return next;
+};
+
+const toIntArray = (value) =>
+  Array.isArray(value)
+    ? [...new Set(value.map(Number).filter(Number.isInteger))]
+    : [];
+
+const toBool = (value) => value === true || value === "true";
+
+// Карта прав формы {menuId: {view, add, update, delete}} → строки
+// user_telegram_menu_access. null / не объект → [] (права телеграма сбрасываются).
+const toTelegramMenuRows = (menu) =>
+  menu && typeof menu === "object" && !Array.isArray(menu)
+    ? Object.entries(menu).map(([menu_id, perms]) => ({
+        menu_id: Number(menu_id),
+        can_view: !!perms?.view,
+        can_add: !!perms?.add,
+        can_update: !!perms?.update,
+        can_delete: !!perms?.delete,
+      }))
+    : [];
+
+// Права для меню: в телеграм приложении — отдельный набор логина, а пока он не задан
+// (нет строк) — те же права, что в вебе.
+const resolveMenuAccess = async (userId, platform) => {
+  if (platform === "telegram") {
+    const telegramAccesses = await UserModel.getTelegramMenuAccess(userId);
+    if (telegramAccesses.length > 0) return telegramAccesses;
+  }
+  return UserModel.getMenuAccess(userId);
+};
 
 export const UserService = {
   create: async (data) => {
@@ -17,6 +73,12 @@ export const UserService = {
       telegramId,
       view_mode,
       ignore_gps_check,
+      settings,
+      production_operation_ids,
+      can_edit_sticker,
+      production_own_only,
+      telegram_work_punch,
+      telegram_menu,
     } = data;
 
     if (
@@ -34,9 +96,14 @@ export const UserService = {
       throw error;
     }
 
+    const telegramMenuAccess = toTelegramMenuRows(telegram_menu);
+
+    const normalizedTelegramId = normalizeTelegramId(telegramId);
+    await assertTelegramIdFree(normalizedTelegramId);
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const menuAccess = Object.entries(menu).map(([menu_id, perms]) => ({
+    const menuAccess = Object.entries(menu || {}).map(([menu_id, perms]) => ({
       menu_id: Number(menu_id),
       can_view: perms.view,
       can_add: perms.add,
@@ -44,7 +111,7 @@ export const UserService = {
       can_delete: perms.delete,
     }));
 
-    return UserModel.create({
+    const result = await UserModel.create({
       username,
       password: hashedPassword,
       employee_id: Number(employee_id),
@@ -52,14 +119,25 @@ export const UserService = {
       branch_access: branches || [],
       department_access: departments || [],
       personal_menus: personal_menus || [],
-      telegram_id: telegramId,
+      telegram_id: normalizedTelegramId,
       view_mode: view_mode || "branch",
       status,
       ignore_gps_check: ignore_gps_check === true || ignore_gps_check === "true",
+      settings: mergeInterfaceSettings({}, settings),
+      production_operation_ids: toIntArray(production_operation_ids),
+      can_edit_sticker: can_edit_sticker === undefined ? true : toBool(can_edit_sticker),
+      production_own_only: toBool(production_own_only),
+      telegram_work_punch: toBool(telegram_work_punch),
       menuAccess: {
         create: menuAccess,
       },
+      ...(telegramMenuAccess.length > 0 && {
+        telegramMenuAccess: { create: telegramMenuAccess },
+      }),
     });
+    await syncTelegramLink(null, normalizedTelegramId);
+    await createAuditLog({ userId: data.createdBy, action: "create", entity: "users", recordId: result.id, newData: omitPassword(result) });
+    return result;
   },
 
   get: async (page, limit, filters = {}) => {
@@ -92,9 +170,10 @@ export const UserService = {
       where.status = status === "true";
     }
 
-    const [data, total] = await Promise.all([
+    const [data, total, totalMenus] = await Promise.all([
       UserModel.getList({ skip, take: limitNumber, where }),
       UserModel.count(where),
+      MenuModel.countAll(),
     ]);
 
     const formattedData = data.map((item) => {
@@ -106,14 +185,18 @@ export const UserService = {
           } (${employee.id})`
         : null;
 
+      const { _count, ...rest } = item;
+
       return {
-        ...item,
+        ...rest,
         employeeFullName,
+        menuCount: _count?.menuAccess ?? 0,
       };
     });
 
     return {
       data: formattedData,
+      totalMenus,
       pagination: {
         totalItems: total,
         currentPage: pageNumber,
@@ -157,6 +240,12 @@ export const UserService = {
       telegramId,
       view_mode,
       ignore_gps_check,
+      settings,
+      production_operation_ids,
+      can_edit_sticker,
+      production_own_only,
+      telegram_work_punch,
+      telegram_menu,
     } = data;
 
     if (
@@ -174,6 +263,10 @@ export const UserService = {
       throw error;
     }
 
+    // Нет поля в запросе — Telegram ID не трогаем (undefined Prisma пропускает)
+    const normalizedTelegramId = normalizeTelegramId(telegramId);
+    await assertTelegramIdFree(normalizedTelegramId);
+
     const updateData = {
       username,
       employee_id: Number(employee_id),
@@ -181,7 +274,7 @@ export const UserService = {
       branch_access: branches || [],
       department_access: departments || [],
       personal_menus: personal_menus || [],
-      telegram_id: telegramId,
+      telegram_id: normalizedTelegramId,
       view_mode: view_mode || "branch",
       status,
       ignore_gps_check: ignore_gps_check === true || ignore_gps_check === "true",
@@ -203,12 +296,51 @@ export const UserService = {
           }))
         : [];
 
-    return UserModel.updateById(id, updateData, menuAccessOperations);
+    const old = await UserModel.getById(Number(id));
+
+    // Поля, которых нет в запросе, не трогаем — старый клиент не должен сбросить права.
+    if (settings !== undefined) {
+      updateData.settings = mergeInterfaceSettings(old?.settings, settings);
+    }
+    if (production_operation_ids !== undefined) {
+      updateData.production_operation_ids = toIntArray(production_operation_ids);
+    }
+    if (can_edit_sticker !== undefined) {
+      updateData.can_edit_sticker = toBool(can_edit_sticker);
+    }
+    if (production_own_only !== undefined) {
+      updateData.production_own_only = toBool(production_own_only);
+    }
+    if (telegram_work_punch !== undefined) {
+      updateData.telegram_work_punch = toBool(telegram_work_punch);
+    }
+
+    // Права телеграма: нет поля — не трогаем, null — сбросить (снова как в вебе),
+    // объект — заменить.
+    const telegramMenuOperations =
+      telegram_menu === undefined
+        ? undefined
+        : toTelegramMenuRows(telegram_menu).map((row) => ({
+            ...row,
+            user_id: Number(id),
+          }));
+
+    const result = await UserModel.updateById(
+      id,
+      updateData,
+      menuAccessOperations,
+      telegramMenuOperations,
+    );
+    if (normalizedTelegramId !== undefined) {
+      await syncTelegramLink(old?.telegram_id, normalizedTelegramId);
+    }
+    await createAuditLog({ userId: data.updatedBy, action: "update", entity: "users", recordId: id, oldData: omitPassword(old), newData: omitPassword(result) });
+    return result;
   },
 
-  getMenu: async (userId) => {
+  getMenu: async (userId, platform = "web") => {
     const [accesses, menus] = await Promise.all([
-      UserModel.getMenuAccess(userId),
+      resolveMenuAccess(userId, platform),
       MenuModel.getAllMenus(),
     ]);
 
@@ -253,6 +385,7 @@ export const UserService = {
       newPassword,
       theme,
       language,
+      sidebar,
       view_mode,
       active_branch_id,
       settings,
@@ -282,11 +415,42 @@ export const UserService = {
 
     if (theme !== undefined) updateData.theme = theme;
     if (language !== undefined) updateData.language = language;
+    if (sidebar !== undefined)
+      updateData.sidebar = typeof sidebar === "string" ? sidebar : sidebar ? "opened" : "closed";
     if (view_mode !== undefined) updateData.view_mode = view_mode;
     if (active_branch_id !== undefined)
       updateData.active_branch_id = active_branch_id;
     if (settings !== undefined) updateData.settings = settings;
 
     return UserModel.updateProfile(userId, updateData);
+  },
+
+  // === Блокировки входа ===
+
+  listLockouts: (tenant) => LoginLockout.listLocked(tenant),
+
+  unlockLogin: async ({ tenant, userId, actorId }) => {
+    const user = await UserModel.getUsernameById(userId);
+
+    if (!user) {
+      const err = new Error("Пользователь не найден");
+      err.statusCode = 404;
+      throw err;
+    }
+
+    const key = LoginLockout.buildKey(tenant, user.username);
+    const wasLocked = LoginLockout.unlock(key);
+
+    if (wasLocked) {
+      await createAuditLog({
+        userId: actorId,
+        action: "unlock",
+        entity: "users",
+        recordId: user.id,
+        newData: { username: user.username },
+      });
+    }
+
+    return { username: user.username, wasLocked };
   },
 };

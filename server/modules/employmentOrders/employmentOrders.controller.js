@@ -2,23 +2,63 @@ import { EmploymentOrdersService } from "./employmentOrders.service.js";
 
 export const EmploymentOrdersController = {
   create: async (req, res) => {
-    const data = await EmploymentOrdersService.create(req.body);
-    res.status(201).json({ success: true, data });
+    try {
+      const data = await EmploymentOrdersService.create(req.body, req.user.id);
+      res.status(201).json({ success: true, data });
+    } catch (err) {
+      if (err.code === "EMPLOYEE_HAS_ASSETS") {
+        return res
+          .status(409)
+          .json({ success: false, message: err.message, error: err.message });
+      }
+      console.error("Ошибка при создании приказа:", err);
+      res.status(500).json({
+        success: false,
+        message: err.message || "Ошибка при создании приказа",
+      });
+    }
+  },
+
+  bulkCreate: async (req, res) => {
+    try {
+      const result = await EmploymentOrdersService.bulkCreate(
+        req.body,
+        req.user.id,
+      );
+      res.status(201).json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовом создании приказов:", err);
+      res.status(400).json({
+        success: false,
+        message: err.message || "Ошибка при массовом создании приказов",
+        error: err.message,
+      });
+    }
   },
 
   getAll: async (req, res) => {
     try {
+      const { page, pageSize, search, type, branch_id, department_id, position_id, date_from, date_to, sort_by, sort_order } = req.query;
       const result = await EmploymentOrdersService.getAll({
         userId: req.user.id,
-        page: req.query.page,
-        pageSize: req.query.pageSize,
-        filters: req.query.filters,
+        page,
+        pageSize,
+        filters: { search, type, branch_id, department_id, position_id, date_from, date_to, sort_by, sort_order },
       });
-
       res.json({ success: true, ...result });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Ошибка при получении приказов" });
+    }
+  },
+
+  getStats: async (req, res) => {
+    try {
+      const stats = await EmploymentOrdersService.getStats(req.user.id);
+      res.json({ success: true, stats });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Ошибка при получении статистики приказов" });
     }
   },
 
@@ -52,8 +92,25 @@ export const EmploymentOrdersController = {
   },
 
   update: async (req, res) => {
-    const data = await EmploymentOrdersService.update(req.params.id, req.body);
-    res.json({ success: true, data });
+    try {
+      const data = await EmploymentOrdersService.update(
+        req.params.id,
+        req.body,
+        req.user.id,
+      );
+      res.json({ success: true, data });
+    } catch (err) {
+      if (err.code === "EMPLOYEE_HAS_ASSETS") {
+        return res
+          .status(409)
+          .json({ success: false, message: err.message, error: err.message });
+      }
+      console.error("Ошибка при обновлении приказа:", err);
+      res.status(500).json({
+        success: false,
+        message: err.message || "Ошибка при обновлении приказа",
+      });
+    }
   },
 
   delete: async (req, res) => {

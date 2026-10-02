@@ -33,10 +33,13 @@ export const PayrollController = {
   },
 
   updateItem: async (req, res) => {
+    const userId = req.user?.id;
     const { itemId } = req.params;
     try {
-      const result = await PayrollService.updateItem(itemId, req.body);
-      return result.success ? res.json(result) : res.status(404).json(result);
+      const result = await PayrollService.updateItem(itemId, req.body, userId);
+      if (result.success) return res.json(result);
+      const code = result.message === "Item not found" ? 404 : 400;
+      return res.status(code).json(result);
     } catch (err) {
       console.error("PayrollController.updateItem:", err.message);
       return res.status(500).json({ success: false, message: err.message });
@@ -44,9 +47,10 @@ export const PayrollController = {
   },
 
   bulkUpdateStatus: async (req, res) => {
+    const userId = req.user?.id;
     const { itemIds, status } = req.body;
     try {
-      const result = await PayrollService.bulkUpdateStatus(itemIds, status);
+      const result = await PayrollService.bulkUpdateStatus(itemIds, status, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.bulkUpdateStatus:", err.message);
@@ -55,10 +59,11 @@ export const PayrollController = {
   },
 
   updateAllItemsStatus: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     const { status } = req.body;
     try {
-      const result = await PayrollService.updateAllItemsStatus(id, status);
+      const result = await PayrollService.updateAllItemsStatus(id, status, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.updateAllItemsStatus:", err.message);
@@ -79,9 +84,10 @@ export const PayrollController = {
   },
 
   unapproveSheet: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     try {
-      const result = await PayrollService.unapproveSheet(id);
+      const result = await PayrollService.unapproveSheet(id, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.unapproveSheet:", err.message);
@@ -90,9 +96,10 @@ export const PayrollController = {
   },
 
   deleteSheet: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     try {
-      const result = await PayrollService.deleteSheet(id);
+      const result = await PayrollService.deleteSheet(id, userId);
       return result.success ? res.json(result) : res.status(404).json(result);
     } catch (err) {
       console.error("PayrollController.deleteSheet:", err.message);
@@ -101,6 +108,48 @@ export const PayrollController = {
   },
 
   // ── Payouts ───────────────────────────────────────────────────────────────────
+
+  recalculateYearBalances: async (req, res) => {
+    const userId = req.user?.id;
+    const { year } = req.params;
+    try {
+      const result = await PayrollService.recalculateYearBalances(year, userId);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.recalculateYearBalances:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  getPayoutsYearReport: async (req, res) => {
+    const {
+      year,
+      page, pageSize,
+      search,
+      branch_id, department_id, position_id,
+      salary_type,
+      payout_status,
+      sort_by, sort_order,
+    } = req.query;
+
+    if (!year)
+      return res.status(400).json({ success: false, message: "year required (YYYY)" });
+
+    try {
+      const result = await PayrollService.getPayoutsYearReport(year, {
+        page, pageSize,
+        search,
+        branch_id, department_id, position_id,
+        salary_type,
+        payout_status,
+        sort_by, sort_order,
+      });
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.getPayoutsYearReport:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
 
   getPayouts: async (req, res) => {
     const {
@@ -133,9 +182,10 @@ export const PayrollController = {
   },
 
   bulkMarkPaid: async (req, res) => {
+    const userId = req.user?.id;
     const { itemIds, status } = req.body;
     try {
-      const result = await PayrollService.bulkMarkPaid(itemIds, status);
+      const result = await PayrollService.bulkMarkPaid(itemIds, status, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.bulkMarkPaid:", err.message);
@@ -144,10 +194,11 @@ export const PayrollController = {
   },
 
   markAllPayoutsStatus: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     const { status } = req.body;
     try {
-      const result = await PayrollService.markAllPayoutsStatus(id, status);
+      const result = await PayrollService.markAllPayoutsStatus(id, status, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.markAllPayoutsStatus:", err.message);
@@ -169,10 +220,11 @@ export const PayrollController = {
   },
 
   addPaymentLog: async (req, res) => {
+    const userId = req.user?.id;
     const { itemId } = req.params;
     const { amount, payment_date, note } = req.body;
     try {
-      const result = await PayrollService.addPaymentLog(itemId, { amount, payment_date, note });
+      const result = await PayrollService.addPaymentLog(itemId, { amount, payment_date, note }, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.addPaymentLog:", err.message);
@@ -180,10 +232,92 @@ export const PayrollController = {
     }
   },
 
+  addLoan: async (req, res) => {
+    const userId = req.user?.id;
+    const { employee_id, amount, issued_at, note } = req.body;
+    try {
+      const result = await PayrollService.addLoan(userId, {
+        employee_id, amount, issued_at, note,
+      });
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.addLoan:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  deleteLoan: async (req, res) => {
+    const userId = req.user?.id;
+    const { id } = req.params;
+    try {
+      const result = await PayrollService.deleteLoan(id, userId);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.deleteLoan:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  getDebtHistory: async (req, res) => {
+    const { employeeId } = req.params;
+    const { year } = req.query;
+    try {
+      const result = await PayrollService.getDebtHistory(employeeId, year);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.getDebtHistory:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  addAdvance: async (req, res) => {
+    const userId = req.user?.id;
+    const { employee_id, year, month, amount, payment_date, note } = req.body;
+    try {
+      const result = await PayrollService.addAdvance(userId, {
+        employee_id, year, month, amount, payment_date, note,
+      });
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.addAdvance:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  addPaymentLogsBulk: async (req, res) => {
+    const userId = req.user?.id;
+    const { payments, payment_date, note } = req.body;
+    try {
+      const result = await PayrollService.addPaymentLogsBulk(payments, {
+        payment_date, note,
+      }, userId);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.addPaymentLogsBulk:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
+  updatePaymentLog: async (req, res) => {
+    const userId = req.user?.id;
+    const { itemId, logId } = req.params;
+    const { amount, payment_date, note } = req.body;
+    try {
+      const result = await PayrollService.updatePaymentLog(logId, itemId, {
+        amount, payment_date, note,
+      }, userId);
+      return result.success ? res.json(result) : res.status(400).json(result);
+    } catch (err) {
+      console.error("PayrollController.updatePaymentLog:", err.message);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  },
+
   deletePaymentLog: async (req, res) => {
+    const userId = req.user?.id;
     const { itemId, logId } = req.params;
     try {
-      const result = await PayrollService.deletePaymentLog(logId, itemId);
+      const result = await PayrollService.deletePaymentLog(logId, itemId, userId);
       return result.success ? res.json(result) : res.status(404).json(result);
     } catch (err) {
       console.error("PayrollController.deletePaymentLog:", err.message);
@@ -192,9 +326,10 @@ export const PayrollController = {
   },
 
   recalculateSalaryBalances: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     try {
-      const result = await PayrollService.recalculateSalaryBalances(id);
+      const result = await PayrollService.recalculateSalaryBalances(id, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.recalculateSalaryBalances:", err.message);
@@ -215,72 +350,14 @@ export const PayrollController = {
   },
 
   bulkApplyFlags: async (req, res) => {
+    const userId = req.user?.id;
     const { id } = req.params;
     const { apply_late, apply_overtime } = req.body;
     try {
-      const result = await PayrollService.bulkApplyFlags(id, { apply_late, apply_overtime });
+      const result = await PayrollService.bulkApplyFlags(id, { apply_late, apply_overtime }, userId);
       return result.success ? res.json(result) : res.status(400).json(result);
     } catch (err) {
       console.error("PayrollController.bulkApplyFlags:", err.message);
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  },
-
-  // ── Salary Advances ──────────────────────────────────────────────────────────
-
-  getAdvances: async (req, res) => {
-    const {
-      month,
-      page, pageSize,
-      search,
-      branch_id, department_id, position_id,
-      sort_by, sort_order,
-    } = req.query;
-
-    if (!month)
-      return res.status(400).json({ success: false, message: "month required (YYYY-MM)" });
-
-    try {
-      const result = await PayrollService.getAdvances(month, {
-        page, pageSize, search, branch_id, department_id, position_id, sort_by, sort_order,
-      });
-      return result.success ? res.json(result) : res.status(400).json(result);
-    } catch (err) {
-      console.error("PayrollController.getAdvances:", err.message);
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  },
-
-  createAdvances: async (req, res) => {
-    const userId = req.user?.id;
-    const { advances } = req.body;
-    try {
-      const result = await PayrollService.createAdvances(userId, advances);
-      return result.success ? res.json(result) : res.status(400).json(result);
-    } catch (err) {
-      console.error("PayrollController.createAdvances:", err.message);
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  },
-
-  deleteAdvance: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const result = await PayrollService.deleteAdvance(id);
-      return result.success ? res.json(result) : res.status(404).json(result);
-    } catch (err) {
-      console.error("PayrollController.deleteAdvance:", err.message);
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  },
-
-  updateAdvance: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const result = await PayrollService.updateAdvance(id, req.body);
-      return result.success ? res.json(result) : res.status(400).json(result);
-    } catch (err) {
-      console.error("PayrollController.updateAdvance:", err.message);
       return res.status(500).json({ success: false, message: err.message });
     }
   },

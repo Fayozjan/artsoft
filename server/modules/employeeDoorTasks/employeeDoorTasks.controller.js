@@ -1,4 +1,5 @@
 import { EmployeeDoorTasksService } from "./employeeDoorTasks.service.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 export const EmployeeDoorTasksController = {
   async create(req, res) {
@@ -16,6 +17,11 @@ export const EmployeeDoorTasksController = {
         Number(door_id),
         action,
       );
+
+      await createAuditLog({
+        userId: req.user?.id, action: "create", entity: "employee_door_tasks",
+        recordId: task.id, newData: task,
+      });
 
       return res.status(201).json(task);
     } catch (err) {
@@ -44,6 +50,11 @@ export const EmployeeDoorTasksController = {
         data,
       );
 
+      await createAuditLog({
+        userId: req.user?.id, action: "update", entity: "employee_door_tasks",
+        recordId: Number(id), newData: updated,
+      });
+
       return res.json(updated);
     } catch (err) {
       console.error("Ошибка при обновлении задачи:", err);
@@ -56,6 +67,11 @@ export const EmployeeDoorTasksController = {
       const filter = req.body;
 
       const result = await EmployeeDoorTasksService.deleteTasks(filter);
+
+      await createAuditLog({
+        userId: req.user?.id, action: "delete", entity: "employee_door_tasks",
+        oldData: { filter, count: result.count },
+      });
 
       return res.json({
         message: "Задачи удалены",

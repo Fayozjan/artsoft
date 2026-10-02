@@ -4,6 +4,8 @@ import {
   getPrismaForTenant,
 } from "../../utils/prismaForTenant.js";
 import { prismaContext } from "../../utils/prismaContext.js";
+import { LoginLockout } from "../../services/loginLockout.js";
+import { sendLocked } from "../../middlewares/loginLockout.js";
 
 const setTokens = (res, accessToken, refreshToken) => {
   const secure = process.env.NODE_ENV === "production";
@@ -25,18 +27,35 @@ const setTokens = (res, accessToken, refreshToken) => {
 
 export const AuthController = {
   login: async (req, res) => {
+    const lockKey = req.loginLockoutKey;
+
     try {
-      const { username, password, language } = req.body;
+      const { username, password, language, theme } = req.body;
       const { accessToken, refreshToken, user } = await AuthService.login(
         username,
         password,
         language,
+        theme,
       );
+
+      if (lockKey) LoginLockout.reset(lockKey);
 
       setTokens(res, accessToken, refreshToken);
       res.status(200).json(user);
     } catch (err) {
       console.error("Login error:", err);
+
+      // Счётчик двигает только неверный пароль: несуществующий логин
+      // блокировать нечего, а Map ключей засорять незачем
+      if (lockKey && err.code === "AUTH_INVALID_CREDENTIALS") {
+        const status = LoginLockout.registerFailure(lockKey);
+
+        // Попытка, которая исчерпала порог, сразу получает 429
+        if (status.locked) return sendLocked(res, status);
+
+        return res.status(401).json({ ...err, attemptsLeft: status.attemptsLeft });
+      }
+
       res.status(err.status || 401).json({ ...err });
     }
   },
@@ -112,9 +131,17 @@ export const AuthController = {
     try {
       const user = await AuthService.getMe(req.user.id);
       res.json({
+        id: user.id,
         language: user.language,
         theme: user.theme,
         sidebar: user.sidebar,
+        access_level: user.access_level,
+        employee_id: user.employee_id,
+        first_name: user.employee?.first_name,
+        last_name: user.employee?.last_name,
+        middle_name: user.employee?.middle_name,
+        photo: user.employee?.photo,
+        position: user.employee?.position?.name,
       });
     } catch (err) {
       console.error("Me error:", err);

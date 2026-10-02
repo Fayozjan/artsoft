@@ -11,6 +11,7 @@ const itemInclude = {
       branch: { select: { id: true, name: true } },
       department: { select: { id: true, name: true } },
       position: { select: { id: true, name: true } },
+      workSchedule: { select: { id: true, name: true, type: true } },
     },
   },
 };
@@ -38,7 +39,7 @@ export const PayrollModel = {
     const prisma = prismaContext.get();
     return prisma.payroll_sheet_items.findMany({
       where: { sheet_id: Number(sheetId) },
-      select: { id: true, employee_id: true, salary_balance: true, net: true, paid_amount: true, advance_total: true, status: true },
+      select: { id: true, employee_id: true, salary_balance: true, net: true, paid_amount: true, status: true },
     });
   },
 
@@ -57,7 +58,7 @@ export const PayrollModel = {
     });
   },
 
-  addPaymentLog: async (itemId, { amount, payment_date, note }) => {
+  addPaymentLog: async (itemId, { amount, payment_date, note, is_advance = false }) => {
     const prisma = prismaContext.get();
     await prisma.payroll_payment_logs.create({
       data: {
@@ -65,23 +66,136 @@ export const PayrollModel = {
         amount:       parseFloat(Number(amount).toFixed(2)),
         payment_date: new Date(payment_date),
         note:         note || null,
+        is_advance:   Boolean(is_advance),
       },
     });
+    return { totalPaid: await PayrollModel.sumPaid(itemId) };
+  },
+
+  sumPaid: async (itemId) => {
+    const prisma = prismaContext.get();
     const agg = await prisma.payroll_payment_logs.aggregate({
       where: { item_id: Number(itemId) },
       _sum: { amount: true },
     });
-    return { totalPaid: Number(agg._sum.amount || 0) };
+    return Number(agg._sum.amount || 0);
+  },
+
+  // Сумма выданных авансов по каждому item — для отчёта по выплатам
+  getAdvanceTotals: async (itemIds) => {
+    const prisma = prismaContext.get();
+    if (!itemIds.length) return new Map();
+    const rows = await prisma.payroll_payment_logs.groupBy({
+      by: ["item_id"],
+      where: { item_id: { in: itemIds.map(Number) }, is_advance: true },
+      _sum: { amount: true },
+    });
+    return new Map(rows.map((r) => [r.item_id, Number(r._sum.amount || 0)]));
+  },
+
+  // Выдачи авансов по этим строкам — аванс привязан к месяцу, в отличие от займа
+  getAdvanceLogs: async (itemIds) => {
+    const prisma = prismaContext.get();
+    if (!itemIds.length) return [];
+    return prisma.payroll_payment_logs.findMany({
+      where: { item_id: { in: itemIds.map(Number) }, is_advance: true },
+      orderBy: { payment_date: "asc" },
+    });
+  },
+
+  // ── Займы сотрудника ─────────────────────────────────────────────────────────
+
+  createDebt: async (data) => {
+    const prisma = prismaContext.get();
+    return prisma.employee_debts.create({ data });
+  },
+
+  getDebtsByEmployee: async (employeeId) => {
+    const prisma = prismaContext.get();
+    return prisma.employee_debts.findMany({
+      where: { employee_id: Number(employeeId) },
+      orderBy: { issued_at: "asc" },
+    });
+  },
+
+  deleteDebt: async (id) => {
+    const prisma = prismaContext.get();
+    return prisma.employee_debts.delete({ where: { id: Number(id) } });
+  },
+
+  // Выдано займов по каждому сотруднику
+  getDebtIssuedTotals: async (employeeIds) => {
+    const prisma = prismaContext.get();
+    if (!employeeIds.length) return new Map();
+    const rows = await prisma.employee_debts.groupBy({
+      by: ["employee_id"],
+      where: { employee_id: { in: employeeIds.map(Number) } },
+      _sum: { amount: true },
+    });
+    return new Map(rows.map((r) => [r.employee_id, Number(r._sum.amount || 0)]));
+  },
+
+  // Все строки сотрудника — для расчёта общего долга: переплаты и удержания
+  getEmployeeItemsSummary: async (employeeId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.findMany({
+      where: { employee_id: Number(employeeId) },
+      select: {
+        id: true, status: true, net: true, paid_amount: true, debt_deduction: true,
+        sheet: { select: { month: true, year: true } },
+      },
+    });
+  },
+
+  getDeductionsByEmployee: async (employeeId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.findMany({
+      where: { employee_id: Number(employeeId), debt_deduction: { gt: 0 } },
+      select: {
+        id: true, debt_balance: true, debt_deduction: true, debt_comment: true,
+        sheet: { select: { month: true, year: true } },
+      },
+      orderBy: { sheet: { month: "asc" } },
+    });
+  },
+
+  // Строки одного сотрудника в перечисленных ведомостях
+  getEmployeeItemsInSheets: async (sheetIds, employeeId) => {
+    const prisma = prismaContext.get();
+    if (!sheetIds.length) return [];
+    return prisma.payroll_sheet_items.findMany({
+      where: { sheet_id: { in: sheetIds.map(Number) }, employee_id: Number(employeeId) },
+      select: {
+        id: true, sheet_id: true, status: true,
+        debt_balance: true, debt_deduction: true, debt_comment: true,
+        sheet: { select: { month: true, year: true } },
+      },
+      orderBy: { sheet: { month: "asc" } },
+    });
+  },
+
+  findPaymentLogById: async (logId) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_payment_logs.findUnique({ where: { id: Number(logId) } });
+  },
+
+  updatePaymentLog: async (logId, itemId, { amount, payment_date, note }) => {
+    const prisma = prismaContext.get();
+    await prisma.payroll_payment_logs.update({
+      where: { id: Number(logId) },
+      data: {
+        amount:       parseFloat(Number(amount).toFixed(2)),
+        payment_date: new Date(payment_date),
+        note:         note || null,
+      },
+    });
+    return { totalPaid: await PayrollModel.sumPaid(itemId) };
   },
 
   deletePaymentLog: async (logId, itemId) => {
     const prisma = prismaContext.get();
     await prisma.payroll_payment_logs.delete({ where: { id: Number(logId) } });
-    const agg = await prisma.payroll_payment_logs.aggregate({
-      where: { item_id: Number(itemId) },
-      _sum: { amount: true },
-    });
-    return { totalPaid: Number(agg._sum.amount || 0) };
+    return { totalPaid: await PayrollModel.sumPaid(itemId) };
   },
 
   // Lightweight fetch of items for a set of employees — used for carry-over
@@ -89,7 +203,11 @@ export const PayrollModel = {
     const prisma = prismaContext.get();
     return prisma.payroll_sheet_items.findMany({
       where: { sheet_id: Number(sheetId), employee_id: { in: employeeIds.map(Number) } },
-      select: { employee_id: true, net: true, salary_balance: true, paid_amount: true, advance_total: true },
+      select: {
+        id: true, employee_id: true, net: true, salary_balance: true,
+        paid_amount: true, status: true,
+        debt_balance: true, debt_deduction: true,
+      },
     });
   },
 
@@ -168,22 +286,19 @@ export const PayrollModel = {
     const [
       totalCount,
       approvedCount,
+      adjCount,
       adjPosAgg,
-      adjNegAgg,
       approvedNetAgg,
       totalNetAgg,
     ] = await Promise.all([
       prisma.payroll_sheet_items.count({ where: { sheet_id: id } }),
       prisma.payroll_sheet_items.count({ where: { sheet_id: id, status: "approved" } }),
+      prisma.payroll_sheet_items.count({
+        where: { sheet_id: id, manual_adjustment: { not: 0 } },
+      }),
       prisma.payroll_sheet_items.aggregate({
         where: { sheet_id: id, manual_adjustment: { gt: 0 } },
         _sum: { manual_adjustment: true },
-        _count: { id: true },
-      }),
-      prisma.payroll_sheet_items.aggregate({
-        where: { sheet_id: id, manual_adjustment: { lt: 0 } },
-        _sum: { manual_adjustment: true },
-        _count: { id: true },
       }),
       prisma.payroll_sheet_items.aggregate({
         where: { sheet_id: id, status: "approved" },
@@ -199,10 +314,8 @@ export const PayrollModel = {
       total:        totalCount,
       approved:     approvedCount,
       remaining:    totalCount - approvedCount,
-      adj_count:    adjPosAgg._count.id + adjNegAgg._count.id,
+      adj_count:    adjCount,
       adj_plus:     Number(adjPosAgg._sum.manual_adjustment || 0),
-      adj_minus:    Number(adjNegAgg._sum.manual_adjustment || 0),
-      adj_sum:      Number(adjPosAgg._sum.manual_adjustment || 0) + Number(adjNegAgg._sum.manual_adjustment || 0),
       approved_net: Number(approvedNetAgg._sum.net || 0),
       total_net:    Number(totalNetAgg._sum.net || 0),
     };
@@ -283,6 +396,11 @@ export const PayrollModel = {
   createItems: async (items) => {
     const prisma = prismaContext.get();
     return prisma.payroll_sheet_items.createMany({ data: items, skipDuplicates: true });
+  },
+
+  createItem: async (data) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheet_items.create({ data });
   },
 
   findItemById: async (id) => {
@@ -394,27 +512,12 @@ export const PayrollModel = {
     return { items, total };
   },
 
-  // Sum of advances per employee for a given year/month
-  getAdvanceTotalsForMonth: async (year, month, employeeIds) => {
-    const prisma = prismaContext.get();
-    const start = new Date(year, month - 1, 1);
-    const end   = new Date(year, month - 1, new Date(year, month, 0).getDate(), 23, 59, 59);
-    const rows  = await prisma.salary_advances.groupBy({
-      by:    ["employee_id"],
-      where: { advance_date: { gte: start, lte: end }, employee_id: { in: employeeIds.map(Number) } },
-      _sum:  { amount: true },
-    });
-    const map = new Map();
-    for (const r of rows) map.set(r.employee_id, Number(r._sum.amount || 0));
-    return map;
-  },
-
   getPayoutsStats: async (sheetId) => {
     const prisma = prismaContext.get();
     const id = Number(sheetId);
 
     const approvedWhere = { sheet_id: id, status: "approved" };
-    const [pendingAgg, paidAgg, totalPaidAgg, debtAgg, balAgg, advAgg] = await Promise.all([
+    const [pendingAgg, paidAgg, totalPaidAgg, debtAgg, balAgg] = await Promise.all([
       // pending = approved + not yet fully paid
       prisma.payroll_sheet_items.aggregate({
         where: { sheet_id: id, status: "approved", payout_status: { in: ["unpaid", "partially_paid"] } },
@@ -443,10 +546,6 @@ export const PayrollModel = {
         where: { ...approvedWhere, salary_balance: { gt: 0 } },
         _sum:  { salary_balance: true },
       }),
-      prisma.payroll_sheet_items.aggregate({
-        where: approvedWhere,
-        _sum:  { advance_total: true },
-      }),
     ]);
 
     return {
@@ -457,7 +556,6 @@ export const PayrollModel = {
       total_paid_amount:     Number(totalPaidAgg._sum.paid_amount || 0),
       total_debt_deduction:  Number(debtAgg._sum.debt_deduction  || 0),
       total_salary_balance:  Number(balAgg._sum.salary_balance   || 0),
-      total_advance:         Number(advAgg._sum.advance_total    || 0),
     };
   },
 
@@ -474,112 +572,6 @@ export const PayrollModel = {
     return prisma.payroll_sheet_items.updateMany({
       where: { sheet_id: Number(sheetId), status: "approved" },
       data:  { payout_status: payoutStatus },
-    });
-  },
-
-  // ── Salary Advances ──────────────────────────────────────────────────────────
-
-  getAdvances: async ({
-    year,
-    month,
-    search        = "",
-    branch_id     = "",
-    department_id = "",
-    position_id   = "",
-    sort_by       = "advance_date",
-    sort_order    = "desc",
-    skip          = 0,
-    take          = 50,
-  } = {}) => {
-    const prisma = prismaContext.get();
-
-    const start = new Date(year, month - 1, 1);
-    const end   = new Date(year, month - 1, new Date(year, month, 0).getDate(), 23, 59, 59);
-
-    const employeeWhere = {};
-    if (search?.trim()) {
-      const s = search.trim();
-      const isNum = /^\d+$/.test(s);
-      if (isNum) {
-        const n = Number(s);
-        employeeWhere.OR = [{ id: n }, { employee_number: s }];
-      } else {
-        employeeWhere.OR = [
-          { last_name:   { contains: s, mode: "insensitive" } },
-          { first_name:  { contains: s, mode: "insensitive" } },
-          { middle_name: { contains: s, mode: "insensitive" } },
-        ];
-      }
-    }
-    if (branch_id)     employeeWhere.branch_id     = Number(branch_id);
-    if (department_id) employeeWhere.department_id = Number(department_id);
-    if (position_id)   employeeWhere.position_id   = Number(position_id);
-
-    const where = { advance_date: { gte: start, lte: end } };
-    if (Object.keys(employeeWhere).length) where.employee = employeeWhere;
-
-    const advanceInclude = {
-      employee: {
-        select: {
-          id: true, last_name: true, first_name: true, middle_name: true,
-          branch:     { select: { id: true, name: true } },
-          department: { select: { id: true, name: true } },
-          position:   { select: { id: true, name: true } },
-        },
-      },
-      givenBy: {
-        select: {
-          id: true,
-          username: true,
-          employee: { select: { last_name: true, first_name: true, middle_name: true } },
-        },
-      },
-    };
-
-    const advanceOrderBy = (() => {
-      const o = sort_order === "desc" ? "desc" : "asc";
-      if (sort_by === "amount")      return { amount: o };
-      if (sort_by === "last_name")   return { employee: { last_name: o } };
-      if (sort_by === "branch")      return { employee: { branch: { name: o } } };
-      if (sort_by === "department")  return { employee: { department: { name: o } } };
-      if (sort_by === "position")    return { employee: { position: { name: o } } };
-      return { advance_date: "desc" };
-    })();
-
-    const [advances, total] = await Promise.all([
-      prisma.salary_advances.findMany({ where, include: advanceInclude, orderBy: advanceOrderBy, skip: Number(skip), take: Number(take) }),
-      prisma.salary_advances.count({ where }),
-    ]);
-
-    return { advances, total };
-  },
-
-  getAdvancesStats: async ({ year, month }) => {
-    const prisma = prismaContext.get();
-    const start = new Date(year, month - 1, 1);
-    const end   = new Date(year, month - 1, new Date(year, month, 0).getDate(), 23, 59, 59);
-    const where = { advance_date: { gte: start, lte: end } };
-
-    const [agg, empCount] = await Promise.all([
-      prisma.salary_advances.aggregate({ where, _count: { id: true }, _sum: { amount: true } }),
-      prisma.salary_advances.findMany({ where, select: { employee_id: true }, distinct: ["employee_id"] }),
-    ]);
-
-    const count  = agg._count.id;
-    const total  = Number(agg._sum.amount || 0);
-    return {
-      total_count:    count,
-      total_amount:   total,
-      avg_amount:     count > 0 ? parseFloat((total / count).toFixed(2)) : 0,
-      employee_count: empCount.length,
-    };
-  },
-
-  findAdvanceById: async (id) => {
-    const prisma = prismaContext.get();
-    return prisma.salary_advances.findUnique({
-      where: { id: Number(id) },
-      select: { id: true, employee_id: true, advance_date: true, amount: true },
     });
   },
 
@@ -618,50 +610,11 @@ export const PayrollModel = {
       select: {
         id: true, employee_id: true, status: true,
         net: true, accrued: true,
-        salary_balance: true, paid_amount: true, advance_total: true,
+        salary_balance: true, paid_amount: true,
         debt_balance: true, debt_deduction: true, debt_mode: true,
         manual_adjustment: true,
         apply_late: true, late_amount: true,
         apply_overtime: true, overtime_amount: true,
-      },
-    });
-  },
-
-  createAdvances: async (rows) => {
-    const prisma = prismaContext.get();
-    return prisma.salary_advances.createMany({ data: rows });
-  },
-
-  deleteAdvance: async (id) => {
-    const prisma = prismaContext.get();
-    return prisma.salary_advances.delete({ where: { id: Number(id) } });
-  },
-
-  updateAdvance: async (id, { employee_id, amount, advance_date, note }) => {
-    const prisma = prismaContext.get();
-    return prisma.salary_advances.update({
-      where: { id: Number(id) },
-      data: {
-        ...(employee_id !== undefined ? { employee_id: Number(employee_id) } : {}),
-        ...(amount      !== undefined ? { amount: Number(amount) }           : {}),
-        ...(advance_date !== undefined ? { advance_date: new Date(advance_date) } : {}),
-        note: note ?? null,
-      },
-      include: {
-        employee: {
-          select: {
-            id: true, last_name: true, first_name: true, middle_name: true,
-            branch:     { select: { id: true, name: true } },
-            department: { select: { id: true, name: true } },
-            position:   { select: { id: true, name: true } },
-          },
-        },
-        givenBy: {
-          select: {
-            id: true, username: true,
-            employee: { select: { last_name: true, first_name: true, middle_name: true } },
-          },
-        },
       },
     });
   },
@@ -737,11 +690,91 @@ export const PayrollModel = {
             overtime_minutes: u.overtime_minutes,
             overtime_amount:  u.overtime_amount,
             worked_days:      u.worked_days,
+            total_work_days:  u.total_work_days,
             worked_hours:     u.worked_hours,
             net:              u.net,
           },
         }),
       ),
     );
+  },
+
+  // ── Year payout report ───────────────────────────────────────────────────────
+
+  // All sheets of a calendar year
+  findSheetsByYear: async (year) => {
+    const prisma = prismaContext.get();
+    return prisma.payroll_sheets.findMany({
+      where: { year: Number(year) },
+      select: { id: true, month: true, year: true },
+      orderBy: { month: "asc" },
+    });
+  },
+
+  // Every payout-relevant item of the given sheets, with employee data.
+  // No pagination — grouping per employee happens in the service layer.
+  getYearPayoutItems: async (
+    sheetIds,
+    {
+      search        = "",
+      branch_id     = "",
+      department_id = "",
+      position_id   = "",
+      salary_type   = "",
+    } = {}
+  ) => {
+    const prisma = prismaContext.get();
+    if (!sheetIds.length) return [];
+
+    const employeeWhere = {};
+    if (search?.trim()) {
+      const s = search.trim();
+      const isNum = /^\d+$/.test(s);
+      if (isNum) {
+        employeeWhere.OR = [{ id: Number(s) }, { employee_number: s }];
+      } else {
+        employeeWhere.OR = [
+          { last_name:   { contains: s, mode: "insensitive" } },
+          { first_name:  { contains: s, mode: "insensitive" } },
+          { middle_name: { contains: s, mode: "insensitive" } },
+        ];
+      }
+    }
+    if (branch_id)     employeeWhere.branch_id     = Number(branch_id);
+    if (department_id) employeeWhere.department_id = Number(department_id);
+    if (position_id)   employeeWhere.position_id   = Number(position_id);
+
+    const where = {
+      sheet_id: { in: sheetIds.map(Number) },
+      OR: [
+        { status: "approved" },
+        { paid_amount: { gt: 0 } },
+        { payout_status: { in: ["paid", "partially_paid"] } },
+      ],
+    };
+    if (Object.keys(employeeWhere).length) where.employee = employeeWhere;
+    if (salary_type) where.salary_type = salary_type;
+
+    return prisma.payroll_sheet_items.findMany({
+      where,
+      include: {
+        employee: {
+          select: {
+            id: true,
+            employee_number: true,
+            last_name: true,
+            first_name: true,
+            middle_name: true,
+            photo: true,
+            status: true,
+            branch: { select: { id: true, name: true } },
+            department: { select: { id: true, name: true } },
+            position: { select: { id: true, name: true } },
+          },
+        },
+        sheet: { select: { id: true, month: true, year: true } },
+      },
+      orderBy: { sheet: { month: "asc" } },
+    });
   },
 };

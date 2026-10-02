@@ -1,5 +1,6 @@
 import "dotenv/config";
 import path from "path";
+import net from "net";
 import fetch from "digest-fetch";
 import pool from "../db.js";
 import { internalIpV4 } from "internal-ip";
@@ -18,6 +19,165 @@ const api_edit_user = "/ISAPI/AccessControl/UserInfo/SetUp?format=json";
 const api_edit_user_photo = "/ISAPI/Intelligent/FDLib/FDSetUp?format=json";
 const api_delete_user =
   "/ISAPI/AccessControl/UserInfoDetail/Delete?format=json";
+const api_user_count = "/ISAPI/AccessControl/UserInfo/Count?format=json";
+const api_user_capabilities = "/ISAPI/AccessControl/UserInfo/capabilities?format=json";
+
+// Обёртки узлов у прошивок расходятся (UserInfoCount/UserInfo/плоский json) —
+// пробуем известные варианты по очереди вместо жёсткого пути.
+function extractCount(data) {
+  const n =
+    data?.UserInfoCount?.userNumber ??
+    data?.UserInfo?.userNumber ??
+    data?.userNumber;
+  const num = Number(n);
+  return Number.isFinite(num) ? num : null;
+}
+
+function extractMaxCapacity(data) {
+  const n =
+    data?.UserInfo?.maxRecordNum ??
+    data?.maxRecordNum ??
+    data?.UserInfoCount?.maxRecordNum;
+  const num = Number(n);
+  return Number.isFinite(num) ? num : null;
+}
+// Без ?format=json: подтверждено на реальном устройстве — с этим параметром
+// System/time принимает только JSON-тело, а XML-тело (обязательное для этого
+// core-модуля) отклоняет как badXmlContent даже при корректном XML.
+const api_time = "/ISAPI/System/time";
+const api_ntp_server = "/ISAPI/System/time/ntpServers/1";
+
+const NTP_HOST = "time.google.com";
+
+const pad = (n) => String(n).padStart(2, "0");
+
+// ISAPI требует timeZone в POSIX-формате (знак смещения инвертирован:
+// восток от Гринвича — минус). offsetMinutes — обычное смещение (Ташкент = +300).
+function buildPosixTimeZone(offsetMinutes) {
+  const sign = offsetMinutes <= 0 ? "+" : "-";
+  const abs = Math.abs(offsetMinutes);
+  return `CST${sign}${pad(Math.floor(abs / 60))}:${pad(abs % 60)}:00`;
+}
+
+const ISAPI_XML_NS = 'xmlns="http://www.isapi.org/ver20/XMLSchema"';
+
+// System/time и его ntpServers — древние core-модули ISAPI, тело запроса
+// принимают только в XML. С ?format=json в URL — независимо от заголовков —
+// требуют JSON-тело (иначе 400 badXmlFormat); без него — XML-тело (badXmlContent
+// при некорректном XML). Поэтому запрос идёт БЕЗ ?format=json, ответ тоже XML.
+
+// Режим manual — время выставляется вручную одним запросом.
+function buildManualTimeXml(offsetMinutes) {
+  const target = new Date(Date.now() + offsetMinutes * 60000);
+  const localTime =
+    `${target.getUTCFullYear()}-${pad(target.getUTCMonth() + 1)}-${pad(target.getUTCDate())}` +
+    `T${pad(target.getUTCHours())}:${pad(target.getUTCMinutes())}:${pad(target.getUTCSeconds())}`;
+
+  const isoSign = offsetMinutes >= 0 ? "+" : "-";
+  const isoAbs = Math.abs(offsetMinutes);
+  const isoOffset = `${isoSign}${pad(Math.floor(isoAbs / 60))}:${pad(isoAbs % 60)}`;
+
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<Time version="2.0" ${ISAPI_XML_NS}>` +
+    `<timeMode>manual</timeMode>` +
+    `<localTime>${localTime}${isoOffset}</localTime>` +
+    `<timeZone>${buildPosixTimeZone(offsetMinutes)}</timeZone>` +
+    `</Time>`
+  );
+}
+
+// Режим NTP — таймзона выставляется отдельно, часы устройство тянет само
+// с NTP-сервера (time.google.com), поэтому localTime не передаём.
+function buildNtpTimeXml(offsetMinutes) {
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<Time version="2.0" ${ISAPI_XML_NS}>` +
+    `<timeMode>NTP</timeMode>` +
+    `<timeZone>${buildPosixTimeZone(offsetMinutes)}</timeZone>` +
+    `</Time>`
+  );
+}
+
+function buildNtpServerXml() {
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>` +
+    `<NTPServer version="2.0" ${ISAPI_XML_NS}>` +
+    `<id>1</id>` +
+    `<addressingFormatType>hostname</addressingFormatType>` +
+    `<hostName>${NTP_HOST}</hostName>` +
+    `<portNo>123</portNo>` +
+    `<synchronizeInterval>60</synchronizeInterval>` +
+    `</NTPServer>`
+  );
+}
+
+// Ошибки синхронизации времени приводим к стабильным кодам: UI переводит код
+// сам, а detail (текст устройства) показывает вторым планом и не переводит.
+export function syncTimeError(code, detail = "") {
+  const err = new Error(detail ? `${code}: ${detail}` : code);
+  err.syncCode = code;
+  err.detail = String(detail || "").slice(0, 200);
+  return err;
+}
+
+// Устройство отвечает XML/JSON: в UI нужен statusString, а не весь дамп тела.
+function extractDeviceMessage(body) {
+  if (!body) return "";
+  const text = typeof body === "string" ? body : JSON.stringify(body);
+  const sub = text.match(/<subStatusCode>([^<]+)<\/subStatusCode>/i)?.[1];
+  const status = text.match(/<statusString>([^<]+)<\/statusString>/i)?.[1];
+
+  let fromJson = "";
+  try {
+    const parsed = JSON.parse(text);
+    fromJson =
+      parsed?.subStatusCode ||
+      parsed?.statusString ||
+      parsed?.message ||
+      parsed?.errorCode ||
+      "";
+  } catch {
+    fromJson = "";
+  }
+
+  const message = sub || status || fromJson || text;
+  return String(message).replace(/\s+/g, " ").trim().slice(0, 200);
+}
+
+const NETWORK_ERROR_CODES = {
+  ECONNREFUSED: "CONNECTION_REFUSED",
+  ETIMEDOUT: "TIMEOUT",
+  ESOCKETTIMEDOUT: "TIMEOUT",
+  ECONNABORTED: "TIMEOUT",
+  EHOSTUNREACH: "UNREACHABLE",
+  ENETUNREACH: "UNREACHABLE",
+  ENOTFOUND: "UNREACHABLE",
+  EAI_AGAIN: "UNREACHABLE",
+  ECONNRESET: "NETWORK",
+  EPIPE: "NETWORK",
+};
+
+export function classifyTransportError(err) {
+  if (err?.syncCode) return err;
+
+  const code =
+    NETWORK_ERROR_CODES[err?.code] || NETWORK_ERROR_CODES[err?.errno];
+  if (code) return syncTimeError(code, err?.message);
+  if (err?.type === "request-timeout" || /timeout/i.test(err?.message || ""))
+    return syncTimeError("TIMEOUT", err?.message);
+
+  return syncTimeError("NETWORK", err?.message);
+}
+
+export function classifyHttpError(status, body) {
+  const detail = extractDeviceMessage(body);
+  if (status === 401 || status === 403) return syncTimeError("AUTH", detail);
+  if (status === 404) return syncTimeError("NOT_SUPPORTED_BY_DEVICE", detail);
+  if (status >= 500)
+    return syncTimeError("DEVICE_ERROR", detail || `HTTP ${status}`);
+  return syncTimeError("DEVICE_REJECTED", detail || `HTTP ${status}`);
+}
 
 export const FaceDeviceClient = {
   async updateUser(ip, employeeId, fullName) {
@@ -123,6 +283,113 @@ export const FaceDeviceClient = {
       console.log(`Error HTTP: Ошибка удаления пользователя ${res.status}`);
     }
   },
+
+  async searchUsers(ip) {
+    const client = new fetch(username, password);
+    const url = `http://${ip}${api_get_users}`;
+    const users = [];
+    let position = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const res = await client.fetch(url, {
+        method: "POST",
+        body: JSON.stringify({
+          UserInfoSearchCond: {
+            searchID: "1",
+            searchResultPosition: position,
+            maxResults: 30,
+          },
+        }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) break;
+      const data = await res.json();
+      const items = data?.UserInfoSearch?.UserInfo || [];
+      users.push(
+        ...items.map((u) => ({ employeeNo: u.employeeNo, name: u.name || "" })),
+      );
+      hasMore = data?.UserInfoSearch?.responseStatusStrg === "MORE";
+      if (hasMore) position += items.length;
+    }
+    return users;
+  },
+
+  async syncTime(ip, offsetMinutes, mode = "manual") {
+    const client = new fetch(username, password);
+
+    const putXml = async (path, xml) => {
+      let res;
+      try {
+        res = await client.fetch(`http://${ip}${path}`, {
+          method: "PUT",
+          body: xml,
+          headers: { "Content-Type": "application/xml" },
+        });
+      } catch (err) {
+        throw classifyTransportError(err);
+      }
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        throw classifyHttpError(res.status, body);
+      }
+    };
+
+    if (mode === "ntp") {
+      // NTP-сервер — обязательный шаг, именно он запускает синхронизацию.
+      await putXml(api_ntp_server, buildNtpServerXml());
+      // Переключение timeMode на NTP часть прошивок отклоняет как избыточное
+      // (сервер уже включён и синхронизирует), это не должно считаться сбоем.
+      try {
+        await putXml(api_time, buildNtpTimeXml(offsetMinutes));
+      } catch (err) {
+        console.warn(`syncTime NTP ${ip}: timeMode не переключён:`, err.message);
+      }
+    } else {
+      await putXml(api_time, buildManualTimeXml(offsetMinutes));
+    }
+  },
+
+  async checkOnline(ip, port = 80, timeout = 2000) {
+    return new Promise((resolve) => {
+      const socket = new net.Socket();
+      const finish = (online) => {
+        socket.destroy();
+        resolve(online);
+      };
+      socket.setTimeout(timeout);
+      socket.once("connect", () => finish(true));
+      socket.once("timeout", () => finish(false));
+      socket.once("error", () => finish(false));
+      socket.connect(port, ip);
+    });
+  },
+
+  // Сколько людей уже прописано на терминале и сколько всего влезает.
+  // Не хранится в базе — запрашивается на лету, как онлайн-статус.
+  async getUserCapacity(ip) {
+    const client = new fetch(username, password);
+
+    const [countRes, capRes] = await Promise.all([
+      client.fetch(`http://${ip}${api_user_count}`, { method: "GET" }),
+      client.fetch(`http://${ip}${api_user_capabilities}`, { method: "GET" }),
+    ]);
+
+    if (!countRes.ok || !capRes.ok) {
+      throw new Error(`Ошибка запроса вместимости (${countRes.status}/${capRes.status})`);
+    }
+
+    const [countData, capData] = await Promise.all([
+      countRes.json(),
+      capRes.json(),
+    ]);
+
+    return {
+      registered: extractCount(countData),
+      capacity: extractMaxCapacity(capData),
+    };
+  },
 };
 
 export const RemoteFaceDeviceClient = {
@@ -175,173 +442,405 @@ export const RemoteFaceDeviceClient = {
     }
   },
 
-  // ➕ Добавление / обновление пользователя
-  async addUserToDevice(employeeNo, name, deviceSerial) {
-    await this.ensureToken();
+  isTokenExpiredError(err) {
+    return (
+      err?.errorCode === "LAP500004" ||
+      err?.message?.includes("LAP500004") ||
+      err?.response?.data?.errorCode === "LAP500004" ||
+      err?.response?.data?.message?.includes("LAP500004")
+    );
+  },
 
-    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/SetUp?format=json`;
-
-    const data = {
-      UserInfo: {
-        employeeNo,
-        name,
-        userType: "normal",
-        Valid: {
-          enable: true,
-          beginTime: "2024-01-01T00:00:00",
-          endTime: "2037-12-31T23:59:59",
-          timeType: "local",
-        },
-        doorRight: "1",
-        RightPlan: [
-          {
-            doorNo: 1,
-            planTemplateNo: "1",
-          },
-        ],
-      },
-    };
-
+  async callWithRetry(fn) {
     try {
-      const response = await axios.put(url, data, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "X-Devserial": deviceSerial,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.data.errorCode && response.data.errorCode !== "0") {
-        throw new Error(response.data.message || "User API error");
+      return await fn();
+    } catch (err) {
+      if (this.isTokenExpiredError(err)) {
+        this.accessToken = null;
+        this.tokenExpireTime = 0;
+        await this.getToken();
+        return fn();
       }
-
-      const status = response.data.ResponseStatus || response.data;
-
-      if (status.statusCode !== 1 && status.statusString !== "OK") {
-        throw new Error(
-          status.subStatusCode ||
-            status.statusString ||
-            "Device rejected user setup",
-        );
-      }
-
-      return true;
-    } catch (error) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.ResponseStatus?.subStatusCode ||
-          error.response?.data ||
-          error.message ||
-          "User setup failed",
-      );
+      throw err;
     }
   },
 
-  // 📷 Добавление фото
-  async addUserPhotoToDevice(employeeNo, name, deviceSerial, photoPath) {
-    await this.ensureToken();
+  // ➕ Добавление / обновление пользователя
+  async addUserToDevice(employeeNo, name, deviceSerial) {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
 
-    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/Intelligent/FDLib/FDSetUp?format=json`;
+      const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/SetUp?format=json`;
 
-    const filePath = path.join(
-      process.cwd(),
-      "uploads",
-      "employees",
-      photoPath,
-    );
-    const token = createTempToken(filePath);
-    const photoUrl = `http://${serverIp}:${config.port}/api/employees/photo/${token}`;
-
-    const data = {
-      faceURL: photoUrl,
-      faceLibType: "blackFD",
-      FDID: "1",
-      FPID: String(employeeNo),
-      name: name,
-      bornTime: "1990-01-01T00:00:00Z",
-      saveFacePic: true,
-    };
-
-    try {
-      const response = await axios.put(url, data, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "X-Devserial": deviceSerial,
-          "Content-Type": "application/json",
+      const data = {
+        UserInfo: {
+          employeeNo,
+          name,
+          userType: "normal",
+          Valid: {
+            enable: true,
+            beginTime: "2024-01-01T00:00:00",
+            endTime: "2037-12-31T23:59:59",
+            timeType: "local",
+          },
+          doorRight: "1",
+          RightPlan: [
+            {
+              doorNo: 1,
+              planTemplateNo: "1",
+            },
+          ],
         },
-      });
+      };
 
-      if (response.data.errorCode && response.data.errorCode !== "0") {
-        throw new Error(response.data.message || "Photo API error");
+      try {
+        const response = await axios.put(url, data, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "X-Devserial": deviceSerial,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.data.errorCode && response.data.errorCode !== "0") {
+          throw new Error(response.data.message || "User API error");
+        }
+
+        const status = response.data.ResponseStatus || response.data;
+
+        if (status.statusCode !== 1 && status.statusString !== "OK") {
+          throw new Error(
+            status.subStatusCode ||
+              status.statusString ||
+              "Device rejected user setup",
+          );
+        }
+
+        return true;
+      } catch (error) {
+        throw new Error(
+          error.response?.data?.message ||
+            error.response?.data?.ResponseStatus?.subStatusCode ||
+            error.response?.data ||
+            error.message ||
+            "User setup failed",
+        );
+      }
+    });
+  },
+
+  // 📷 Добавление фото
+  async addUserPhotoToDevice(
+    employeeNo,
+    name,
+    deviceSerial,
+    photoPath,
+    tenant,
+  ) {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
+
+      const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/Intelligent/FDLib/FDSetUp?format=json`;
+
+      const filePath = path.join(
+        process.cwd(),
+        "uploads",
+        "employees",
+        photoPath,
+      );
+      const token = createTempToken(filePath);
+      const photoUrl = `https://${tenant}.onbase.uz/api/employees/photo/${token}`;
+
+      const data = {
+        faceURL: photoUrl,
+        faceLibType: "blackFD",
+        FDID: "1",
+        FPID: String(employeeNo),
+        name: name,
+        bornTime: "1990-01-01T00:00:00Z",
+        saveFacePic: true,
+      };
+
+      try {
+        const response = await axios.put(url, data, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "X-Devserial": deviceSerial,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.data.errorCode && response.data.errorCode !== "0") {
+          throw new Error(response.data.message || "Photo API error");
+        }
+
+        const status = response.data.ResponseStatus || response.data;
+
+        if (status.statusCode !== 1 && status.statusString !== "OK") {
+          throw new Error(
+            status.subStatusCode ||
+              status.statusString ||
+              "Device rejected photo",
+          );
+        }
+
+        return true;
+      } catch (error) {
+        throw new Error(
+          error.response?.data?.message ||
+            error.response?.data?.ResponseStatus?.subStatusCode ||
+            error.response?.data ||
+            error.message ||
+            "Photo upload failed",
+        );
+      }
+    });
+  },
+
+  async getUsers(deviceSerial) {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
+      const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/Search?format=json`;
+      const users = [];
+      let position = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        try {
+          const response = await axios.post(
+            url,
+            {
+              UserInfoSearchCond: {
+                searchID: "1",
+                searchResultPosition: position,
+                maxResults: 30,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${this.accessToken}`,
+                "X-Devserial": deviceSerial,
+                "Content-Type": "application/json",
+              },
+            },
+          );
+          if (response.data.errorCode && response.data.errorCode !== "0") {
+            if (this.isTokenExpiredError(response.data))
+              throw new Error(response.data.message);
+            break;
+          }
+          const items = response.data?.UserInfoSearch?.UserInfo || [];
+          users.push(
+            ...items.map((u) => ({
+              employeeNo: u.employeeNo,
+              name: u.name || "",
+            })),
+          );
+          hasMore =
+            response.data?.UserInfoSearch?.responseStatusStrg === "MORE";
+          if (hasMore) position += items.length;
+          else break;
+        } catch (err) {
+          if (this.isTokenExpiredError(err)) throw err;
+          break;
+        }
+      }
+      return users;
+    });
+  },
+
+  // 📋 Получение событий доступа
+  async getEvents(deviceSerial, startTime, endTime) {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
+
+      const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/AcsEvent?format=json`;
+      const allEvents = [];
+      let position = 0;
+
+      while (true) {
+        let response;
+        try {
+          response = await axios.post(
+            url,
+            {
+              AcsEventCond: {
+                searchID: "1",
+                searchResultPosition: position,
+                maxResults: 100,
+                major: 5,
+                minor: 75,
+                startTime,
+                endTime,
+                picEnable: false,
+              },
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${this.accessToken}`,
+                "X-Devserial": deviceSerial,
+                "Content-Type": "application/json",
+              },
+              timeout: 20000,
+            },
+          );
+        } catch (err) {
+          if (this.isTokenExpiredError(err)) throw err;
+          console.warn(
+            `⚠️ [remote:${deviceSerial}] getEvents error: ${err.message}`,
+          );
+          break;
+        }
+
+        if (response.data.errorCode && response.data.errorCode !== "0") {
+          if (this.isTokenExpiredError(response.data))
+            throw new Error(response.data.message);
+          console.warn(
+            `⚠️ [remote:${deviceSerial}] API error: ${response.data.message}`,
+          );
+          break;
+        }
+
+        const batch = response.data?.AcsEvent?.InfoList || [];
+        if (!batch.length) break;
+
+        allEvents.push(...batch);
+        position += batch.length;
       }
 
-      const status = response.data.ResponseStatus || response.data;
+      return allEvents;
+    });
+  },
 
-      if (status.statusCode !== 1 && status.statusString !== "OK") {
-        throw new Error(
-          status.subStatusCode ||
-            status.statusString ||
-            "Device rejected photo",
-        );
+  // 🕒 Синхронизация времени
+  async syncTime(deviceSerial, offsetMinutes, mode = "manual") {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
+
+      // Без ?format=json (см. комментарий у api_time выше) — с ним устройство
+      // ждёт JSON-тело и отклоняет XML как badXmlContent. Ответ тоже придёт
+      // как XML-строка, поэтому статус не разбираем — успех есть успех, если
+      // axios не бросил исключение (не 2xx).
+      const putIsapi = async (isapiPath, xml) => {
+        const url = `${this.domain}/api/hpcgw/v1/device/transparent${isapiPath}`;
+
+        try {
+          await axios.put(url, xml, {
+            headers: {
+              Authorization: `Bearer ${this.accessToken}`,
+              "X-Devserial": deviceSerial,
+              "Content-Type": "application/xml",
+            },
+          });
+        } catch (error) {
+          // Протухший токен обрабатывает callWithRetry — ошибку не подменяем.
+          if (this.isTokenExpiredError(error)) throw error;
+          if (error.response)
+            throw classifyHttpError(error.response.status, error.response.data);
+          throw classifyTransportError(error);
+        }
+      };
+
+      if (mode === "ntp") {
+        // NTP-сервер — обязательный шаг, именно он запускает синхронизацию.
+        await putIsapi("/ISAPI/System/time/ntpServers/1", buildNtpServerXml());
+        // Переключение timeMode часть прошивок отклоняет как избыточное
+        // (сервер уже включён и синхронизирует), это не должно считаться сбоем.
+        try {
+          await putIsapi("/ISAPI/System/time", buildNtpTimeXml(offsetMinutes));
+        } catch (err) {
+          console.warn(
+            `syncTime NTP [remote:${deviceSerial}]: timeMode не переключён: ${err.message}`,
+          );
+        }
+      } else {
+        await putIsapi("/ISAPI/System/time", buildManualTimeXml(offsetMinutes));
       }
 
       return true;
-    } catch (error) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.ResponseStatus?.subStatusCode ||
-          error.response?.data ||
-          error.message ||
-          "Photo upload failed",
-      );
-    }
+    });
   },
 
   // ❌ Удаление пользователя
   async deleteUserFromDevice(employeeNo, deviceSerial) {
-    await this.ensureToken();
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
 
-    const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/Delete?format=json`;
+      const url = `${this.domain}/api/hpcgw/v1/device/transparent/ISAPI/AccessControl/UserInfo/Delete?format=json`;
 
-    const data = {
-      UserInfoDelCond: {
-        EmployeeNoList: [{ employeeNo }],
-      },
-    };
-
-    try {
-      const response = await axios.put(url, data, {
-        headers: {
-          Authorization: `Bearer ${this.accessToken}`,
-          "X-Devserial": deviceSerial,
-          "Content-Type": "application/json",
+      const data = {
+        UserInfoDelCond: {
+          EmployeeNoList: [{ employeeNo }],
         },
-      });
+      };
 
-      if (response.data.errorCode && response.data.errorCode !== "0") {
-        throw new Error(response.data.message || "Delete API error");
-      }
+      try {
+        const response = await axios.put(url, data, {
+          headers: {
+            Authorization: `Bearer ${this.accessToken}`,
+            "X-Devserial": deviceSerial,
+            "Content-Type": "application/json",
+          },
+        });
 
-      const status = response.data.ResponseStatus || response.data;
+        if (response.data.errorCode && response.data.errorCode !== "0") {
+          throw new Error(response.data.message || "Delete API error");
+        }
 
-      if (status.statusCode !== 1 && status.statusString !== "OK") {
+        const status = response.data.ResponseStatus || response.data;
+
+        if (status.statusCode !== 1 && status.statusString !== "OK") {
+          throw new Error(
+            status.subStatusCode ||
+              status.statusString ||
+              "Device rejected delete",
+          );
+        }
+
+        return true;
+      } catch (error) {
         throw new Error(
-          status.subStatusCode ||
-            status.statusString ||
-            "Device rejected delete",
+          error.response?.data?.message ||
+            error.response?.data?.ResponseStatus?.subStatusCode ||
+            error.response?.data ||
+            error.message ||
+            "User delete failed",
         );
       }
+    });
+  },
 
-      return true;
-    } catch (error) {
-      throw new Error(
-        error.response?.data?.message ||
-          error.response?.data?.ResponseStatus?.subStatusCode ||
-          error.response?.data ||
-          error.message ||
-          "User delete failed",
-      );
-    }
+  // Аналог FaceDeviceClient.getUserCapacity, только через транспарентный канал
+  async getUserCapacity(deviceSerial) {
+    return this.callWithRetry(async () => {
+      await this.ensureToken();
+
+      const headers = {
+        Authorization: `Bearer ${this.accessToken}`,
+        "X-Devserial": deviceSerial,
+        "Content-Type": "application/json",
+      };
+
+      const [countRes, capRes] = await Promise.all([
+        axios.get(
+          `${this.domain}/api/hpcgw/v1/device/transparent${api_user_count}`,
+          { headers },
+        ),
+        axios.get(
+          `${this.domain}/api/hpcgw/v1/device/transparent${api_user_capabilities}`,
+          { headers },
+        ),
+      ]);
+
+      if (countRes.data.errorCode && countRes.data.errorCode !== "0") {
+        throw new Error(countRes.data.message || "Count API error");
+      }
+
+      return {
+        registered: extractCount(countRes.data),
+        capacity: extractMaxCapacity(capRes.data),
+      };
+    });
   },
 };
 

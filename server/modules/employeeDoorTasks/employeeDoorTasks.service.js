@@ -1,121 +1,111 @@
 import { RemoteFaceDeviceClient } from "../../utils/faceDeviceFunction.js";
 import { retry } from "../../utils/utils.js";
 import { EmployeeDoorTasksModel } from "./employeeDoorTasks.model.js";
+import { tenantContext } from "../../utils/tenantContext.js";
+import { getPrismaForTenant } from "../../utils/prismaForTenant.js";
 
 export const EmployeeDoorTasksService = {
   async addTask(employeeId, doorId, action) {
-    try {
-      return await EmployeeDoorTasksModel.create({
-        employee_id: employeeId,
-        door_id: doorId,
-        action,
-        status: "pending",
-      });
-    } catch (err) {
-      console.error("Ошибка при добавлении задачи:", err);
-      throw err;
-    }
+    const tenant = tenantContext.get();
+    if (!tenant) throw new Error("No tenant context for addTask");
+    return await EmployeeDoorTasksModel.create({
+      tenant_id: tenant.id,
+      employee_id: employeeId,
+      door_id: doorId,
+      action,
+      status: "pending",
+    });
   },
 
   async addManyTasks(tasks) {
     if (!tasks || tasks.length === 0) return;
-    try {
-      return await EmployeeDoorTasksModel.createMany(tasks);
-    } catch (err) {
-      console.error("Ошибка при добавлении нескольких задач:", err);
-      throw err;
-    }
+    const tenant = tenantContext.get();
+    if (!tenant) throw new Error("No tenant context for addManyTasks");
+    const tasksWithTenant = tasks.map((t) => ({ ...t, tenant_id: tenant.id }));
+    return await EmployeeDoorTasksModel.createMany(tasksWithTenant);
   },
 
   async getPendingTasks() {
-    try {
-      return await EmployeeDoorTasksModel.findMany({ status: "pending" });
-    } catch (err) {
-      console.error("Ошибка при получении pending задач:", err);
-      throw err;
-    }
+    const tenant = tenantContext.get();
+    const filter = { status: "pending" };
+    if (tenant) filter.tenant_id = tenant.id;
+    return await EmployeeDoorTasksModel.findMany(filter);
   },
 
   async updateTask(id, data) {
-    try {
-      return await EmployeeDoorTasksModel.update(id, data);
-    } catch (err) {
-      console.error(`Ошибка при обновлении задачи с id=${id}:`, err);
-      throw err;
-    }
+    return await EmployeeDoorTasksModel.update(id, data);
   },
 
   async updateManyTasks(filter, data) {
-    try {
-      return await EmployeeDoorTasksModel.updateMany(filter, data);
-    } catch (err) {
-      console.error("Ошибка при обновлении нескольких задач:", err);
-      throw err;
-    }
+    return await EmployeeDoorTasksModel.updateMany(filter, data);
   },
 
   async deleteTasks(filter) {
-    try {
-      return await EmployeeDoorTasksModel.deleteMany(filter);
-    } catch (err) {
-      console.error("Ошибка при удалении задач:", err);
-      throw err;
-    }
+    const tenant = tenantContext.get();
+    const finalFilter = tenant ? { ...filter, tenant_id: tenant.id } : filter;
+    return await EmployeeDoorTasksModel.deleteMany(finalFilter);
   },
 
-  async processTask(task) {
-    if (!task.door) {
+  async processTask(task, employee, door, tenant) {
+    if (!door) {
       throw new Error(`Door ${task.door_id} not found`);
     }
 
-    const device = (task.door?.faceDevices ?? []).find(
-      (fd) => fd.serial_number,
-    );
+    const devices = (door.faceDevices ?? []).filter((fd) => fd.serial_number);
 
-    if (!device) {
+    if (devices.length === 0) {
       throw new Error(`No device attached to door ${task.door_id}`);
     }
 
     const employeeNo = String(task.employee_id);
 
     if (task.action === "delete") {
-      await retry(
-        () =>
-          RemoteFaceDeviceClient.deleteUserFromDevice(
-            employeeNo,
-            device.serial_number,
-          ),
-        { retries: 3, delay: 10000 },
-      );
+      for (const device of devices) {
+        await retry(
+          () =>
+            RemoteFaceDeviceClient.deleteUserFromDevice(
+              employeeNo,
+              device.serial_number,
+            ),
+          { retries: 3, delay: 10000 },
+        );
+      }
       return;
     }
 
-    const { first_name, last_name, photo } = task.employee;
+    if (!employee) {
+      throw new Error(`Employee ${task.employee_id} not found`);
+    }
+
+    const { first_name, last_name, photo } = employee;
     const fullName = `${last_name} ${first_name}`;
 
-    await retry(
-      async () => {
-        await RemoteFaceDeviceClient.addUserToDevice(
-          employeeNo,
-          fullName,
-          device.serial_number,
-        );
-
-        if (photo) {
-          await RemoteFaceDeviceClient.addUserPhotoToDevice(
+    for (const device of devices) {
+      await retry(
+        async () => {
+          await RemoteFaceDeviceClient.addUserToDevice(
             employeeNo,
             fullName,
             device.serial_number,
-            photo,
           );
-        }
-      },
-      { retries: 3, delay: 10000 },
-    );
+
+          if (photo) {
+            await RemoteFaceDeviceClient.addUserPhotoToDevice(
+              employeeNo,
+              fullName,
+              device.serial_number,
+              photo,
+              tenant,
+            );
+          }
+        },
+        { retries: 3, delay: 10000 },
+      );
+    }
   },
 
   async processPendingTasks() {
-    const tasks = await EmployeeDoorTasksModel.findMany({ status: "pending" });
+    const tasks = await EmployeeDoorTasksModel.findPending();
 
     if (tasks.length === 0) return;
 
@@ -125,7 +115,25 @@ export const EmployeeDoorTasksService = {
       await EmployeeDoorTasksModel.update(task.id, { status: "processing" });
 
       try {
-        await this.processTask(task);
+        const tenantPrisma = getPrismaForTenant(task.tenant.schema);
+
+        const [employee, door] = await Promise.all([
+          tenantPrisma.employees.findUnique({
+            where: { id: task.employee_id },
+            select: {
+              id: true,
+              first_name: true,
+              last_name: true,
+              photo: true,
+            },
+          }),
+          tenantPrisma.doors.findUnique({
+            where: { id: task.door_id },
+            include: { faceDevices: true },
+          }),
+        ]);
+
+        await this.processTask(task, employee, door, task.tenant.schema);
 
         await EmployeeDoorTasksModel.update(task.id, {
           status: "done",

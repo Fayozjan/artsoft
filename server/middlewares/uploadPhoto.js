@@ -3,23 +3,39 @@ import path from "path";
 import fs from "fs";
 import sharp from "sharp";
 
+const ALLOWED_MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_EXT = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+
 const uploadPhoto = (typeFolder = "employees") => {
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const clientFolder = req?.tenant?.subdomain || "default";
       const dir = path.join("uploads", typeFolder, clientFolder);
-      fs.mkdirSync(dir, { recursive: true }); // existsSync не нужен перед mkdirSync({ recursive })
+      fs.mkdirSync(dir, { recursive: true });
       cb(null, dir);
     },
     filename: (req, file, cb) => {
-      // Сохраняем сразу под финальным именем — без temp
       const ext = path.extname(file.originalname).toLowerCase();
-      const pinfl = req.body.pinfl || `upload_${Date.now()}`;
-      cb(null, `${pinfl}${ext}`);
+      const id = req.params?.id;
+      if (id) {
+        cb(null, `${id}${ext}`);
+      } else {
+        cb(null, `upload_${Date.now()}${ext}`);
+      }
     },
   });
 
-  const upload = multer({ storage });
+  const upload = multer({
+    storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (!ALLOWED_MIME.has(file.mimetype) || !ALLOWED_EXT.has(ext)) {
+        return cb(new Error("Only image files allowed"));
+      }
+      cb(null, true);
+    },
+  });
 
   const convertToJpg = async (req, res, next) => {
     if (!req.file) return next();
@@ -28,9 +44,11 @@ const uploadPhoto = (typeFolder = "employees") => {
     const filePath = req.file.path;
     const ext = path.extname(filePath).toLowerCase();
     const maxSize = 200 * 1024;
-    const pinfl = req.body.pinfl || Date.now();
+    const id = req.params?.id;
+    const baseName = path.basename(req.file.filename, path.extname(req.file.filename));
+    const identifier = id || baseName;
 
-    const newFileName = `${pinfl}.jpg`;
+    const newFileName = `${identifier}.jpg`;
     const newPath = path.join(path.dirname(filePath), newFileName);
 
     try {

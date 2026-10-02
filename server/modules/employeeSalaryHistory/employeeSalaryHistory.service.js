@@ -1,5 +1,6 @@
 import { EmployeeSalaryHistoryModel } from "./employeeSalaryHistory.model.js";
 import { PayrollService } from "../payroll/payroll.service.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 const VALID_TYPES = ["monthly", "hourly", "piecework"];
 
@@ -41,6 +42,7 @@ export const EmployeeSalaryHistoryService = {
         addedBy: { connect: { id: Number(userId) } },
       });
 
+      await createAuditLog({ userId, action: "create", entity: "employee_salary_history", recordId: record.id, newData: record });
       await PayrollService.recalculateAllDraftItemsForEmployee(empId);
 
       return { success: true, data: record };
@@ -50,7 +52,7 @@ export const EmployeeSalaryHistoryService = {
     }
   },
 
-  update: async (id, body) => {
+  update: async (id, body, userId) => {
     const { salary_type, amount, date_from, date_to, note } = body;
 
     if (!id) return { success: false, message: "Не указан ID" };
@@ -71,6 +73,7 @@ export const EmployeeSalaryHistoryService = {
       if (note !== undefined) data.note = note || null;
 
       const updated = await EmployeeSalaryHistoryModel.update(id, data);
+      await createAuditLog({ userId, action: "update", entity: "employee_salary_history", recordId: id, oldData: existing, newData: updated });
 
       await PayrollService.recalculateAllDraftItemsForEmployee(existing.employee_id);
 
@@ -204,13 +207,14 @@ export const EmployeeSalaryHistoryService = {
     }
   },
 
-  deleteById: async (id) => {
+  deleteById: async (id, userId) => {
     if (!id) return { success: false, message: "Не указан ID" };
     try {
       const existing = await EmployeeSalaryHistoryModel.findById(id);
       if (!existing) return { success: false, message: "Запись не найдена" };
 
       await EmployeeSalaryHistoryModel.deleteById(id);
+      await createAuditLog({ userId, action: "delete", entity: "employee_salary_history", recordId: id, oldData: existing });
 
       await PayrollService.recalculateAllDraftItemsForEmployee(existing.employee_id);
 

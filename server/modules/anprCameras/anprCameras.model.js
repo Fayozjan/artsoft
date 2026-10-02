@@ -70,6 +70,11 @@ export const AnprCamerasModel = {
     });
   },
 
+  delete: async (id) => {
+    const prisma = prismaContext.get();
+    return prisma.anpr_cameras.delete({ where: { id: Number(id) } });
+  },
+
   findActive: async () => {
     const prisma = prismaContext.get();
     return prisma.anpr_cameras.findMany({

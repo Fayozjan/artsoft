@@ -1,4 +1,5 @@
 import { GateModel } from "./gates.model.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 export const GatesService = {
   getGates: async ({ page, pageSize, filters = {} }) => {
@@ -50,17 +51,22 @@ export const GatesService = {
     return GateModel.findUnique(id);
   },
 
-  createGate: async ({ name, status = true }) => {
-    return GateModel.create({
+  createGate: async ({ name, status = true }, userId) => {
+    const result = await GateModel.create({
       name: name?.trim(),
       status,
     });
+    await createAuditLog({ userId, action: "create", entity: "gates", recordId: result.id, newData: result });
+    return result;
   },
 
-  updateGate: async (id, { name, status }) => {
-    return GateModel.update(id, {
+  updateGate: async (id, { name, status }, userId) => {
+    const old = await GateModel.findUnique(id);
+    const result = await GateModel.update(id, {
       name: name?.trim(),
       status: status === "true",
     });
+    await createAuditLog({ userId, action: "update", entity: "gates", recordId: id, oldData: old, newData: result });
+    return result;
   },
 };

@@ -1,6 +1,7 @@
 import { AuthModel } from "./auth.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 const signTokens = (userId, username) => {
   const accessToken = jwt.sign(
@@ -15,7 +16,7 @@ const signTokens = (userId, username) => {
 };
 
 export const AuthService = {
-  login: async (username, password, language) => {
+  login: async (username, password, language, theme) => {
     const user = await AuthModel.findUserByUsername(username);
 
     if (!user) {
@@ -44,6 +45,12 @@ export const AuthService = {
       ).language;
     }
 
+    if (theme && theme !== user.theme) {
+      user.theme = (
+        await AuthModel.updateUserTheme(user.id, theme)
+      ).theme;
+    }
+
     const refreshToken = jwt.sign({ id: user.id }, process.env.REFRESH_SECRET, {
       expiresIn: "8h",
     });
@@ -55,13 +62,21 @@ export const AuthService = {
       { expiresIn: "15m" },
     );
 
+    await createAuditLog({
+      userId: user.id, action: "login", entity: "auth", recordId: user.id,
+      newData: { username: user.username },
+    });
+
     return {
       accessToken,
       refreshToken,
       user: {
+        id: user?.id,
         language: user?.language,
         theme: user?.theme,
         sidebar: user?.sidebar,
+        access_level: user?.access_level,
+        employee_id: user?.employee_id,
         first_name: user?.employee?.first_name,
         last_name: user?.employee?.last_name,
         middle_name: user?.employee?.middle_name,
@@ -91,6 +106,11 @@ export const AuthService = {
     const { accessToken, refreshToken } = signTokens(user.id, user.username);
     await AuthModel.createSession({ userId: user.id, refreshToken });
 
+    await createAuditLog({
+      userId: user.id, action: "login", entity: "auth", recordId: user.id,
+      newData: { username: user.username, via: "telegram" },
+    });
+
     return {
       accessToken,
       refreshToken,
@@ -112,6 +132,9 @@ export const AuthService = {
     try {
       const payload = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
       await AuthModel.deleteSession({ userId: payload.id, refreshToken });
+      await createAuditLog({
+        userId: payload.id, action: "logout", entity: "auth", recordId: payload.id,
+      });
     } catch {
       // Игнорируем ошибки
     }

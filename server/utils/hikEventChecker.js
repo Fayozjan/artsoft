@@ -16,6 +16,14 @@ import {
 } from "../modules/employees/employees.model.js";
 import { notificationsOutboxService } from "../modules/notificationsOutbox/notificationsOutbox.service.js";
 import { telegramBotsService } from "../modules/telegramBots/telegramBots.service.js";
+import { calcLateForNotification } from "../modules/facePasses/facePasses.service.js";
+import { prismaPublic, getPrismaForTenant } from "./prismaForTenant.js";
+import { tenantContext } from "./tenantContext.js";
+import { prismaContext } from "./prismaContext.js";
+import { RemoteFaceDeviceClient } from "./faceDeviceFunction.js";
+import { resolveEventDirection } from "./utils.js";
+import { CanteenModel } from "../modules/canteen/canteen.model.js";
+import { CanteenService } from "../modules/canteen/canteen.service.js";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -94,6 +102,8 @@ function parseMultipartResponse(buffer, boundary) {
 }
 
 function buildPhotoPath(info) {
+  const tenant = tenantContext.get();
+  const schema = tenant?.schema ?? DEFAULT_TENANT;
   const d = new Date(info.time);
   const year = d.getFullYear().toString();
   const month = (d.getMonth() + 1).toString().padStart(2, "0");
@@ -103,14 +113,14 @@ function buildPhotoPath(info) {
     "..",
     "uploads",
     "face-passes",
-    DEFAULT_TENANT,
+    schema,
     year,
     month,
   );
   return {
     folderPath,
     imagePath: path.join(folderPath, fileName),
-    relativePath: `${DEFAULT_TENANT}/${year}/${month}/${fileName}`,
+    relativePath: `${schema}/${year}/${month}/${fileName}`,
   };
 }
 
@@ -128,9 +138,9 @@ async function savePhotoFromBuffer(buffer, info) {
   return relativePath;
 }
 
-async function downloadPhotoByUrl(imageUrl, info) {
+async function downloadPhotoByUrl(imageUrl, info, password) {
   const { folderPath, imagePath, relativePath } = buildPhotoPath(info);
-  const client = new fetch(USERNAME, PASSWORD);
+  const client = new fetch(USERNAME, password ?? PASSWORD);
 
   for (let attempt = 1; attempt <= 5; attempt++) {
     const controller = new AbortController();
@@ -171,21 +181,26 @@ async function resolveEventPhoto(e) {
   if (e._photoBuffer) {
     return savePhotoFromBuffer(e._photoBuffer, e);
   }
-  if (e.pictureURL) {
-    const ip = new URL(e.pictureURL).hostname;
-    return enqueuePhoto(ip, () => downloadPhotoByUrl(e.pictureURL, e));
+  if (e.pictureURL && e.device?.is_local) {
+    const parsedUrl = new URL(e.pictureURL);
+    parsedUrl.hostname = e.device.device_ip;
+    parsedUrl.port = String(e.device.port ?? 80);
+    const photoUrl = parsedUrl.toString();
+    return enqueuePhoto(e.device.device_ip, () =>
+      downloadPhotoByUrl(photoUrl, e, e.device?.password),
+    );
   }
   return null;
 }
 
 // ─── Client factory ───────────────────────────────────────────────────────────
 
-export function createHikClient() {
-  return new fetch(USERNAME, PASSWORD);
+export function createHikClient(password) {
+  return new fetch(USERNAME, password ?? PASSWORD);
 }
 
-async function fetchEventsBatch(client, deviceIp, postData) {
-  const url = `http://${deviceIp}${API_ACS_EVENT}`;
+async function fetchEventsBatch(client, deviceIp, port, postData) {
+  const url = `http://${deviceIp}:${port ?? 80}${API_ACS_EVENT}`;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const controller = new AbortController();
@@ -252,7 +267,23 @@ async function fetchEventsBatch(client, deviceIp, postData) {
 }
 
 async function fetchAllBatchesForDevice(device, startTime, endTime) {
-  const client = createHikClient();
+  if (!device.is_local) {
+    if (!device.serial_number) {
+      console.warn(
+        `⚠️ Удалённое устройство без serial_number: ${device.device_ip}`,
+      );
+      return [];
+    }
+    const events = await RemoteFaceDeviceClient.getEvents(
+      device.serial_number,
+      startTime,
+      endTime,
+    );
+    return events.map((e) => ({ ...e, device }));
+  }
+
+  const client = createHikClient(device.password);
+
   let position = 0;
   const allEvents = [];
 
@@ -269,7 +300,12 @@ async function fetchAllBatchesForDevice(device, startTime, endTime) {
       },
     };
 
-    const batch = await fetchEventsBatch(client, device.device_ip, postData);
+    const batch = await fetchEventsBatch(
+      client,
+      device.device_ip,
+      device.port,
+      postData,
+    );
     if (!batch.length) break;
 
     allEvents.push(...batch.map((e) => ({ ...e, device })));
@@ -304,6 +340,20 @@ function getRange(from, to) {
   };
 }
 
+// В отличие от getRange, границы не округляются до суток — нужно для окон
+// меньше дня (крон-задача events_sync с window_minutes = 60 и т.п.).
+function getExactRange(from, to) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const fmt = (d) =>
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}+05:00`;
+  return { startTime: fmt(new Date(from)), endTime: fmt(new Date(to)) };
+}
+
+// serialNo — счётчик журнала конкретного устройства, поэтому identifier
+// уникален только в паре с устройством (см. @@unique в схеме).
+const passKey = (deviceId, identifier) => `${deviceId ?? "null"}:${identifier}`;
+
 async function asyncPool(poolLimit, array, iteratorFn) {
   const ret = [];
   const executing = new Set();
@@ -318,19 +368,39 @@ async function asyncPool(poolLimit, array, iteratorFn) {
   return Promise.all(ret);
 }
 
+// Дедупликация одновременных вставок одного и того же сотрудника.
+// Ключ — schema:empId, поэтому работает и внутри прогона (asyncPool по событиям),
+// и между параллельными тирами планировщика (live/recovery/deep_sync/weekly_sync).
+const pendingEmployeeInserts = new Map();
+
 async function ensureEmployeeExists(empId, info, allEmployeeIds) {
   if (allEmployeeIds.has(empId)) return true;
   if (!ADD_NOT_FOUND_USER) return false;
+  if (!Number.isInteger(empId)) {
+    console.warn(`⚠️ Пропущен нечисловой employeeNo: ${info?.employeeNoString}`);
+    return false;
+  }
 
-  try {
-    await addEmployeeRaw({
+  const schema = tenantContext.get()?.schema ?? DEFAULT_TENANT ?? "default";
+  const key = `${schema}:${empId}`;
+
+  let pending = pendingEmployeeInserts.get(key);
+  if (!pending) {
+    pending = addEmployeeRaw({
       id: empId,
       first_name: info.name,
       branch_id: 15,
       status: true,
-    });
+    }).finally(() => pendingEmployeeInserts.delete(key));
+    pendingEmployeeInserts.set(key, pending);
+  }
+
+  try {
+    const created = await pending;
     allEmployeeIds.add(empId);
-    console.log(`👤 Добавлен новый пользователь: ${info.name} (${empId})`);
+    if (created) {
+      console.log(`👤 Добавлен новый пользователь: ${info.name} (${empId})`);
+    }
     return true;
   } catch (err) {
     console.error("Ошибка добавления нового сотрудника:", err);
@@ -340,19 +410,23 @@ async function ensureEmployeeExists(empId, info, allEmployeeIds) {
 
 // ─── Main checker ─────────────────────────────────────────────────────────────
 
-export async function events_checker(from, to) {
-  const { startTime, endTime } =
-    typeof from === "number" ? getDayRange(from) : getRange(from, to);
-
-  const [allActiveDoors, existedIds, allEmployeeIds, employeeSubscribers] =
-    await Promise.all([
-      DoorModel.findActive(),
-      FacePassesModel.findIds(startTime, endTime),
-      EmployeeModel.getAllIds(),
-      telegramBotsService.getEventAlertBots(),
-    ]);
+async function _runEventsForRange(startTime, endTime) {
+  const [
+    allActiveDoors,
+    existedIds,
+    existedMealIds,
+    allEmployeeIds,
+    employeeSubscribers,
+  ] = await Promise.all([
+    DoorModel.findActive(),
+    FacePassesModel.findIds(startTime, endTime),
+    CanteenModel.findMealIds(startTime, endTime),
+    EmployeeModel.getAllIds(),
+    telegramBotsService.getEventAlertBots(),
+  ]);
 
   const existedFacePassIds = new Set(existedIds);
+  const existedCanteenMealIds = new Set(existedMealIds);
   const employeeIdSet = new Set(allEmployeeIds);
 
   await asyncPool(3, allActiveDoors, async (door) => {
@@ -373,10 +447,14 @@ export async function events_checker(from, to) {
       );
       const doorEvents = perDevice.flat();
 
-      // 2. Фильтруем только новые
-      const newEvents = doorEvents.filter(
-        (e) => !existedFacePassIds.has(`${e.employeeNoString}-${e.serialNo}`),
-      );
+      // 2. Фильтруем только новые. События столовой лежат в отдельной
+      // таблице, поэтому и сверяем их с ней, а не с проходами.
+      const newEvents = doorEvents.filter((e) => {
+        const key = passKey(e.device.id, `${e.employeeNoString}-${e.serialNo}`);
+        return e.device.purpose === "canteen"
+          ? !existedCanteenMealIds.has(key)
+          : !existedFacePassIds.has(key);
+      });
 
       // 3. Проверяем/добавляем сотрудников
       await asyncPool(10, newEvents, async (e) => {
@@ -403,41 +481,81 @@ export async function events_checker(from, to) {
         });
       });
 
-      // 5. Записываем в базу — фото уже готово, updatePhoto не нужен
+      // 5. События терминалов столовой — выдача порций, а не проходы
+      const canteenEvents = eventsToInsert.filter(
+        (e) => e.device.purpose === "canteen",
+      );
+      const passEvents = eventsToInsert.filter(
+        (e) => e.device.purpose !== "canteen",
+      );
+
+      if (canteenEvents.length) {
+        for (const e of canteenEvents) {
+          existedCanteenMealIds.add(
+            passKey(e.device.id, `${e.employeeNoString}-${e.serialNo}`),
+          );
+        }
+        await CanteenService.registerPolledEvents(
+          canteenEvents.map((e) => ({
+            employeeId: Number(e.employeeNoString),
+            faceDeviceId: e.device.id,
+            date: e.time,
+            identifier: `${e.employeeNoString}-${e.serialNo}`,
+            photo: e._resolvedPhoto ?? null,
+          })),
+        );
+      }
+
+      // 6. Записываем проходы — фото уже готово, updatePhoto не нужен
       const newPasses = await FacePassesModel.bulkCreate(
-        eventsToInsert.map((e) => ({
+        passEvents.map((e) => ({
           date: e.time,
           identifier: `${e.employeeNoString}-${e.serialNo}`,
           photo: e._resolvedPhoto ?? null,
           employee_id: Number(e.employeeNoString),
           door_id: e.device.door_id,
           face_devices_id: e.device.id,
-          direction: e.device.direction,
+          direction: resolveEventDirection(e.device, e),
         })),
       );
 
-      // 6. Уведомления (fire-and-forget, не блокируем)
+      // 7. Уведомления (fire-and-forget, не блокируем)
       const eventByIdentifier = new Map(
-        eventsToInsert.map((e) => [`${e.employeeNoString}-${e.serialNo}`, e]),
+        passEvents.map((e) => [
+          passKey(e.device.id, `${e.employeeNoString}-${e.serialNo}`),
+          e,
+        ]),
       );
 
       for (const newPass of newPasses) {
-        existedFacePassIds.add(newPass.identifier);
+        const key = passKey(newPass.face_devices_id, newPass.identifier);
+        existedFacePassIds.add(key);
 
-        const e = eventByIdentifier.get(newPass.identifier);
+        const e = eventByIdentifier.get(key);
         if (!e) continue;
 
         const chats = employeeSubscribers.get(Number(e.employeeNoString));
         if (chats?.size > 0) {
-          notificationsOutboxService
-            .create("face_pass", newPass, chats)
-            .catch((err) =>
-              console.error(`❌ Уведомление для ${newPass.id}:`, err.message),
-            );
+          (async () => {
+            try {
+              const lateInfo = await calcLateForNotification(newPass.employee_id, newPass.date, newPass.direction);
+              if (lateInfo) {
+                newPass._lateMinutes = lateInfo.lateMinutes;
+                newPass._lateType = lateInfo.type;
+                newPass._scheduleStart = lateInfo.scheduleStart ?? lateInfo.breakEnd;
+              }
+              await notificationsOutboxService.create("face_pass", newPass, chats);
+            } catch (err) {
+              console.error(`❌ Уведомление для ${newPass.id}:`, err.message);
+            }
+          })();
         }
       }
 
-      console.log(`✅ ${door.name}: добавлено ${eventsToInsert.length}`);
+      console.log(
+        `✅ ${door.name}: проходов ${passEvents.length}` +
+          (canteenEvents.length ? `, порций ${canteenEvents.length}` : ""),
+      );
     } catch (err) {
       console.error(`❌ Дверь ${door.name}:`, err.message);
     }
@@ -446,52 +564,46 @@ export async function events_checker(from, to) {
   console.log("🏁 Все двери обработаны");
 }
 
-// ─── Scheduler ────────────────────────────────────────────────────────────────
-
-export function scheduleEventsChecker() {
-  const tiers = [
-    {
-      label: "live",
-      windowMs: 60 * 60 * 1000, // 1 час
-      intervalMs: 30 * 60 * 1000, // каждые 30 минут
-    },
-    {
-      label: "recovery",
-      windowMs: 12 * 60 * 60 * 1000, // 12 часов
-      intervalMs: 3 * 60 * 60 * 1000, // каждые 3 часа
-    },
-    {
-      label: "deep_sync",
-      windowMs: 24 * 60 * 60 * 1000, // 24 часа
-      intervalMs: 24 * 60 * 60 * 1000, // каждые 24 часа
-    },
-    {
-      label: "weekly_sync",
-      windowMs: 30 * 24 * 60 * 60 * 1000, // 30 дней (месяц)
-      intervalMs: 7 * 24 * 60 * 60 * 1000, // каждые 7 дней (неделя)
-    },
-  ];
-
-  return function start() {
-    tiers.forEach(({ label, windowMs, intervalMs }) => {
-      const run = async () => {
-        const endTime = new Date();
-        const startTime = new Date(endTime - windowMs);
-
-        try {
-          console.log(
-            `🚀 [${label}] ${startTime.toISOString()} → ${endTime.toISOString()}`,
-          );
-          await events_checker(startTime, endTime);
-        } catch (err) {
-          console.error(`❌ [${label}] Ошибка:`, err.message);
-        } finally {
-          setTimeout(run, intervalMs);
-        }
-      };
-
-      const jitter = Math.random() * 5000;
-      setTimeout(run, jitter);
-    });
-  };
+export async function events_checker(from, to) {
+  const { startTime, endTime } =
+    typeof from === "number" ? getDayRange(from) : getRange(from, to);
+  await _runEventsForRange(startTime, endTime);
 }
+
+// Синхронизация «за последние N минут» для текущего тенанта.
+// Тенант берётся из prismaContext/tenantContext вызывающей стороны
+// (крон-планировщик уже открывает их на каждый тик), поэтому тут — не *_per_tenant.
+export async function events_checker_window(windowMinutes) {
+  const end = new Date();
+  const start = new Date(end.getTime() - windowMinutes * 60_000);
+  const { startTime, endTime } = getExactRange(start, end);
+  await _runEventsForRange(startTime, endTime);
+  return { startTime, endTime };
+}
+
+export async function events_checker_per_tenant(from, to) {
+  const { startTime, endTime } =
+    typeof from === "number" ? getDayRange(from) : getRange(from, to);
+
+  const tenants = await prismaPublic.tenants.findMany();
+  console.log(`🏢 Найдено тенантов: ${tenants.length}`);
+
+  for (const tenant of tenants) {
+    console.log(`🏢 [${tenant.schema}] Начинаем проверку...`);
+    const prisma = getPrismaForTenant(tenant.schema);
+    try {
+      await prismaContext.run(prisma, () =>
+        tenantContext.run(tenant, () => _runEventsForRange(startTime, endTime)),
+      );
+    } catch (err) {
+      console.error(`❌ [${tenant.schema}] Ошибка:`, err.message);
+    }
+  }
+
+  console.log("🏁 Все тенанты обработаны");
+}
+
+// Планировщик (бывший scheduleEventsChecker с зашитыми тирами live/recovery/
+// deep_sync/weekly_sync) перенесён в крон-задачи: тип "events_sync",
+// расписание schedule_kind="interval". См. services/cronTasks/executors/eventsSyncExecutor.js
+// и scripts/seed-events-sync-tasks.js для создания стандартных тиров.

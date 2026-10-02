@@ -22,5 +22,6 @@ router.get("/", tenantMiddleware, authMiddleware, AnprCamerasController.getAll);
 router.get("/:id", AnprCamerasController.getById);
 router.post("/", AnprCamerasController.create);
 router.put("/:id", AnprCamerasController.update);
+router.delete("/:id", AnprCamerasController.remove);
 
 export default router;

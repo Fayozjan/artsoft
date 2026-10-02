@@ -92,6 +92,27 @@ export const FacePassesModel = {
     return { records, total };
   },
 
+  // Табель: employee/branch/department/position/workSchedule уже есть у вызывающей
+  // стороны (список сотрудников страницы) — тут только сырые события без join'ов
+  // и без count (табелю total не нужен, пагинация идёт по сотрудникам).
+  findForTimesheet: async ({ where }) => {
+    const prisma = prismaContext.get();
+
+    return prisma.face_passes.findMany({
+      where,
+      orderBy: { date: "asc" },
+      select: {
+        id: true,
+        date: true,
+        identifier: true,
+        direction: true,
+        photo: true,
+        employee_id: true,
+        door: { select: { name: true } },
+      },
+    });
+  },
+
   findById: async (id) => {
     const prisma = prismaContext.get();
 
@@ -105,6 +126,8 @@ export const FacePassesModel = {
     });
   },
 
+  // Ключ дедупликации — пара (устройство, identifier): serialNo уникален
+  // только внутри журнала одного устройства.
   findIds: async (startTime, endTime) => {
     const prisma = prismaContext.get();
 
@@ -118,10 +141,11 @@ export const FacePassesModel = {
         },
         select: {
           identifier: true,
+          face_devices_id: true,
         },
       });
 
-      return passes.map((p) => p.identifier);
+      return passes.map((p) => `${p.face_devices_id ?? "null"}:${p.identifier}`);
     } catch (err) {
       console.error("Ошибка при получении идентификаторов:", err);
       return [];

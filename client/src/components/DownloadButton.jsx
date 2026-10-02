@@ -1,10 +1,20 @@
-import { Icons } from "../icons/icons";
+import { Download, Loader2 } from "lucide-react";
 import styles from "./DownloadButton.module.scss";
 
-const DownloadButton = ({ text = "Сохранить", onClick }) => {
+const DownloadButton = ({ text = "Сохранить", onClick, loading = false }) => {
   return (
-    <button className={styles.downloadBtn} type="button" onClick={onClick}>
-      {Icons.download}
+    <button
+      className={styles.downloadBtn}
+      type="button"
+      title={text}
+      onClick={onClick}
+      disabled={loading}
+    >
+      {loading ? (
+        <Loader2 size={16} className={styles.spinner} />
+      ) : (
+        <Download size={16} />
+      )}
     </button>
   );
 };

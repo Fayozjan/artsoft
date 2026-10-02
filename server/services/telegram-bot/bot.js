@@ -2,8 +2,9 @@ import { Bot, session } from "grammy";
 
 import cron from "node-cron";
 
-import { startNotificationsWorker } from "./src/workers/notificationsWorker.js";
+import { startNotificationsWorker } from "../../workers/notificationsWorker.js";
 import { setupCommands } from "./src/handlers/commandHandler.js";
+import { employeeTaskHandler } from "./src/handlers/employeeTaskHandler.js";
 import { sendDatabaseBackup } from "./src/services/backupService.js";
 import { notificationsOutboxService } from "../../modules/notificationsOutbox/notificationsOutbox.service.js";
 
@@ -50,6 +51,7 @@ export async function startTelegramBot() {
     }),
   );
 
+  bot.use(employeeTaskHandler);
   bot.use(setupCommands);
 
   try {
@@ -60,6 +62,10 @@ export async function startTelegramBot() {
 
   initBackUpScheduler();
   initCleanupNotificationScheduler();
+
+  bot.catch((err) => {
+    console.error("[bot] Unhandled error:", err.message, err.stack);
+  });
 
   return bot.start({
     onStart: (info) => console.log(`✨ Телеграм бот запущен`),

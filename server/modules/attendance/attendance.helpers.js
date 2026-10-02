@@ -4,6 +4,7 @@ export function splitEmployeesByTodayStatus(data = []) {
     absent: [],
     inside: [],
     left: [],
+    onTimeOff: [],
   };
 
   for (const employee of data) {
@@ -12,11 +13,12 @@ export function splitEmployeesByTodayStatus(data = []) {
       ? Object.values(employee.sessions)[0] ?? null
       : null;
 
-    if (
-      !session ||
-      !Array.isArray(session.events) ||
-      session.events.length === 0
-    ) {
+    const hasEvents = Array.isArray(session?.events) && session.events.length > 0;
+    const isCompanyPaidOff = session?.timeOff?.isCompanyPaid === true;
+
+    // Отсутствие: нет реальных событий, и либо совсем нет сессии, либо отгул не за счёт компании
+    // (отгул за свой счёт не меняет статус — просто прикрепляем причину для отображения в "Пришел")
+    if (!session || (!hasEvents && !isCompanyPaidOff)) {
       result.absent.push({
         employeeId: employee.employeeId,
         employeeNumber: employee.employeeNumber,
@@ -27,12 +29,34 @@ export function splitEmployeesByTodayStatus(data = []) {
         positionName: employee.positionName,
         workScheduleName: employee.workScheduleName,
         scheduledStart: employee.workSchedule?.shiftStart || null,
+        timeOff: session?.timeOff || null,
       });
       continue;
     }
 
-    // Была сессия → сотрудник присутствует
+    // Отгул на весь день (day_off/vacation, за счёт компании), реальных событий не было → отдельный статус, не present/absent
+    if (
+      !hasEvents &&
+      session.timeOff?.isCompanyPaid &&
+      session.timeOff.type !== "hour"
+    ) {
+      result.onTimeOff.push({
+        employeeId: employee.employeeId,
+        employeeNumber: employee.employeeNumber,
+        employeeFullName: employee.employeeFullName,
+        employeePhoto: employee.employeePhoto,
+        branchName: employee.branchName,
+        departmentName: employee.departmentName,
+        positionName: employee.positionName,
+        workScheduleName: employee.workScheduleName,
+        timeOff: session.timeOff,
+      });
+      continue;
+    }
+
+    // Была сессия (реальная или excused "hour"-отгул) → сотрудник присутствует
     const firstEntry = session.firstEntry || null;
+    const firstEntryDoor = session.firstEntryDoor || null;
     const lastExit = session.lastExit || null;
     const workDuration = session.workDuration || null;
     const shiftType = session.shiftType || null;
@@ -48,9 +72,11 @@ export function splitEmployeesByTodayStatus(data = []) {
       workScheduleName: employee.workScheduleName,
       scheduledStart: employee.workSchedule?.shiftStart || null,
       firstEntry,
+      firstEntryDoor,
       lastExit,
       workDuration,
       shiftType,
+      timeOff: session.timeOff || null,
     };
 
     result.present.push({ ...baseEmployee });

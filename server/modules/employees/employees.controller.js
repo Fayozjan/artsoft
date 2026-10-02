@@ -1,6 +1,8 @@
 import path from "path";
 import fs from "fs";
 import { EmployeeService } from "./employees.service.js";
+import { canAccessEmployee } from "./employee.helpers.js";
+import { UserModel } from "../users/users.model.js";
 import {
   createTempToken,
   resolveTempToken,
@@ -17,6 +19,10 @@ export const EmployeeController = {
       res.status(201).json(result);
     } catch (err) {
       console.error("Ошибка при добавлении сотрудника:", err);
+
+      if (file?.path) {
+        fs.unlink(file.path, () => {});
+      }
 
       if (err.code === "P2002") {
         return res.status(400).json({
@@ -48,6 +54,7 @@ export const EmployeeController = {
         search,
         gender,
         status,
+        has_work_schedule,
         sort_by,
         sort_order,
       } = req.query;
@@ -64,6 +71,7 @@ export const EmployeeController = {
           search,
           gender,
           status,
+          has_work_schedule,
           sort_by,
           sort_order,
         },
@@ -92,6 +100,21 @@ export const EmployeeController = {
     }
   },
 
+  getProfile: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const profile = await EmployeeService.getProfile(id);
+
+      if (!profile)
+        return res.status(404).json({ error: "Сотрудник не найден" });
+
+      res.json({ success: true, data: profile });
+    } catch (err) {
+      console.error("Ошибка при получении профиля сотрудника:", err);
+      res.status(500).json({ error: "Ошибка при получении профиля сотрудника" });
+    }
+  },
+
   getById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -100,10 +123,81 @@ export const EmployeeController = {
       if (!employee)
         return res.status(404).json({ error: "Сотрудник не найден" });
 
+      const user = await UserModel.getById(Number(req.user.id));
+      if (!user || !canAccessEmployee(user, employee))
+        return res.status(403).json({ error: "Нет доступа к сотруднику" });
+
       res.json({ success: true, data: employee });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: "Ошибка при получении сотрудника" });
+    }
+  },
+
+  getRehireCandidates: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const result = await EmployeeService.getRehireCandidates({
+        search: req.query.search,
+      });
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при получении уволенных сотрудников:", err);
+      res.status(500).json({ error: "Ошибка при получении уволенных сотрудников" });
+    }
+  },
+
+  getRehireCandidate: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const data = await EmployeeService.getRehireCandidate({
+        id: req.params.id,
+      });
+
+      if (!data) return res.status(404).json({ error: "Сотрудник не найден" });
+
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error("Ошибка при получении уволенного сотрудника:", err);
+      res.status(500).json({ error: "Ошибка при получении уволенного сотрудника" });
+    }
+  },
+
+  rehire: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    const file = req.file;
+
+    try {
+      const data = await EmployeeService.rehire(
+        req.params.id,
+        req.body,
+        file,
+        userId,
+      );
+
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error("Ошибка при повторном приёме сотрудника:", err);
+
+      if (file?.path) {
+        fs.unlink(file.path, () => {});
+      }
+
+      if (err.code === "P2002") {
+        return res
+          .status(400)
+          .json({ error: "Сотрудник с таким ПИНФЛ уже существует" });
+      }
+
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при повторном приёме сотрудника" });
     }
   },
 
@@ -149,16 +243,166 @@ export const EmployeeController = {
     }
   },
 
-  delete: async (req, res) => {
+  bulkUpdateWorkSchedule: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
     try {
-      const { id } = req.params;
-      const deleted = await EmployeeService.delete(id);
-      res.json({ success: true, data: deleted });
+      const { employee_ids, work_schedule_id, work_schedule_start_date } = req.body;
+
+      const result = await EmployeeService.bulkUpdateWorkSchedule(
+        Array.isArray(employee_ids) ? employee_ids : [],
+        work_schedule_id,
+        work_schedule_start_date,
+        userId,
+      );
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовом изменении графика:", err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при массовом изменении графика" });
+    }
+  },
+
+  bulkUpdateDoors: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const { employee_ids, door_ids, mode, sync_doors } = req.body;
+
+      const result = await EmployeeService.bulkUpdateDoors(
+        Array.isArray(employee_ids) ? employee_ids : [],
+        Array.isArray(door_ids) ? door_ids : [],
+        mode,
+        ["true", "1", true, 1].includes(sync_doors),
+        userId,
+      );
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовом изменении дверей:", err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при массовом изменении дверей" });
+    }
+  },
+
+  bulkSyncFaceDevices: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const { employee_ids } = req.body;
+      const result = await EmployeeService.bulkSyncFaceDevices(
+        Array.isArray(employee_ids) ? employee_ids : [],
+      );
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовой синхронизации с FaceDevice:", err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при синхронизации" });
+    }
+  },
+
+  bulkUpdatePlacement: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const { employee_ids, branch_id, department_id, position_id } = req.body;
+
+      const result = await EmployeeService.bulkUpdatePlacement(
+        Array.isArray(employee_ids) ? employee_ids : [],
+        { branch_id, department_id, position_id },
+        userId,
+      );
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовом изменении данных сотрудников:", err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при массовом изменении данных" });
+    }
+  },
+
+  getBulkDeleteImpact: async (req, res) => {
+    try {
+      const { employee_ids } = req.body;
+      const impact = await EmployeeService.getBulkDeleteImpact(
+        Array.isArray(employee_ids) ? employee_ids : [],
+      );
+      res.json({ success: true, ...impact });
     } catch (err) {
       console.error(err);
       res
         .status(400)
-        .json({ error: err.message || "Ошибка при удалении сотрудника" });
+        .json({ error: err.message || "Ошибка при проверке удаления" });
+    }
+  },
+
+  bulkDelete: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+
+    try {
+      const { employee_ids } = req.body;
+      const result = await EmployeeService.bulkDelete(
+        Array.isArray(employee_ids) ? employee_ids : [],
+        userId,
+      );
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при массовом удалении сотрудников:", err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при массовом удалении" });
+    }
+  },
+
+  delete: async (req, res) => {
+    const userId = req.user.id;
+    try {
+      const { id } = req.params;
+      const deleted = await EmployeeService.delete(id, userId);
+      res.json({ success: true, data: deleted });
+    } catch (err) {
+      console.error(err);
+      res.status(400).json({
+        error: err.message || "Ошибка при удалении сотрудника",
+        blockers: err.blockers,
+      });
+    }
+  },
+
+  getDeleteImpact: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const impact = await EmployeeService.getDeleteImpact(id);
+      res.json({ success: true, ...impact });
+    } catch (err) {
+      console.error(err);
+      res
+        .status(400)
+        .json({ error: err.message || "Ошибка при проверке удаления" });
+    }
+  },
+
+  importExcel: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+    if (!req.file) return res.status(400).json({ error: "Файл не загружен" });
+
+    try {
+      const result = await EmployeeService.importFromExcel(req.file.buffer, userId);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при импорте сотрудников:", err);
+      res.status(500).json({ error: err.message || "Ошибка при импорте" });
     }
   },
 

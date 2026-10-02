@@ -45,7 +45,7 @@ export const GatesController = {
 
   create: async (req, res) => {
     try {
-      const gate = await GatesService.createGate(req.body);
+      const gate = await GatesService.createGate(req.body, req.user?.id);
       res.status(201).json({ success: true, result: gate });
     } catch (err) {
       console.error("Ошибка при добавлении гейта:", err);
@@ -57,8 +57,9 @@ export const GatesController = {
   },
 
   update: async (req, res) => {
+    const userId = req.user?.id;
     try {
-      const gate = await GatesService.updateGate(req.params.id, req.body);
+      const gate = await GatesService.updateGate(req.params.id, req.body, userId);
       res.status(200).json({ success: true, result: gate });
     } catch (err) {
       console.error("Ошибка при обновлении гейта:", err);

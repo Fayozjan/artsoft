@@ -1,31 +1,16 @@
 import { prismaContext } from "../../utils/prismaContext.js";
 import { startOfMonth, endOfMonth } from "date-fns";
 
-// Получить праздники на конкретную дату
-export async function getHolidays(dateString) {
+// Переопределения производственного календаря за месяц указанной даты
+export async function getCalendarOverrides(dateString) {
   const prisma = prismaContext.get();
 
   const start = startOfMonth(new Date(dateString));
   const end = endOfMonth(new Date(dateString));
 
-  return prisma.holidays.findMany({
-    where: {
-      OR: [
-        {
-          // Holiday starts within the month
-          date_from: { gte: start, lte: end },
-        },
-        {
-          // Holiday ends within the month
-          date_to: { gte: start, lte: end },
-        },
-        {
-          // Holiday spans across the entire month
-          AND: [{ date_from: { lte: start } }, { date_to: { gte: end } }],
-        },
-      ],
-    },
-    orderBy: { date_from: "asc" },
+  return prisma.production_calendar.findMany({
+    where: { date: { gte: start, lte: end } },
+    orderBy: { date: "asc" },
   });
 }
 

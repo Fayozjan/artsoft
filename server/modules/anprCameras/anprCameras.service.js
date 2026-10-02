@@ -1,4 +1,5 @@
 import { AnprCamerasModel } from "./anprCameras.model.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 export const AnprCamerasService = {
   get: async ({ page, pageSize, filters = {} }) => {
@@ -77,23 +78,37 @@ export const AnprCamerasService = {
     return AnprCamerasModel.findByMacAddress(mac);
   },
 
-  create: async (data) => {
-    return AnprCamerasModel.create({
+  create: async (data, userId) => {
+    const result = await AnprCamerasModel.create({
       ...data,
       port: data.port ? Number(data.port) : null,
       gate_id: data.gate_id ? Number(data.gate_id) : null,
       status: data.status === true || data.status === "true",
     });
+    await createAuditLog({ userId, action: "create", entity: "anpr_cameras", recordId: result.id, newData: result });
+    return result;
   },
 
-  update: async (id, data) => {
+  update: async (id, data, userId) => {
+    const old = await AnprCamerasModel.findById(id);
     const { id: _removedId, port, gate_id, status, ...rest } = data;
 
-    return AnprCamerasModel.update(id, {
+    const result = await AnprCamerasModel.update(id, {
       ...rest,
       port: port ? Number(port) : null,
       gate_id: gate_id ? Number(gate_id) : null,
       status: status === true || status === "true",
     });
+    await createAuditLog({ userId, action: "update", entity: "anpr_cameras", recordId: id, oldData: old, newData: result });
+    return result;
+  },
+
+  remove: async (id, userId) => {
+    const old = await AnprCamerasModel.findById(id);
+    if (!old) return null;
+
+    const result = await AnprCamerasModel.delete(id);
+    await createAuditLog({ userId, action: "delete", entity: "anpr_cameras", recordId: Number(id), oldData: old });
+    return result;
   },
 };

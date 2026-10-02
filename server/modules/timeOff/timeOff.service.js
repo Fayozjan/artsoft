@@ -1,6 +1,16 @@
 import { TimeOffModel } from "./timeOff.model.js";
 import { UserModel } from "../users/users.model.js";
 import { buildTimeOffEmployeeAccess } from "./timeOff.helpers.js";
+import { createAuditLog } from "../../utils/auditLog.js";
+
+function getTimeOffNumericPriority(record, s) {
+  const emp = record.employee || {};
+  if (String(emp.id) === s) return 1;
+  if (String(emp.employee_number || "") === s) return 2;
+  if ((emp.pinfl || "").includes(s)) return 3;
+  if ((emp.passport || "").toLowerCase().includes(s.toLowerCase())) return 4;
+  return 5;
+}
 
 const getFullName = (person) => {
   if (!person) return null;
@@ -70,12 +80,16 @@ export const TimeOffService = {
       added_by: creator_id,
     };
 
-    return TimeOffModel.createMany(
+    const results = await TimeOffModel.createMany(
       selectedEmployeeIds.map((employee_id) => ({
         ...payloadBase,
         employee_id,
       })),
     );
+    for (const r of (Array.isArray(results) ? results : [])) {
+      await createAuditLog({ userId: creator_id, action: "create", entity: "time_off", recordId: r.id, newData: r });
+    }
+    return results;
   },
 
   get: async ({ userId, page, pageSize, filters }) => {
@@ -91,21 +105,26 @@ export const TimeOffService = {
       branch_id,
       department_id,
       position_id,
+      type,
       search,
     } = filters || {};
 
-    // --- фильтры по датам ---
+    if (type) where.type = type;
+
+    // --- фильтры по датам: пересечение диапазонов, а не полное вложение ---
+    // Запись должна показываться на КАЖДОМ дне между date_from и date_to,
+    // поэтому попадание в фильтр — это overlap: record.date_from <= filter.to И record.date_to >= filter.from
     if (date_from) {
       const fromDate = new Date(date_from);
       if (!isNaN(fromDate.getTime())) {
-        where.date_from = { gte: fromDate.toISOString() };
+        where.date_to = { gte: fromDate.toISOString() };
       }
     }
 
     if (date_to) {
       const toDate = new Date(date_to);
       if (!isNaN(toDate.getTime())) {
-        where.date_to = { lte: toDate.toISOString() };
+        where.date_from = { lte: toDate.toISOString() };
       }
     }
 
@@ -132,6 +151,7 @@ export const TimeOffService = {
                   { id: num },
                   { pinfl: searchStr },
                   { employee_number: searchStr },
+                  { passport: { contains: searchStr, mode: "insensitive" } },
                 ],
               },
             },
@@ -152,14 +172,20 @@ export const TimeOffService = {
     const currentPage = Math.max(parseInt(page, 10) || 1, 1);
     const size = Math.max(parseInt(pageSize, 10) || 50, 1);
     const skip = (currentPage - 1) * size;
+    const isNumericSearch = search && /^\d+$/.test(search.toString().trim());
 
     const { records, total } = await TimeOffModel.get({
       where,
-      skip,
-      take: size,
+      skip: isNumericSearch ? 0 : skip,
+      take: isNumericSearch ? 100000 : size,
     });
 
-    const formattedData = formatRecords(records);
+    if (isNumericSearch && records.length > 0) {
+      const s = search.toString().trim();
+      records.sort((a, b) => getTimeOffNumericPriority(a, s) - getTimeOffNumericPriority(b, s));
+    }
+
+    const formattedData = formatRecords(isNumericSearch ? records.slice(skip, skip + size) : records);
 
     return {
       data: formattedData,
@@ -189,18 +215,18 @@ export const TimeOffService = {
       search,
     } = filters || {};
 
-    // --- фильтры по датам ---
+    // --- фильтры по датам: пересечение диапазонов (см. комментарий в get) ---
     if (date_from) {
       const fromDate = new Date(date_from);
       if (!isNaN(fromDate.getTime())) {
-        where.date_from = { gte: fromDate.toISOString() };
+        where.date_to = { gte: fromDate.toISOString() };
       }
     }
 
     if (date_to) {
       const toDate = new Date(date_to);
       if (!isNaN(toDate.getTime())) {
-        where.date_to = { lte: toDate.toISOString() };
+        where.date_from = { lte: toDate.toISOString() };
       }
     }
 
@@ -268,6 +294,28 @@ export const TimeOffService = {
     return { data: formattedData };
   },
 
+  // Табель: employeeIds уже отфильтрованы/авторизованы выше, тут только пересечение
+  // диапазона [start_date, end_date] месяца — без include employee (см. getAll,
+  // который его туда даже не применял: destructure там date_from/date_to, а не
+  // start_date/end_date, из-за чего раньше улетала вся история отгулов сотрудника).
+  getAllLean: async ({ employeeIds, start_date, end_date }) => {
+    if (!employeeIds?.length) return { data: [] };
+
+    const where = {
+      employee_id: { in: employeeIds.map(Number) },
+    };
+
+    if (start_date || end_date) {
+      where.AND = [];
+      if (end_date) where.AND.push({ date_from: { lte: new Date(end_date) } });
+      if (start_date) where.AND.push({ date_to: { gte: new Date(start_date) } });
+    }
+
+    const records = await TimeOffModel.getAllLean({ where });
+
+    return { data: records };
+  },
+
   getById: async (id) => {
     const record = await TimeOffModel.getById(id);
 
@@ -278,7 +326,7 @@ export const TimeOffService = {
     return record;
   },
 
-  updateById: async (id, data) => {
+  updateById: async (id, data, userId) => {
     try {
       const { id: _, added_by: __, added_at: ___, ...cleanData } = data;
 
@@ -294,21 +342,25 @@ export const TimeOffService = {
         date_to: cleanData.date_to ? new Date(cleanData.date_to) : undefined,
       };
 
+      const old = await TimeOffModel.getById(id);
       const updated = await TimeOffModel.update(Number(id), preparedData);
 
       if (!updated) {
         throw new Error("Time off не найден для обновления");
       }
 
+      await createAuditLog({ userId, action: "update", entity: "time_off", recordId: id, oldData: old, newData: updated });
       return updated;
     } catch (err) {
       throw err;
     }
   },
 
-  deleteById: async (id) => {
+  deleteById: async (id, userId) => {
     try {
+      const old = await TimeOffModel.getById(id);
       const deleted = await TimeOffModel.delete(id);
+      await createAuditLog({ userId, action: "delete", entity: "time_off", recordId: id, oldData: old });
       return deleted;
     } catch (err) {
       if (err.code === "P2025") {

@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { AnprCamerasModel } from "../anprCameras/anprCameras.model.js";
 import { UserModel } from "../users/users.model.js";
 import { VehiclePassesModel } from "./vehiclePasses.model.js";
@@ -5,9 +6,16 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { notificationsOutboxService } from "../notificationsOutbox/notificationsOutbox.service.js";
+import { createAuditLog } from "../../utils/auditLog.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+function toTashkentDate(value) {
+  if (!value) return null;
+  const dt = DateTime.fromISO(String(value), { zone: "Asia/Tashkent" });
+  return dt.isValid ? dt.toJSDate() : new Date(value);
+}
 
 function formatDates(records) {
   return records.map((r) => ({
@@ -117,8 +125,8 @@ export const VehiclePassesService = {
     // Дата
     if (start_date || end_date) {
       where.date = {};
-      if (start_date) where.date.gte = new Date(start_date);
-      if (end_date) where.date.lte = new Date(end_date);
+      if (start_date) where.date.gte = toTashkentDate(start_date);
+      if (end_date) where.date.lte = toTashkentDate(end_date);
     }
 
     // Фильтр по филиалу
@@ -185,8 +193,8 @@ export const VehiclePassesService = {
     // Дата
     if (start_date || end_date) {
       where.date = {};
-      if (start_date) where.date.gte = new Date(start_date);
-      if (end_date) where.date.lte = new Date(end_date);
+      if (start_date) where.date.gte = toTashkentDate(start_date);
+      if (end_date) where.date.lte = toTashkentDate(end_date);
     }
 
     // Фильтр по филиалу
@@ -208,12 +216,22 @@ export const VehiclePassesService = {
     return formatDates(records.map(mapVehiclePass));
   },
 
-  updateById: async (id, data) => {
-    return VehiclePassesModel.updateById(Number(id), data);
+  updateById: async (id, data, userId) => {
+    const old = await VehiclePassesModel.findById(Number(id));
+    const updated = await VehiclePassesModel.updateById(Number(id), data);
+    await createAuditLog({
+      userId, action: "update", entity: "vehicle_passes", recordId: Number(id),
+      oldData: old, newData: updated,
+    });
+    return updated;
   },
 
-  deleteById: async (id) => {
-    return VehiclePassesModel.deleteById(Number(id));
+  deleteById: async (id, userId) => {
+    const deleted = await VehiclePassesModel.deleteById(Number(id));
+    await createAuditLog({
+      userId, action: "delete", entity: "vehicle_passes", recordId: Number(id), oldData: deleted,
+    });
+    return deleted;
   },
 
   createFromDeviceEvent: async (

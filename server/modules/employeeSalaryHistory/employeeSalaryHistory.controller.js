@@ -28,7 +28,8 @@ export const EmployeeSalaryHistoryController = {
 
   update: async (req, res) => {
     const { id } = req.params;
-    const result = await EmployeeSalaryHistoryService.update(id, req.body);
+    const userId = req.user?.id;
+    const result = await EmployeeSalaryHistoryService.update(id, req.body, userId);
     if (result.success) return res.json(result);
     const status = result.message === "Запись не найдена" ? 404 : 400;
     return res.status(status).json(result);
@@ -36,7 +37,8 @@ export const EmployeeSalaryHistoryController = {
 
   deleteById: async (req, res) => {
     const { id } = req.params;
-    const result = await EmployeeSalaryHistoryService.deleteById(id);
+    const userId = req.user?.id;
+    const result = await EmployeeSalaryHistoryService.deleteById(id, userId);
     if (result.success) return res.json(result);
     const status = result.message === "Запись не найдена" ? 404 : 400;
     return res.status(status).json(result);

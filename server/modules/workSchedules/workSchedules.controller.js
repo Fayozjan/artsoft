@@ -2,8 +2,9 @@ import { workScheduleService } from "./workSchedules.service.js";
 
 export const workScheduleController = {
   create: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const result = await workScheduleService.create(req.body);
+      const result = await workScheduleService.create(req.body, null, userId);
       res.status(201).json(result);
     } catch (err) {
       console.error(err);
@@ -70,10 +71,11 @@ export const workScheduleController = {
   },
 
   updateById: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
 
-      const updated = await workScheduleService.updateById(id, req.body);
+      const updated = await workScheduleService.updateById(id, req.body, null, userId);
 
       res.json({ success: true, data: updated });
     } catch (err) {
@@ -86,9 +88,10 @@ export const workScheduleController = {
   },
 
   deleteById: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
-      const schedule = await workScheduleService.deleteById(id);
+      const schedule = await workScheduleService.deleteById(id, null, userId);
       res.json({ success: true, data: schedule });
     } catch (err) {
       console.error(err);

@@ -1,9 +1,11 @@
 import { UserService } from "./users.service.js";
+import { tenantKeyOf } from "../../middlewares/loginLockout.js";
 
 export const UserController = {
   create: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const result = await UserService.create(req.body);
+      const result = await UserService.create({ ...req.body, createdBy: userId });
 
       res.status(201).json({
         success: true,
@@ -18,6 +20,34 @@ export const UserController = {
           .json({ success: false, error: "Такое имя логина уже существует!" });
       }
 
+      res
+        .status(err.statusCode || 500)
+        .json({ success: false, error: err.message });
+    }
+  },
+
+  // Активные блокировки входа по арендатору
+  getLockouts: (req, res) => {
+    try {
+      res.json({ success: true, data: UserService.listLockouts(tenantKeyOf(req)) });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ success: false, error: "Ошибка получения блокировок" });
+    }
+  },
+
+  // Снятие блокировки входа администратором
+  unlockLogin: async (req, res) => {
+    try {
+      const result = await UserService.unlockLogin({
+        tenant: tenantKeyOf(req),
+        userId: req.params.id,
+        actorId: req.user.id,
+      });
+
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error(err);
       res
         .status(err.statusCode || 500)
         .json({ success: false, error: err.message });
@@ -59,7 +89,9 @@ export const UserController = {
 
   getMenu: async (req, res) => {
     try {
-      const menu = await UserService.getMenu(req.user.id);
+      // ?platform=telegram — меню телеграм приложения (отдельные права логина)
+      const platform = req.query.platform === "telegram" ? "telegram" : "web";
+      const menu = await UserService.getMenu(req.user.id, platform);
       res.json(menu);
     } catch (err) {
       console.error(err);
@@ -91,8 +123,9 @@ export const UserController = {
   },
 
   updateById: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const result = await UserService.updateById(req.params.id, req.body);
+      const result = await UserService.updateById(req.params.id, { ...req.body, updatedBy: userId });
 
       res.json({
         success: true,

@@ -1,4 +1,5 @@
 import { prismaContext } from "../../utils/prismaContext.js";
+import { CRON_ACTOR, isCronActor } from "../../utils/cronActor.js";
 
 export const UserModel = {
   create: async (data) => {
@@ -23,7 +24,13 @@ export const UserModel = {
         id: true,
         username: true,
         access_level: true,
+        view_mode: true,
         status: true,
+        _count: {
+          select: {
+            menuAccess: { where: { can_view: true } },
+          },
+        },
         employee: {
           select: {
             id: true,
@@ -41,7 +48,19 @@ export const UserModel = {
     return prisma.users.count({ where });
   },
 
+  getUsernameById: async (id) => {
+    const prisma = prismaContext.get();
+    return prisma.users.findUnique({
+      where: { id: Number(id) },
+      select: { id: true, username: true },
+    });
+  },
+
   getById: async (id) => {
+    // Крон-актор (см. utils/cronActor.js) — не строка в users, отдаём синтетического
+    // пользователя с полным доступом: отчёт крон-задачи ограничивает только её фильтр.
+    if (isCronActor(id)) return { ...CRON_ACTOR };
+
     const prisma = prismaContext.get();
 
     return prisma.users.findUnique({
@@ -59,7 +78,21 @@ export const UserModel = {
         personal_menus: true,
         status: true,
         ignore_gps_check: true,
+        settings: true,
+        production_operation_ids: true,
+        can_edit_sticker: true,
+        production_own_only: true,
+        telegram_work_punch: true,
         menuAccess: {
+          select: {
+            menu_id: true,
+            can_view: true,
+            can_add: true,
+            can_update: true,
+            can_delete: true,
+          },
+        },
+        telegramMenuAccess: {
           select: {
             menu_id: true,
             can_view: true,
@@ -90,6 +123,9 @@ export const UserModel = {
     const user = await prisma.users.findUnique({
       where: { id },
       select: {
+        id: true,
+        access_level: true,
+        employee_id: true,
         employee: {
           select: {
             last_name: true,
@@ -104,6 +140,9 @@ export const UserModel = {
     });
 
     return {
+      id: user?.id,
+      access_level: user?.access_level,
+      employee_id: user?.employee_id,
       first_name: user?.employee?.first_name,
       last_name: user?.employee?.last_name,
       photo: user?.employee?.photo,
@@ -111,7 +150,14 @@ export const UserModel = {
     };
   },
 
-  updateById: async (userId, dataToUpdate, menuAccessOperations = []) => {
+  // telegramMenuOperations: undefined — права телеграма не трогаем, [] — сбросить
+  // (телеграм снова использует веб-права), непустой список — заменить.
+  updateById: async (
+    userId,
+    dataToUpdate,
+    menuAccessOperations = [],
+    telegramMenuOperations,
+  ) => {
     const prisma = prismaContext.get();
 
     return prisma.$transaction(async (tx) => {
@@ -130,6 +176,18 @@ export const UserModel = {
         });
       }
 
+      if (telegramMenuOperations !== undefined) {
+        await tx.user_telegram_menu_access.deleteMany({
+          where: { user_id: Number(userId) },
+        });
+
+        if (telegramMenuOperations.length > 0) {
+          await tx.user_telegram_menu_access.createMany({
+            data: telegramMenuOperations,
+          });
+        }
+      }
+
       return updatedUser;
     });
   },
@@ -138,6 +196,14 @@ export const UserModel = {
     const prisma = prismaContext.get();
 
     return prisma.user_menu_access.findMany({
+      where: { user_id: Number(userId) },
+    });
+  },
+
+  getTelegramMenuAccess: async (userId) => {
+    const prisma = prismaContext.get();
+
+    return prisma.user_telegram_menu_access.findMany({
       where: { user_id: Number(userId) },
     });
   },
@@ -156,6 +222,10 @@ export const UserModel = {
         active_branch_id: true,
         personal_menus: true,
         settings: true,
+        production_operation_ids: true,
+        can_edit_sticker: true,
+        production_own_only: true,
+        telegram_work_punch: true,
         menuAccess: {
           where: { can_view: true },
           select: {
@@ -213,7 +283,13 @@ export const UserModel = {
       view_mode: user.view_mode,
       active_branch_id: user.active_branch_id,
       personal_menus: user.personal_menus,
+      telegram_work_punch: user.telegram_work_punch,
       settings: user.settings,
+      production: {
+        operation_type_ids: user.production_operation_ids,
+        can_edit_sticker: user.can_edit_sticker,
+        own_only: user.production_own_only,
+      },
       branches,
       departments,
       menu,

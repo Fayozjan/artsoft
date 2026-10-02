@@ -45,8 +45,9 @@ export const PositionsController = {
   },
 
   addPosition: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const newPosition = await PositionsService.addPosition(req.body);
+      const newPosition = await PositionsService.addPosition(req.body, userId);
       res.status(201).json({ success: true, result: newPosition });
     } catch (err) {
       console.error(err);
@@ -57,6 +58,7 @@ export const PositionsController = {
   },
 
   editPositionById: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { status, ...rest } = req.body;
       let statusBool =
@@ -66,13 +68,26 @@ export const PositionsController = {
       const updated = await PositionsService.editPositionById(req.params.id, {
         ...rest,
         status: statusBool,
-      });
+      }, userId);
       res.json({ success: true, data: updated });
     } catch (err) {
       console.error("Ошибка при обновлении должности:", err);
       if (err.code === "P2025")
         return res.status(404).json({ error: "Должность не найдена" });
       res.status(500).json({ error: "Ошибка при обновлении должности" });
+    }
+  },
+
+  importExcel: async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) return res.status(401).json({ error: "Не авторизован" });
+    if (!req.file) return res.status(400).json({ error: "Файл не загружен" });
+    try {
+      const result = await PositionsService.importFromExcel(req.file.buffer, userId);
+      res.json({ success: true, ...result });
+    } catch (err) {
+      console.error("Ошибка при импорте должностей:", err);
+      res.status(500).json({ error: err.message || "Ошибка при импорте" });
     }
   },
 };

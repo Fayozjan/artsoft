@@ -1,7 +1,8 @@
 import { prismaContext } from "../utils/prismaContext.js";
 import { prismaPublic, getPrismaForTenant } from "../utils/prismaForTenant.js";
+import { tenantContext } from "../utils/tenantContext.js";
 
-const tenantCache = new Map();
+export const tenantCache = new Map();
 
 export const tenantMiddleware = async (req, res, next) => {
   try {
@@ -30,7 +31,7 @@ export const tenantMiddleware = async (req, res, next) => {
 
     req.tenant = tenant;
 
-    prismaContext.run(prisma, () => next());
+    prismaContext.run(prisma, () => tenantContext.run(tenant, () => next()));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Tenant error" });

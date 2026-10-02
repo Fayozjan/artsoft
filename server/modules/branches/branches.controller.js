@@ -64,10 +64,11 @@ export const BranchController = {
   },
 
   update: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
       const data = req.body;
-      const updated = await BranchService.update(id, data);
+      const updated = await BranchService.update(id, data, userId);
 
       if (!updated) return res.status(404).json({ error: "Филиал не найден" });
 
@@ -84,9 +85,10 @@ export const BranchController = {
   },
 
   remove: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
-      const deleted = await BranchService.remove(id);
+      const deleted = await BranchService.remove(id, userId);
 
       if (!deleted) return res.status(404).json({ error: "Филиал не найден" });
 

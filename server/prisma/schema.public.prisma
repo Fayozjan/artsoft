@@ -14,12 +14,31 @@ enum NotificationSourceType {
 }
 
 model tenants {
-  id        Int    @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   name      String
-  subdomain String @unique
-  schema    String // имя схемы клиента
+  subdomain String   @unique
+  schema    String   // имя схемы клиента
 
   telegram_users tenant_telegram_users[]
+  door_tasks     employee_door_tasks[]
+}
+
+model employee_door_tasks {
+  id          Int       @id @default(autoincrement())
+  tenant_id   Int
+  employee_id Int
+  door_id     Int
+  action      String    @db.VarChar(50)
+  status      String    @db.VarChar(50) @default("pending")
+  retry_count Int       @default(0)
+  error       String?
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime? @db.Timestamptz(6)
+
+  tenant      tenants   @relation(fields: [tenant_id], references: [id], onDelete: Cascade)
+
+  @@index([status, created_at])
+  @@index([tenant_id])
 }
 
 model tenant_telegram_users {
@@ -31,6 +50,15 @@ model tenant_telegram_users {
 
   @@id([telegram_id, tenant_id])
   @@index([telegram_id])         
+}
+
+model employee_telegram_chats {
+  chat_id     String   @id @db.VarChar(50)
+  schema_name String   @db.VarChar(100)
+  employee_id Int
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([schema_name, employee_id])
 }
 
 model notifications_outbox {

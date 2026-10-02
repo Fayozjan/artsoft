@@ -8,15 +8,6 @@ import lateMenuHandler from "./lateMenuHandler.js";
 
 const composer = new Composer();
 
-composer.command("start", async (ctx) => {
-  await ctx.reply(
-    "👋 Привет! Я бот мониторинга.\nИспользуй кнопки меню для работы.",
-    {
-      reply_markup: mainKeyboard,
-    },
-  );
-});
-
 composer.command("backup", async (ctx) => {
   try {
     await ctx.reply("🔄 Запускаю ручной бэкап...");

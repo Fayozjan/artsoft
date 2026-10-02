@@ -66,11 +66,12 @@ export const TimeOffController = {
   },
 
   updateById: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
       const data = req.body;
 
-      const updated = await TimeOffService.updateById(id, data);
+      const updated = await TimeOffService.updateById(id, data, userId);
 
       res.json({ success: true, data: updated });
     } catch (err) {
@@ -87,10 +88,11 @@ export const TimeOffController = {
   },
 
   deleteById: async (req, res) => {
+    const userId = req.user.id;
     try {
       const { id } = req.params;
 
-      const deleted = await TimeOffService.deleteById(id);
+      const deleted = await TimeOffService.deleteById(id, userId);
 
       res.json({ success: true, data: deleted });
     } catch (err) {

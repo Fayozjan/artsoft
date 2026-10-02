@@ -19,6 +19,9 @@ export function buildPayload(source_type, eventData) {
         branch: eventData.employee?.branch?.name,
         department: eventData.employee?.department?.name,
         position: eventData.employee?.position?.name,
+        late_minutes: eventData._lateMinutes ?? null,
+        late_type: eventData._lateType ?? null,
+        schedule_start: eventData._scheduleStart ?? null,
       };
 
     case "anpr_pass":

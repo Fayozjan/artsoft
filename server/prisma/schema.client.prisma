@@ -9,145 +9,173 @@ generator client {
 }
 
 model branches {
-  id               Int                @id @default(autoincrement())
-  name             String             @unique @db.VarChar(255)
-  status           Boolean            @default(true)
-  director_id      Int?
-  region           String?             @db.VarChar(255)
-  address          String?             @db.VarChar(500)
-  bank_name        String?  @db.VarChar(255)
-  bank_account     String? @db.VarChar(255)
-  inn              String?  @db.VarChar(50)
-  mfo              String?  @db.VarChar(10)
+  id           Int     @id @default(autoincrement())
+  name         String  @unique @db.VarChar(255)
+  status       Boolean @default(true)
+  director_id  Int?
+  region       String? @db.VarChar(255)
+  address      String? @db.VarChar(500)
+  bank_name    String? @db.VarChar(255)
+  bank_account String? @db.VarChar(255)
+  inn          String? @db.VarChar(50)
+  mfo          String? @db.VarChar(10)
+  sort_order   Int     @default(0)
 
-  added_at         DateTime @default(now()) @db.Timestamptz(6)
-  added_by         Int
+  added_at DateTime @default(now()) @db.Timestamptz(6)
+  added_by Int
 
-  director  employees? @relation("BranchDirector", fields: [director_id], references: [id])
-  employmentOrders      employment_orders[]
-  employees   employees[]
-  gates   gates[]
-  vehiclePasses   vehicle_passes[]
-  departments departments[]
-  doors       doors[]
-  addedBy    users     @relation(fields: [added_by], references: [id])
+  director         employees?          @relation("BranchDirector", fields: [director_id], references: [id])
+  employmentOrders employment_orders[]
+  employees        employees[]
+  gates            gates[]
+  vehiclePasses    vehicle_passes[]
+  departments      departments[]
+  doors            doors[]
+  addedBy          users               @relation(fields: [added_by], references: [id])
+  stockLocations   stock_locations[]
 }
 
 model departments {
-  id               Int                @id @default(autoincrement())
-  name             String?            @db.VarChar(255)
-  status           Boolean            @default(true)
-  branch_id        Int
-  added_at DateTime @default(now()) @db.Timestamptz(6)
+  id        Int      @id @default(autoincrement())
+  name      String?  @db.VarChar(255)
+  status    Boolean  @default(true)
+  branch_id Int
+  added_at  DateTime @default(now()) @db.Timestamptz(6)
 
-  employmentOrders employment_orders[]
-  employees        employees[]
-  branch    branches    @relation(fields: [branch_id], references: [id])
+  employmentOrders  employment_orders[]
+  employees         employees[]
+  branch            branches            @relation(fields: [branch_id], references: [id])
+  staffingPositions staffing_position[]
+  tasksAssigned     tasks[]             @relation("TaskAssigneeDepartment")
 }
 
 model employment_orders {
-  id            Int                @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   employee_id   Int?
-  type          String?      @db.VarChar(50)
-  date          DateTime?    @db.Date
+  type          String?   @db.VarChar(50)
+  date          DateTime? @db.Date
   branch_id     Int?
   department_id Int?
   position_id   Int?
-  order_number  String?      @db.VarChar(100)
-  note   String?
-  added_at    DateTime    @default(now()) @db.Timestamptz(6)
+  order_number  String?   @db.VarChar(100)
+  note          String?
+  added_at      DateTime  @default(now()) @db.Timestamptz(6)
 
-  branch      branches?    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  department   departments? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  position     positions?   @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  employee     employees?   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  branch     branches?    @relation(fields: [branch_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  department departments? @relation(fields: [department_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  position   positions?   @relation(fields: [position_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employee   employees?   @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model employees {
-  id                                       Int                @id @default(autoincrement())
-  employee_number                          String?               @unique
-  last_name                                String?
-  first_name                               String?
-  middle_name                              String?            @db.VarChar(255)
-  date_of_birth                            DateTime?          @db.Date
-  gender                                   String?            @db.VarChar(255)
-  passport                                 String?            @db.VarChar(255)
-  passport_expiry_date                     DateTime?          @db.Date
-  pinfl                                    String?            @unique @db.VarChar(255)
-  education                                String?            @db.VarChar(255)
-  phone                                    String?            @db.VarChar(255)
-  email                                    String?            @db.VarChar(255)
-  address                                  String?            @db.VarChar(255)
-  status                                   Boolean?           @default(true)
-  photo                                    String?            @db.VarChar(255)
-  branch_id                                Int?
-  department_id                            Int?
-  position_id                              Int?
-  work_schedule_id                         Int?
-  education_specialty                      String?            @db.VarChar(500)
-  added_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+  id                   Int       @id @default(autoincrement())
+  employee_number      String?   @unique
+  last_name            String?
+  first_name           String?
+  middle_name          String?   @db.VarChar(255)
+  date_of_birth        DateTime? @db.Date
+  gender               String?   @db.VarChar(255)
+  passport             String?   @db.VarChar(255)
+  passport_expiry_date DateTime? @db.Date
+  pinfl                String?   @unique @db.VarChar(255)
+  education            String?   @db.VarChar(255)
+  phone                String?   @db.VarChar(255)
+  email                String?   @db.VarChar(255)
+  address              String?   @db.VarChar(255)
+  status               Boolean?  @default(true)
+  photo                String?   @db.VarChar(255)
+  branch_id            Int?
+  department_id        Int?
+  position_id          Int?
+  work_schedule_id     Int?
+  education_specialty  String?   @db.VarChar(500)
+  added_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
 
-  branch         branches?       @relation(fields: [branch_id], references: [id])
-  department     departments?    @relation(fields: [department_id], references: [id])
-  position       positions?      @relation(fields: [position_id], references: [id])
-  workSchedule  work_schedules? @relation(fields: [work_schedule_id], references: [id])
+  branch                  branches?                   @relation(fields: [branch_id], references: [id])
+  department              departments?                @relation(fields: [department_id], references: [id])
+  position                positions?                  @relation(fields: [position_id], references: [id])
+  workSchedule            work_schedules?             @relation(fields: [work_schedule_id], references: [id])
   employeeScheduleHistory employee_schedule_history[]
   employeeSalaryHistory   employee_salary_history[]
-  employmentOrders   employment_orders[]
-  employeeTimeOffs   time_off[]  @relation("employeeTimeOffs")
-  facePasses        face_passes[]
-  doors           doors[]
-  doorTasks    employee_door_tasks[]
-  user users?
-  directedBranches   branches[] @relation("BranchDirector")
-  payrollSheetItems  payroll_sheet_items[]
-  salaryAdvances     salary_advances[]
+  employmentOrders        employment_orders[]
+  employeeTimeOffs        time_off[]                  @relation("employeeTimeOffs")
+  facePasses              face_passes[]
+  doors                   doors[]
+  user                    users?
+  directedBranches        branches[]                  @relation("BranchDirector")
+  payrollSheetItems       payroll_sheet_items[]
+  tasksAssigned           tasks[]                     @relation("TaskAssigneeEmployee")
+  assetAssignments        asset_assignments[]
+  debts                   employee_debts[]
+  canteenAllowance        canteen_allowances?
+  canteenMeals            canteen_meals[]
+  operationItems          operation_items[]
+  workStickers            work_stickers[]
+  operationTypeLinks      operation_type_employees[]
+  teamMemberships         employee_team_members[]
+  pickingsAsManager       stock_pickings[]            @relation("PickingManager")
 
   @@index([branch_id])
   @@index([department_id])
 }
 
 model face_passes {
-  id                  Int       @id @default(autoincrement())
-  date                DateTime  @db.Timestamptz(6)
-  identifier          String    @unique @db.VarChar(50)
-  photo               String?   @db.VarChar(255)
-  employee_id         Int
-  door_id             Int?
-  face_devices_id     Int?
-  direction           String?   @db.VarChar(10)
-  source              String?   @db.VarChar(20)
-  latitude            Float?
-  longitude           Float?
-  added_at DateTime @default(now()) @db.Timestamptz(6)
+  id              Int      @id @default(autoincrement())
+  date            DateTime @db.Timestamptz(6)
+  identifier      String   @db.VarChar(50)
+  photo           String?  @db.VarChar(255)
+  employee_id     Int
+  door_id         Int?
+  face_devices_id Int?
+  direction       String?  @db.VarChar(10)
+  source          String?  @db.VarChar(20)
+  latitude        Float?
+  longitude       Float?
+  added_at        DateTime @default(now()) @db.Timestamptz(6)
 
-  employee     employees     @relation(fields: [employee_id], references: [id])
-  faceDevice  face_devices?  @relation(fields: [face_devices_id], references: [id])
-  door         doors?        @relation(fields: [door_id], references: [id])
+  employee   employees     @relation(fields: [employee_id], references: [id])
+  faceDevice face_devices? @relation(fields: [face_devices_id], references: [id])
+  door       doors?        @relation(fields: [door_id], references: [id])
 
+  // identifier = employeeNo-serialNo, а serialNo — счётчик журнала конкретного
+  // устройства. Два устройства независимо доходят до одного serialNo, поэтому
+  // уникальность только в паре с face_devices_id.
+  @@unique([face_devices_id, identifier])
   @@index([employee_id, date])
 }
 
-model holidays {
-  id         Int      @id @default(autoincrement())
-  name       String   @db.VarChar(255)
-  date_from  DateTime @db.Date
-  date_to    DateTime @db.Date
-  added_by Int
-  added_at DateTime @default(now()) @db.Timestamptz(6)
-  
-  addedBy    users     @relation(fields: [added_by], references: [id])
+// Производственный календарь. Рабочие/выходные дни недели задаёт график
+// сотрудника (work_schedules) — календарь хранит только общефирменные
+// исключения поверх любого графика. Дни без строки работают по графику.
+model production_calendar {
+  id            Int      @id @default(autoincrement())
+  date          DateTime @unique @db.Date
+  // holiday — праздник | weekend — разовый выходной | short — сокращённый день
+  day_type      String   @db.VarChar(20)
+  name          String?  @db.VarChar(255)
+  // только для day_type = short: на сколько минут сокращён день
+  short_minutes Int?
+  added_by      Int
+  added_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
+
+  addedBy users @relation(fields: [added_by], references: [id])
+
+  @@index([date])
 }
 
 model positions {
-  id               Int                @id @default(autoincrement())
-  name             String             @unique @db.VarChar(255)
-  status           Boolean            @default(true)
-  added_at         DateTime @default(now()) @db.Timestamptz(6)
+  id         Int      @id @default(autoincrement())
+  name       String   @unique @db.VarChar(255)
+  status     Boolean  @default(true)
+  sort_order Int      @default(0)
+  added_at   DateTime @default(now()) @db.Timestamptz(6)
 
-  employmentOrders employment_orders[]
-  employees employees[]
+  employmentOrders  employment_orders[]
+  employees         employees[]
+  staffingPositions staffing_position[]
+  tasksAssigned     tasks[]             @relation("TaskAssigneePosition")
 }
 
 model sessions {
@@ -155,7 +183,7 @@ model sessions {
   refresh_token String
   ip_address    String?
   user_agent    String?
-  added_at    DateTime @default(now()) @db.Timestamptz(6)
+  added_at      DateTime  @default(now()) @db.Timestamptz(6)
   expires_at    DateTime? @db.Timestamptz(6)
   user_id       Int
   user          users     @relation(fields: [user_id], references: [id])
@@ -170,23 +198,25 @@ model telegram_bots {
   receive_event_alerts      Boolean?
   receive_attendance_report Boolean?
   status                    Boolean? @default(true)
-  added_at DateTime @default(now()) @db.Timestamptz(6)
+  added_at                  DateTime @default(now()) @db.Timestamptz(6)
 }
 
 model time_off {
-  id                                        Int    @id @default(autoincrement())
-  employee_id                               Int
-  reason                                    String
-  date_from                                 DateTime  @db.Timestamptz(6)
-  date_to                                   DateTime  @db.Timestamptz(6)
-  added_by Int
-  added_at DateTime @default(now()) @db.Timestamptz(6)
-  is_company_paid                           Boolean   @default(false)
-  type                                      String    @default("hour") @db.VarChar(10)
-  credited_hours                            Int?      @default(0)
+  id              Int      @id @default(autoincrement())
+  employee_id     Int
+  reason          String
+  date_from       DateTime @db.Timestamptz(6)
+  date_to         DateTime @db.Timestamptz(6)
+  added_by        Int
+  added_at        DateTime @default(now()) @db.Timestamptz(6)
+  is_company_paid Boolean  @default(false)
+  type            String   @default("hour") @db.VarChar(10)
+  credited_hours  Int?     @default(0)
 
-  addedBy    users     @relation(fields: [added_by], references: [id])
-  employee   employees     @relation("employeeTimeOffs", fields: [employee_id], references: [id])
+  addedBy  users     @relation(fields: [added_by], references: [id])
+  employee employees @relation("employeeTimeOffs", fields: [employee_id], references: [id])
+
+  @@index([employee_id, date_from, date_to])
 }
 
 model timesheet {
@@ -200,79 +230,131 @@ model timesheet {
 }
 
 model users {
-  id           Int       @id @default(autoincrement())
-  username     String    @unique
-  password     String
-  telegram_id  String?    @unique   @db.VarChar(60)
-  employee_id  Int?      
-  status       Boolean   @default(true)
-  access_level String?
-  branch_access Int[]
+  id                Int      @id @default(autoincrement())
+  username          String   @unique
+  password          String
+  telegram_id       String?  @unique @db.VarChar(60)
+  employee_id       Int?
+  status            Boolean  @default(true)
+  access_level      String?
+  branch_access     Int[]
   department_access Int[]
-  language     String    @default("ru")
-  theme        String    @default("light")
-  sidebar      String    @default("opened")
-  view_mode        String   @default("branch")
-  personal_menus    String[]  @default([])
-  active_branch_id Int?
-  ignore_gps_check Boolean  @default(false)
-  settings         Json?
-  added_at   DateTime @default(now()) @db.Timestamptz(6)
+  language          String   @default("ru")
+  theme             String   @default("light")
+  sidebar           String   @default("opened")
+  view_mode         String   @default("branch")
+  personal_menus    String[] @default([])
+  active_branch_id  Int?
+  ignore_gps_check  Boolean  @default(false)
+  settings          Json?
+  // Меню «Производство»: типы операций, доступные логину (пусто — все), право
+  // редактировать шаблон стикера и «только свои» — в истории приёма показывать лишь
+  // то, что принял сам логин. Задаёт администратор в карточке логина; в settings
+  // не кладём — пользователь правит его сам через профиль.
+  production_operation_ids Int[]   @default([])
+  can_edit_sticker         Boolean @default(true)
+  production_own_only      Boolean @default(false)
+  // Телеграм-приложение: можно ли отмечать «Начать работу» / «Завершить работу»
+  // кнопкой на главной странице. Задаёт администратор в карточке логина.
+  telegram_work_punch      Boolean @default(false)
+  added_at          DateTime @default(now()) @db.Timestamptz(6)
 
-  employee     employees? @relation(fields: [employee_id], references: [id])
-  menuAccess  user_menu_access[]
-  sessions     sessions[]
-  holidays     holidays[]
-  branches     branches[]
-  timeOff     time_off[]
-  employeeScheduleHistory employee_schedule_history[]
-  employeeSalaryHistory   employee_salary_history[]
-  payrollSheetsAdded      payroll_sheets[] @relation("PayrollAddedBy")
-  payrollSheetsApproved   payroll_sheets[] @relation("PayrollApprovedBy")
-  salaryAdvancesGiven     salary_advances[] @relation("AdvancesGivenBy")
+  employee                   employees?                      @relation(fields: [employee_id], references: [id])
+  menuAccess                 user_menu_access[]
+  telegramMenuAccess         user_telegram_menu_access[]
+  sessions                  sessions[]
+  productionCalendar         production_calendar[]
+  branches                   branches[]
+  timeOff                    time_off[]
+  employeeScheduleHistory    employee_schedule_history[]
+  employeeSalaryHistory      employee_salary_history[]
+  payrollSheetsAdded         payroll_sheets[]                @relation("PayrollAddedBy")
+  payrollSheetsApproved      payroll_sheets[]                @relation("PayrollApprovedBy")
+  auditLogs                  audit_logs[]
+  employeeDebtsAdded         employee_debts[]                @relation("EmployeeDebtAddedBy")
+  tasksCreated               tasks[]                         @relation("TaskCreatedBy")
+  tasksConfirmed             tasks[]                         @relation("TaskConfirmedBy")
+  tasksAssignedUser          tasks[]                         @relation("TaskAssigneeUser")
+  taskComments               task_comments[]
+  taskFiles                  task_files[]
+  attendanceFilterPresets    attendance_filter_presets[]     @relation("AttendanceFilterPresetCreatedBy")
+  timesheetFilterPresets     timesheet_filter_presets[]      @relation("TimesheetFilterPresetCreatedBy")
+  lateEmployeesFilterPresets late_employees_filter_presets[] @relation("LateEmployeesFilterPresetCreatedBy")
+  cronTasks                  cron_tasks[]                    @relation("CronTaskCreatedBy")
+  assetAssignments           asset_assignments[]
+  canteenAllowances          canteen_allowances[]            @relation("CanteenAllowanceCreatedBy")
+  batchReceipts              batch_receipts[]
+  batchReceiptItemsAdded     batch_receipt_items[]
+  operations                 operations[]
+  workStickersAdded          work_stickers[]                 @relation("WorkStickerAddedBy")
+  workStickersScanned        work_stickers[]                 @relation("WorkStickerScannedBy")
+  operationTypesAdded        operation_types[]               @relation("OperationTypeAddedBy")
+  employeeTeamsAdded         employee_teams[]                @relation("EmployeeTeamAddedBy")
+  stockPickingsAdded         stock_pickings[]                @relation("PickingAddedBy")
+  stockPickingsConfirmed     stock_pickings[]                @relation("PickingConfirmedBy")
+  stockPickingsDone          stock_pickings[]                @relation("PickingDoneBy")
+  stockPickingsEdited        stock_pickings[]                @relation("PickingEditedBy")
 
+  @@unique([employee_id], map: "unique_employee_per_user")
   @@index([employee_id])
   @@index([telegram_id])
-  @@unique([employee_id], map: "unique_employee_per_user")
 }
 
 model menus {
-  id         Int              @id @default(autoincrement())
-  name       String           @unique @db.VarChar(100)
-  path       String?          @db.VarChar(255)
-  parent_id   Int?
-  parent     menus?            @relation("MenuHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
-  children   menus[]           @relation("MenuHierarchy")
-  sort_order  Int              @default(0)
-  
-  access     user_menu_access[] 
+  id         Int     @id @default(autoincrement())
+  name       String  @unique @db.VarChar(100)
+  path       String? @db.VarChar(255)
+  parent_id  Int?
+  parent     menus?  @relation("MenuHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children   menus[] @relation("MenuHierarchy")
+  sort_order Int     @default(0)
+
+  access         user_menu_access[]
+  telegramAccess user_telegram_menu_access[]
 }
 
 model user_menu_access {
-  id        Int   @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   user_id    Int
   menu_id    Int
   can_view   Boolean @default(false)
-  can_add Boolean @default(false)
+  can_add    Boolean @default(false)
   can_update Boolean @default(false)
   can_delete Boolean @default(false)
 
-  user      users   @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  menu      menus   @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  menu menus @relation(fields: [menu_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, menu_id])
+}
+
+// Отдельные права логина на меню в телеграм приложении. Нет строк — телеграм
+// использует те же права, что и веб (user_menu_access).
+model user_telegram_menu_access {
+  id         Int     @id @default(autoincrement())
+  user_id    Int
+  menu_id    Int
+  can_view   Boolean @default(false)
+  can_add    Boolean @default(false)
+  can_update Boolean @default(false)
+  can_delete Boolean @default(false)
+
+  user users @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  menu menus @relation(fields: [menu_id], references: [id], onDelete: Cascade)
 
   @@unique([user_id, menu_id])
 }
 
 model work_schedules {
-  id           Int       @id @default(autoincrement())
-  name         String    @db.VarChar(255)
-  type         String?   @db.VarChar           // fixed | shift | flexible
-  weekly_days  Int?                             // только для fixed
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  type         String?  @db.VarChar // fixed | shift | flexible
+  weekly_days  Int? // только для fixed
   weekly_hours Int?
-  work_days    Json?                             // массив объектов для fixed
-  shifts       Json?                             // массив объектов для shift
-  added_at     DateTime  @default(now()) @db.Timestamptz(6)
-  status       Boolean?  @default(true)
+  work_days    Json? // массив объектов для fixed
+  shifts       Json? // массив объектов для shift
+  added_at     DateTime @default(now()) @db.Timestamptz(6)
+  status       Boolean? @default(true)
 
   // Допустимые окна опоздания/ухода (минуты)
   late_tolerance_minutes        Int? @default(0)
@@ -282,127 +364,150 @@ model work_schedules {
   // Метод расчёта отработанного времени для fixed/remote
   // by_period  — сумма всех пар вход/выход
   // first_last — от первого входа до последнего выхода
-  time_calc_method String? @db.VarChar @default("by_period")
+  time_calc_method String? @default("by_period") @db.VarChar
 
-  employees          employees[]
+  employees               employees[]
   employeeScheduleHistory employee_schedule_history[]
 }
 
 model employee_schedule_history {
-  id                Int   @id @default(autoincrement())
-  employee_id       Int
-  work_schedule_id  Int
-  date_from         DateTime @db.Date
-  date_to           DateTime? @db.Date
-  added_at          DateTime @default(now())
-  added_by          Int
+  id               Int       @id @default(autoincrement())
+  employee_id      Int
+  work_schedule_id Int
+  date_from        DateTime  @db.Date
+  date_to          DateTime? @db.Date
+  added_at         DateTime  @default(now())
+  added_by         Int
 
   // relations
-  employee         employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  workSchedule     work_schedules  @relation(fields: [work_schedule_id], references: [id])
-  addedBy          users     @relation(fields: [added_by], references: [id])
+  employee     employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  workSchedule work_schedules @relation(fields: [work_schedule_id], references: [id])
+  addedBy      users          @relation(fields: [added_by], references: [id])
 
   @@index([employee_id, date_from])
   @@index([employee_id, date_to])
 }
 
 model employee_salary_history {
-  id           Int       @id @default(autoincrement())
-  employee_id  Int
-  salary_type  String    @db.VarChar(20)   // monthly | hourly | piecework
-  amount       Decimal   @db.Decimal(15, 2)
-  date_from    DateTime  @db.Date
-  date_to      DateTime? @db.Date
-  note         String?
-  added_at     DateTime  @default(now()) @db.Timestamptz(6)
-  added_by     Int
+  id          Int       @id @default(autoincrement())
+  employee_id Int
+  salary_type String    @db.VarChar(20) // monthly | hourly | piecework
+  amount      Decimal   @db.Decimal(15, 2)
+  date_from   DateTime  @db.Date
+  date_to     DateTime? @db.Date
+  note        String?
+  added_at    DateTime  @default(now()) @db.Timestamptz(6)
+  added_by    Int
 
-  employee     employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
-  addedBy      users     @relation(fields: [added_by], references: [id])
+  employee employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  addedBy  users     @relation(fields: [added_by], references: [id])
 
   @@index([employee_id, date_from])
 }
 
-model doors {
-  id           Int            @id @default(autoincrement())
-  name         String         @unique @db.VarChar(255)
-  status       Boolean        @default(true)
-  branch_id    Int?
-  latitude     Float?
-  longitude    Float?
-  added_at DateTime @default(now()) @db.Timestamptz(6)
+// Имущество компании, закреплённое за сотрудником во временное пользование
+// (Odoo: equipment assignment, SAP: asset custody). Одна строка = одна позиция,
+// переданная сотруднику, с историей возврата/списания.
+model asset_assignments {
+  id                   Int       @id @default(autoincrement())
+  employee_id          Int
+  asset_name           String    @db.VarChar(255) // Компьютер
+  asset_spec           String? // i3 8/256gb
+  asset_condition      String?   @db.VarChar(100) // Отличное
+  quantity             Int       @default(1)
+  inventory_number     String?   @db.VarChar(100) // инвентарный номер
+  assigned_date        DateTime  @db.Date
+  expected_return_date DateTime? @db.Date
+  // assigned — на руках | returned — возвращено | scrapped — списано
+  state                String    @default("assigned") @db.VarChar(20)
+  return_date          DateTime? @db.Date
+  return_condition     String?   @db.VarChar(100)
+  note                 String?
+  // произвольные доп. поля: [{ "label": "Гарантия", "value": "до 2027" }]
+  custom_fields        Json?
+  added_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  added_by             Int
 
-  branch       branches?      @relation(fields: [branch_id], references: [id], onDelete: SetNull)
-  employees    employees[]
+  employee employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  addedBy  users     @relation(fields: [added_by], references: [id])
+
+  @@index([employee_id, assigned_date])
+  @@index([state])
+}
+
+model doors {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(255)
+  status    Boolean  @default(true)
+  branch_id Int?
+  latitude  Float?
+  longitude Float?
+  added_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  branch      branches?      @relation(fields: [branch_id], references: [id], onDelete: SetNull)
+  employees   employees[]
   faceDevices face_devices[]
   facePasses  face_passes[]
-  doorTasks    employee_door_tasks[]
 }
 
 model face_devices {
-  id         Int       @id @default(autoincrement())
-  name       String?   @db.VarChar(100)
-  door_id    Int
-  device_ip  String    @db.VarChar(50) @unique
-  serial_number  String?    @db.VarChar(50) 
-  port       Int?      @default(80)
-  direction  String?   @db.VarChar(10)
-  password   String?   @db.VarChar(100)
-  status     Boolean?  @default(true)
-  is_local   Boolean   @default(false)
-  added_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  id            Int      @id @default(autoincrement())
+  name          String?  @db.VarChar(100)
+  door_id       Int
+  device_ip     String   @unique @db.VarChar(50)
+  // MAC — единственный ключ, по которому webhook находит устройство.
+  // IP плавает (DHCP/NAT), имя не уникально, серийника в событии нет.
+  mac_address   String?  @unique @db.VarChar(17)
+  // serial_number — не для поиска: это X-Devserial для облачного API
+  // удалённых устройств (RemoteFaceDeviceClient).
+  serial_number String?  @db.VarChar(50)
+  port          Int?     @default(80)
+  direction     String?  @db.VarChar(10)
+  password      String?  @db.VarChar(100)
+  status        Boolean? @default(true)
+  is_local      Boolean  @default(false)
+  // purpose = "access"  → обычный проход, событие пишется в face_passes
+  // purpose = "canteen" → терминал столовой: событие списывает порцию
+  //                       и пишется в canteen_meals, проход не создаётся
+  purpose       String   @default("access") @db.VarChar(20)
+  added_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
 
-  door      doors     @relation(fields: [door_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  facePasses  face_passes[]
-}
-
-model employee_door_tasks {
-  id           Int       @id @default(autoincrement())
-  employee_id  Int
-  door_id      Int
-  action       String    @db.VarChar(50) // "add", "update", "delete"
-  status       String    @db.VarChar(50) @default("pending")
-  retry_count  Int       @default(0)
-  error       String?   
-  created_at   DateTime  @default(now()) @db.Timestamptz(6)
-  updated_at   DateTime? @db.Timestamptz(6)
-
-  employee     employees @relation(fields: [employee_id], references: [id])
-  door         doors     @relation(fields: [door_id], references: [id])
-
-  @@index([status, created_at])
+  door         doors           @relation(fields: [door_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  facePasses   face_passes[]
+  canteenMeals canteen_meals[]
 }
 
 model gates {
-  id        Int    @id @default(autoincrement())
-  name      String? @db.VarChar(100)
-  branch_id Int?
-  telegram_chat_ids String[] @db.VarChar(20) @default([])
-  status    Boolean? @default(true)
+  id                Int      @id @default(autoincrement())
+  name              String?  @db.VarChar(100)
+  branch_id         Int?
+  telegram_chat_ids String[] @default([]) @db.VarChar(20)
+  status            Boolean? @default(true)
 
   added_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
-  branch branches? @relation(fields: [branch_id], references: [id], onDelete: Cascade)
-  cameras anpr_cameras[]
+  branch        branches?        @relation(fields: [branch_id], references: [id], onDelete: Cascade)
+  cameras       anpr_cameras[]
   vehiclePasses vehicle_passes[]
 }
 
 model anpr_cameras {
-  id            Int     @id @default(autoincrement())
-  name          String? @db.VarChar(100)
-  gate_id       Int
-  camera_ip     String  @db.VarChar(50) @unique
-  mac_address   String? @db.VarChar(17) @unique
-  port          Int?    @default(80)
-  direction     String? @db.VarChar(10)
-  username      String? @db.VarChar(50)
-  password      String? @db.VarChar(100)
+  id          Int     @id @default(autoincrement())
+  name        String? @db.VarChar(100)
+  gate_id     Int
+  camera_ip   String  @unique @db.VarChar(50)
+  mac_address String? @unique @db.VarChar(17)
+  port        Int?    @default(80)
+  direction   String? @db.VarChar(10)
+  username    String? @db.VarChar(50)
+  password    String? @db.VarChar(100)
 
-  status        Boolean? @default(true)
+  status Boolean? @default(true)
 
-  added_at DateTime @default(now()) @db.Timestamptz(6)
+  added_at   DateTime @default(now()) @db.Timestamptz(6)
   updated_at DateTime @default(now()) @db.Timestamptz(6)
 
   gate gates @relation(fields: [gate_id], references: [id], onDelete: Cascade)
@@ -411,19 +516,19 @@ model anpr_cameras {
 }
 
 model vehicle_passes {
-  id          Int @id @default(autoincrement())
-  branch_id   Int?
-  gate_id     Int
-  camera_id   Int?
-  plate_number String @db.VarChar(20)
-  direction   String? @db.VarChar(10)
-  photo       String?
+  id           Int     @id @default(autoincrement())
+  branch_id    Int?
+  gate_id      Int
+  camera_id    Int?
+  plate_number String  @db.VarChar(20)
+  direction    String? @db.VarChar(10)
+  photo        String?
 
-  date DateTime @db.Timestamptz(6)
+  date       DateTime @db.Timestamptz(6)
   created_at DateTime @default(now()) @db.Timestamptz(6)
 
-  branch   branches? @relation (fields: [branch_id], references: [id])
-  gate   gates @relation(fields: [gate_id], references: [id])
+  branch branches?     @relation(fields: [branch_id], references: [id])
+  gate   gates         @relation(fields: [gate_id], references: [id])
   camera anpr_cameras? @relation(fields: [camera_id], references: [id])
 }
 
@@ -431,15 +536,15 @@ model payroll_sheets {
   id          Int       @id @default(autoincrement())
   month       Int
   year        Int
-  status      String    @db.VarChar(20) @default("draft")
+  status      String    @default("draft") @db.VarChar(20)
   added_by    Int
   added_at    DateTime  @default(now()) @db.Timestamptz(6)
   approved_by Int?
   approved_at DateTime? @db.Timestamptz(6)
 
   items      payroll_sheet_items[]
-  addedBy    users  @relation("PayrollAddedBy",    fields: [added_by],    references: [id])
-  approvedBy users? @relation("PayrollApprovedBy", fields: [approved_by], references: [id])
+  addedBy    users                 @relation("PayrollAddedBy", fields: [added_by], references: [id])
+  approvedBy users?                @relation("PayrollApprovedBy", fields: [approved_by], references: [id])
 
   @@unique([month, year])
 }
@@ -455,31 +560,46 @@ model payroll_sheet_items {
   worked_hours       String? @db.VarChar(10)
   total_work_hours   String? @db.VarChar(10)
   accrued            Decimal @db.Decimal(15, 2)
-  debt_balance       Decimal @db.Decimal(15, 2) @default(0)
-  debt_deduction     Decimal @db.Decimal(15, 2) @default(0)
-  debt_mode          String  @db.VarChar(20)    @default("skip")
+  debt_balance       Decimal @default(0) @db.Decimal(15, 2)
+  debt_deduction     Decimal @default(0) @db.Decimal(15, 2)
+  debt_mode          String  @default("skip") @db.VarChar(20)
   debt_comment       String?
-  manual_adjustment  Decimal @db.Decimal(15, 2) @default(0)
+  manual_adjustment  Decimal @default(0) @db.Decimal(15, 2)
   adjustment_comment String?
   late_minutes       Int     @default(0)
   overtime_minutes   Int     @default(0)
   apply_late         Boolean @default(false)
   apply_overtime     Boolean @default(false)
-  late_amount        Decimal @db.Decimal(15, 2) @default(0)
-  overtime_amount    Decimal @db.Decimal(15, 2) @default(0)
-  advance_total      Decimal @db.Decimal(15, 2) @default(0)
+  late_amount        Decimal @default(0) @db.Decimal(15, 2)
+  overtime_amount    Decimal @default(0) @db.Decimal(15, 2)
   net                Decimal @db.Decimal(15, 2)
-  salary_balance     Decimal @db.Decimal(15, 2) @default(0)
-  paid_amount        Decimal @db.Decimal(15, 2) @default(0)
-  status             String  @db.VarChar(20)    @default("draft")
-  payout_status      String  @db.VarChar(20)    @default("unpaid")
+  salary_balance     Decimal @default(0) @db.Decimal(15, 2)
+  paid_amount        Decimal @default(0) @db.Decimal(15, 2)
+  status             String  @default("draft") @db.VarChar(20)
+  payout_status      String  @default("unpaid") @db.VarChar(20)
 
-  sheet       payroll_sheets        @relation(fields: [sheet_id],    references: [id], onDelete: Cascade)
-  employee    employees             @relation(fields: [employee_id], references: [id])
+  sheet       payroll_sheets         @relation(fields: [sheet_id], references: [id], onDelete: Cascade)
+  employee    employees              @relation(fields: [employee_id], references: [id])
   paymentLogs payroll_payment_logs[]
 
   @@unique([sheet_id, employee_id])
   @@index([sheet_id])
+}
+
+model employee_debts {
+  id          Int      @id @default(autoincrement())
+  employee_id Int
+  amount      Decimal  @db.Decimal(15, 2)
+  issued_at   DateTime @db.Date
+  note        String?
+  added_by    Int
+  added_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  employee employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  addedBy  users     @relation("EmployeeDebtAddedBy", fields: [added_by], references: [id])
+
+  @@index([employee_id])
+  @@index([issued_at])
 }
 
 model payroll_payment_logs {
@@ -488,6 +608,7 @@ model payroll_payment_logs {
   amount       Decimal  @db.Decimal(15, 2)
   payment_date DateTime @db.Date
   note         String?
+  is_advance   Boolean  @default(false)
   added_at     DateTime @default(now()) @db.Timestamptz(6)
 
   item payroll_sheet_items @relation(fields: [item_id], references: [id], onDelete: Cascade)
@@ -495,18 +616,926 @@ model payroll_payment_logs {
   @@index([item_id])
 }
 
-model salary_advances {
-  id           Int      @id @default(autoincrement())
-  employee_id  Int
-  amount       Decimal  @db.Decimal(15, 2)
-  advance_date DateTime @db.Date
-  note         String?
-  given_by     Int
-  added_at     DateTime @default(now()) @db.Timestamptz(6)
+model staffing_position {
+  id            Int      @id @default(autoincrement())
+  department_id Int
+  position_id   Int
+  headcount     Int      @default(1)
+  added_at      DateTime @default(now()) @db.Timestamptz(6)
 
-  employee employees @relation(fields: [employee_id], references: [id])
-  givenBy  users     @relation("AdvancesGivenBy", fields: [given_by], references: [id])
+  department departments @relation(fields: [department_id], references: [id], onDelete: Cascade)
+  position   positions   @relation(fields: [position_id], references: [id])
 
+  @@unique([department_id, position_id])
+}
+
+model audit_logs {
+  id         Int      @id @default(autoincrement())
+  entity     String   @db.VarChar(100)
+  record_id  Int?
+  action     String   @db.VarChar(20)
+  old_data   Json?
+  new_data   Json?
+  user_id    Int?
+  ip_address String?  @db.VarChar(45)
+  user_agent String?  @db.VarChar(500)
+  added_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  user users? @relation(fields: [user_id], references: [id])
+
+  @@index([entity])
+  @@index([user_id])
+  @@index([added_at])
+}
+
+model tasks {
+  id                     Int       @id @default(autoincrement())
+  title                  String    @db.VarChar(255)
+  description            String?   @db.Text
+  priority               String    @default("medium") @db.VarChar(20)
+  status                 String    @default("draft") @db.VarChar(20)
+  deadline               DateTime? @db.Timestamptz(6)
+  assignee_employee_id   Int?
+  assignee_department_id Int?
+  assignee_position_id   Int?
+  assignee_user_id       Int?
+  created_by_id          Int
+  confirmed_by_id        Int?
+  published_at           DateTime? @db.Timestamptz(6)
+  accepted_at            DateTime? @db.Timestamptz(6)
+  completed_at           DateTime? @db.Timestamptz(6)
+  confirmed_at           DateTime? @db.Timestamptz(6)
+  cancelled_at           DateTime? @db.Timestamptz(6)
+  created_at             DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at             DateTime  @updatedAt @db.Timestamptz(6)
+
+  assignee_employee   employees?      @relation("TaskAssigneeEmployee", fields: [assignee_employee_id], references: [id])
+  assignee_department departments?    @relation("TaskAssigneeDepartment", fields: [assignee_department_id], references: [id])
+  assignee_position   positions?      @relation("TaskAssigneePosition", fields: [assignee_position_id], references: [id])
+  assignee_user       users?          @relation("TaskAssigneeUser", fields: [assignee_user_id], references: [id])
+  created_by          users           @relation("TaskCreatedBy", fields: [created_by_id], references: [id])
+  confirmed_by        users?          @relation("TaskConfirmedBy", fields: [confirmed_by_id], references: [id])
+  comments            task_comments[]
+  files               task_files[]
+
+  @@index([status])
+  @@index([assignee_employee_id])
+  @@index([assignee_department_id])
+  @@index([created_by_id])
+  @@index([deadline])
+}
+
+model task_comments {
+  id         Int      @id @default(autoincrement())
+  task_id    Int
+  user_id    Int
+  text       String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  task tasks @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  user users @relation(fields: [user_id], references: [id])
+
+  @@index([task_id])
+}
+
+model task_files {
+  id             Int      @id @default(autoincrement())
+  task_id        Int
+  file_name      String   @db.VarChar(255)
+  file_path      String   @db.VarChar(500)
+  file_size      Int?
+  uploaded_by_id Int
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  task        tasks @relation(fields: [task_id], references: [id], onDelete: Cascade)
+  uploaded_by users @relation(fields: [uploaded_by_id], references: [id])
+
+  @@index([task_id])
+}
+
+model attendance_filter_presets {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  filter     Json
+  created_by Int
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  addedBy users @relation("AttendanceFilterPresetCreatedBy", fields: [created_by], references: [id])
+
+  @@index([created_by])
+}
+
+model timesheet_filter_presets {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  filter     Json
+  created_by Int
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  addedBy users @relation("TimesheetFilterPresetCreatedBy", fields: [created_by], references: [id])
+
+  @@index([created_by])
+}
+
+model late_employees_filter_presets {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  filter     Json
+  created_by Int
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  addedBy users @relation("LateEmployeesFilterPresetCreatedBy", fields: [created_by], references: [id])
+
+  @@index([created_by])
+}
+
+model cron_tasks {
+  id        Int    @id @default(autoincrement())
+  name      String @db.VarChar(255)
+  task_type String @default("attendance_report") @db.VarChar(50)
+  config    Json
+
+  // schedule_kind = "daily"    → hour + minute + days_of_week
+  // schedule_kind = "interval" → interval_minutes (каждые N минут от last_run_at)
+  schedule_kind    String @default("daily") @db.VarChar(20)
+  hour             Int?
+  minute           Int?
+  days_of_week     Int[]
+  interval_minutes Int?
+
+  status          Boolean   @default(true)
+  last_run_at     DateTime? @db.Timestamptz(6)
+  last_run_status String?   @db.VarChar(20)
+  last_run_error  String?
+  created_by      Int
+  added_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  addedBy users @relation("CronTaskCreatedBy", fields: [created_by], references: [id])
+
+  @@index([status])
+  @@index([created_by])
+}
+
+// ─── Столовая ────────────────────────────────────────────────────────────────
+
+// Дневная норма порций сотрудника. Одна строка на сотрудника: норма
+// не накапливается — каждый день остаток считается заново как
+// daily_limit − выданные сегодня порции.
+model canteen_allowances {
+  id          Int      @id @default(autoincrement())
+  employee_id Int      @unique
+  daily_limit Int      @default(1)
+  status      Boolean  @default(true)
+  note        String?  @db.VarChar(255)
+  added_by    Int?
+  added_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  employee employees @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  addedBy  users?    @relation("CanteenAllowanceCreatedBy", fields: [added_by], references: [id])
+
+  @@index([status])
+}
+
+// Одна строка = одно распознавание на терминале столовой.
+// Отказы (нормы нет / норма исчерпана) тоже пишем — нужны в отчёте.
+model canteen_meals {
+  id             Int      @id @default(autoincrement())
+  employee_id    Int
+  face_device_id Int?
+  date           DateTime @db.Timestamptz(6)
+  // Локальная (Asia/Tashkent) дата события. Дневной остаток считается по ней:
+  // по UTC ужин после 19:00 попадал бы уже в следующие сутки.
+  meal_date      DateTime @db.Date
+  // employeeNo-serialNo устройства — защита от повторной обработки события
+  identifier     String?  @db.VarChar(50)
+  // served — порция выдана | denied — отказ
+  status         String   @default("served") @db.VarChar(20)
+  // no_allowance — нормы нет либо выключена | limit_reached — норма исчерпана
+  deny_reason    String?  @db.VarChar(30)
+  // норма на момент события — отчёт не должен меняться задним числом
+  daily_limit    Int      @default(0)
+  photo          String?  @db.VarChar(255)
+  added_at       DateTime @default(now()) @db.Timestamptz(6)
+
+  employee   employees     @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+  faceDevice face_devices? @relation(fields: [face_device_id], references: [id], onDelete: SetNull)
+
+  @@unique([face_device_id, identifier])
+  @@index([employee_id, meal_date])
+  @@index([meal_date, status])
+}
+
+// ─── Швейное производство ──────────────────────────────────────────────────
+
+// Приход партии сырья (пряжа/полотно). Пока только журнал документов —
+// без движения складских остатков.
+model batch_receipts {
+  id               Int      @id @default(autoincrement())
+  document_number  String   @unique @db.VarChar(50)
+  batch_number     String   @unique @db.VarChar(100)
+  receipt_date     DateTime @db.Date
+  order_number     String?  @db.VarChar(100)
+  customer         String?  @db.VarChar(255)
+  status           String   @default("draft") @db.VarChar(20) // draft | accepted
+  comment          String?
+  added_by         Int
+  added_at         DateTime @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  addedBy users                 @relation(fields: [added_by], references: [id])
+  items   batch_receipt_items[]
+
+  @@index([status])
+  @@index([receipt_date])
+}
+
+model batch_receipt_items {
+  id              Int      @id @default(autoincrement())
+  receipt_id      Int
+  product_name    String?  @db.VarChar(255)
+  color           String?  @db.VarChar(100)
+  color_variant   String?  @db.VarChar(100)
+  color_tone      String?  @db.VarChar(100)
+  size            String?  @db.VarChar(50)
+  yarn_type       String?  @db.VarChar(100)
+  material        String?  @db.VarChar(100)
+  design          String?  @db.VarChar(100)
+  quantity        Decimal  @db.Decimal(15, 4)
+  gross_weight_kg Decimal? @db.Decimal(15, 4)
+  roll_count      Int?
+  grammage        Decimal? @db.Decimal(10, 2)
+  sort_order      Int      @default(0)
+  // Позицию может добавить другой пользователь (дописать в принятую партию).
+  // null — позиции, созданные до появления поля: считаем автором партии.
+  added_by        Int?
+
+  receipt      batch_receipts  @relation(fields: [receipt_id], references: [id], onDelete: Cascade)
+  addedBy      users?          @relation(fields: [added_by], references: [id])
+  workStickers work_stickers[]
+
+  @@index([receipt_id])
+}
+
+// Справочник типов операций (раскрой, пошив, вышивка, утюжка, упаковка...)
+model operation_types {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique @db.VarChar(100)
+  unit       String?  @db.VarChar(20)
+  price      Decimal? @db.Decimal(15, 2)
+  complexity String?  @db.VarChar(20) // simple | medium | hard
+  is_active  Boolean  @default(true)
+  sort_order Int      @default(0)
+  // Последняя операция: при приёме работы следующая операция не печатается
+  // (nextOperations у такого типа всегда пуст).
+  is_final   Boolean  @default(false)
+  // Операция исправления: выбирается только как "операция для исправления" и
+  // никогда — как следующая операция; в списке исправления видны только такие типы.
+  is_rework  Boolean  @default(false)
+  // Первая операция после прихода партии: в распределении работы по позиции партии
+  // выбирается автоматически. Такой тип один — при сохранении флаг снимается с
+  // остальных; операция исправления первой быть не может.
+  is_first   Boolean  @default(false)
+  // Разрешает на «Приёме работы» объединять несколько принятых стикеров этой
+  // операции (одной партии и размера) в один перед раздачей дальше — см.
+  // work_stickers.merged_into_id.
+  allow_merge Boolean @default(false)
+  // Разрешает на «Приёме работы» указать «Не выполнено» — часть стикера, которую не
+  // успели сделать: не оплачивается, при раздаче уходит на выбранную операцию для
+  // не выполненных (см. operation_type_incomplete_operations).
+  allow_incomplete Boolean @default(false)
+  // Только у операции исправления (is_rework): какую операцию она исправляет, например
+  // «Исправление пошива» → «Пошив». При раздаче исправления по этому типу сервер сам
+  // находит виновный стикер среди предков (см. work_stickers.origin_sticker_id) —
+  // приёмщик ничего, кроме самой операции исправления, не выбирает.
+  rework_target_operation_type_id Int?
+
+  // Кто добавил тип. null у типов, созданных до появления поля.
+  added_by Int?
+
+  addedBy users? @relation("OperationTypeAddedBy", fields: [added_by], references: [id])
+
+  // Исправляемая операция — цель для операции исправления; SetNull — удаление
+  // исправляемой операции не удаляет операцию исправления.
+  reworkTarget operation_types?  @relation("OperationTypeReworkTarget", fields: [rework_target_operation_type_id], references: [id], onDelete: SetNull)
+  reworkedBy   operation_types[] @relation("OperationTypeReworkTarget")
+
+  // Следующие операции по умолчанию: один вариант — подставляется при приёме
+  // работы сам, несколько — приёмщик выбирает из них (см. operation_type_next_operations).
+  nextOperations operation_type_next_operations[] @relation("OperationTypeNextOptions")
+  nextOptionOf   operation_type_next_operations[] @relation("OperationTypeNextOptionsTarget")
+
+  // Операции для исправления по умолчанию: так же — один вариант подставляется
+  // сам, несколько — приёмщик выбирает из них (см. operation_type_rework_operations).
+  reworkOperations operation_type_rework_operations[] @relation("OperationTypeReworkOptions")
+  reworkOptionOf   operation_type_rework_operations[] @relation("OperationTypeReworkOptionsTarget")
+
+  // Операции для не выполненных по умолчанию (только при allow_incomplete): так же —
+  // один вариант подставляется сам, несколько — приёмщик выбирает из них.
+  incompleteOperations operation_type_incomplete_operations[] @relation("OperationTypeIncompleteOptions")
+  incompleteOptionOf   operation_type_incomplete_operations[] @relation("OperationTypeIncompleteOptionsTarget")
+
+  items       operation_items[]
+  workStickers work_stickers[]
+  employees    operation_type_employees[]
+  teams        employee_teams[]
+
+  @@index([rework_target_operation_type_id])
+}
+
+// Следующие операции по умолчанию для типа: несколько строк на один тип.
+// Один вариант — при приёме работы подставляется сам, несколько — приёмщик
+// выбирает из них (см. WorkStickerRoutePanel / operationTypes.service.js).
+model operation_type_next_operations {
+  operation_type_id      Int
+  next_operation_type_id Int
+
+  operationType     operation_types @relation("OperationTypeNextOptions", fields: [operation_type_id], references: [id], onDelete: Cascade)
+  nextOperationType operation_types @relation("OperationTypeNextOptionsTarget", fields: [next_operation_type_id], references: [id], onDelete: Cascade)
+
+  @@id([operation_type_id, next_operation_type_id])
+  @@index([next_operation_type_id])
+}
+
+// Операции для исправления по умолчанию для типа: несколько строк на один тип,
+// как operation_type_next_operations, но цель — только тип, помеченный is_rework.
+model operation_type_rework_operations {
+  operation_type_id        Int
+  rework_operation_type_id Int
+
+  operationType       operation_types @relation("OperationTypeReworkOptions", fields: [operation_type_id], references: [id], onDelete: Cascade)
+  reworkOperationType operation_types @relation("OperationTypeReworkOptionsTarget", fields: [rework_operation_type_id], references: [id], onDelete: Cascade)
+
+  @@id([operation_type_id, rework_operation_type_id])
+  @@index([rework_operation_type_id])
+}
+
+// Операции для не выполненных по умолчанию для типа: несколько строк на один тип,
+// как operation_type_rework_operations, но цель — обычный тип (не исправление).
+model operation_type_incomplete_operations {
+  operation_type_id            Int
+  incomplete_operation_type_id Int
+
+  operationType           operation_types @relation("OperationTypeIncompleteOptions", fields: [operation_type_id], references: [id], onDelete: Cascade)
+  incompleteOperationType operation_types @relation("OperationTypeIncompleteOptionsTarget", fields: [incomplete_operation_type_id], references: [id], onDelete: Cascade)
+
+  @@id([operation_type_id, incomplete_operation_type_id])
+  @@index([incomplete_operation_type_id])
+}
+
+// Сотрудники, допущенные к типу операции: при приёме работы (скан стикера)
+// в выборе показываются только они. Нет ни одной записи — допущены все.
+model operation_type_employees {
+  operation_type_id Int
+  employee_id       Int
+
+  operationType operation_types @relation(fields: [operation_type_id], references: [id], onDelete: Cascade)
+  employee      employees       @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@id([operation_type_id, employee_id])
   @@index([employee_id])
-  @@index([advance_date])
+}
+
+// Команда сотрудников внутри типа операции: сохранённый набор из уже
+// допущенных сотрудников (operation_type_employees). При приёме работы
+// подставляется целиком одной кнопкой вместо выбора каждого по одному.
+// Команд на один тип операции может быть сколько угодно.
+model employee_teams {
+  id                Int      @id @default(autoincrement())
+  name              String   @db.VarChar(100)
+  operation_type_id Int
+  added_by          Int?
+  added_at          DateTime @default(now()) @db.Timestamptz(6)
+
+  operationType operation_types         @relation(fields: [operation_type_id], references: [id], onDelete: Cascade)
+  addedBy       users?                  @relation("EmployeeTeamAddedBy", fields: [added_by], references: [id])
+  members       employee_team_members[]
+
+  @@unique([operation_type_id, name])
+  @@index([operation_type_id])
+}
+
+model employee_team_members {
+  team_id     Int
+  employee_id Int
+
+  team     employee_teams @relation(fields: [team_id], references: [id], onDelete: Cascade)
+  employee employees      @relation(fields: [employee_id], references: [id], onDelete: Cascade)
+
+  @@id([team_id, employee_id])
+  @@index([employee_id])
+}
+
+// Учёт выполненных операций по сотрудникам (сдельная работа). Пока не связан
+// с batch_receipts и не влияет на payroll — отдельный журнал фактов.
+model operations {
+  id              Int      @id @default(autoincrement())
+  document_number String   @unique @db.VarChar(50)
+  operation_date  DateTime @db.Date
+  order_number    String?  @db.VarChar(100)
+  status          String   @default("draft") @db.VarChar(20) // draft | accepted
+  comment         String?
+  added_by        Int
+  added_at        DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  addedBy users             @relation(fields: [added_by], references: [id])
+  items   operation_items[]
+
+  @@index([status])
+  @@index([operation_date])
+}
+
+model operation_items {
+  id                Int     @id @default(autoincrement())
+  operation_id      Int
+  employee_id       Int
+  operation_type_id Int
+  quantity          Decimal @db.Decimal(15, 4)
+  rate              Decimal @db.Decimal(15, 2)
+  amount            Decimal @db.Decimal(15, 2)
+  comment           String?
+  sort_order        Int     @default(0)
+
+  operation     operations      @relation(fields: [operation_id], references: [id], onDelete: Cascade)
+  employee      employees       @relation(fields: [employee_id], references: [id])
+  operationType operation_types @relation(fields: [operation_type_id], references: [id])
+
+  @@index([operation_id])
+  @@index([employee_id])
+  @@index([operation_type_id])
+}
+
+// Распределение работы и приём работы. Стикер = единица работы (пачка/бандл),
+// печатается при раздаче партии на операцию — сотрудник и факт выполнения
+// проставляются позже, при скане стикера ("Приём работы").
+model work_stickers {
+  id                    Int       @id @default(autoincrement())
+  sticker_code          String    @unique @db.VarChar(50)
+  batch_receipt_item_id Int
+  operation_type_id     Int
+  planned_quantity      Decimal   @db.Decimal(15, 4)
+  rate                  Decimal?  @db.Decimal(15, 2) // снимок цены типа операции на момент печати
+  status                String    @default("pending") @db.VarChar(20) // pending | done | scrapped
+  employee_id           Int?
+  actual_quantity       Decimal?  @db.Decimal(15, 4) // выполнено (годное) — оплачивается и раздаётся дальше
+  defect_quantity       Decimal?  @db.Decimal(15, 4) // брак, указанный при приёме; не оплачивается, для него печатается стикер брака
+  rework_quantity       Decimal?  @db.Decimal(15, 4) // на исправление, указано при приёме (сверх actual_quantity); при раздаче уходит на выбранную операцию исправления
+  incomplete_quantity   Decimal?  @db.Decimal(15, 4) // не выполнено, указано при приёме (только если у типа allow_incomplete); не оплачивается, при раздаче уходит на выбранную операцию для не выполненных
+  amount                Decimal?  @db.Decimal(15, 2)
+  comment               String?
+  added_by              Int
+  added_at              DateTime  @default(now()) @db.Timestamptz(6)
+  scanned_by            Int?
+  scanned_at            DateTime? @db.Timestamptz(6)
+
+  // При разделении после скана (advance) создаются child-стикеры с
+  // parent_sticker_id — так трекается вся цепочка бандла без переиспользования
+  // одного sticker_code.
+  parent_sticker_id Int?
+  split_kind        String? @db.VarChar(20) // normal | rework | incomplete | scrap — путь, которым этот кусок получен от родителя (scrap — стикер брака); share — доля сотрудника при приёме
+
+  // Работу принятого стикера могли выполнить несколько сотрудников. Стикер хранит
+  // долю первого (основного) сотрудника, а доля каждого следующего — отдельная
+  // принятая строка с share_of_id на основной стикер (split_kind = share,
+  // planned_quantity = 0). Так каждая доля — обычный принятый стикер со своим
+  // сотрудником, количеством и суммой, и отчёты считают её без изменений.
+  // Выполнено всего = actual_quantity основного + actual_quantity его долей.
+  share_of_id Int?
+
+  // Объединение принятых стикеров одной операции/партии/размера в один — перед
+  // раздачей на следующую операцию (см. operation_types.allow_merge). В отличие
+  // от parent_sticker_id (1 родитель → N детей при раздаче) тут наоборот: N
+  // источников → 1 результат, поэтому связь хранится на стороне источника.
+  // onDelete: SetNull — удаление результата не должно затронуть уже оплаченные
+  // исходные стикеры, они просто снова считаются неразданными.
+  merged_into_id Int?
+
+  // Отмечен для объединения (кнопка на карточке приёма) — раздача этого стикера
+  // одиночно заблокирована, пока флаг не снят. Режим объединения при входе сразу
+  // подгружает все такие стикеры, доступные логину, — не нужно сканировать заново.
+  awaiting_merge Boolean @default(false)
+
+  // Операция-виновник: принятый стикер более ранней операции, работу которой этот
+  // стикер (split_kind = rework) возвращает на исправление. parent_sticker_id — это
+  // стикер, где брак нашли (например, «Контроль»), а виновная операция может быть на
+  // несколько шагов раньше — при раздаче сервер находит её сам: ближайший принятый
+  // предок с типом operation_types.rework_target_operation_type_id операции исправления.
+  // null — не найдена или у операции исправления она не задана. onDelete: SetNull —
+  // удаление виновного стикера не трогает стикер исправления. Виновника наследуют и
+  // следующие за исправлением стикеры (например, «Ремонт» → «Утюжка после ремонта»):
+  // цепочка возврата заканчивается на операции, где брак нашли.
+  origin_sticker_id Int?
+
+  batchReceiptItem batch_receipt_items    @relation(fields: [batch_receipt_item_id], references: [id], onDelete: Cascade)
+  operationType    operation_types        @relation(fields: [operation_type_id], references: [id])
+  employee         employees?             @relation(fields: [employee_id], references: [id])
+  addedBy          users                  @relation("WorkStickerAddedBy", fields: [added_by], references: [id])
+  scannedBy        users?                 @relation("WorkStickerScannedBy", fields: [scanned_by], references: [id])
+  parent           work_stickers?         @relation("StickerLineage", fields: [parent_sticker_id], references: [id])
+  children         work_stickers[]        @relation("StickerLineage")
+  shareOf          work_stickers?         @relation("StickerShares", fields: [share_of_id], references: [id], onDelete: Cascade)
+  shares           work_stickers[]        @relation("StickerShares")
+  mergedInto       work_stickers?         @relation("StickerMerge", fields: [merged_into_id], references: [id], onDelete: SetNull)
+  mergedSources     work_stickers[]        @relation("StickerMerge")
+  origin           work_stickers?         @relation("StickerReworkOrigin", fields: [origin_sticker_id], references: [id], onDelete: SetNull)
+  reworkReturns    work_stickers[]        @relation("StickerReworkOrigin")
+
+  @@index([batch_receipt_item_id])
+  @@index([status])
+  @@index([parent_sticker_id])
+  @@index([share_of_id])
+  @@index([merged_into_id])
+  @@index([awaiting_merge])
+  @@index([origin_sticker_id])
+}
+
+// Внешний вид и размер стикера "Распределение работы" — несколько вариантов
+// дизайна на компанию, редактируются через кнопку-шестерёнку в панели печати
+// (WYSIWYG-конструктор: перетаскивание/ресайз блоков на канвасе). Печатается
+// всегда вариант с is_active=true (ровно один); остальные — заготовки/копии.
+// elements — массив блоков вида {id, type: "qr"|"text", field?, x, y, w, h,
+// fontSize, bold, align} в мм-координатах, PDF-генератор рисует их 1:1.
+model work_sticker_templates {
+  id         Int      @id @default(autoincrement())
+  name       String   @default("Основной") @db.VarChar(60)
+  is_active  Boolean  @default(true)
+  width_mm   Decimal  @default(58) @db.Decimal(6, 2)
+  height_mm  Decimal  @default(40) @db.Decimal(6, 2)
+  elements   Json
+  updated_at DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+}
+
+// ── Складской учёт: товар ──────────────────────────────────────────
+
+model units {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique @db.VarChar(100)
+  short_name String?  @db.VarChar(20)
+  status     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  products   products[]
+  stockMoves stock_moves[]
+}
+
+model product_categories {
+  id        Int     @id @default(autoincrement())
+  parent_id Int?
+  name      String  @db.VarChar(255)
+  status    Boolean @default(true)
+
+  parent   product_categories?  @relation("ProductCategoryHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children product_categories[] @relation("ProductCategoryHierarchy")
+  products products[]
+
+  categoryAttributes category_attributes[]
+}
+
+model products {
+  id          Int      @id @default(autoincrement())
+  category_id Int?
+  unit_id     Int
+  name        String   @db.VarChar(255)
+  sku         String?  @db.VarChar(100)
+  barcode     String?  @unique @db.VarChar(100)
+  description String?
+  min_stock   Int?
+  status      Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+
+  category product_categories? @relation(fields: [category_id], references: [id])
+  unit     units               @relation(fields: [unit_id], references: [id])
+
+  stockMoves  stock_moves[]
+  stockQuants stock_quants[]
+  stockLots   stock_lots[]
+
+  productAttributes product_attributes[]
+
+  @@index([category_id])
+}
+
+model attributes {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  status     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  values             attribute_values[]
+  categoryAttributes category_attributes[]
+  productAttributes  product_attributes[]
+  moveValues         stock_move_attribute_values[]
+  lotValues          stock_lot_attribute_values[]
+}
+
+model attribute_values {
+  id           Int      @id @default(autoincrement())
+  attribute_id Int
+  value        String   @db.VarChar(255)
+  status       Boolean  @default(true)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
+
+  attribute  attributes                    @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  moveValues stock_move_attribute_values[]
+  lotValues  stock_lot_attribute_values[]
+
+  @@unique([attribute_id, value])
+  @@index([attribute_id])
+}
+
+model category_attributes {
+  id           Int     @id @default(autoincrement())
+  category_id  Int
+  attribute_id Int
+  required     Boolean @default(false)
+
+  category  product_categories @relation(fields: [category_id], references: [id], onDelete: Cascade)
+  attribute attributes         @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+
+  @@unique([category_id, attribute_id])
+  @@index([attribute_id])
+}
+
+// Какие характеристики вообще применимы к товару (без значения) — значение
+// выбирается позже, отдельно на каждой строке документа (stock_move_attribute_values).
+model product_attributes {
+  id           Int @id @default(autoincrement())
+  product_id   Int
+  attribute_id Int
+
+  product   products   @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  attribute attributes @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, attribute_id])
+  @@index([attribute_id])
+}
+
+// Значение характеристики на конкретной строке документа (выбирается при
+// создании документа из значений, уже заведённых в attribute_values), из
+// набора характеристик, разрешённых для товара в product_attributes.
+model stock_move_attribute_values {
+  id                 Int @id @default(autoincrement())
+  move_id            Int
+  attribute_id       Int
+  attribute_value_id Int
+
+  move           stock_moves      @relation(fields: [move_id], references: [id], onDelete: Cascade)
+  attribute      attributes       @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  attributeValue attribute_values @relation(fields: [attribute_value_id], references: [id], onDelete: Cascade)
+
+  @@unique([move_id, attribute_id])
+  @@index([attribute_value_id])
+}
+
+// Партия остатка — связка (товар, цена, описание, набор характеристик).
+// Расход/перемещение со склада выбирает конкретную партию (stock_moves.lot_id
+// задаётся сразу в черновике), приход находит-или-создаёт партию по этой
+// связке при проведении (см. resolveOrCreateLot в stockPickings.model.js).
+// Пустые/одинаковые price_unit+note+атрибуты — одна и та же партия, остаток
+// не дробится.
+model stock_lots {
+  id         Int      @id @default(autoincrement())
+  product_id Int
+  price_unit Decimal? @db.Decimal(15, 4)
+  note       String?  @db.VarChar(500)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  product         products                     @relation(fields: [product_id], references: [id])
+  moves           stock_moves[]
+  quants          stock_quants[]
+  attributeValues stock_lot_attribute_values[]
+
+  @@index([product_id])
+}
+
+model stock_lot_attribute_values {
+  id                 Int @id @default(autoincrement())
+  lot_id             Int
+  attribute_id       Int
+  attribute_value_id Int
+
+  lot            stock_lots       @relation(fields: [lot_id], references: [id], onDelete: Cascade)
+  attribute      attributes       @relation(fields: [attribute_id], references: [id], onDelete: Cascade)
+  attributeValue attribute_values @relation(fields: [attribute_value_id], references: [id], onDelete: Cascade)
+
+  @@unique([lot_id, attribute_id])
+  @@index([attribute_value_id])
+}
+
+// ── Складской учёт: партнёры ───────────────────────────────────────
+
+model partner_categories {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(255)
+  status     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  partners partners[]
+}
+
+model partners {
+  id                   Int      @id @default(autoincrement())
+  category_id          Int?
+  type                 String   @db.VarChar(20)
+  name                 String   @db.VarChar(255)
+  code                 String?  @db.VarChar(100)
+  tax_number           String?  @unique @db.VarChar(100)
+  contact_person       String?  @db.VarChar(255)
+  phone                String?  @db.VarChar(50)
+  email                String?  @db.VarChar(255)
+  address              String?  @db.VarChar(500)
+  note                 String?
+  supplier_location_id Int?
+  customer_location_id Int?
+  status               Boolean  @default(true)
+  created_at           DateTime @default(now()) @db.Timestamptz(6)
+
+  category         partner_categories? @relation(fields: [category_id], references: [id])
+  supplierLocation stock_locations?    @relation("PartnerSupplierLocation", fields: [supplier_location_id], references: [id])
+  customerLocation stock_locations?    @relation("PartnerCustomerLocation", fields: [customer_location_id], references: [id])
+
+  pickingsAsSrc  stock_pickings[] @relation("PickingSrcPartner")
+  pickingsAsDest stock_pickings[] @relation("PickingDestPartner")
+
+  @@index([category_id])
+}
+
+// ── Складской учёт: локации ────────────────────────────────────────
+
+model stock_locations {
+  id            Int      @id @default(autoincrement())
+  parent_id     Int?
+  name          String   @db.VarChar(255)
+  complete_name String?  @db.VarChar(1000)
+  type          String   @db.VarChar(20)
+  branch_id     Int?
+  code          String?  @db.VarChar(50)
+  note          String?
+  is_scrap      Boolean  @default(false)
+  status        Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+
+  parent   stock_locations?  @relation("StockLocationHierarchy", fields: [parent_id], references: [id], onDelete: Cascade)
+  children stock_locations[] @relation("StockLocationHierarchy")
+  branch   branches?         @relation(fields: [branch_id], references: [id])
+
+  suppliersOf partners[] @relation("PartnerSupplierLocation")
+  customersOf partners[] @relation("PartnerCustomerLocation")
+
+  pickingTypeDefaultSrcOf  stock_picking_types[] @relation("PickingTypeDefaultSrc")
+  pickingTypeDefaultDestOf stock_picking_types[] @relation("PickingTypeDefaultDest")
+  pickingsAsSrc            stock_pickings[]      @relation("PickingLocationSrc")
+  pickingsAsDest           stock_pickings[]      @relation("PickingLocationDest")
+  movesAsSrc               stock_moves[]         @relation("MoveLocationSrc")
+  movesAsDest              stock_moves[]         @relation("MoveLocationDest")
+  quants                   stock_quants[]        @relation("QuantLocation")
+
+  @@index([parent_id])
+}
+
+// ── Складской учёт: валюты ──────────────────────────────────────────
+//
+// code — ISO alpha (USD/EUR/RUB/UZS/...), он же Ccy в ответе ЦБ РУз
+// (cbu.uz) — по нему подтягивается рекомендованный курс. Ровно одна
+// строка is_base=true — базовая валюта отчётности (сум), для неё
+// rate документа всегда 1 (см. CurrenciesService.getRecommendedRate).
+model currencies {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(10)
+  name       String   @db.VarChar(100)
+  symbol     String?  @db.VarChar(10)
+  is_base    Boolean  @default(false)
+  status     Boolean  @default(true)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  pickings stock_pickings[]
+}
+
+// ── Складской учёт: типы документов и сами документы ───────────────
+//
+// Тип документа (stock_picking_types) задаёт логику движения: code
+// incoming/outgoing/internal определяет какая сторона (src/dest) виртуальная
+// (поставщик/клиент/цех/расходы), а какая — физический склад. default_location_*
+// — необязательная "прошивка" одной из сторон (например у "Приём от поставщика"
+// src всегда "Поставщики"), вторую сторону (физический склад) выбирают при
+// создании документа. Сам документ (stock_pickings) — шапка + строки (stock_moves),
+// проводится (validate) — тогда остатки (stock_quants) пересчитываются; проведённый
+// можно отменить (reverse — назад в черновик) или отменить совсем (cancel).
+model stock_picking_types {
+  id                        Int      @id @default(autoincrement())
+  name                      String   @db.VarChar(255)
+  code                      String   @db.VarChar(20) // incoming | outgoing | internal
+  sequence_prefix           String   @db.VarChar(20)
+  default_location_src_id   Int?
+  default_location_dest_id  Int?
+  status                    Boolean  @default(true)
+  created_at                DateTime @default(now()) @db.Timestamptz(6)
+
+  defaultLocationSrc  stock_locations? @relation("PickingTypeDefaultSrc", fields: [default_location_src_id], references: [id])
+  defaultLocationDest stock_locations? @relation("PickingTypeDefaultDest", fields: [default_location_dest_id], references: [id])
+  pickings            stock_pickings[]
+}
+
+model stock_pickings {
+  id                Int       @id @default(autoincrement())
+  name              String    @unique @db.VarChar(50)
+  type_id           Int
+  src_partner_id    Int?
+  dest_partner_id   Int?
+  location_src_id   Int
+  location_dest_id  Int
+  origin            String?   @db.VarChar(255)
+  state             String    @default("draft") @db.VarChar(20) // draft | confirmed | done | cancelled
+  scheduled_date    DateTime? @db.Timestamptz(6)
+  date_done         DateTime? @db.Timestamptz(6)
+  note              String?
+  payment_method    String?   @db.VarChar(20) // cash | card | transfer
+  manager_id        Int? // менеджер по закупкам (incoming) / менеджер отдела продаж (outgoing)
+  transport         String?   @db.VarChar(100) // марка/тип транспорта
+  driver            String?   @db.VarChar(100) // ФИО водителя
+  vehicle_number    String?   @db.VarChar(20) // гос. номер транспорта
+  currency_id       Int
+  rate              Decimal   @default(1) @db.Decimal(15, 6) // 1 ед. валюты документа = rate ед. базовой; снимок на момент документа
+  added_by          Int?
+  confirmed_by      Int? // кто подтвердил документ (draft -> confirmed)
+  confirmed_at      DateTime? @db.Timestamptz(6)
+  done_by           Int? // кто провёл документ (-> done), вместе с date_done
+  edited_by         Int? // кто последним редактировал черновик (update)
+  edited_at         DateTime? @db.Timestamptz(6)
+  created_at        DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  type         stock_picking_types @relation(fields: [type_id], references: [id])
+  srcPartner   partners?           @relation("PickingSrcPartner", fields: [src_partner_id], references: [id])
+  destPartner  partners?           @relation("PickingDestPartner", fields: [dest_partner_id], references: [id])
+  locationSrc  stock_locations     @relation("PickingLocationSrc", fields: [location_src_id], references: [id])
+  locationDest stock_locations     @relation("PickingLocationDest", fields: [location_dest_id], references: [id])
+  currency     currencies          @relation(fields: [currency_id], references: [id])
+  manager      employees?          @relation("PickingManager", fields: [manager_id], references: [id])
+  addedBy      users?              @relation("PickingAddedBy", fields: [added_by], references: [id])
+  confirmedBy  users?              @relation("PickingConfirmedBy", fields: [confirmed_by], references: [id])
+  doneBy       users?              @relation("PickingDoneBy", fields: [done_by], references: [id])
+  editedBy     users?              @relation("PickingEditedBy", fields: [edited_by], references: [id])
+  moves        stock_moves[]
+
+  @@index([type_id])
+  @@index([state])
+}
+
+model stock_moves {
+  id                Int      @id @default(autoincrement())
+  picking_id        Int
+  product_id        Int
+  lot_id            Int?
+  unit_id           Int?
+  qty_demand        Decimal  @db.Decimal(15, 4)
+  qty_done          Decimal  @default(0) @db.Decimal(15, 4)
+  qty_packages      Decimal? @db.Decimal(15, 4)
+  location_src_id   Int
+  location_dest_id  Int
+  state             String   @default("draft") @db.VarChar(20) // draft | done | cancelled
+  price_unit        Decimal? @db.Decimal(15, 4)
+  note              String?  @db.VarChar(500)
+  created_at        DateTime @default(now()) @db.Timestamptz(6)
+
+  picking      stock_pickings  @relation(fields: [picking_id], references: [id], onDelete: Cascade)
+  product      products        @relation(fields: [product_id], references: [id])
+  lot          stock_lots?     @relation(fields: [lot_id], references: [id])
+  unit         units?          @relation(fields: [unit_id], references: [id])
+  locationSrc  stock_locations @relation("MoveLocationSrc", fields: [location_src_id], references: [id])
+  locationDest stock_locations @relation("MoveLocationDest", fields: [location_dest_id], references: [id])
+
+  attributeValues stock_move_attribute_values[]
+
+  @@index([product_id])
+  @@index([picking_id])
+  @@index([lot_id])
+}
+
+// Текущие остатки — materialized-кэш, обновляется только сервером при
+// validate/cancel/reverse (см. stockPickings.service.js). Считает только по
+// физическим (type=internal) локациям — виртуальные (поставщики/клиенты/…)
+// источники/приёмники бесконечны и в остатках не участвуют.
+// lot_id nullable на уровне колонки сознательно (старые строки до бэкофилла
+// партий, см. server/scripts/migrate-stock-lots.js), но приложение всегда
+// пишет его через applyQuantDelta(..., lotId, ...) — там lotId обязательный
+// параметр, пустых значений после бэкофилла в проде быть не должно.
+model stock_quants {
+  id           Int      @id @default(autoincrement())
+  product_id   Int
+  location_id  Int
+  lot_id       Int?
+  qty          Decimal  @default(0) @db.Decimal(15, 4)
+  qty_packages Decimal  @default(0) @db.Decimal(15, 4)
+  updated_at   DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  product  products        @relation(fields: [product_id], references: [id])
+  location stock_locations @relation("QuantLocation", fields: [location_id], references: [id])
+  lot      stock_lots?     @relation(fields: [lot_id], references: [id])
+
+  @@unique([product_id, location_id, lot_id])
+  @@index([location_id])
+  @@index([lot_id])
 }
